@@ -1,0 +1,15 @@
+language: haskell
+ghc:
+  - 7.8
+install:
+  - make install
+  - make configure
+before_script:
+  - git config --global user.email "example@example.com"
+  - git config --global user.name "Travis CI"
+script:
+  - make bench
+  - make test
+after_script:
+  - cabal install hpc-coveralls
+  - .cabal-sandbox/bin/hpc-coveralls --exclude-dir=test-suite --exclude-dir=benchmark --exclude-dir=executable tests examples

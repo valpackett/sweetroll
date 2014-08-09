@@ -1,0 +1,118 @@
+name:            sweetroll
+version:         0.0.0
+synopsis:        A (micro)blogging engine with curved swords. Curved! Swords!
+--description: TODO
+category:        Web
+homepage:        https://github.com/myfreeweb/sweetroll
+author:          Greg V
+copyright:       2014 Greg V <floatboth@me.com>
+maintainer:      floatboth@me.com
+license:         Apache-2.0
+license-file:    COPYING
+build-type:      Simple
+cabal-version:   >= 1.18
+extra-source-files:
+    README.md
+tested-with:
+    GHC == 7.6.3
+  , GHC == 7.8.2
+
+source-repository head
+    type: git
+    location: git://github.com/myfreeweb/sweetroll.git
+
+library
+    build-depends:
+        base >= 4.0.0.0 && < 5
+      , transformers
+      , filepath
+      , text
+      , bytestring
+      , time
+      , aeson
+      , gitson == 0.3.0
+      , http-types
+      , wai
+      , wai-extra
+      , scotty == 0.8.2
+    default-language: Haskell2010
+    exposed-modules:
+        Sweetroll
+        Sweetroll.Types
+        Sweetroll.Util
+        -- HASKELETON: New.Module
+    ghc-prof-options: -auto-all -prof
+    ghc-options: -threaded -Wall -Werror
+    hs-source-dirs: library
+
+executable sweetroll
+    build-depends:
+        base >= 4.0.0.0 && < 5
+      , options == 1.2
+      , warp >= 3.0.0 && < 4
+      , wai-extra
+      , ansi-terminal
+      , directory
+      , sweetroll
+    default-language: Haskell2010
+    ghc-prof-options: -auto-all -prof
+    ghc-options: -threaded -rtsopts
+    hs-source-dirs: executable
+    main-is: Main.hs
+
+test-suite documentation
+    build-depends:
+        base >= 4.0.0.0 && < 5
+      , process == 1.*
+      , regex-compat == 0.*
+    default-language: Haskell2010
+    hs-source-dirs: test-suite
+    main-is: Haddock.hs
+    type: exitcode-stdio-1.0
+
+test-suite examples
+    build-depends:
+        base >= 4.0.0.0 && < 5
+      , Glob == 0.*
+      , doctest == 0.*
+    default-language: Haskell2010
+    hs-source-dirs: test-suite
+    main-is: DocTest.hs
+    type: exitcode-stdio-1.0
+
+test-suite tests
+    build-depends:
+        base >= 4.0.0.0 && < 5
+      , sweetroll
+      , http-types
+      , case-insensitive
+      , wai
+      , directory
+      , gitson
+      , wai-extra
+      , bytestring
+      , hspec == 1.*
+        , HUnit
+        , QuickCheck
+    default-language: Haskell2010
+    ghc-options: -threaded -fhpc -Wall -Werror
+    hs-source-dirs: test-suite
+    main-is: Spec.hs
+    other-modules:
+        SweetrollSpec
+        Sweetroll.TypesSpec
+        Sweetroll.UtilSpec
+        -- HASKELETON: New.ModuleSpec
+    type: exitcode-stdio-1.0
+
+benchmark benchmarks
+    build-depends:
+        base >= 4.0.0.0 && < 5
+      , sweetroll
+      , criterion == 0.6.*
+        , hastache < 0.6
+        , statistics < 0.11
+    default-language: Haskell2010
+    hs-source-dirs: benchmark
+    main-is: Bench.hs
+    type: exitcode-stdio-1.0

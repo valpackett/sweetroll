@@ -1,33 +1,29 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 
 -- | Various functions used inside Sweetroll.
 module Sweetroll.Util (module Sweetroll.Util) where
 
+import           ClassyPrelude
 import qualified Data.ByteString.Lazy.Char8 as B8
 import qualified Data.Text.Lazy as T
-import           Data.Text.Lazy (Text)
-import           Data.Time.Clock (UTCTime)
-import           Data.Maybe (fromMaybe)
-import           Data.Monoid (mconcat)
+import           Data.Text.Lazy (split, replace, strip)
 import           Data.Aeson (encode, decode)
-import           Data.List (find)
-import           Control.Applicative
 
 -- | Tries to parse a text ISO datetime into a UTCTime.
 --
--- >>> import Data.Text.Lazy
--- >>> parseTime $ Just $ pack "2013-10-17T09:42:49.007Z"
+-- >>> import Data.LText.Lazy
+-- >>> parseISOTime $ Just $ pack "2013-10-17T09:42:49.007Z"
 -- Just 2013-10-17 09:42:49.007 UTC
 --
--- >>> parseTime $ Just $ pack "yolo"
+-- >>> parseISOTime $ Just $ pack "yolo"
 -- Nothing
-parseTime :: Maybe Text -> Maybe UTCTime
-parseTime x = fmap head $ decodeTime $ B8.pack $ T.unpack $ mconcat ["[\"", (fromMaybe "" x), "\"]"]
+parseISOTime :: Maybe LText -> Maybe UTCTime
+parseISOTime x = fmap unsafeHead $ decodeTime $ B8.pack $ unpack $ "[\"" ++ (fromMaybe "" x) ++ "\"]"
   where decodeTime y = (decode y) :: Maybe [UTCTime]
 
 -- | Formats a UTCTime into a text.
-formatTime :: UTCTime -> Text
-formatTime x = T.reverse $ T.drop 1 $ T.reverse $ T.drop 1 $ T.pack $ B8.unpack $ encode [x]
+formatISOTime :: UTCTime -> LText
+formatISOTime x = T.reverse $ T.drop 1 $ T.reverse $ T.drop 1 $ T.pack $ B8.unpack $ encode [x]
 
 -- | Tries to find a key-value pair by key and return the value.
 --
@@ -42,23 +38,23 @@ findByKey ps x = snd <$> find ((== x) . fst) ps
 -- Just 1024
 findFirstKey :: Eq a => [(a, b)] -> [a] -> Maybe b
 findFirstKey ps (x:xs) = case (findByKey ps x) of
-  Just v -> Just v
   Nothing -> findFirstKey ps xs
+  m -> m
 findFirstKey _ [] = Nothing
 
 -- | Prepares a text for inclusion in a URL.
 --
 -- >>> slugify $ T.pack "Hello & World!"
 -- "hello-and-world"
-slugify :: Text -> Text
-slugify = T.intercalate "-" . T.words . T.replace "&" "and" . T.replace "+" "plus" .
-          T.replace "<" "lt" . T.replace ">" "gt" . T.replace "=" "eq" .
-          T.replace "#" "hash" . T.replace "@" "at" . T.replace "$" "dollar" .
-          T.toLower . T.filter (`notElem` ['!', '^', '*', '?', '(', ')']) . T.strip
+slugify :: LText -> LText
+slugify = intercalate "-" . words . replace "&" "and" . replace "+" "plus" .
+          replace "<" "lt" . replace ">" "gt" . replace "=" "eq" .
+          replace "#" "hash" . replace "@" "at" . replace "$" "dollar" .
+          toLower . filter (`notElem` ['!', '^', '*', '?', '(', ')']) . strip
 
 -- | Parses comma-separated tags into a list.
 --
 -- >>> parseTags $ T.pack "article,note, first post"
 -- ["article","note","first post"]
-parseTags :: Text -> [Text]
-parseTags = T.split (== ',') . T.replace ", " ","
+parseTags :: LText -> [LText]
+parseTags = split (== ',') . replace ", " ","

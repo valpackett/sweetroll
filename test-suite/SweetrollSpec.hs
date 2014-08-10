@@ -1,7 +1,8 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 
 module SweetrollSpec (spec) where
 
+import           ClassyPrelude
 import           Test.Hspec
 import           System.Directory
 import           Network.HTTP.Types.Status
@@ -9,12 +10,9 @@ import           Network.HTTP.Types.Method
 import           Network.Wai.Internal (Request, requestMethod)
 import           Network.Wai.Test
 import qualified Network.Wai as Wai
-import           Control.Monad
-import           Control.Exception
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.CaseInsensitive as CI
-import           Data.Maybe
 import           Sweetroll.Types
 import           Sweetroll.Util (findByKey)
 import           Sweetroll

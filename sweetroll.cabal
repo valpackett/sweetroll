@@ -24,6 +24,7 @@ source-repository head
 library
     build-depends:
         base >= 4.0.0.0 && < 5
+      , classy-prelude
       , transformers
       , filepath
       , text
@@ -83,6 +84,7 @@ test-suite examples
 test-suite tests
     build-depends:
         base >= 4.0.0.0 && < 5
+      , classy-prelude
       , sweetroll
       , http-types
       , case-insensitive

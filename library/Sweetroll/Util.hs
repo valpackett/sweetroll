@@ -55,3 +55,10 @@ slugify = T.intercalate "-" . T.words . T.replace "&" "and" . T.replace "+" "plu
           T.replace "<" "lt" . T.replace ">" "gt" . T.replace "=" "eq" .
           T.replace "#" "hash" . T.replace "@" "at" . T.replace "$" "dollar" .
           T.toLower . T.filter (`notElem` ['!', '^', '*', '?', '(', ')']) . T.strip
+
+-- | Parses comma-separated tags into a list.
+--
+-- >>> parseTags $ T.pack "article,note, first post"
+-- ["article","note","first post"]
+parseTags :: Text -> [Text]
+parseTags = T.split (== ',') . T.replace ", " ","

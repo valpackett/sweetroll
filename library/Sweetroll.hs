@@ -7,7 +7,7 @@ import           Network.Wai (Application)
 import           Network.Wai.Middleware.Autohead
 import           Network.HTTP.Types.Status
 import           Control.Monad.IO.Class (liftIO)
-import           Data.Text.Lazy (Text, split, unpack)
+import           Data.Text.Lazy (Text, unpack)
 import           Data.Time.Clock
 import           Data.Monoid
 import           Data.Maybe
@@ -47,7 +47,7 @@ app = scottyApp $ do
             , entryContent   = findParam "content"
             , entryPublished = fromMaybe now $ parseTime $ findParam "published"
             , entryUpdated   = now
-            , entryTags      = split (== ',') $ fromMaybe "" $ findParam "tags"
+            , entryTags      = parseTags $ fromMaybe "" $ findParam "tags"
             , entryAuthor    = findParam "author"
             , entryInReplyTo = findParam "in-reply-to"
             , entryLikeOf    = findParam "like-of"

@@ -9,7 +9,7 @@ import           Data.Text.Lazy (Text)
 import           Data.Time.Clock (UTCTime)
 import           Data.Maybe (fromMaybe)
 import           Data.Monoid (mconcat)
-import           Data.Aeson (decode)
+import           Data.Aeson (encode, decode)
 import           Data.List (find)
 import           Control.Applicative
 
@@ -25,7 +25,33 @@ parseTime :: Maybe Text -> Maybe UTCTime
 parseTime x = fmap head $ decodeTime $ B8.pack $ T.unpack $ mconcat ["[\"", (fromMaybe "" x), "\"]"]
   where decodeTime y = (decode y) :: Maybe [UTCTime]
 
+-- | Formats a UTCTime into a text.
+formatTime :: UTCTime -> Text
+formatTime x = T.reverse $ T.drop 1 $ T.reverse $ T.drop 1 $ T.pack $ B8.unpack $ encode [x]
 
 -- | Tries to find a key-value pair by key and return the value.
+--
+-- >>> findByKey [("cpus", 1), ("ram", 1024)] "ram"
+-- Just 1024
 findByKey :: Eq a => [(a, b)] -> a -> Maybe b
 findByKey ps x = snd <$> find ((== x) . fst) ps
+
+-- | Tries to find a key-value pair by key and return the value, trying all given keys.
+--
+-- >>> findFirstKey [("cpus", 1), ("ram", 1024)] ["hdd", "ram"]
+-- Just 1024
+findFirstKey :: Eq a => [(a, b)] -> [a] -> Maybe b
+findFirstKey ps (x:xs) = case (findByKey ps x) of
+  Just v -> Just v
+  Nothing -> findFirstKey ps xs
+findFirstKey _ [] = Nothing
+
+-- | Prepares a text for inclusion in a URL.
+--
+-- >>> slugify $ T.pack "Hello & World!"
+-- "hello-and-world"
+slugify :: Text -> Text
+slugify = T.intercalate "-" . T.words . T.replace "&" "and" . T.replace "+" "plus" .
+          T.replace "<" "lt" . T.replace ">" "gt" . T.replace "=" "eq" .
+          T.replace "#" "hash" . T.replace "@" "at" . T.replace "$" "dollar" .
+          T.toLower . T.filter (`notElem` ['!', '^', '*', '?', '(', ')']) . T.strip

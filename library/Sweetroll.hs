@@ -34,11 +34,11 @@ app = scottyApp $ do
   post "/micropub" $ do
     h :: Text <- param "h"
     allParams <- params
+    now <- liftIO $ getCurrentTime
     let findParam = findByKey allParams
         category = fromMaybe "notes" $ findParam "category"
-        slug = fromMaybe "" $ findParam "slug" -- TODO: auto slug
+        slug = fromMaybe (slugify $ fromMaybe (formatTime now) $ findFirstKey allParams ["name", "summary", "content"]) $ findParam "slug"
         save x = liftIO $ transaction "./" $ saveNextEntry (unpack category) (unpack slug) x
-    now <- liftIO $ getCurrentTime
     case h of
       "entry" -> do
         save Entry {

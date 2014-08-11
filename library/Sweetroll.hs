@@ -14,7 +14,7 @@ import           Sweetroll.Types
 import           Sweetroll.Util
 
 getHost :: ActionT LText IO LText
-getHost = header "Host" >>= return . (fromMaybe "localhost")
+getHost = liftM (fromMaybe "localhost") (header "Host")
 
 created :: [LText] -> ActionT LText IO ()
 created urlParts = do
@@ -30,7 +30,7 @@ app = scottyApp $ do
   post "/micropub" $ do
     h :: LText <- param "h"
     allParams <- params
-    now <- liftIO $ getCurrentTime
+    now <- liftIO getCurrentTime
     let findParam = findByKey allParams
         category = fromMaybe "notes" $ findParam "category"
         slug = fromMaybe (slugify $ fromMaybe (formatISOTime now) $ findFirstKey allParams ["name", "summary", "content"]) $ findParam "slug"

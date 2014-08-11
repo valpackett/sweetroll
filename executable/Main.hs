@@ -34,7 +34,7 @@ main = runCommand $ \opts args -> do
   setCurrentDirectory (repo opts)
   let printListening = boldYellow "         Sweetroll " >> red "0.0.0" >> reset " running on " >> blue (protocol opts) >> reset " port " >> boldMagenta (show $ port opts) >> setReset >> putStrLn ""
   let warpSettings = setBeforeMainLoop printListening $ setPort (port opts) defaultSettings
-  case (protocol opts) of
+  case protocol opts of
     "http" -> putSweetroll >> app >>= runSettings warpSettings
     "cgi" -> app >>= CGI.run
-    otherwise -> putStrLn $ "Unsupported protocol: " ++ (protocol opts)
+    otherwise -> putStrLn $ "Unsupported protocol: " ++ protocol opts

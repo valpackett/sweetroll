@@ -18,8 +18,8 @@ import           Data.Aeson (encode, decode)
 -- >>> parseISOTime $ Just $ pack "yolo"
 -- Nothing
 parseISOTime :: Maybe LText -> Maybe UTCTime
-parseISOTime x = fmap unsafeHead $ decodeTime $ B8.pack $ unpack $ "[\"" ++ (fromMaybe "" x) ++ "\"]"
-  where decodeTime y = (decode y) :: Maybe [UTCTime]
+parseISOTime x = fmap unsafeHead $ decodeTime $ B8.pack $ unpack $ "[\"" ++ fromMaybe "" x ++ "\"]"
+  where decodeTime y = decode y :: Maybe [UTCTime]
 
 -- | Formats a UTCTime into a text.
 formatISOTime :: UTCTime -> LText
@@ -37,7 +37,7 @@ findByKey ps x = snd <$> find ((== x) . fst) ps
 -- >>> findFirstKey [("cpus", 1), ("ram", 1024)] ["hdd", "ram"]
 -- Just 1024
 findFirstKey :: Eq a => [(a, b)] -> [a] -> Maybe b
-findFirstKey ps (x:xs) = case (findByKey ps x) of
+findFirstKey ps (x:xs) = case findByKey ps x of
   Nothing -> findFirstKey ps xs
   m -> m
 findFirstKey _ [] = Nothing
@@ -50,7 +50,7 @@ slugify :: LText -> LText
 slugify = intercalate "-" . words . replace "&" "and" . replace "+" "plus" .
           replace "<" "lt" . replace ">" "gt" . replace "=" "eq" .
           replace "#" "hash" . replace "@" "at" . replace "$" "dollar" .
-          toLower . filter (`notElem` ['!', '^', '*', '?', '(', ')']) . strip
+          toLower . filter (`notElem` "!^*?()") . strip
 
 -- | Parses comma-separated tags into a list.
 --

@@ -11,7 +11,6 @@ import           Data.Aeson (encode, decode)
 
 -- | Tries to parse a text ISO datetime into a UTCTime.
 --
--- >>> import Data.LText.Lazy
 -- >>> parseISOTime $ Just $ pack "2013-10-17T09:42:49.007Z"
 -- Just 2013-10-17 09:42:49.007 UTC
 --
@@ -23,7 +22,7 @@ parseISOTime x = fmap unsafeHead $ decodeTime $ B8.pack $ unpack $ "[\"" ++ from
 
 -- | Formats a UTCTime into a text.
 formatISOTime :: UTCTime -> LText
-formatISOTime x = T.reverse $ T.drop 1 $ T.reverse $ T.drop 1 $ T.pack $ B8.unpack $ encode [x]
+formatISOTime x = reverse $ drop 1 $ reverse $ drop 1 $ T.pack $ B8.unpack $ encode [x]
 
 -- | Tries to find a key-value pair by key and return the value.
 --
@@ -50,7 +49,7 @@ slugify :: LText -> LText
 slugify = intercalate "-" . words . replace "&" "and" . replace "+" "plus" .
           replace "<" "lt" . replace ">" "gt" . replace "=" "eq" .
           replace "#" "hash" . replace "@" "at" . replace "$" "dollar" .
-          toLower . filter (`notElem` "!^*?()") . strip
+          toLower . filter (`notElem` ("!^*?()" :: String)) . strip
 
 -- | Parses comma-separated tags into a list.
 --

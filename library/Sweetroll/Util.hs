@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, GADTs #-}
 
 -- | Various functions used inside Sweetroll.
 module Sweetroll.Util (module Sweetroll.Util) where
@@ -57,3 +57,17 @@ slugify = intercalate "-" . words . replace "&" "and" . replace "+" "plus" .
 -- ["article","note","first post"]
 parseTags :: LText -> [LText]
 parseTags = split (== ',') . replace ", " ","
+
+-- | Trims characters before HTML begins
+--
+-- >>> dropNonHtml "something<!DOCTYPE html>..."
+-- "<!DOCTYPE html>..."
+dropNonHtml :: (IsSequence s, Element s ~ Char) => s -> s
+dropNonHtml = dropWhile (/= '<')
+
+-- | Makes a URL from a hostname and parts
+--
+-- >>> mkUrl "localhost:4200" ["yolo", "lol"]
+-- "http://localhost:4200/yolo/lol"
+mkUrl :: (IsString s, Monoid s) => s -> [s] -> s
+mkUrl host parts = intercalate "/" $ ["http:/", host] <> parts

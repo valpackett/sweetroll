@@ -1,31 +1,36 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE NoImplicitPrelude, NoMonomorphismRestriction #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE CPP, QuasiQuotes #-}
 
 -- | The module that contains the Sweetroll WAI application.
-module Sweetroll (app) where
+module Sweetroll (mkApp, defaultSweetrollConf) where
 
 import           ClassyPrelude
 import           Network.Wai (Application)
 import           Network.Wai.Middleware.Autohead
 import           Network.HTTP.Types.Status
+import           Text.RawString.QQ
 import           Web.Scotty.Trans (ActionT)
 import           Web.Scotty
 import           Gitson
 import           Sweetroll.Types
+import           Sweetroll.Pages
 import           Sweetroll.Util
 
-getHost :: ActionT LText IO LText
-getHost = liftM (fromMaybe "localhost") (header "Host")
-
-created :: [LText] -> ActionT LText IO ()
-created urlParts = do
-  status created201
-  host <- getHost
-  setHeader "Location" $ mconcat $ ["http://", host, "/"] ++ urlParts
-
--- | The Sweetroll WAI application.
-app :: IO Application
-app = scottyApp $ do
+-- | Makes the Sweetroll WAI application.
+mkApp :: SweetrollConf -> IO Application
+mkApp conf = scottyApp $ do
   middleware autohead -- XXX: does it even work properly?
+
+  let render = ok $ pageTemplate conf
+
+  get "/:category/:slug" $ do
+    category <- param "category"
+    slug <- param "slug"
+    entry <- liftIO $ (readEntryByName category slug :: IO (Maybe Entry))
+    case entry of
+      Just e  -> render $ entryPage e
+      Nothing -> entryNotFound
 
   post "/micropub" $ do
     h :: LText <- param "h"
@@ -48,7 +53,41 @@ app = scottyApp $ do
             , entryInReplyTo = findParam "in-reply-to"
             , entryLikeOf    = findParam "like-of"
             , entryRepostOf  = findParam "repost-of" }
-        created [category, "/", slug]
+        created [category, slug]
       _ -> status badRequest400
 
   matchAny "/micropub" $ status methodNotAllowed405
+
+------------ Actions {{{
+
+type SweetrollAction = ActionT LText IO
+
+getHost :: SweetrollAction LText
+getHost = liftM (fromMaybe "localhost") (header "Host")
+
+ok :: Text -> Page -> SweetrollAction ()
+ok tpl dat = liftIO (renderPage tpl dat) >>= html
+
+created :: [LText] -> SweetrollAction ()
+created urlParts = do
+  status created201
+  host <- getHost
+  setHeader "Location" $ mkUrl host urlParts
+
+entryNotFound :: SweetrollAction ()
+entryNotFound = status notFound404
+
+------------ }}}
+
+------------ Configuration {{{
+
+data SweetrollConf = SweetrollConf
+  { pageTemplate :: Text }
+
+-- cpp screws up line numbering, so we put this at the end
+defaultSweetrollConf :: SweetrollConf
+defaultSweetrollConf =  SweetrollConf {
+    pageTemplate = dropNonHtml [r|
+#include "../templates/page.html"
+|] }
+------------ }}}

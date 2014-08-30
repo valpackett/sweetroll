@@ -13,7 +13,8 @@ import           Text.RawString.QQ
 import           Web.Scotty.Trans (ActionT)
 import           Web.Scotty
 import           Gitson
-import           Sweetroll.Types
+import           Data.Microformats2
+import           Data.Microformats2.Aeson ()
 import           Sweetroll.Pages
 import           Sweetroll.Util
 
@@ -27,7 +28,7 @@ mkApp conf = scottyApp $ do
   get "/:category/:slug" $ do
     category <- param "category"
     slug <- param "slug"
-    entry <- liftIO $ (readEntryByName category slug :: IO (Maybe Entry))
+    entry <- liftIO $ (readDocumentByName category slug :: IO (Maybe Entry))
     case entry of
       Just e  -> render $ entryPage e
       Nothing -> entryNotFound
@@ -37,22 +38,24 @@ mkApp conf = scottyApp $ do
     allParams <- params
     now <- liftIO getCurrentTime
     let findParam = findByKey allParams
-        category = fromMaybe "notes" $ findParam "category"
+        category = case findParam "name" of
+          Just _ -> "articles"
+          Nothing -> "notes"
         slug = fromMaybe (slugify $ fromMaybe (formatISOTime now) $ findFirstKey allParams ["name", "summary", "content"]) $ findParam "slug"
-        save x = liftIO $ transaction "./" $ saveNextEntry (unpack category) (unpack slug) x
+        save x = liftIO $ transaction "./" $ saveNextDocument category (unpack slug) x
     case h of
       "entry" -> do
-        save Entry {
-              entryName      = findParam "name"
-            , entrySummary   = findParam "summary"
-            , entryContent   = findParam "content"
-            , entryPublished = fromMaybe now $ parseISOTime $ findParam "published"
-            , entryUpdated   = now
-            , entryTags      = parseTags $ fromMaybe "" $ findParam "tags"
-            , entryAuthor    = findParam "author"
-            , entryInReplyTo = findParam "in-reply-to"
-            , entryLikeOf    = findParam "like-of"
-            , entryRepostOf  = findParam "repost-of" }
+        save $ defaultEntry {
+              entryName         = findParam "name"
+            , entrySummary      = findParam "summary"
+            , entryContent      = findParam "content"
+            , entryPublished    = Just $ fromMaybe now $ parseISOTime $ findParam "published"
+            , entryUpdated      = Just now
+            , entryAuthor       = somewhereFromMaybe $ findParam "author"
+            , entryCategory     = parseTags $ fromMaybe "" $ findParam "category"
+            , entryInReplyTo    = Right <$> findParam "in-reply-to"
+            , entryLikeOf       = Right <$> findParam "like-of"
+            , entryRepostOf     = Right <$> findParam "repost-of" }
         created [category, slug]
       _ -> status badRequest400
 

@@ -5,10 +5,10 @@
 module Sweetroll.Pages (module Sweetroll.Pages) where
 
 import           ClassyPrelude
-import           Data.Data
-import           Text.Hastache
 import           Text.Hastache.Context
-import           Sweetroll.Types
+import           Text.Hastache
+import           Data.Microformats2
+import           Data.Data
 
 data Page = Page
   { name        :: LText

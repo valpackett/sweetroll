@@ -13,7 +13,7 @@ import qualified Network.Wai as Wai
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.CaseInsensitive as CI
-import           Sweetroll.Types
+import           Data.Microformats2
 import           Sweetroll.Util (findByKey)
 import           Sweetroll
 import           Gitson
@@ -40,32 +40,23 @@ spec = before setup $ after cleanup $ do
       simpleStatus resp `shouldBe` notFound404
 
     it "renders entries" $ do
-      now <- getCurrentTime
-      transaction "./" $ saveNextEntry "articles" "hello-world" Entry {
+      transaction "./" $ saveNextDocument "articles" "hello-world" $ defaultEntry {
               entryName      = Just "Hello, World!"
-            , entrySummary   = Nothing
-            , entryContent   = Just ""
-            , entryPublished = now
-            , entryUpdated   = now
-            , entryTags      = []
-            , entryAuthor    = Just "/"
-            , entryInReplyTo = Nothing
-            , entryLikeOf    = Nothing
-            , entryRepostOf  = Nothing }
+            , entryAuthor    = Somewhere "/" }
       resp <- app >>= get "/articles/hello-world"
       simpleBody resp `shouldSatisfy` (`contains` "Hello, World!")
       simpleStatus resp `shouldBe` ok200
 
   describe "POST /micropub" $ do
     it "creates entries" $ do
-      resp <- app >>= post "/micropub?h=entry&category=articles&slug=first&content=Hello&tags=test,demo"
+      resp <- app >>= post "/micropub?h=entry&name=First&slug=first&content=Hello&category=test,demo"
       simpleStatus resp `shouldBe` created201
       header resp "Location" `shouldBe` "http://localhost/articles/first"
-      written <- readEntryById "articles" 1 :: IO (Maybe Entry)
+      written <- readDocumentById "articles" 1 :: IO (Maybe Entry)
       case written of
         Just article -> do
           entryContent article `shouldBe` Just "Hello"
-          entryTags article `shouldBe` ["test", "demo"]
+          entryCategory article `shouldBe` ["test", "demo"]
         Nothing -> error "article not written"
 
 setup :: IO ()

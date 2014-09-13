@@ -33,12 +33,14 @@ library
       , time
       , aeson
       , gitson == 0.4.*
-      , microformats2-types == 0.1.*
+      , microformats2-types == 0.2.*
       , http-types
       , wai
       , wai-extra
       , scotty == 0.8.*
       , hastache == 0.6.*
+      , blaze-markup
+      , pandoc
       , raw-strings-qq == 1.*
     default-language: Haskell2010
     exposed-modules:
@@ -98,6 +100,8 @@ test-suite tests
       , gitson
       , wai-extra
       , bytestring
+      , raw-strings-qq
+      , pandoc
       , hspec == 1.*
         , HUnit
         , QuickCheck

@@ -7,13 +7,14 @@ import           Test.Hspec
 import           System.Directory
 import           Network.HTTP.Types.Status
 import           Network.HTTP.Types.Method
-import           Network.Wai.Internal (Request, requestMethod)
+import           Network.Wai.Internal (requestMethod)
 import           Network.Wai.Test
 import qualified Network.Wai as Wai
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.CaseInsensitive as CI
 import           Data.Microformats2
+import           Text.Pandoc
 import           Sweetroll.Util (findByKey)
 import           Sweetroll
 import           Gitson
@@ -55,7 +56,7 @@ spec = before setup $ after cleanup $ do
       written <- readDocumentById "articles" 1 :: IO (Maybe Entry)
       case written of
         Just article -> do
-          entryContent article `shouldBe` Just "Hello"
+          entryContent article `shouldBe` (Just $ Left $ readMarkdown def "Hello")
           entryCategory article `shouldBe` ["test", "demo"]
         Nothing -> error "article not written"
 

@@ -10,6 +10,7 @@ import           Network.Wai (Application)
 import           Network.Wai.Middleware.Autohead
 import           Network.HTTP.Types.Status
 import           Text.RawString.QQ
+import           Text.Pandoc
 import           Web.Scotty.Trans (ActionT)
 import           Web.Scotty
 import           Gitson
@@ -48,8 +49,8 @@ mkApp conf = scottyApp $ do
         save $ defaultEntry {
               entryName         = findParam "name"
             , entrySummary      = findParam "summary"
-            , entryContent      = findParam "content"
-            , entryPublished    = Just $ fromMaybe now $ parseISOTime $ findParam "published"
+            , entryContent      = Left <$> readMarkdown def <$> unpack <$> findParam "content"
+            , entryPublished    = Just $ fromMaybe now $ parseISOTime $ fromMaybe "" $ findParam "published"
             , entryUpdated      = Just now
             , entryAuthor       = somewhereFromMaybe $ findParam "author"
             , entryCategory     = parseTags $ fromMaybe "" $ findParam "category"

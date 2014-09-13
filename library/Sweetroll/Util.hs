@@ -11,18 +11,21 @@ import           Data.Aeson (encode, decode)
 
 -- | Tries to parse a text ISO datetime into a UTCTime.
 --
--- >>> parseISOTime $ Just $ pack "2013-10-17T09:42:49.007Z"
+-- >>> parseISOTime $ pack "2013-10-17T09:42:49.007Z"
 -- Just 2013-10-17 09:42:49.007 UTC
 --
--- >>> parseISOTime $ Just $ pack "yolo"
+-- >>> parseISOTime $ pack "yolo"
 -- Nothing
-parseISOTime :: Maybe LText -> Maybe UTCTime
-parseISOTime x = fmap unsafeHead $ decodeTime $ B8.pack $ unpack $ "[\"" ++ fromMaybe "" x ++ "\"]"
+parseISOTime :: LText -> Maybe UTCTime
+parseISOTime x = fmap unsafeHead $ decodeTime $ B8.pack $ unpack $ "[\"" ++ x ++ "\"]"
   where decodeTime y = decode y :: Maybe [UTCTime]
 
 -- | Formats a UTCTime into a text.
+--
+-- >>> formatISOTime <$> parseISOTime (pack "2013-10-17T09:42:49.007Z")
+-- Just "2013-10-17T09:42:49.007Z"
 formatISOTime :: UTCTime -> LText
-formatISOTime x = reverse $ drop 1 $ reverse $ drop 1 $ T.pack $ B8.unpack $ encode [x]
+formatISOTime x = reverse $ drop 2 $ reverse $ drop 2 $ T.pack $ B8.unpack $ encode [x]
 
 -- | Tries to find a key-value pair by key and return the value.
 --
@@ -58,12 +61,12 @@ slugify = intercalate "-" . words . replace "&" "and" . replace "+" "plus" .
 parseTags :: LText -> [LText]
 parseTags = split (== ',') . replace ", " ","
 
--- | Trims characters before HTML begins
+-- | Trims characters before HTML begins and after it ends
 --
--- >>> dropNonHtml "something<!DOCTYPE html>..."
--- "<!DOCTYPE html>..."
+-- >>> dropNonHtml "something<!DOCTYPE html>...</html>something"
+-- "<!DOCTYPE html>...</html>"
 dropNonHtml :: (IsSequence s, Element s ~ Char) => s -> s
-dropNonHtml = dropWhile (/= '<')
+dropNonHtml = dropWhile (/= '<') . reverse . dropWhile (/= '>') . reverse
 
 -- | Makes a URL from a hostname and parts
 --

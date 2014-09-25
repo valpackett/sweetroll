@@ -5,7 +5,6 @@
 module Sweetroll.Pages (module Sweetroll.Pages) where
 
 import           ClassyPrelude
-import           Sweetroll.Util (formatISOTime)
 import           Text.Hastache.Context
 import           Text.Hastache
 import           Text.Pandoc
@@ -20,7 +19,7 @@ data EntryPage = EntryPage
   { name                :: LText
   , content             :: LText
   , published           :: LText
-  , publishedISO        :: LText
+  , publishedAttr       :: LText
   , permalink           :: LText
   , isEntryPage         :: Bool
   , isNote              :: Bool
@@ -31,13 +30,14 @@ entryPage :: LText -> Entry -> EntryPage
 entryPage l e = EntryPage
   { name               = fromMaybe "" $ entryName e
   , content            = renderContent e
-  , published          = fromMaybe "" $ formatDateTime <$> entryPublished e
-  , publishedISO       = fromMaybe "" $ formatISOTime <$> entryPublished e
+  , published          = fromMaybe "" $ formatTimeText <$> entryPublished e
+  , publishedAttr      = fromMaybe "" $ formatTimeAttr <$> entryPublished e
   , permalink          = l
   , isEntryPage        = True
   , isNote             = isNothing $ entryName e
   , isArticle          = isJust $ entryName e }
-    where formatDateTime = pack . formatTime defaultTimeLocale "%d.%m.%Y %I:%M %p"
+    where formatTimeText = pack . formatTime defaultTimeLocale "%d.%m.%Y %I:%M %p"
+          formatTimeAttr = pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M"
 
 data CategoryPage = CategoryPage
   { entries             :: [EntryPage]

@@ -5,9 +5,8 @@ module Sweetroll.Util (module Sweetroll.Util) where
 
 import           ClassyPrelude
 import qualified Data.ByteString.Lazy.Char8 as B8
-import qualified Data.Text.Lazy as T
 import           Data.Text.Lazy (split, replace, strip)
-import           Data.Aeson (encode, decode)
+import           Data.Aeson (decode)
 
 -- | Tries to parse a text ISO datetime into a UTCTime.
 --
@@ -19,13 +18,6 @@ import           Data.Aeson (encode, decode)
 parseISOTime :: LText -> Maybe UTCTime
 parseISOTime x = fmap unsafeHead $ decodeTime $ B8.pack $ unpack $ "[\"" ++ x ++ "\"]"
   where decodeTime y = decode y :: Maybe [UTCTime]
-
--- | Formats a UTCTime into a text.
---
--- >>> formatISOTime <$> parseISOTime (pack "2013-10-17T09:42:49.007Z")
--- Just "2013-10-17T09:42:49.007Z"
-formatISOTime :: UTCTime -> LText
-formatISOTime x = reverse $ drop 2 $ reverse $ drop 2 $ T.pack $ B8.unpack $ encode [x]
 
 -- | Tries to find a key-value pair by key and return the value.
 --
@@ -46,7 +38,7 @@ findFirstKey _ [] = Nothing
 
 -- | Prepares a text for inclusion in a URL.
 --
--- >>> slugify $ T.pack "Hello & World!"
+-- >>> slugify $ pack "Hello & World!"
 -- "hello-and-world"
 slugify :: LText -> LText
 slugify = intercalate "-" . words . replace "&" "and" . replace "+" "plus" .
@@ -56,7 +48,7 @@ slugify = intercalate "-" . words . replace "&" "and" . replace "+" "plus" .
 
 -- | Parses comma-separated tags into a list.
 --
--- >>> parseTags $ T.pack "article,note, first post"
+-- >>> parseTags $ pack "article,note, first post"
 -- ["article","note","first post"]
 parseTags :: LText -> [LText]
 parseTags = split (== ',') . replace ", " ","

@@ -90,7 +90,8 @@ decideCategory pars =
 
 decideSlug :: [Param] -> UTCTime -> LText
 decideSlug pars now = fromMaybe fallback $ findByKey pars "slug"
-  where fallback = slugify $ fromMaybe (formatISOTime now) $ findFirstKey pars ["name", "summary", "content"]
+  where fallback = slugify $ fromMaybe (formatTimeSlug now) $ findFirstKey pars ["name", "summary", "content"]
+        formatTimeSlug = pack . formatTime defaultTimeLocale "%Y-%m-%d-%H-%M"
 
 makeEntry :: [Param] -> UTCTime -> Entry
 makeEntry pars now = defaultEntry

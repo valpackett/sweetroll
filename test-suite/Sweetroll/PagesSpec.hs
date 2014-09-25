@@ -14,12 +14,12 @@ testEntryTpl :: Text
 testEntryTpl = [r|{{#isEntryPage}}
 {{#isNote}}<note>
   <p>{{content}}</p>
-  <time datetime="{{publishedISO}}">posted {{published}}</time>
+  <time datetime="{{publishedAttr}}">posted {{published}}</time>
 </note>{{/isNote}}
 {{#isArticle}}<article>
   <h1><a href="{{permalink}}">{{name}}</a></h1>
   {{{content}}}
-  <time datetime="{{publishedISO}}">posted {{published}}</time>
+  <time datetime="{{publishedAttr}}">posted {{published}}</time>
 </article>{{/isArticle}}
 {{/isEntryPage}}|]
 
@@ -40,7 +40,7 @@ spec = do
       result <- renderPage testEntryTpl $ entryPage "/test" testNote
       result `shouldBe` [r|<note>
   <p>Hello, world!</p>
-  <time datetime="2013-10-17T09:42:49.000Z">posted 17.10.2013 09:42 AM</time>
+  <time datetime="2013-10-17 09:42">posted 17.10.2013 09:42 AM</time>
 </note>|]
 
     it "renders articles" $ do
@@ -52,7 +52,7 @@ spec = do
       result `shouldBe` [r|<article>
   <h1><a href="/articles/first">First post</a></h1>
   <p>This is the content</p>
-  <time datetime="2013-10-17T09:42:49.000Z">posted 17.10.2013 09:42 AM</time>
+  <time datetime="2013-10-17 09:42">posted 17.10.2013 09:42 AM</time>
 </article>|]
 
     it "renders categories" $ do

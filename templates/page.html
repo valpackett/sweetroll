@@ -15,7 +15,7 @@
 		<article class="h-entry">
 			<header>
 				{{#isArticle}}<h1 class="p-name">{{name}}</h1>{{/isArticle}}
-				published <time class="dt-published" datetime="{{publishedISO}}">{{published}}</time>
+				published <time class="dt-published" datetime="{{publishedAttr}}">{{published}}</time>
 				{{#inReplyTo}}{{#citeHref}}in reply to <a class="u-in-reply-to" href="{{citeHref}}">{{citeText}}</a>{{/citeHref}}{{/inReplyTo}}
 				{{#likeOf}}{{#citeHref}}like <a class="u-like-of" href="{{citeHref}}">{{citeText}}</a>{{/citeHref}}{{/likeOf}}
 				{{#repostOf}}{{#citeHref}}repost of <a class="u-repost-of" href="{{citeHref}}">{{citeText}}</a>{{/citeHref}}{{/repostOf}}

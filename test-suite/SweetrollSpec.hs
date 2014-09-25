@@ -34,6 +34,20 @@ header resp x = B8.unpack $ fromMaybe "" $ findByKey (simpleHeaders resp) (CI.mk
 spec :: Spec
 spec = before setup $ after cleanup $ do
   let app = mkApp defaultSweetrollConf
+  let transaction' = transaction "./"
+
+  describe "GET /:category" $ do
+    it "renders categories" $ do
+      transaction' $ do
+        saveNextDocument "articles" "first" $ defaultEntry {
+          entryName      = Just "First" }
+        saveNextDocument "articles" "second" $ defaultEntry {
+          entryName      = Just "Second" }
+      resp <- app >>= get "/articles"
+      simpleBody resp `shouldSatisfy` (`contains` "articles")
+      simpleBody resp `shouldSatisfy` (`contains` "First")
+      simpleBody resp `shouldSatisfy` (`contains` "Second")
+      simpleStatus resp `shouldBe` ok200
 
   describe "GET /:category/:name" $ do
     it "returns 404 for nonexistent entries" $ do
@@ -41,7 +55,7 @@ spec = before setup $ after cleanup $ do
       simpleStatus resp `shouldBe` notFound404
 
     it "renders entries" $ do
-      transaction "./" $ saveNextDocument "articles" "hello-world" $ defaultEntry {
+      transaction' $ saveNextDocument "articles" "hello-world" $ defaultEntry {
               entryName      = Just "Hello, World!"
             , entryAuthor    = Somewhere "/" }
       resp <- app >>= get "/articles/hello-world"

@@ -6,7 +6,13 @@
 	</head>
 	<body>
 		{{#isEntryPage}}
-		<h1>{{name}}</h1>
+			<h1>{{name}}</h1>
 		{{/isEntryPage}}
+		{{#isCategoryPage}}
+			<h1>{{categoryName}}</h1>
+			{{#entries}}
+				<h2>{{name}}</h2>
+			{{/entries}}
+		{{/isCategoryPage}}
 	</body>
 </html>

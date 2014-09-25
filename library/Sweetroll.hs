@@ -14,6 +14,7 @@ import           Text.Pandoc
 import           Web.Scotty.Trans (ActionT)
 import           Web.Scotty
 import           Gitson
+import           Data.Data
 import           Data.Microformats2
 import           Data.Microformats2.Aeson ()
 import           Sweetroll.Pages
@@ -26,12 +27,19 @@ mkApp conf = scottyApp $ do
 
   let render = ok $ pageTemplate conf
 
+  get "/:category" $ do
+    category <- param "category"
+    slugs <- liftIO $ listDocumentKeys category
+    maybes <- liftIO $ mapM (readD' category) slugs
+    let cpg = categoryPage (pack category) (fromMaybe [] $ sequence maybes)
+    render $ cpg
+
   get "/:category/:slug" $ do
     category <- param "category"
     slug <- param "slug"
-    entry <- liftIO $ (readDocumentByName category slug :: IO (Maybe Entry))
+    entry <- liftIO (readDocumentByName category slug :: IO (Maybe Entry))
     case entry of
-      Just e  -> render $ entryPage e
+      Just e  -> render $ entryPage (mconcat ["/", pack category, "/", pack slug]) e
       Nothing -> entryNotFound
 
   post "/micropub" $ do
@@ -50,7 +58,7 @@ mkApp conf = scottyApp $ do
               entryName         = findParam "name"
             , entrySummary      = findParam "summary"
             , entryContent      = Left <$> readMarkdown def <$> unpack <$> findParam "content"
-            , entryPublished    = Just $ fromMaybe now $ parseISOTime $ fromMaybe "" $ findParam "published"
+            , entryPublished    = Just $ fromMaybe now $ parseISOTime =<< findParam "published"
             , entryUpdated      = Just now
             , entryAuthor       = somewhereFromMaybe $ findParam "author"
             , entryCategory     = parseTags $ fromMaybe "" $ findParam "category"
@@ -69,7 +77,7 @@ type SweetrollAction = ActionT LText IO
 getHost :: SweetrollAction LText
 getHost = liftM (fromMaybe "localhost") (header "Host")
 
-ok :: Text -> Page -> SweetrollAction ()
+ok :: Data d => Text -> d -> SweetrollAction ()
 ok tpl dat = liftIO (renderPage tpl dat) >>= html
 
 created :: [LText] -> SweetrollAction ()
@@ -80,6 +88,15 @@ created urlParts = do
 
 entryNotFound :: SweetrollAction ()
 entryNotFound = status notFound404
+
+------------ }}}
+
+------------ Helpers {{{
+
+readD' :: String -> String -> IO (Maybe (LText, Entry))
+readD' category n = do
+  doc <- readDocument category n :: IO (Maybe (Entry))
+  return $ (\x -> (pack n, x)) <$> doc
 
 ------------ }}}
 

@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings, DeriveDataTypeable #-}
 
--- | Boring page rendering stuff
+-- | The module responsible for rendering pages into actual HTML
 module Sweetroll.Pages (module Sweetroll.Pages) where
 
 import           ClassyPrelude
@@ -30,15 +30,13 @@ data EntryPage = EntryPage
 entryPage :: LText -> Entry -> EntryPage
 entryPage l e = EntryPage
   { name               = fromMaybe "" $ entryName e
-  , content            = case fromMaybe (Right "") $ entryContent e of
-                           Left p -> renderMarkup $ writeHtml def p
-                           Right t -> t
+  , content            = renderContent e
   , published          = fromMaybe "" $ formatDateTime <$> entryPublished e
   , publishedISO       = fromMaybe "" $ formatISOTime <$> entryPublished e
   , permalink          = l
   , isEntryPage        = True
-  , isNote             = entryName e == Nothing
-  , isArticle          = entryName e /= Nothing }
+  , isNote             = isNothing $ entryName e
+  , isArticle          = isJust $ entryName e }
     where formatDateTime = pack . formatTime defaultTimeLocale "%d.%m.%Y %I:%M %p"
 
 data CategoryPage = CategoryPage
@@ -53,3 +51,8 @@ categoryPage n es = CategoryPage
   , categoryName        = n
   , isCategoryPage      = True }
     where mkEntryPage (slug, e) = entryPage (mconcat ["/", n, "/", slug]) e
+
+renderContent :: Entry -> LText
+renderContent e = case fromMaybe (Right "") $ entryContent e of
+  Left p -> renderMarkup $ writeHtml def p
+  Right t -> t

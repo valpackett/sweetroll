@@ -1,5 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude, NoMonomorphismRestriction #-}
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE CPP, QuasiQuotes #-}
 
 -- | The module that contains the Sweetroll WAI application.
@@ -14,7 +14,6 @@ import           Text.Pandoc
 import           Web.Scotty.Trans (ActionT)
 import           Web.Scotty
 import           Gitson
-import           Data.Data
 import           Data.Microformats2
 import           Data.Microformats2.Aeson ()
 import           Sweetroll.Pages
@@ -25,14 +24,13 @@ mkApp :: SweetrollConf -> IO Application
 mkApp conf = scottyApp $ do
   middleware autohead -- XXX: does it even work properly?
 
-  let render = ok $ pageTemplate conf
+  let render d = liftIO (renderPage (pageTemplate conf) d) >>= html
 
   get "/:category" $ do
     category <- param "category"
     slugs <- liftIO $ listDocumentKeys category
-    maybes <- liftIO $ mapM (readD' category) slugs
-    let cpg = categoryPage (pack category) (fromMaybe [] $ sequence maybes)
-    render $ cpg
+    maybes <- liftIO $ mapM (readEntry category) slugs
+    render $ categoryPage (pack category) (fromMaybe [] $ sequence maybes)
 
   get "/:category/:slug" $ do
     category <- param "category"
@@ -43,29 +41,15 @@ mkApp conf = scottyApp $ do
       Nothing -> entryNotFound
 
   post "/micropub" $ do
-    h :: LText <- param "h"
+    h <- param "h"
     allParams <- params
     now <- liftIO getCurrentTime
-    let findParam = findByKey allParams
-        category = case findParam "name" of
-          Just _ -> "articles"
-          Nothing -> "notes"
-        slug = fromMaybe (slugify $ fromMaybe (formatISOTime now) $ findFirstKey allParams ["name", "summary", "content"]) $ findParam "slug"
-        save x = liftIO $ transaction "./" $ saveNextDocument category (unpack slug) x
-    case h of
-      "entry" -> do
-        save $ defaultEntry {
-              entryName         = findParam "name"
-            , entrySummary      = findParam "summary"
-            , entryContent      = Left <$> readMarkdown def <$> unpack <$> findParam "content"
-            , entryPublished    = Just $ fromMaybe now $ parseISOTime =<< findParam "published"
-            , entryUpdated      = Just now
-            , entryAuthor       = somewhereFromMaybe $ findParam "author"
-            , entryCategory     = parseTags $ fromMaybe "" $ findParam "category"
-            , entryInReplyTo    = Right <$> findParam "in-reply-to"
-            , entryLikeOf       = Right <$> findParam "like-of"
-            , entryRepostOf     = Right <$> findParam "repost-of" }
-        created [category, slug]
+    let category = decideCategory allParams
+        slug = decideSlug allParams now
+        save x = liftIO $ transaction "./" $ saveNextDocument (unpack category) (unpack slug) x
+        save' x = save x >> created [category, slug]
+    case asLText h of
+      "entry" -> save' $ makeEntry allParams now
       _ -> status badRequest400
 
   matchAny "/micropub" $ status methodNotAllowed405
@@ -76,9 +60,6 @@ type SweetrollAction = ActionT LText IO
 
 getHost :: SweetrollAction LText
 getHost = liftM (fromMaybe "localhost") (header "Host")
-
-ok :: Data d => Text -> d -> SweetrollAction ()
-ok tpl dat = liftIO (renderPage tpl dat) >>= html
 
 created :: [LText] -> SweetrollAction ()
 created urlParts = do
@@ -93,10 +74,37 @@ entryNotFound = status notFound404
 
 ------------ Helpers {{{
 
-readD' :: String -> String -> IO (Maybe (LText, Entry))
-readD' category n = do
-  doc <- readDocument category n :: IO (Maybe (Entry))
+readEntry :: String -> String -> IO (Maybe (LText, Entry))
+readEntry category n = do
+  doc <- readDocument category n :: IO (Maybe Entry)
   return $ (\x -> (pack n, x)) <$> doc
+
+decideCategory :: [Param] -> LText
+decideCategory pars =
+  case par "name" of
+    Just _ -> "articles"
+    _ -> case par "in-reply-to" of
+      Just _ -> "replies"
+      _ -> "notes"
+  where par = findByKey pars
+
+decideSlug :: [Param] -> UTCTime -> LText
+decideSlug pars now = fromMaybe fallback $ findByKey pars "slug"
+  where fallback = slugify $ fromMaybe (formatISOTime now) $ findFirstKey pars ["name", "summary", "content"]
+
+makeEntry :: [Param] -> UTCTime -> Entry
+makeEntry pars now = defaultEntry
+  { entryName         = par "name"
+  , entrySummary      = par "summary"
+  , entryContent      = Left <$> readMarkdown def <$> unpack <$> par "content"
+  , entryPublished    = Just $ fromMaybe now $ parseISOTime =<< par "published"
+  , entryUpdated      = Just now
+  , entryAuthor       = somewhereFromMaybe $ par "author"
+  , entryCategory     = parseTags $ fromMaybe "" $ par "category"
+  , entryInReplyTo    = Right <$> par "in-reply-to"
+  , entryLikeOf       = Right <$> par "like-of"
+  , entryRepostOf     = Right <$> par "repost-of" }
+  where par = findByKey pars
 
 ------------ }}}
 

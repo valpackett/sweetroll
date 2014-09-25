@@ -73,4 +73,4 @@ dropNonHtml = dropWhile (/= '<') . reverse . dropWhile (/= '>') . reverse
 -- >>> mkUrl "localhost:4200" ["yolo", "lol"]
 -- "http://localhost:4200/yolo/lol"
 mkUrl :: (IsString s, Monoid s) => s -> [s] -> s
-mkUrl host parts = intercalate "/" $ ["http:/", host] <> parts
+mkUrl host parts = intercalate "/" $ ["http:/", host] ++ parts

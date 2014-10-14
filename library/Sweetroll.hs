@@ -1,5 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, NoMonomorphismRestriction #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 
 -- | The module that contains the Sweetroll WAI application.
 module Sweetroll (mkApp, defaultSweetrollConf) where
@@ -31,14 +30,14 @@ mkApp conf = scottyApp $ do
     category <- param "category"
     slugs <- liftIO $ listDocumentKeys category
     maybes <- liftIO $ mapM (readEntry category) slugs
-    render categoryTemplate (catView (pack category) (fromMaybe [] $ sequence maybes))
+    render categoryTemplate $ catView category (fromMaybe [] $ sequence maybes)
 
   get "/:category/:slug" $ do
     category <- param "category"
     slug <- param "slug"
     entry <- liftIO (readDocumentByName category slug :: IO (Maybe Entry))
     case entry of
-      Just e  -> render entryTemplate (entryView (pack category) (slug, e))
+      Just e  -> render entryTemplate $ entryView category (slug, e)
       Nothing -> entryNotFound
 
   post "/micropub" $ do

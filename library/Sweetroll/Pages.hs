@@ -1,5 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings, QuasiQuotes #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 
 -- | The module responsible for rendering pages into actual HTML
 module Sweetroll.Pages (module Sweetroll.Pages) where
@@ -11,7 +10,7 @@ import           Data.Microformats2
 import           Data.Microformats2.Aeson()
 import           Data.Aeson.Types
 
-entryView :: LText -> (String, Entry) -> Value
+entryView :: String -> (String, Entry) -> Value
 entryView catName (slug, e) = object [
     "name"             .= fromMaybe "" (entryName e)
   , "content"          .= renderContent e
@@ -23,7 +22,7 @@ entryView catName (slug, e) = object [
   where formatTimeText = asLText . pack . formatTime defaultTimeLocale "%d.%m.%Y %I:%M %p"
         formatTimeAttr = asLText . pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M"
 
-catView :: LText -> [(String, Entry)] -> Value
+catView :: String -> [(String, Entry)] -> Value
 catView name entries = object [
     "name" .= name
   , "entries" .= map (entryView name) entries

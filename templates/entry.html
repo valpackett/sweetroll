@@ -1,0 +1,13 @@
+<article class="h-entry">
+	<header>
+		$if(isNote)$$else$<h1 class="p-name">$name$</h1>$endif$
+		published <time class="dt-published" datetime="$publishedAttr$">$published$</time>
+		TODO
+		{{#inReplyTo}}{{#citeHref}}in reply to <a class="u-in-reply-to" href="{{citeHref}}">{{citeText}}</a>{{/citeHref}}{{/inReplyTo}}
+		{{#likeOf}}{{#citeHref}}like <a class="u-like-of" href="{{citeHref}}">{{citeText}}</a>{{/citeHref}}{{/likeOf}}
+		{{#repostOf}}{{#citeHref}}repost of <a class="u-repost-of" href="{{citeHref}}">{{citeText}}</a>{{/citeHref}}{{/repostOf}}
+	</header>
+	<div class="e-content$if(isNote)$ p-name$endif$">
+		$content$
+	</div>
+</article>

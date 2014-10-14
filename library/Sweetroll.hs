@@ -10,12 +10,14 @@ import           Network.Wai (Application)
 import           Network.Wai.Middleware.Autohead
 import           Network.HTTP.Types.Status
 import           Text.RawString.QQ
-import           Text.Pandoc
+import           Text.Pandoc (readMarkdown, def)
+import           Web.Simple.Templates.Language
 import           Web.Scotty.Trans (ActionT)
 import           Web.Scotty
 import           Gitson
+import           Data.Aeson.Types
 import           Data.Microformats2
-import           Data.Microformats2.Aeson ()
+import           Data.Microformats2.Aeson()
 import           Sweetroll.Pages
 import           Sweetroll.Util
 
@@ -24,20 +26,20 @@ mkApp :: SweetrollConf -> IO Application
 mkApp conf = scottyApp $ do
   middleware autohead -- XXX: does it even work properly?
 
-  let render d = liftIO (renderPage (pageTemplate conf) d) >>= html
+  let render = renderWithConf conf
 
   get "/:category" $ do
     category <- param "category"
     slugs <- liftIO $ listDocumentKeys category
     maybes <- liftIO $ mapM (readEntry category) slugs
-    render $ categoryPage (pack category) (fromMaybe [] $ sequence maybes)
+    render categoryTemplate (catView (pack category) (fromMaybe [] $ sequence maybes))
 
   get "/:category/:slug" $ do
     category <- param "category"
     slug <- param "slug"
     entry <- liftIO (readDocumentByName category slug :: IO (Maybe Entry))
     case entry of
-      Just e  -> render $ entryPage (mconcat ["/", pack category, "/", pack slug]) e
+      Just e  -> render entryTemplate (entryView (pack category) (slug, e))
       Nothing -> entryNotFound
 
   post "/micropub" $ do
@@ -61,6 +63,13 @@ type SweetrollAction = ActionT LText IO
 getHost :: SweetrollAction LText
 getHost = liftM (fromMaybe "localhost") (header "Host")
 
+renderWithConf :: SweetrollConf -> (SweetrollConf -> Template) -> Value -> SweetrollAction ()
+renderWithConf conf tplf stuff = html $ fromStrict $ renderTemplate (layoutTemplate conf) mempty topctx
+  where topctx = object [ "content" .= renderTemplate (tplf conf) mempty stuff
+                        , "website_title" .= siteName conf
+                        , "meta_title" .= siteName conf -- TODO: generate title
+                        ]
+
 created :: [LText] -> SweetrollAction ()
 created urlParts = do
   status created201
@@ -74,10 +83,10 @@ entryNotFound = status notFound404
 
 ------------ Helpers {{{
 
-readEntry :: String -> String -> IO (Maybe (LText, Entry))
+readEntry :: String -> String -> IO (Maybe (String, Entry))
 readEntry category n = do
   doc <- readDocument category n :: IO (Maybe Entry)
-  return $ (\x -> (pack n, x)) <$> doc
+  return $ (\x -> (n, x)) <$> doc
 
 decideCategory :: [Param] -> LText
 decideCategory pars =
@@ -112,12 +121,25 @@ makeEntry pars now = defaultEntry
 ------------ Configuration {{{
 
 data SweetrollConf = SweetrollConf
-  { pageTemplate :: Text }
+  {           layoutTemplate :: Template
+  ,            entryTemplate :: Template
+  ,         categoryTemplate :: Template
+  ,                 siteName :: Text }
+
+processTpl :: String -> Template
+processTpl x = case compileTemplate $ dropNonHtml $ pack x of
+  Left e -> Template { renderTemplate = \_ _ -> "Template compilation error: " ++ pack e }
+  Right t -> t
 
 -- cpp screws up line numbering, so we put this at the end
 defaultSweetrollConf :: SweetrollConf
 defaultSweetrollConf =  SweetrollConf {
-    pageTemplate = dropNonHtml [r|
-#include "../templates/page.html"
-|] }
+    siteName = "A new Sweetroll site"
+ ,  layoutTemplate = processTpl [r|
+#include "../templates/layout.html"
+|], entryTemplate = processTpl [r|
+#include "../templates/entry.html"
+|], categoryTemplate = processTpl [r|
+#include "../templates/category.html"
+|]}
 ------------ }}}

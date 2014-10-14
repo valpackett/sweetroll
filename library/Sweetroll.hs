@@ -1,6 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude, NoMonomorphismRestriction #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE CPP, QuasiQuotes #-}
 
 -- | The module that contains the Sweetroll WAI application.
 module Sweetroll (mkApp, defaultSweetrollConf) where
@@ -9,7 +8,6 @@ import           ClassyPrelude
 import           Network.Wai (Application)
 import           Network.Wai.Middleware.Autohead
 import           Network.HTTP.Types.Status
-import           Text.RawString.QQ
 import           Text.Pandoc (readMarkdown, def)
 import           Web.Simple.Templates.Language
 import           Web.Scotty.Trans (ActionT)
@@ -19,6 +17,7 @@ import           Data.Aeson.Types
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
 import           Sweetroll.Pages
+import           Sweetroll.Conf
 import           Sweetroll.Util
 
 -- | Makes the Sweetroll WAI application.
@@ -56,8 +55,6 @@ mkApp conf = scottyApp $ do
 
   matchAny "/micropub" $ status methodNotAllowed405
 
------------- Actions {{{
-
 type SweetrollAction = ActionT LText IO
 
 getHost :: SweetrollAction LText
@@ -78,10 +75,6 @@ created urlParts = do
 
 entryNotFound :: SweetrollAction ()
 entryNotFound = status notFound404
-
------------- }}}
-
------------- Helpers {{{
 
 readEntry :: String -> String -> IO (Maybe (String, Entry))
 readEntry category n = do
@@ -115,31 +108,3 @@ makeEntry pars now = defaultEntry
   , entryLikeOf       = Right <$> par "like-of"
   , entryRepostOf     = Right <$> par "repost-of" }
   where par = findByKey pars
-
------------- }}}
-
------------- Configuration {{{
-
-data SweetrollConf = SweetrollConf
-  {           layoutTemplate :: Template
-  ,            entryTemplate :: Template
-  ,         categoryTemplate :: Template
-  ,                 siteName :: Text }
-
-processTpl :: String -> Template
-processTpl x = case compileTemplate $ dropNonHtml $ pack x of
-  Left e -> Template { renderTemplate = \_ _ -> "Template compilation error: " ++ pack e }
-  Right t -> t
-
--- cpp screws up line numbering, so we put this at the end
-defaultSweetrollConf :: SweetrollConf
-defaultSweetrollConf =  SweetrollConf {
-    siteName = "A new Sweetroll site"
- ,  layoutTemplate = processTpl [r|
-#include "../templates/layout.html"
-|], entryTemplate = processTpl [r|
-#include "../templates/entry.html"
-|], categoryTemplate = processTpl [r|
-#include "../templates/category.html"
-|]}
------------- }}}

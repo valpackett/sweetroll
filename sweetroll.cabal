@@ -27,7 +27,6 @@ library
       , classy-prelude
       , either
       , transformers
-      , filepath
       , text
       , bytestring
       , time
@@ -47,6 +46,7 @@ library
         Sweetroll
         Sweetroll.Pages
         Sweetroll.Util
+        Sweetroll.Conf
         -- HASKELETON: New.Module
     ghc-prof-options: -auto-all -prof
     ghc-options: -threaded -Wall -Werror
@@ -114,6 +114,5 @@ test-suite tests
     other-modules:
         SweetrollSpec
         Sweetroll.PagesSpec
-        Sweetroll.UtilSpec
         -- HASKELETON: New.ModuleSpec
     type: exitcode-stdio-1.0

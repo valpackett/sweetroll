@@ -36,7 +36,7 @@ spec = do
       case testEntryTpl of
         Left str -> fail str
         Right tpl ->
-          renderTemplate tpl mempty (entryView "articles" ("first", testNote)) `shouldBe` [r|<note>
+          renderTemplate tpl mempty (tplContext $ entryView "articles" ("first", testNote)) `shouldBe` [r|<note>
   <p>Hello, world!</p>
   <time datetime="2013-10-17 09:42">17.10.2013 09:42 AM</time>
 </note>|]
@@ -49,7 +49,7 @@ spec = do
       case testEntryTpl of
         Left str -> fail str
         Right tpl ->
-          renderTemplate tpl mempty (entryView "articles" ("first", testArticle)) `shouldBe` [r|<article>
+          renderTemplate tpl mempty (tplContext $ entryView "articles" ("first", testArticle)) `shouldBe` [r|<article>
   <h1><a href="/articles/first">First post</a></h1>
   <p>This is the content</p>
   <time datetime="2013-10-17 09:42">17.10.2013 09:42 AM</time>
@@ -61,7 +61,7 @@ spec = do
       case testCategoryTpl of
         Left str -> fail str
         Right tpl ->
-          renderTemplate tpl mempty (catView "test" testEntries) `shouldBe` [r|<category name="test">
+          renderTemplate tpl mempty (tplContext $ catView "test" testEntries) `shouldBe` [r|<category name="test">
 <e href="/test/f">First note</e>
 <e href="/test/s">Second note</e>
 </category>|]

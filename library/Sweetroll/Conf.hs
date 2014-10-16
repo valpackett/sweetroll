@@ -12,7 +12,8 @@ data SweetrollConf = SweetrollConf
   {           layoutTemplate :: Template
   ,            entryTemplate :: Template
   ,         categoryTemplate :: Template
-  ,                 siteName :: Text }
+  ,                 siteName :: Text
+  ,           titleSeparator :: Text }
 
 processTpl :: String -> Template
 processTpl x = case compileTemplate $ dropNonHtml $ pack x of
@@ -23,7 +24,8 @@ processTpl x = case compileTemplate $ dropNonHtml $ pack x of
 defaultSweetrollConf :: SweetrollConf
 defaultSweetrollConf =  SweetrollConf {
     siteName = "A new Sweetroll site"
- ,  layoutTemplate = processTpl [r|
+  , titleSeparator = " / "
+  , layoutTemplate = processTpl [r|
 #include "../../templates/layout.html"
 |], entryTemplate = processTpl [r|
 #include "../../templates/entry.html"

@@ -46,7 +46,7 @@ mkApp conf = scottyApp $ do
     now <- liftIO getCurrentTime
     let category = decideCategory allParams
         slug = decideSlug allParams now
-        save x = liftIO $ transaction "./" $ saveNextDocument (unpack category) (unpack slug) x
+        save x = liftIO $ transaction "./" $ saveNextDocument category slug x
         save' x = save x >> created [category, slug]
     case asLText h of
       "entry" -> save' $ makeEntry allParams now
@@ -59,18 +59,19 @@ type SweetrollAction = ActionT LText IO
 getHost :: SweetrollAction LText
 getHost = liftM (fromMaybe "localhost") (header "Host")
 
-renderWithConf :: SweetrollConf -> (SweetrollConf -> Template) -> Value -> SweetrollAction ()
-renderWithConf conf tplf stuff = html $ fromStrict $ renderTemplate (layoutTemplate conf) mempty topctx
-  where topctx = object [ "content" .= renderTemplate (tplf conf) mempty stuff
-                        , "website_title" .= siteName conf
-                        , "meta_title" .= siteName conf -- TODO: generate title
-                        ]
+renderWithConf :: SweetrollConf -> (SweetrollConf -> Template) -> ViewResult -> SweetrollAction ()
+renderWithConf conf tplf stuff = html $ fromStrict $ renderTemplate (layoutTemplate conf) mempty ctx
+  where ctx = object [
+                "content" .= renderTemplate (tplf conf) mempty (tplContext stuff)
+              , "website_title" .= siteName conf
+              , "meta_title" .= intercalate (titleSeparator conf) (titleParts stuff ++ [siteName conf])
+              ]
 
-created :: [LText] -> SweetrollAction ()
+created :: [String] -> SweetrollAction ()
 created urlParts = do
   status created201
   host <- getHost
-  setHeader "Location" $ mkUrl host urlParts
+  setHeader "Location" $ mkUrl host $ map pack urlParts
 
 entryNotFound :: SweetrollAction ()
 entryNotFound = status notFound404
@@ -80,7 +81,7 @@ readEntry category n = do
   doc <- readDocument category n :: IO (Maybe Entry)
   return $ (\x -> (n, x)) <$> doc
 
-decideCategory :: [Param] -> LText
+decideCategory :: [Param] -> CategoryName
 decideCategory pars =
   case par "name" of
     Just _ -> "articles"
@@ -89,8 +90,8 @@ decideCategory pars =
       _ -> "notes"
   where par = findByKey pars
 
-decideSlug :: [Param] -> UTCTime -> LText
-decideSlug pars now = fromMaybe fallback $ findByKey pars "slug"
+decideSlug :: [Param] -> UTCTime -> EntrySlug
+decideSlug pars now = unpack $ fromMaybe fallback $ findByKey pars "slug"
   where fallback = slugify $ fromMaybe (formatTimeSlug now) $ findFirstKey pars ["name", "summary", "content"]
         formatTimeSlug = pack . formatTime defaultTimeLocale "%Y-%m-%d-%H-%M"
 

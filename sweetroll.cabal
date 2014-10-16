@@ -25,6 +25,7 @@ library
     build-depends:
         base >= 4.0.0.0 && < 5
       , classy-prelude
+      , setters
       , either
       , transformers
       , text
@@ -56,6 +57,7 @@ library
 executable sweetroll
     build-depends:
         base >= 4.0.0.0 && < 5
+      , classy-prelude
       , options == 1.*
       , warp == 3.0.*
       , wai-extra

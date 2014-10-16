@@ -5,6 +5,7 @@ import           Network.Wai.Handler.Warp
 import           System.Console.ANSI
 import           Control.Applicative
 import           System.Directory
+import           Sweetroll.Conf
 import           Sweetroll
 import           Options
 
@@ -34,7 +35,8 @@ main = runCommand $ \opts args -> do
   setCurrentDirectory (repo opts)
   let printListening = boldYellow "         Sweetroll " >> red "0.0.0" >> reset " running on " >> blue (protocol opts) >> reset " port " >> boldMagenta (show $ port opts) >> setReset >> putStrLn ""
   let warpSettings = setBeforeMainLoop printListening $ setPort (port opts) defaultSettings
-  let app = mkApp defaultSweetrollConf
+  conf <- loadTemplates defaultSweetrollConf
+  let app = mkApp conf
   case protocol opts of
     "http" -> putSweetroll >> app >>= runSettings warpSettings
     "cgi" -> app >>= CGI.run

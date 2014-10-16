@@ -6,6 +6,7 @@ module Sweetroll (mkApp, defaultSweetrollConf) where
 import           ClassyPrelude
 import           Network.Wai (Application)
 import           Network.Wai.Middleware.Autohead
+import           Network.Wai.Middleware.Static
 import           Network.HTTP.Types.Status
 import           Text.Pandoc (readMarkdown, def)
 import           Web.Simple.Templates.Language
@@ -22,7 +23,8 @@ import           Sweetroll.Util
 -- | Makes the Sweetroll WAI application.
 mkApp :: SweetrollConf -> IO Application
 mkApp conf = scottyApp $ do
-  middleware autohead -- XXX: does it even work properly?
+  middleware autohead -- XXX: does not add Content-Length
+  middleware $ staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
 
   let render = renderWithConf conf
 

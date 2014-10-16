@@ -36,6 +36,7 @@ library
       , http-types
       , wai
       , wai-extra
+      , wai-middleware-static
       , scotty == 0.9.*
       , simple-templates == 0.8.*
       , blaze-markup

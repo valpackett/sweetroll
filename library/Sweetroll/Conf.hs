@@ -39,6 +39,7 @@ readFailHandler :: SweetrollConf -> IOError -> IO SweetrollConf
 readFailHandler c _ = return c
 
 -- cpp screws up line numbering, so we put this at the end
+-- | The default SweetrollConf.
 defaultSweetrollConf :: SweetrollConf
 defaultSweetrollConf =  SweetrollConf {
     siteName = "A new Sweetroll site"

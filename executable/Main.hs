@@ -6,7 +6,7 @@ import           System.Console.ANSI
 import           Control.Applicative
 import           System.Directory
 import           Sweetroll.Conf
-import           Sweetroll
+import           Sweetroll.App
 import           Options
 
 data AppOptions = AppOptions

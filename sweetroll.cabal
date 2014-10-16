@@ -45,7 +45,7 @@ library
       , raw-strings-qq == 1.*
     default-language: Haskell2010
     exposed-modules:
-        Sweetroll
+        Sweetroll.App
         Sweetroll.Pages
         Sweetroll.Util
         Sweetroll.Conf
@@ -115,7 +115,7 @@ test-suite tests
     hs-source-dirs: test-suite
     main-is: Spec.hs
     other-modules:
-        SweetrollSpec
+        Sweetroll.AppSpec
         Sweetroll.PagesSpec
         -- HASKELETON: New.ModuleSpec
     type: exitcode-stdio-1.0

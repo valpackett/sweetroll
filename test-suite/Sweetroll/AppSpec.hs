@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 
-module SweetrollSpec (spec) where
+module Sweetroll.AppSpec (spec) where
 
 import           ClassyPrelude
 import           Test.Hspec
@@ -16,7 +16,7 @@ import qualified Data.CaseInsensitive as CI
 import           Data.Microformats2
 import           Text.Pandoc
 import           Sweetroll.Util (findByKey)
-import           Sweetroll
+import           Sweetroll.App
 import           Gitson
 
 contains :: EqSequence a => a -> a -> Bool

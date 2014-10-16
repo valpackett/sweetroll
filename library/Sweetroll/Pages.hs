@@ -1,7 +1,15 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 
 -- | The module responsible for rendering pages into actual HTML
-module Sweetroll.Pages (module Sweetroll.Pages) where
+module Sweetroll.Pages (
+  CategoryName
+, EntrySlug
+, ViewResult
+, tplContext
+, titleParts
+, entryView
+, catView
+) where
 
 import           ClassyPrelude
 import           Text.Pandoc

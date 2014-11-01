@@ -97,7 +97,7 @@ readCategory :: CategoryName -> IO (CategoryName, [(EntrySlug, Entry)])
 readCategory c = do
   slugs <- listDocumentKeys c
   maybes <- mapM (readEntry c) slugs
-  return (c, fromMaybe [] $ sequence maybes)
+  return (c, reverse $ fromMaybe [] $ sequence maybes)
 
 decideCategory :: [Param] -> CategoryName
 decideCategory pars =

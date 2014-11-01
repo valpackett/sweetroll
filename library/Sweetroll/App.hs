@@ -44,8 +44,10 @@ mkApp conf = scottyApp $ do
     slug <- param "slug"
     entry <- liftIO (readDocumentByName category slug :: IO (Maybe Entry))
     case entry of
-      Just e  -> render entryTemplate $ entryView category (slug, e)
       Nothing -> entryNotFound
+      Just e  -> do
+        otherSlugs <- liftIO $ listDocumentKeys category
+        render entryTemplate $ entryView category (map readSlug otherSlugs) (slug, e)
 
   post "/micropub" $ do
     h <- param "h"
@@ -83,11 +85,13 @@ created urlParts = do
 entryNotFound :: SweetrollAction ()
 entryNotFound = status notFound404
 
+readSlug :: String -> EntrySlug
+readSlug x = drop 1 $ fromMaybe "-404" $ snd <$> maybeReadIntString x -- errors should never happen
+
 readEntry :: CategoryName -> String -> IO (Maybe (EntrySlug, Entry))
 readEntry category fname = do
   doc <- readDocument category fname :: IO (Maybe Entry)
-  let slug = drop 1 $ fromMaybe "-404" $ snd <$> maybeReadIntString fname -- errors should never happen
-  return $ (\x -> (slug, x)) <$> doc
+  return $ (\x -> (readSlug fname, x)) <$> doc
 
 readCategory :: CategoryName -> IO (CategoryName, [(EntrySlug, Entry)])
 readCategory c = do

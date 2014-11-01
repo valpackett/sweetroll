@@ -18,6 +18,8 @@ import           Text.Blaze.Renderer.Text
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
 import           Data.Aeson.Types
+import           Data.List (elemIndex)
+import           Safe (atMay)
 
 type CategoryName = String
 type EntrySlug = String
@@ -26,12 +28,15 @@ data ViewResult = ViewResult
   { titleParts           :: [Text]
   , tplContext           :: Value }
 
-entryView :: CategoryName -> (EntrySlug, Entry) -> ViewResult
-entryView catName (slug, e) =
+entryView :: CategoryName -> [EntrySlug] -> (EntrySlug, Entry) -> ViewResult
+entryView catName otherSlugs (slug, e) =
   ViewResult { titleParts = [toStrict (fromMaybe ("Note @ " ++ published) (entryName e)), pack catName]
              , tplContext = ctx }
   where content = renderContent e
         published = fromMaybe "" (formatTimeText <$> entryPublished e)
+        slugIdx = fromMaybe (negate 1) $ elemIndex slug otherSlugs
+        prev = atMay otherSlugs $ slugIdx - 1
+        next = atMay otherSlugs $ slugIdx + 1
         ctx = object [
             "name"             .= fromMaybe "" (entryName e)
           , "content"          .= content
@@ -39,16 +44,23 @@ entryView catName (slug, e) =
           , "publishedAttr"    .= fromMaybe "" (formatTimeAttr <$> entryPublished e)
           , "permalink"        .= mconcat ["/", catName, "/", pack slug]
           , "isNote"           .= isNothing (entryName e)
+          , "category"         .= catName
+          , "categoryHref"     .= mconcat ["/", catName]
+          , "hasPrev"          .= isJust prev
+          , "prevHref"         .= mconcat ["/", catName, "/", fromMaybe "" prev]
+          , "hasNext"          .= isJust next
+          , "nextHref"         .= mconcat ["/", catName, "/", fromMaybe "" next]
           ]
 
 catView :: CategoryName -> [(EntrySlug, Entry)] -> ViewResult
 catView name entries =
   ViewResult { titleParts = [pack name]
              , tplContext = ctx }
-  where ctx = object [
+  where slugs = map fst entries
+        ctx = object [
             "name"            .= name
           , "permalink"       .= mconcat ["/", name]
-          , "entries"         .= map (tplContext . entryView name) entries
+          , "entries"         .= map (tplContext . entryView name slugs) entries
           ]
 
 indexView :: [(CategoryName, [(EntrySlug, Entry)])] -> ViewResult

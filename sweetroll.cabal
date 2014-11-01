@@ -26,6 +26,7 @@ library
         base >= 4.0.0.0 && < 5
       , classy-prelude
       , setters
+      , safe
       , either
       , transformers
       , text

@@ -19,6 +19,8 @@ import           Sweetroll.Util (findByKey)
 import           Sweetroll.App
 import           Gitson
 
+{-# ANN module ("HLint: ignore Redundant do"::String) #-}
+
 contains :: EqSequence a => a -> a -> Bool
 contains = flip isInfixOf
 
@@ -35,6 +37,20 @@ spec :: Spec
 spec = before setup $ after cleanup $ do
   let app = mkApp defaultSweetrollConf
   let transaction' = transaction "./"
+
+  describe "GET /" $ do
+    it "renders the index" $ do
+      transaction' $ do
+        saveNextDocument "posts" "first" $ defaultEntry {
+          entryName      = Just "Post 1" }
+        saveNextDocument "thingies" "tweeeet" $ defaultEntry {
+          entryName      = Just "Something 1" }
+      resp <- app >>= get "/"
+      simpleBody resp `shouldSatisfy` (`contains` "posts")
+      simpleBody resp `shouldSatisfy` (`contains` "thingies")
+      simpleBody resp `shouldSatisfy` (`contains` "Post 1")
+      simpleBody resp `shouldSatisfy` (`contains` "Something 1")
+      simpleStatus resp `shouldBe` ok200
 
   describe "GET /:category" $ do
     it "renders categories" $ do

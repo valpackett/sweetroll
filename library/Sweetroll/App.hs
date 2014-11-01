@@ -13,6 +13,7 @@ import           Web.Simple.Templates.Language
 import           Web.Scotty.Trans (ActionT)
 import           Web.Scotty
 import           Gitson
+import           Gitson.Util (maybeReadIntString)
 import           Data.Aeson.Types
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
@@ -28,11 +29,15 @@ mkApp conf = scottyApp $ do
 
   let render = renderWithConf conf
 
+  get "/" $ do
+    catNames <- liftIO listCollections
+    cats <- liftIO $ mapM readCategory catNames
+    render indexTemplate $ indexView cats
+
   get "/:category" $ do
-    category <- param "category"
-    slugs <- liftIO $ listDocumentKeys category
-    maybes <- liftIO $ mapM (readEntry category) slugs
-    render categoryTemplate $ catView category (fromMaybe [] $ sequence maybes)
+    catName <- param "category"
+    cat <- liftIO $ readCategory catName
+    render categoryTemplate $ catView catName $ snd cat
 
   get "/:category/:slug" $ do
     category <- param "category"
@@ -78,10 +83,17 @@ created urlParts = do
 entryNotFound :: SweetrollAction ()
 entryNotFound = status notFound404
 
-readEntry :: String -> String -> IO (Maybe (String, Entry))
-readEntry category n = do
-  doc <- readDocument category n :: IO (Maybe Entry)
-  return $ (\x -> (n, x)) <$> doc
+readEntry :: CategoryName -> String -> IO (Maybe (EntrySlug, Entry))
+readEntry category fname = do
+  doc <- readDocument category fname :: IO (Maybe Entry)
+  let slug = drop 1 $ fromMaybe "-404" $ snd <$> maybeReadIntString fname -- errors should never happen
+  return $ (\x -> (slug, x)) <$> doc
+
+readCategory :: CategoryName -> IO (CategoryName, [(EntrySlug, Entry)])
+readCategory c = do
+  slugs <- listDocumentKeys c
+  maybes <- mapM (readEntry c) slugs
+  return (c, fromMaybe [] $ sequence maybes)
 
 decideCategory :: [Param] -> CategoryName
 decideCategory pars =

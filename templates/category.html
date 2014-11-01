@@ -1,6 +1,13 @@
 <h1>$name$</h1>
 <ul>
 	$for(entry in entries)$
+		$if(entry.isNote)$
+		<li class="h-entry">
+			<div class="e-content p-name">$entry.content$</div>
+			<a href="$entry.permalink$"><time datetime="$entry.publishedAttr$">$entry.published$</time></a>
+		</li>
+		$else$
 		<li><a href="$entry.permalink$">$entry.name$</a></li>
+		$endif$
 	$endfor$
 </ul>

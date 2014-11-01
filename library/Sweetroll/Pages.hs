@@ -9,6 +9,7 @@ module Sweetroll.Pages (
 , titleParts
 , entryView
 , catView
+, indexView
 ) where
 
 import           ClassyPrelude
@@ -46,7 +47,16 @@ catView name entries =
              , tplContext = ctx }
   where ctx = object [
             "name"            .= name
+          , "permalink"       .= mconcat ["/", name]
           , "entries"         .= map (tplContext . entryView name) entries
+          ]
+
+indexView :: [(CategoryName, [(EntrySlug, Entry)])] -> ViewResult
+indexView cats =
+  ViewResult { titleParts = []
+             , tplContext = ctx }
+  where ctx = object [
+            "categories" .= map (tplContext . uncurry catView) cats
           ]
 
 renderContent :: Entry -> LText

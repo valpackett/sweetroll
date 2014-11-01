@@ -3,6 +3,7 @@
 all: install configure build haddock test hpc
 
 build:
+	touch library/Sweetroll/Conf.hs
 	cabal build
 
 clean:
@@ -29,8 +30,10 @@ repl:
 	cabal repl lib:sweetroll
 
 run:
+	touch library/Sweetroll/Conf.hs
 	rm sweetroll.tix || true
 	cabal run sweetroll
 
 test:
+	touch library/Sweetroll/Conf.hs
 	cabal test examples tests --show-details=always --test-option=--color

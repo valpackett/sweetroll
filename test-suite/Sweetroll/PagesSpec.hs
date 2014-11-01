@@ -12,6 +12,8 @@ import           Data.Microformats2
 import           Data.Microformats2.Aeson()
 import           Web.Simple.Templates.Language
 
+{-# ANN module ("HLint: ignore Redundant do"::String) #-}
+
 testEntryTpl :: Either String Template
 testEntryTpl = compileTemplate [r|<$if(isNote)$note$else$article$endif$>$if(isNote)$
   <p>$content$</p>
@@ -25,6 +27,13 @@ testCategoryTpl :: Either String Template
 testCategoryTpl = compileTemplate [r|<category name="$name$">
 $for(entry in entries)$<e href="$entry.permalink$">$entry.content$</e>
 $endfor$</category>|]
+
+testIndexTpl :: Either String Template
+testIndexTpl = compileTemplate [r|<index>
+$for(cat in categories)$  <category name="$cat.name$">
+$for(entry in cat.entries)$    <e href="$entry.permalink$">$entry.content$</e>
+$endfor$  </category>$endfor$
+</index>|]
 
 spec :: Spec
 spec = do
@@ -50,12 +59,22 @@ spec = do
 </article>|]
 
     it "renders categories" $ do
-      let testEntries = [ ("f", defaultEntry { entryContent = Just $ Right "First note"  }),
-                          ("s", defaultEntry { entryContent = Just $ Right "Second note" }) ]
+      let testEntries = [ ("f", defaultEntry { entryContent = Just $ Right "First note"  })
+                        , ("s", defaultEntry { entryContent = Just $ Right "Second note" }) ]
       testRender testCategoryTpl (catView "test" testEntries) `shouldBe` [r|<category name="test">
 <e href="/test/f">First note</e>
 <e href="/test/s">Second note</e>
 </category>|]
+
+    it "renders the index" $ do
+      let testCats = [ ("stuff", [ ("first",  defaultEntry { entryContent = Just $ Right "First"  })
+                                 , ("second", defaultEntry { entryContent = Just $ Right "Second" }) ]) ]
+      testRender testIndexTpl (indexView testCats) `shouldBe` [r|<index>
+  <category name="stuff">
+    <e href="/stuff/first">First</e>
+    <e href="/stuff/second">Second</e>
+  </category>
+</index>|]
 
 testRender :: Either String Template -> ViewResult -> Text
 testRender (Left  s) _ = error s

@@ -1,0 +1,19 @@
+<main class="index">
+	$for(cat in categories)$
+		<section class="category">
+			<h1><a href="$cat.permalink$">$cat.name$</a></h1>
+			<ul>
+				$for(entry in cat.entries)$
+					$if(entry.isNote)$
+					<li class="h-entry">
+						<div class="e-content p-name">$entry.content$</div>
+						<a href="$entry.permalink$"><time datetime="$entry.publishedAttr$">$entry.published$</time></a>
+					</li>
+					$else$
+					<li><a href="$entry.permalink$">$entry.name$</a></li>
+					$endif$
+				$endfor$
+			</ul>
+		</section>
+	$endfor$
+</main>

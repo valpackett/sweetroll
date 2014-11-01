@@ -7,17 +7,22 @@ import           Control.Applicative
 import           System.Directory
 import           Sweetroll.Conf
 import           Sweetroll.App
+import qualified Data.Text as T
 import           Options
 
 data AppOptions = AppOptions
-  { port       :: Int
-  , protocol   :: String
-  , repo       :: FilePath }
+  { port          :: Int
+  , protocol      :: String
+  , domain        :: String
+  , https         :: Bool
+  , repo          :: FilePath }
 
 instance Options AppOptions where
   defineOptions = pure AppOptions
     <*> simpleOption "port" 3000 "The port the app should listen for connections on"
     <*> simpleOption "protocol" "http" "The protocol for the server. One of: http, cgi"
+    <*> simpleOption "domain" "" "The domain on which the server will run"
+    <*> simpleOption "https" False "Whether HTTPS works on the domain"
     <*> simpleOption "repo" "./" "The git repository directory of the website"
 
 setReset = setSGR [ Reset ]
@@ -35,7 +40,12 @@ main = runCommand $ \opts args -> do
   setCurrentDirectory (repo opts)
   let printListening = boldYellow "         Sweetroll " >> red "0.0.0" >> reset " running on " >> blue (protocol opts) >> reset " port " >> boldMagenta (show $ port opts) >> setReset >> putStrLn ""
   let warpSettings = setBeforeMainLoop printListening $ setPort (port opts) defaultSettings
-  conf <- loadTemplates defaultSweetrollConf
+  conf <- loadTemplates defaultSweetrollConf {
+    domainName = case domain opts of
+      "" -> Nothing
+      s -> Just $ T.pack s
+  , httpsWorks = https opts
+  }
   let app = mkApp conf
   case protocol opts of
     "http" -> putSweetroll >> app >>= runSettings warpSettings

@@ -4,13 +4,18 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<title>$meta_title$</title>
+		<link rel="openid.delegate" href="http$s$://$domain$" />
+		<link rel="openid.server" href="https://indieauth.com/openid" />
 	</head>
 	<body>
-		<header>
+		<header class="site-header">
 			<h1><a href="/">$website_title$</a></h1>
 		</header>
+		<aside class="site-author h-card">
+			$author$
+		</aside>
 		$content$
-		<footer>
+		<footer class="site-footer">
 			Powered by <a href="https://github.com/myfreeweb/sweetroll">Sweetroll</a>, an <a href="http://indiewebcamp.com">#IndieWeb</a> engine.
 		</footer>
 	</body>

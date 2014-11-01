@@ -16,7 +16,10 @@ data SweetrollConf = SweetrollConf
   ,            entryTemplate :: Template
   ,         categoryTemplate :: Template
   ,            indexTemplate :: Template
+  ,           authorTemplate :: Template
   ,                 siteName :: Text
+  ,               httpsWorks :: Bool
+  ,               domainName :: Maybe Text
   ,           titleSeparator :: Text }
 
 $(declareSetters ''SweetrollConf)
@@ -35,7 +38,8 @@ loadTemplates conf = foldM loadTpl conf tplsWithSetters
           tplsWithSetters = [ (setCategoryTemplate,   "category.html")
                             , (setEntryTemplate,      "entry.html")
                             , (setLayoutTemplate,     "layout.html")
-                            , (setIndexTemplate,      "index.html") ]
+                            , (setIndexTemplate,      "index.html")
+                            , (setAuthorTemplate,     "author.html") ]
 
 readFailHandler :: SweetrollConf -> IOError -> IO SweetrollConf
 readFailHandler c _ = return c
@@ -45,6 +49,8 @@ readFailHandler c _ = return c
 defaultSweetrollConf :: SweetrollConf
 defaultSweetrollConf =  SweetrollConf {
     siteName = "A new Sweetroll site"
+  , domainName = Nothing
+  , httpsWorks = False
   , titleSeparator = " / "
   , layoutTemplate = processTpl [r|
 #include "../../templates/layout.html"
@@ -54,4 +60,6 @@ defaultSweetrollConf =  SweetrollConf {
 #include "../../templates/category.html"
 |], indexTemplate = processTpl [r|
 #include "../../templates/index.html"
+|], authorTemplate = processTpl [r|
+#include "../../templates/author.html"
 |]}

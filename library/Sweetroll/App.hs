@@ -27,12 +27,15 @@ mkApp conf = scottyApp $ do
   middleware autohead -- XXX: does not add Content-Length
   middleware $ staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
 
-  let render = renderWithConf conf
+  let hostInfo = [ "domain" .= domainName conf
+                 , "s" .= asText (if httpsWorks conf then "s" else "") ]
+  let authorHtml = renderTemplate (authorTemplate conf) mempty (object hostInfo)
+  let render = renderWithConf conf authorHtml hostInfo
 
   get "/" $ do
     catNames <- liftIO listCollections
     cats <- liftIO $ mapM readCategory catNames
-    render indexTemplate $ indexView cats
+    render indexTemplate $ indexView $ filter visibleCat cats
 
   get "/:category" $ do
     catName <- param "category"
@@ -68,10 +71,11 @@ type SweetrollAction = ActionT LText IO
 getHost :: SweetrollAction LText
 getHost = liftM (fromMaybe "localhost") (header "Host")
 
-renderWithConf :: SweetrollConf -> (SweetrollConf -> Template) -> ViewResult -> SweetrollAction ()
-renderWithConf conf tplf stuff = html $ fromStrict $ renderTemplate (layoutTemplate conf) mempty ctx
-  where ctx = object [
+renderWithConf :: SweetrollConf -> Text -> [Pair] -> (SweetrollConf -> Template) -> ViewResult -> SweetrollAction ()
+renderWithConf conf authorHtml hostInfo tplf stuff = html $ fromStrict $ renderTemplate (layoutTemplate conf) mempty ctx
+  where ctx = object $ hostInfo <> [
                 "content" .= renderTemplate (tplf conf) mempty (tplContext stuff)
+              , "author" .= authorHtml
               , "website_title" .= siteName conf
               , "meta_title" .= intercalate (titleSeparator conf) (titleParts stuff ++ [siteName conf])
               ]
@@ -84,6 +88,11 @@ created urlParts = do
 
 entryNotFound :: SweetrollAction ()
 entryNotFound = status notFound404
+
+visibleCat :: (CategoryName, [(EntrySlug, Entry)]) -> Bool
+visibleCat (slug, entries) =
+     not (null entries)
+  && slug /= "templates"
 
 readSlug :: String -> EntrySlug
 readSlug x = drop 1 $ fromMaybe "-404" $ snd <$> maybeReadIntString x -- errors should never happen

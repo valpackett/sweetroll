@@ -20,6 +20,8 @@ data SweetrollConf = SweetrollConf
   ,                 siteName :: Text
   ,               httpsWorks :: Bool
   ,               domainName :: Maybe Text
+  ,        indieAuthEndpoint :: String
+  ,                 testMode :: Bool
   ,           titleSeparator :: Text }
 
 $(declareSetters ''SweetrollConf)
@@ -46,11 +48,14 @@ readFailHandler c _ = return c
 
 -- cpp screws up line numbering, so we put this at the end
 -- | The default SweetrollConf.
+-- Actual defaults are in the executable!
 defaultSweetrollConf :: SweetrollConf
 defaultSweetrollConf =  SweetrollConf {
-    siteName = "A new Sweetroll site"
-  , domainName = Nothing
+    siteName = ""
   , httpsWorks = False
+  , domainName = Nothing
+  , indieAuthEndpoint = "http://127.0.0.1"
+  , testMode = False
   , titleSeparator = " / "
   , layoutTemplate = processTpl [r|
 #include "../../templates/layout.html"

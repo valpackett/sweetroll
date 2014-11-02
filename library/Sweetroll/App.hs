@@ -8,12 +8,15 @@ import           Network.Wai (Application)
 import           Network.Wai.Middleware.Autohead
 import           Network.Wai.Middleware.Static
 import           Network.HTTP.Types.Status
+import           Network.HTTP.Client
+import           Network.HTTP.Client.TLS
 import           Text.Pandoc (readMarkdown, def)
 import           Web.Simple.Templates.Language
 import           Web.Scotty.Trans (ActionT)
 import           Web.Scotty
 import           Gitson
 import           Gitson.Util (maybeReadIntString)
+import qualified Data.Set as Set
 import           Data.Aeson.Types
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
@@ -27,10 +30,45 @@ mkApp conf = scottyApp $ do
   middleware autohead -- XXX: does not add Content-Length
   middleware $ staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
 
-  let hostInfo = [ "domain" .= domainName conf
-                 , "s" .= asText (if httpsWorks conf then "s" else "") ]
-  let authorHtml = renderTemplate (authorTemplate conf) mempty (object hostInfo)
-  let render = renderWithConf conf authorHtml hostInfo
+  validTokens <- atomically $ newTVar Set.empty
+
+  httpClientMgr <- liftIO $ newManager tlsManagerSettings
+  indieAuthReq <- liftIO $ parseUrl (indieAuthEndpoint conf) >>= \x -> return $ x { method = "POST", secure = True }
+  let httpReq x = liftIO $ httpLbs x httpClientMgr
+
+  let s = asText $ if httpsWorks conf then "s" else ""
+      baseURL = mconcat ["http", s, "://", fromMaybe "" (domainName conf)]
+      hostInfo = [ "domain" .= domainName conf
+                 , "s" .= s
+                 , "base_url" .= baseURL ]
+      authorHtml = renderTemplate (authorTemplate conf) mempty (object hostInfo)
+      render = renderWithConf conf authorHtml hostInfo
+
+  get "/login" $ do
+    code <- param "code"
+    let valid = addAuth validTokens code >> status ok200 >> html ("Your token is: " ++ fromStrict code)
+    if testMode conf then valid else do
+      let reqBody = encodeUtf8 $ mconcat ["code=", code, "&redirect_uri=", baseURL ++ "/login", "&client_id=", baseURL]
+      resp <- httpReq $ indieAuthReq { requestBody = RequestBodyBS reqBody }
+      if responseStatus resp /= ok200 then unauthorized
+      else valid
+
+  get "/micropub" $ checkAuth validTokens $ do
+    status ok200
+    text $ "me=" ++ fromStrict baseURL
+    setHeader "Content-Type" "application/x-www-form-urlencoded; charset=utf-8"
+
+  post "/micropub" $ checkAuth validTokens $ do
+    h <- param "h"
+    allParams <- params
+    now <- liftIO getCurrentTime
+    let category = decideCategory allParams
+        slug = decideSlug allParams now
+        save x = liftIO $ transaction "./" $ saveNextDocument category slug x
+        save' x = save x >> created [category, slug]
+    case asLText h of
+      "entry" -> save' $ makeEntry allParams now
+      _ -> status badRequest400
 
   get "/" $ do
     catNames <- liftIO listCollections
@@ -52,20 +90,6 @@ mkApp conf = scottyApp $ do
         otherSlugs <- liftIO $ listDocumentKeys category
         render entryTemplate $ entryView category (map readSlug otherSlugs) (slug, e)
 
-  post "/micropub" $ do
-    h <- param "h"
-    allParams <- params
-    now <- liftIO getCurrentTime
-    let category = decideCategory allParams
-        slug = decideSlug allParams now
-        save x = liftIO $ transaction "./" $ saveNextDocument category slug x
-        save' x = save x >> created [category, slug]
-    case asLText h of
-      "entry" -> save' $ makeEntry allParams now
-      _ -> status badRequest400
-
-  matchAny "/micropub" $ status methodNotAllowed405
-
 type SweetrollAction = ActionT LText IO
 
 getHost :: SweetrollAction LText
@@ -73,7 +97,7 @@ getHost = liftM (fromMaybe "localhost") (header "Host")
 
 renderWithConf :: SweetrollConf -> Text -> [Pair] -> (SweetrollConf -> Template) -> ViewResult -> SweetrollAction ()
 renderWithConf conf authorHtml hostInfo tplf stuff = html $ fromStrict $ renderTemplate (layoutTemplate conf) mempty ctx
-  where ctx = object $ hostInfo <> [
+  where ctx = object $ hostInfo ++ [
                 "content" .= renderTemplate (tplf conf) mempty (tplContext stuff)
               , "author" .= authorHtml
               , "website_title" .= siteName conf
@@ -83,11 +107,26 @@ renderWithConf conf authorHtml hostInfo tplf stuff = html $ fromStrict $ renderT
 created :: [String] -> SweetrollAction ()
 created urlParts = do
   status created201
-  host <- getHost
-  setHeader "Location" $ mkUrl host $ map pack urlParts
+  hostH <- getHost
+  setHeader "Location" $ mkUrl hostH $ map pack urlParts
 
 entryNotFound :: SweetrollAction ()
 entryNotFound = status notFound404
+
+unauthorized :: SweetrollAction ()
+unauthorized = status unauthorized401
+
+checkAuth :: TVar (Set Text) -> SweetrollAction () -> SweetrollAction ()
+checkAuth tokenVar act = do
+  allParams <- params
+  tokenHeader <- header "Authorization" >>= \x -> return $ fromMaybe "" $ drop 7 <$> x -- Drop "Bearer "
+  let token = toStrict $ fromMaybe tokenHeader $ findByKey allParams "access_token"
+  tokensToCheck <- atomically $ readTVar tokenVar
+  if Set.member token tokensToCheck then act
+  else unauthorized
+
+addAuth :: TVar (Set Text) -> Text -> SweetrollAction ()
+addAuth tokenVar code = atomically $ modifyTVar' tokenVar $ Set.insert code
 
 visibleCat :: (CategoryName, [(EntrySlug, Entry)]) -> Bool
 visibleCat (slug, entries) =

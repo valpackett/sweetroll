@@ -25,12 +25,15 @@ library
     build-depends:
         base >= 4.0.0.0 && < 5
       , classy-prelude
+      , containers
       , setters
       , safe
       , either
       , transformers
       , text
       , bytestring
+      , blaze-markup
+      , blaze-builder
       , time
       , aeson
       , gitson == 0.4.*
@@ -41,7 +44,8 @@ library
       , wai-middleware-static
       , scotty == 0.9.*
       , simple-templates == 0.8.*
-      , blaze-markup
+      , http-client
+      , http-client-tls
       , pandoc == 1.13.*
       , raw-strings-qq == 1.*
     default-language: Haskell2010

@@ -56,7 +56,6 @@ library
         Sweetroll.Pages
         Sweetroll.Util
         Sweetroll.Conf
-        -- HASKELETON: New.Module
     ghc-prof-options: -auto-all -prof
     ghc-options: -threaded -Wall -Werror
     hs-source-dirs: library
@@ -128,5 +127,4 @@ test-suite tests
     other-modules:
         Sweetroll.AppSpec
         Sweetroll.PagesSpec
-        -- HASKELETON: New.ModuleSpec
     type: exitcode-stdio-1.0

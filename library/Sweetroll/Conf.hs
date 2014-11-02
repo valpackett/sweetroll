@@ -27,6 +27,12 @@ data SweetrollConf = SweetrollConf
 
 $(declareSetters ''SweetrollConf)
 
+s :: SweetrollConf -> Text
+s conf = asText $ if httpsWorks conf then "s" else ""
+
+baseURL :: SweetrollConf -> Text
+baseURL conf = mconcat ["http", s conf, "://", domainName conf]
+
 processTpl :: String -> Template
 processTpl x = case compileTemplate $ dropNonHtml $ pack x of
   Left e -> Template { renderTemplate = \_ _ -> "Template compilation error: " ++ pack e }

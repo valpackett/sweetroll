@@ -12,17 +12,14 @@ import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
 import           Text.Pandoc (readMarkdown, def)
 import           Web.Simple.Templates.Language
-import           Web.Scotty.Trans (ActionT)
 import           Web.Scotty
-import qualified Web.JWT as J
-import           Web.JWT (Secret)
 import           Gitson
 import           Gitson.Util (maybeReadIntString)
-import           Data.Time.Clock.POSIX
 import           Data.Aeson.Types
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
 import           Sweetroll.Pages
+import           Sweetroll.Auth
 import           Sweetroll.Conf
 import           Sweetroll.Util
 
@@ -33,37 +30,19 @@ mkApp conf = scottyApp $ do
   middleware $ staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
 
   httpClientMgr <- liftIO $ newManager tlsManagerSettings
-  indieAuthReq <- liftIO $ parseUrl (indieAuthEndpoint conf) >>= \x -> return $ x { method = "POST", secure = True }
-  let httpReq x = liftIO $ httpLbs x httpClientMgr
-      secretKey' = J.secret $ secretKey conf
 
-  let s = asText $ if httpsWorks conf then "s" else ""
-      baseURL = mconcat ["http", s, "://", domainName conf]
-      hostInfo = [ "domain" .= domainName conf
-                 , "s" .= s
-                 , "base_url" .= baseURL ]
+  let hostInfo = [ "domain" .= domainName conf
+                 , "s" .= s conf
+                 , "base_url" .= baseURL conf ]
       authorHtml = renderTemplate (authorTemplate conf) mempty (object hostInfo)
       render = renderWithConf conf authorHtml hostInfo
+      checkAuth' = checkAuth conf unauthorized
 
-  post "/login" $ do
-    code <- param "code"
-    me <- param "me"
-    redirect_uri <- param "redirect_uri"
-    client_id <- param "client_id"
-    state <- param "state"
-    let valid = makeAccessToken (domainName conf) secretKey' me
-    if testMode conf then valid else do
-      let reqBody = encodeUtf8 $ mconcat ["code=", code, "&redirect_uri=", redirect_uri, "&client_id=", baseURL, "&state=", state, "&client_id=", client_id]
-      resp <- httpReq $ indieAuthReq { requestBody = RequestBodyBS reqBody }
-      if responseStatus resp /= ok200 then unauthorized
-      else valid
+  post "/login" $ doIndieAuth conf unauthorized httpClientMgr
 
-  get "/micropub" $ checkAuth secretKey' $ do
-    status ok200
-    text $ "me=" ++ fromStrict baseURL
-    setHeader "Content-Type" "application/x-www-form-urlencoded; charset=utf-8"
+  get "/micropub" $ checkAuth' $ showAuth
 
-  post "/micropub" $ checkAuth secretKey' $ do
+  post "/micropub" $ checkAuth' $ do
     h <- param "h"
     allParams <- params
     now <- liftIO getCurrentTime
@@ -95,8 +74,6 @@ mkApp conf = scottyApp $ do
         otherSlugs <- liftIO $ listDocumentKeys category
         render entryTemplate $ entryView category (map readSlug otherSlugs) (slug, e)
 
-type SweetrollAction = ActionT LText IO
-
 getHost :: SweetrollAction LText
 getHost = liftM (fromMaybe "localhost") (header "Host")
 
@@ -120,26 +97,6 @@ entryNotFound = status notFound404
 
 unauthorized :: SweetrollAction ()
 unauthorized = status unauthorized401
-
-checkAuth :: Secret -> SweetrollAction () -> SweetrollAction ()
-checkAuth secKey act = do
-  allParams <- params
-  tokenHeader <- header "Authorization" >>= \x -> return $ fromMaybe "" $ drop 7 <$> x -- Drop "Bearer "
-  let token = toStrict $ fromMaybe tokenHeader $ findByKey allParams "access_token"
-      verResult = J.decodeAndVerifySignature secKey token
-  case verResult of
-    Just _ -> act
-    _ -> unauthorized
-
-makeAccessToken :: Text -> Secret -> Text -> SweetrollAction ()
-makeAccessToken issuer key me = do
-  now <- liftIO getCurrentTime
-  let claims = J.def { J.iss = J.stringOrURI issuer
-                     , J.sub = J.stringOrURI me
-                     , J.iat = J.intDate $ utcTimeToPOSIXSeconds now }
-  status ok200
-  text $ fromStrict $ mconcat ["access_token=", J.encodeSigned J.HS256 key claims, "&scope=post&me=", me]
-  setHeader "Content-Type" "application/jwt"
 
 visibleCat :: (CategoryName, [(EntrySlug, Entry)]) -> Bool
 visibleCat (slug, entries) =

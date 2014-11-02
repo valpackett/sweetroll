@@ -4,6 +4,7 @@
 module Sweetroll.Util (module Sweetroll.Util) where
 
 import           ClassyPrelude
+import           Web.Scotty.Trans (ActionT)
 import qualified Data.ByteString.Lazy.Char8 as B8
 import           Data.Text.Lazy (split, replace, strip)
 import           Data.Aeson (decode)
@@ -66,3 +67,5 @@ dropNonHtml = dropWhile (/= '<') . reverse . dropWhile (/= '>') . reverse
 -- "http://localhost:4200/yolo/lol"
 mkUrl :: (IsString s, Monoid s) => s -> [s] -> s
 mkUrl host parts = intercalate "/" $ ["http:/", host] ++ parts
+
+type SweetrollAction = ActionT LText IO

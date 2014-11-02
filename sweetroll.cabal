@@ -52,6 +52,7 @@ library
     default-language: Haskell2010
     exposed-modules:
         Sweetroll.App
+        Sweetroll.Auth
         Sweetroll.Pages
         Sweetroll.Util
         Sweetroll.Conf

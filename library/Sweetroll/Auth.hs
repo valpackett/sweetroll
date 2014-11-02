@@ -37,7 +37,9 @@ showAuth = do
   case map claims $ decode token of
     Just cs -> do
       status ok200
-      text $ "me=" ++ (pack $ show $ sub cs)
+      text $ "me=" ++ case sub cs of
+        Just me -> pack $ show me
+        _ -> ""
       setHeader "Content-Type" "application/x-www-form-urlencoded; charset=utf-8"
     _ -> status unauthorized401
 

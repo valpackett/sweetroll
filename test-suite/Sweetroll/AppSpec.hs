@@ -40,6 +40,7 @@ spec = before setup $ after cleanup $ do
   -- Storing an action that returns the app == not persisting TVar state
   -- inside the app. Fsck it, just use unsafePerformIO here :D
   -- Spent a couple hours before realizing what's been stored here :-(
+  -- And then realized the TVar was not needed, because JWT.
   let app' = unsafePerformIO $ mkApp defaultSweetrollConf { testMode = True }
       app = (return app') :: IO Wai.Application
       transaction' = transaction "./"

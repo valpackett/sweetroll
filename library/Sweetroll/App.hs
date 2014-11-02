@@ -14,9 +14,11 @@ import           Text.Pandoc (readMarkdown, def)
 import           Web.Simple.Templates.Language
 import           Web.Scotty.Trans (ActionT)
 import           Web.Scotty
+import qualified Web.JWT as J
+import           Web.JWT (Secret)
 import           Gitson
 import           Gitson.Util (maybeReadIntString)
-import qualified Data.Set as Set
+import           Data.Time.Clock.POSIX
 import           Data.Aeson.Types
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
@@ -30,35 +32,38 @@ mkApp conf = scottyApp $ do
   middleware autohead -- XXX: does not add Content-Length
   middleware $ staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
 
-  validTokens <- atomically $ newTVar Set.empty
-
   httpClientMgr <- liftIO $ newManager tlsManagerSettings
   indieAuthReq <- liftIO $ parseUrl (indieAuthEndpoint conf) >>= \x -> return $ x { method = "POST", secure = True }
   let httpReq x = liftIO $ httpLbs x httpClientMgr
+      secretKey' = J.secret $ secretKey conf
 
   let s = asText $ if httpsWorks conf then "s" else ""
-      baseURL = mconcat ["http", s, "://", fromMaybe "" (domainName conf)]
+      baseURL = mconcat ["http", s, "://", domainName conf]
       hostInfo = [ "domain" .= domainName conf
                  , "s" .= s
                  , "base_url" .= baseURL ]
       authorHtml = renderTemplate (authorTemplate conf) mempty (object hostInfo)
       render = renderWithConf conf authorHtml hostInfo
 
-  get "/login" $ do
+  post "/login" $ do
     code <- param "code"
-    let valid = addAuth validTokens code >> status ok200 >> html ("Your token is: " ++ fromStrict code)
+    me <- param "me"
+    redirect_uri <- param "redirect_uri"
+    client_id <- param "client_id"
+    state <- param "state"
+    let valid = makeAccessToken (domainName conf) secretKey' me
     if testMode conf then valid else do
-      let reqBody = encodeUtf8 $ mconcat ["code=", code, "&redirect_uri=", baseURL ++ "/login", "&client_id=", baseURL]
+      let reqBody = encodeUtf8 $ mconcat ["code=", code, "&redirect_uri=", redirect_uri, "&client_id=", baseURL, "&state=", state, "&client_id=", client_id]
       resp <- httpReq $ indieAuthReq { requestBody = RequestBodyBS reqBody }
       if responseStatus resp /= ok200 then unauthorized
       else valid
 
-  get "/micropub" $ checkAuth validTokens $ do
+  get "/micropub" $ checkAuth secretKey' $ do
     status ok200
     text $ "me=" ++ fromStrict baseURL
     setHeader "Content-Type" "application/x-www-form-urlencoded; charset=utf-8"
 
-  post "/micropub" $ checkAuth validTokens $ do
+  post "/micropub" $ checkAuth secretKey' $ do
     h <- param "h"
     allParams <- params
     now <- liftIO getCurrentTime
@@ -116,17 +121,25 @@ entryNotFound = status notFound404
 unauthorized :: SweetrollAction ()
 unauthorized = status unauthorized401
 
-checkAuth :: TVar (Set Text) -> SweetrollAction () -> SweetrollAction ()
-checkAuth tokenVar act = do
+checkAuth :: Secret -> SweetrollAction () -> SweetrollAction ()
+checkAuth secKey act = do
   allParams <- params
   tokenHeader <- header "Authorization" >>= \x -> return $ fromMaybe "" $ drop 7 <$> x -- Drop "Bearer "
   let token = toStrict $ fromMaybe tokenHeader $ findByKey allParams "access_token"
-  tokensToCheck <- atomically $ readTVar tokenVar
-  if Set.member token tokensToCheck then act
-  else unauthorized
+      verResult = J.decodeAndVerifySignature secKey token
+  case verResult of
+    Just _ -> act
+    _ -> unauthorized
 
-addAuth :: TVar (Set Text) -> Text -> SweetrollAction ()
-addAuth tokenVar code = atomically $ modifyTVar' tokenVar $ Set.insert code
+makeAccessToken :: Text -> Secret -> Text -> SweetrollAction ()
+makeAccessToken issuer key me = do
+  now <- liftIO getCurrentTime
+  let claims = J.def { J.iss = J.stringOrURI issuer
+                     , J.sub = J.stringOrURI me
+                     , J.iat = J.intDate $ utcTimeToPOSIXSeconds now }
+  status ok200
+  text $ fromStrict $ mconcat ["access_token=", J.encodeSigned J.HS256 key claims, "&scope=post&me=", me]
+  setHeader "Content-Type" "application/jwt"
 
 visibleCat :: (CategoryName, [(EntrySlug, Entry)]) -> Bool
 visibleCat (slug, entries) =

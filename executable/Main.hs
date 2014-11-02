@@ -6,9 +6,13 @@ import           Network.Wai.Handler.Warp
 import           System.Console.ANSI
 import           Control.Applicative
 import           System.Directory
+import           System.Entropy
 import           Sweetroll.Conf
 import           Sweetroll.App
 import qualified Data.Text as T
+import           Data.Text.Encoding (decodeUtf8)
+import qualified Data.ByteString.Base64 as B64
+import qualified Crypto.Hash.RIPEMD160 as H
 import           Options
 
 data AppOptions = AppOptions
@@ -17,6 +21,7 @@ data AppOptions = AppOptions
   , domain        :: String
   , sitename      :: String
   , indieauth     :: String
+  , secret        :: String
   , https         :: Bool
   , repo          :: FilePath }
 
@@ -27,6 +32,7 @@ instance Options AppOptions where
     <*> simpleOption "domain" "localhost:3000" "The domain on which the server will run"
     <*> simpleOption "sitename" "A new Sweetroll website" "The name of the website"
     <*> simpleOption "indieauth" "https://indieauth.com/auth" "The IndieAuth endpoint to use"
+    <*> simpleOption "secret" "RANDOM" "The JWT secret key for IndieAuth"
     <*> simpleOption "https" False "Whether HTTPS works on the domain"
     <*> simpleOption "repo" "./" "The git repository directory of the website"
 
@@ -45,10 +51,13 @@ main = runCommand $ \opts args -> do
   setCurrentDirectory (repo opts)
   let printListening = boldYellow "         Sweetroll " >> red "0.0.0" >> reset " running on " >> blue (protocol opts) >> reset " port " >> boldMagenta (show $ port opts) >> setReset >> putStrLn ""
   let warpSettings = setBeforeMainLoop printListening $ setPort (port opts) defaultSettings
+  randBytes <- getEntropy 64
+  let secret' = case secret opts of
+                  "RANDOM" -> decodeUtf8 $ B64.encode $ H.hash randBytes
+                  k -> T.pack k
   conf <- loadTemplates defaultSweetrollConf {
-    domainName = case domain opts of
-      "" -> Nothing
-      s -> Just $ T.pack s
+    domainName = T.pack $ domain opts
+  , secretKey = secret'
   , httpsWorks = https opts
   , siteName = T.pack $ sitename opts
   , indieAuthEndpoint = indieauth opts

@@ -36,6 +36,7 @@ library
       , blaze-builder
       , time
       , aeson
+      , jwt
       , gitson == 0.4.*
       , microformats2-types == 0.2.*
       , http-types
@@ -69,6 +70,9 @@ executable sweetroll
       , ansi-terminal
       , directory
       , text
+      , cryptohash
+      , entropy
+      , base64-bytestring
       , sweetroll
     default-language: Haskell2010
     ghc-prof-options: -auto-all -prof

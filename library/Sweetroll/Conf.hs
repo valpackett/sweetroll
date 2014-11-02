@@ -18,8 +18,9 @@ data SweetrollConf = SweetrollConf
   ,            indexTemplate :: Template
   ,           authorTemplate :: Template
   ,                 siteName :: Text
+  ,                secretKey :: Text
   ,               httpsWorks :: Bool
-  ,               domainName :: Maybe Text
+  ,               domainName :: Text
   ,        indieAuthEndpoint :: String
   ,                 testMode :: Bool
   ,           titleSeparator :: Text }
@@ -52,8 +53,9 @@ readFailHandler c _ = return c
 defaultSweetrollConf :: SweetrollConf
 defaultSweetrollConf =  SweetrollConf {
     siteName = ""
+  , secretKey = "SECRET" -- the executable sets to a secure random value by default
   , httpsWorks = False
-  , domainName = Nothing
+  , domainName = ""
   , indieAuthEndpoint = "http://127.0.0.1"
   , testMode = False
   , titleSeparator = " / "

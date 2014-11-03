@@ -8,7 +8,6 @@ before_script:
   - git config --global user.email "example@example.com"
   - git config --global user.name "Travis CI"
 script:
-  - make bench
   - make test
 after_script:
   - cabal install hpc-coveralls

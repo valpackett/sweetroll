@@ -1,44 +1,46 @@
-<article class="entry h-entry">
-	<header>
-		$if(isNote)$$else$
-		<h1 class="p-name">
-			<a href="$permalink$" class="u-url u-uid" rel="bookmark">$name$</a>
-		</h1>
-		$endif$
-		posted <time class="dt-published" datetime="$publishedAttr$">
-			$if(isNote)$<a href="$permalink$" class="u-url u-uid" rel="bookmark">$endif$
-			$published$
-			$if(isNote)$</a>$endif$
-		</time>
-		$if(isReply)$
-		in reply to <a class="u-in-reply-to" rel="in-reply-to" href="$replyForURL$">$replyForName$</a>
-		$endif$
-		$if(isRepost)$
-		repost of <a class="u-repost-of" rel="repost-of" href="$repostOfURL$">$repostOfName$</a>
-		$endif$
-	</header>
-	$if(isLike)$
-	<div>
-		Liked <a class="u-like-of" rel="like-of" href="$likeOfURL$">$likeOfName$</a>.
-	</div>
-	$else$
-	<div class="e-content$if(isNote)$ p-name$endif$">
-		$content$
-	</div>
-	$endif$
-	<footer>
-		<div class="entry-actions">
-			<indie-action do="reply" with="$permalink$">
-			</indie-action>
-			<indie-action do="repost" with="$permalink$">
-			</indie-action>
-			<indie-action do="like" with="$permalink$">
-			</indie-action>
+<main class="site-main entry-main$if(isNote)$ note-main$endif$">
+	<article class="entry h-entry$if(isNote)$ note$else$article$endif$-entry">
+		<header>
+			$if(isNote)$$else$
+			<h1 class="p-name">
+				<a href="$permalink$" class="u-url u-uid" rel="bookmark">$name$</a>
+			</h1>
+			$endif$
+			posted <time class="dt-published" datetime="$publishedAttr$">
+				$if(isNote)$<a href="$permalink$" class="u-url u-uid note-permalink" rel="bookmark">$endif$
+				$published$
+				$if(isNote)$</a>$endif$
+			</time>
+			$if(isReply)$
+			in reply to <a class="u-in-reply-to" rel="in-reply-to" href="$replyForURL$">$replyForName$</a>
+			$endif$
+			$if(isRepost)$
+			repost of <a class="u-repost-of" rel="repost-of" href="$repostOfURL$">$repostOfName$</a>
+			$endif$
+		</header>
+		$if(isLike)$
+		<div>
+			Liked <a class="u-like-of" rel="like-of" href="$likeOfURL$">$likeOfName$</a>.
 		</div>
-		<nav class="entry-nav">
-			$if(hasPrev)$<a href="$prevHref$" rel="prev">&larr; previous</a>$endif$
-			<a rel="up category" class="p-category" href="$categoryHref$">$category$</a>
-			$if(hasNext)$<a href="$nextHref$" rel="next">next &rarr;</a>$endif$
-		</nav>
-	</footer>
-</article>
+		$else$
+		<div class="e-content$if(isNote)$ p-name$endif$">
+			$content$
+		</div>
+		$endif$
+		<footer>
+			<div class="entry-actions">
+				<indie-action do="reply" with="$permalink$">
+				</indie-action>
+				<indie-action do="repost" with="$permalink$">
+				</indie-action>
+				<indie-action do="like" with="$permalink$">
+				</indie-action>
+			</div>
+			<nav class="entry-nav">
+				$if(hasPrev)$<a href="$prevHref$" rel="prev">&larr; previous</a>$endif$
+				<a rel="up category" class="p-category" href="$categoryHref$">$category$</a>
+				$if(hasNext)$<a href="$nextHref$" rel="next">next &rarr;</a>$endif$
+			</nav>
+		</footer>
+	</article>
+</main>

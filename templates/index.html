@@ -1,13 +1,13 @@
-<main class="index">
+<main class="site-main index-main">
 	$for(cat in categories)$
-		<section class="category">
+		<section class="index-category">
 			<h1><a href="$cat.permalink$">$cat.name$</a></h1>
 			<ul>
 				$for(entry in cat.entries)$
 					$if(entry.isNote)$
-					<li class="h-entry">
+					<li class="h-entry note-in-list">
 						<div class="e-content p-name">$entry.content$</div>
-						<a href="$entry.permalink$"><time datetime="$entry.publishedAttr$">$entry.published$</time></a>
+						<a class="note-permalink" href="$entry.permalink$"><time datetime="$entry.publishedAttr$">$entry.published$</time></a>
 					</li>
 					$else$
 					<li><a href="$entry.permalink$">$entry.name$</a></li>

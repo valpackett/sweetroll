@@ -9,22 +9,90 @@
 		<link rel="authorization_endpoint" href="https://indieauth.com/auth" />
 		<link rel="token_endpoint" href="$base_url$/login" />
 		<link rel="micropub" href="$base_url$/micropub" />
+		<style>
+			html {
+				background: #fff; color: #343434;
+				font-family: "Helvetica Neue", sans-serif;
+				-ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;
+			}
+			*{box-sizing:border-box;}
+			body{margin:0;display:flex;min-height:100vh;flex-direction:column;}
+			article,aside,details,figcaption,figure,footer,header,hgroup,main,menu,nav,section,summary{display:block;}
+			audio,canvas,progress,video{display:inline-block;vertical-align:baseline;}
+			abbr[title]{border-bottom:1px dotted;}
+			b,strong{font-weight:bold;}
+			dfn{font-style:italic;}
+			h1{font-size:1.6em;}
+			h1,h2,h3,h4,h5,h6{margin:0;}
+			mark{background:#ff0;color:#000;}
+			small{font-size:80%;}
+			sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline;}
+			sup{top:-0.5em;}
+			sub{bottom:-0.25em;}
+			img{border:0;max-width:100%;}
+			pre{overflow:auto;}
+			code,kbd,pre,samp {font-family:monospace, monospace;font-size:1em;}
+			table{border-collapse:collapse;border-spacing:0;}
+			td,th{padding:0;}
+			ul{list-style:square;}
+			ul,ol{padding-left:0;list-style-position:inside;}
+			a { color: #0074df; transition: ease-in-out color 0.3s; }
+			a:hover,a:focus,a:active { color: #7fdbff; }
+			.site-content { flex: 1; }
+			.site-footer { padding: 1em 0; font-size: 95%; color: #777; }
+			.site-header { padding: 2em 0; }
+			.site-author { padding: 0 0 2em; }
+			.site-header, .site-content, .site-footer {
+				width: 96%;
+				margin: 0 auto;
+			}
+			.note-in-list {
+				list-style-type: none;
+				display: block;
+				padding: 0 0 1em;
+				border-bottom: #39cccc solid 1px;
+			}
+			.note-in-list:last-child { border-bottom: none; }
+			.note-in-list .note-permalink { font-size: 90%; color: #aaa; }
+			.note-entry {
+				border: #39cccc solid 1px;
+				padding: 1em;
+			}
+			.note-entry header { font-size: 90%; }
+			.note-entry header, .note-entry header a { color: #aaa; }
+			.note-entry footer { border-top: #39cccc solid 1px; padding: 0.5em 0 0; }
+			@media screen and (min-width:56em) {
+				h1 { font-size:2em; }
+				.site-content, .index-main { display: -webkit-flex; display: flex; }
+				.site-author { flex: 1; -webkit-flex: 1; }
+				.site-main { flex: 3; -webkit-flex: 3; }
+				.index-main { overflow-x: scroll; }
+				.index-category { flex: 1; -webkit-flex: 1; min-width: 30%; max-width: 100%; padding: 0 1em 0 0; }
+				.index-category:last-child { padding: 0; }
+			}
+			@media screen and (min-width:80em) {
+				.site-header, .site-content, .site-footer { width: 75%; }
+				.note-entry { max-width: 60em; }
+			}
+		</style>
 	</head>
 	<body>
 		<header class="site-header">
 			<h1><a href="/">$website_title$</a></h1>
 		</header>
-		<aside class="site-author h-card">
-			$author$
-		</aside>
-		$content$
+		<div class="site-content">
+			<aside class="site-author h-card">
+				$author$
+			</aside>
+			$content$
+		</div>
 		<footer class="site-footer">
 			Powered by <a href="https://github.com/myfreeweb/sweetroll">Sweetroll</a>, an <a href="http://indiewebcamp.com">#IndieWeb</a> engine.
 			<!-- form action="https://indieauth.com/auth" method="get">
-				<button type="submit">Sign In</button>
-				<input type="hidden" name="me" value="$domain$" />
-				<input type="hidden" name="client_id" value="$base_url$" />
-				<input type="hidden" name="redirect_uri" value="$base_url$/login" />
+			<button type="submit">Sign In</button>
+			<input type="hidden" name="me" value="$domain$" />
+			<input type="hidden" name="client_id" value="$base_url$" />
+			<input type="hidden" name="redirect_uri" value="$base_url$/login" />
 			</form -->
 		</footer>
 	</body>

@@ -5,8 +5,8 @@ synopsis:        A micro+blogging (IndieWeb) engine with curved swords. Curved! 
 category:        Web
 homepage:        https://github.com/myfreeweb/sweetroll
 author:          Greg V
-copyright:       2014 Greg V <floatboth@me.com>
-maintainer:      floatboth@me.com
+copyright:       2014 Greg V <greg@unrelenting.technology>
+maintainer:      greg@unrelenting.technology
 license:         Apache-2.0
 license-file:    COPYING
 build-type:      Simple

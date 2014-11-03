@@ -57,7 +57,7 @@ library
         Sweetroll.Util
         Sweetroll.Conf
     ghc-prof-options: -auto-all -prof
-    ghc-options: -threaded -Wall -Werror
+    ghc-options: -Wall
     hs-source-dirs: library
 
 executable sweetroll

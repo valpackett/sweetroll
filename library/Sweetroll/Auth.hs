@@ -35,12 +35,10 @@ showAuth :: SweetrollAction ()
 showAuth = do
   token <- getAccessToken
   case map claims $ decode token of
-    Just cs -> do
-      status ok200
-      text $ "me=" ++ case sub cs of
+    Just cs ->
+      showXForm $ "me=" ++ case sub cs of
         Just me -> pack $ show me
         _ -> ""
-      setHeader "Content-Type" "application/x-www-form-urlencoded; charset=utf-8"
     _ -> status unauthorized401
 
 makeAccessToken :: SweetrollConf -> Text -> SweetrollAction ()

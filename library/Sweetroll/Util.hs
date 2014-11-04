@@ -4,11 +4,13 @@
 module Sweetroll.Util (module Sweetroll.Util) where
 
 import           ClassyPrelude
+import           Web.Scotty
 import           Web.Scotty.Trans (ActionT)
 import qualified Data.ByteString.Lazy.Char8 as B8
 import           Data.Text.Lazy (split, replace, strip)
 import           Data.Char (isSpace)
 import           Data.Aeson (decode)
+import           Network.HTTP.Types.Status
 
 -- | Tries to parse a text ISO datetime into a UTCTime.
 --
@@ -66,9 +68,13 @@ dropNonHtml = dropWhile (/= '<') . reverse . dropWhile (/= '>') . reverse
 
 -- | Makes a URL from a hostname and parts
 --
--- >>> mkUrl "localhost:4200" ["yolo", "lol"]
+-- >>> mkURL "http://localhost:4200" ["yolo", "lol"]
 -- "http://localhost:4200/yolo/lol"
-mkUrl :: (IsString s, Monoid s) => s -> [s] -> s
-mkUrl host parts = intercalate "/" $ ["http:/", host] ++ parts
+mkURL :: (IsString s, Monoid s) => s -> [s] -> s
+mkURL base parts = intercalate "/" $ [base] ++ parts
 
 type SweetrollAction = ActionT LText IO
+
+-- | Returns an action that shows text with a Content-Type of application/x-www-form-urlencoded.
+showXForm :: LText -> SweetrollAction ()
+showXForm x = status ok200 >> setHeader "Content-Type" "application/x-www-form-urlencoded; charset=utf-8" >> text x

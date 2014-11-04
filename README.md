@@ -27,7 +27,8 @@ I'm testing it on [my website](https://unrelenting.technology).
 - [x] [token-endpoint](http://indiewebcamp.com/token-endpoint)
 - [x] previous/next [navigation](http://indiewebcamp.com/navigation)
 - [x] aggressive slugify / use id/datetime as slug for notes
-- [ ] [POSSE](http://indiewebcamp.com/POSSE) to Twitter and App.net
+- [x] [POSSE](http://indiewebcamp.com/POSSE) to App.net
+- [ ] POSSE to Twitter
 - [ ] autolinking in notes
 - [ ] a 404 page
 - [ ] pagination

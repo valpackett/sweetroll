@@ -21,6 +21,8 @@ data AppOptions = AppOptions
   , domain        :: String
   , sitename      :: String
   , indieauth     :: String
+  , adnhost       :: String
+  , adntoken      :: String
   , secret        :: String
   , https         :: Bool
   , repo          :: FilePath }
@@ -32,6 +34,8 @@ instance Options AppOptions where
     <*> simpleOption "domain" "localhost:3000" "The domain on which the server will run"
     <*> simpleOption "sitename" "A new Sweetroll website" "The name of the website"
     <*> simpleOption "indieauth" "https://indieauth.com/auth" "The IndieAuth endpoint to use"
+    <*> simpleOption "adnhost" "https://api.app.net" "The App.net API host to use"
+    <*> simpleOption "adntoken" "" "The App.net API access token to use"
     <*> simpleOption "secret" "RANDOM" "The JWT secret key for IndieAuth"
     <*> simpleOption "https" False "Whether HTTPS works on the domain"
     <*> simpleOption "repo" "./" "The git repository directory of the website"
@@ -61,6 +65,8 @@ main = runCommand $ \opts args -> do
   , httpsWorks = https opts
   , siteName = T.pack $ sitename opts
   , indieAuthEndpoint = indieauth opts
+  , adnApiHost = adnhost opts
+  , adnApiToken = adntoken opts
   }
   let app = mkApp conf
   case protocol opts of

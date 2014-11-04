@@ -10,11 +10,11 @@ module Sweetroll.Pages (
 , entryView
 , catView
 , indexView
+, renderContent
 ) where
 
 import           ClassyPrelude
 import           Text.Pandoc
-import           Text.Blaze.Renderer.Text
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
 import           Data.Aeson.Types
@@ -32,7 +32,7 @@ entryView :: CategoryName -> [EntrySlug] -> (EntrySlug, Entry) -> ViewResult
 entryView catName otherSlugs (slug, e) =
   ViewResult { titleParts = [toStrict (fromMaybe ("Note @ " ++ published) (entryName e)), pack catName]
              , tplContext = ctx }
-  where content = renderContent e
+  where content = renderContent writeHtmlString e
         published = fromMaybe "" (formatTimeText <$> entryPublished e)
         slugIdx = fromMaybe (negate 1) $ elemIndex slug otherSlugs
         prev = atMay otherSlugs $ slugIdx - 1
@@ -71,9 +71,9 @@ indexView cats =
             "categories" .= map (tplContext . uncurry catView) cats
           ]
 
-renderContent :: Entry -> LText
-renderContent e = case fromMaybe (Right "") $ entryContent e of
-  Left p -> renderMarkup $ writeHtml def p
+renderContent :: (WriterOptions -> Pandoc -> String) -> Entry -> LText
+renderContent writer e = case fromMaybe (Right "") $ entryContent e of
+  Left p -> pack $ writer def p
   Right t -> t
 
 formatTimeText :: UTCTime -> LText

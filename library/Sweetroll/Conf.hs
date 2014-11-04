@@ -22,6 +22,8 @@ data SweetrollConf = SweetrollConf
   ,               httpsWorks :: Bool
   ,               domainName :: Text
   ,        indieAuthEndpoint :: String
+  ,               adnApiHost :: String
+  ,              adnApiToken :: String
   ,                 testMode :: Bool
   ,           titleSeparator :: Text }
 
@@ -63,6 +65,8 @@ defaultSweetrollConf =  SweetrollConf {
   , httpsWorks = False
   , domainName = ""
   , indieAuthEndpoint = "http://127.0.0.1"
+  , adnApiHost = "http://127.0.0.1"
+  , adnApiToken = ""
   , testMode = False
   , titleSeparator = " / "
   , layoutTemplate = processTpl [r|

@@ -54,6 +54,7 @@ library
         Sweetroll.App
         Sweetroll.Auth
         Sweetroll.Pages
+        Sweetroll.Syndication
         Sweetroll.Util
         Sweetroll.Conf
     ghc-prof-options: -auto-all -prof

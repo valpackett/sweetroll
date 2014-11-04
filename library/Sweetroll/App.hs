@@ -11,7 +11,6 @@ import           Network.HTTP.Types.Status
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
 import           Text.Pandoc (readMarkdown, def)
-import           Web.Simple.Templates.Language
 import           Web.Scotty
 import           Gitson
 import           Gitson.Util (maybeReadIntString)
@@ -35,7 +34,7 @@ mkApp conf = scottyApp $ do
   let hostInfo = [ "domain" .= domainName conf
                  , "s" .= s conf
                  , "base_url" .= baseURL conf ]
-      authorHtml = renderTemplate (authorTemplate conf) mempty (object hostInfo)
+      authorHtml = renderRaw (authorTemplate conf) hostInfo
       render = renderWithConf conf authorHtml hostInfo
       checkAuth' = if testMode conf then id else checkAuth conf unauthorized
 
@@ -80,15 +79,6 @@ mkApp conf = scottyApp $ do
       Just e  -> do
         otherSlugs <- liftIO $ listDocumentKeys category
         render entryTemplate $ entryView category (map readSlug otherSlugs) (slug, e)
-
-renderWithConf :: SweetrollConf -> Text -> [Pair] -> (SweetrollConf -> Template) -> ViewResult -> SweetrollAction ()
-renderWithConf conf authorHtml hostInfo tplf stuff = html $ fromStrict $ renderTemplate (layoutTemplate conf) mempty ctx
-  where ctx = object $ hostInfo ++ [
-                "content" .= renderTemplate (tplf conf) mempty (tplContext stuff)
-              , "author" .= authorHtml
-              , "website_title" .= siteName conf
-              , "meta_title" .= intercalate (titleSeparator conf) (titleParts stuff ++ [siteName conf])
-              ]
 
 created :: LText -> SweetrollAction ()
 created url = status created201 >> setHeader "Location" url

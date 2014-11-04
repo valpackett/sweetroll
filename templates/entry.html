@@ -1,6 +1,6 @@
 <main class="site-main entry-main$if(isNote)$ note-main$endif$">
 	<article class="entry h-entry$if(isNote)$ note$else$article$endif$-entry">
-		<header>
+		<header class="entry-header">
 			$if(isNote)$$else$
 			<h1 class="p-name">
 				<a href="$permalink$" class="u-url u-uid" rel="bookmark">$name$</a>
@@ -19,15 +19,15 @@
 			$endif$
 		</header>
 		$if(isLike)$
-		<div>
+		<div class="entry-content">
 			Liked <a class="u-like-of" rel="like-of" href="$likeOfURL$">$likeOfName$</a>.
 		</div>
 		$else$
-		<div class="e-content$if(isNote)$ p-name$endif$">
+		<div class="entry-content e-content$if(isNote)$ p-name$endif$">
 			$content$
 		</div>
 		$endif$
-		<footer>
+		<footer class="entry-footer">
 			<div class="entry-actions">
 				<indie-action do="reply" with="$permalink$">
 				</indie-action>
@@ -36,7 +36,18 @@
 				<indie-action do="like" with="$permalink$">
 				</indie-action>
 			</div>
+			$if(hasSyndication)$
+			<div class="entry-syndication">
+				<h2>Elsewhere</h2>
+				<ul>
+					$for(repost in syndication)$
+					<li><a class="u-syndication" rel="syndication" href="$repost$">$syndicationName(repost)$</a></li>
+					$endfor$
+				</ul>
+			</div>
+			$endif$
 			<nav class="entry-nav">
+				<h2>Navigation</h2>
 				$if(hasPrev)$<a href="$prevHref$" rel="prev">&larr; previous</a>$endif$
 				<a rel="up category" class="p-category" href="$categoryHref$">$category$</a>
 				$if(hasNext)$<a href="$nextHref$" rel="next">next &rarr;</a>$endif$

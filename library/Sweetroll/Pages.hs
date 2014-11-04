@@ -11,15 +11,21 @@ module Sweetroll.Pages (
 , catView
 , indexView
 , renderContent
+, renderRaw
+, renderWithConf
 ) where
 
 import           ClassyPrelude
-import           Text.Pandoc
+import           Text.Pandoc hiding (Template, renderTemplate)
+import qualified Web.Scotty as SC
+import           Web.Simple.Templates.Language
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
 import           Data.Aeson.Types
 import           Data.List (elemIndex)
 import           Safe (atMay)
+import           Sweetroll.Conf
+import           Sweetroll.Util
 
 type CategoryName = String
 type EntrySlug = String
@@ -50,6 +56,8 @@ entryView catName otherSlugs (slug, e) =
           , "prevHref"         .= mconcat ["/", catName, "/", fromMaybe "" prev]
           , "hasNext"          .= isJust next
           , "nextHref"         .= mconcat ["/", catName, "/", fromMaybe "" next]
+          , "hasSyndication"   .= (not $ null $ entrySyndication e)
+          , "syndication"      .= entrySyndication e
           ]
 
 catView :: CategoryName -> [(EntrySlug, Entry)] -> ViewResult
@@ -75,6 +83,26 @@ renderContent :: (WriterOptions -> Pandoc -> String) -> Entry -> LText
 renderContent writer e = case fromMaybe (Right "") $ entryContent e of
   Left p -> pack $ writer def p
   Right t -> t
+
+renderRaw :: Template -> [Pair] -> Text
+renderRaw t c = renderTemplate t helpers $ object c
+
+renderWithConf :: SweetrollConf -> Text -> [Pair] -> (SweetrollConf -> Template) -> ViewResult -> SweetrollAction ()
+renderWithConf conf authorHtml hostInfo tplf stuff = SC.html $ fromStrict $ renderTemplate (layoutTemplate conf) helpers ctx
+  where ctx = object $ hostInfo ++ [
+                "content" .= renderTemplate (tplf conf) helpers (tplContext stuff)
+              , "author" .= authorHtml
+              , "website_title" .= siteName conf
+              , "meta_title" .= intercalate (titleSeparator conf) (titleParts stuff ++ [siteName conf])
+              ]
+
+helpers :: FunctionMap
+helpers = mapFromList [ ("syndicationName", toFunction syndicationName) ]
+
+syndicationName :: Text -> Value
+syndicationName u | isInfixOf "app.net"     u = toJSON $ asText "App.net"
+                  | isInfixOf "twitter.com" u = toJSON $ asText "Twitter"
+                  | otherwise                 = toJSON $ u
 
 formatTimeText :: UTCTime -> LText
 formatTimeText = asLText . pack . formatTime defaultTimeLocale "%d.%m.%Y %I:%M %p"

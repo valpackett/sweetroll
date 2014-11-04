@@ -22,9 +22,11 @@ import           Sweetroll.Conf
 type SyndicationPoster = SweetrollConf -> Manager -> Entry -> SweetrollAction (Maybe LText)
 
 trimmedText :: Index LText -> Entry -> (Bool, LText)
-trimmedText l entry = case entryName entry of
-  Just n -> (True, take l n)
-  _ -> (False, take l $ renderContent writePlain entry)
+trimmedText l entry = (isArticle, if isTrimmed then (take (l - 1) t) ++ "…" else t)
+  where isTrimmed = length t > fromIntegral l
+        (isArticle, t) = case entryName entry of
+                           Just n -> (True, n)
+                           _ -> (False, renderContent writePlain entry)
 
 data ADNCanonicalData = ADNCanonicalData { canonical_Url :: LText }
 $(deriveJSON defaultOptions { fieldLabelModifier = toLower } ''ADNCanonicalData)

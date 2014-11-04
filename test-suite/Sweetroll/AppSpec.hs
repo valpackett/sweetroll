@@ -41,7 +41,7 @@ spec = before setup $ after cleanup $ do
   -- inside the app. Fsck it, just use unsafePerformIO here :D
   -- Spent a couple hours before realizing what's been stored here :-(
   -- And then realized the TVar was not needed, because JWT.
-  let app' = unsafePerformIO $ mkApp defaultSweetrollConf { testMode = True }
+  let app' = unsafePerformIO $ mkApp defaultSweetrollConf { testMode = True, domainName = "localhost" }
       app = (return app') :: IO Wai.Application
       transaction' = transaction "./"
 

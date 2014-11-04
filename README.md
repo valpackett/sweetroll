@@ -29,7 +29,7 @@ I'm testing it on [my website](https://unrelenting.technology).
 - [x] aggressive slugify / use id/datetime as slug for notes
 - [x] [POSSE](http://indiewebcamp.com/POSSE) to App.net
 - [ ] POSSE to Twitter
-- [ ] autolinking in notes
+- [x] autolinking in notes
 - [ ] a 404 page
 - [ ] pagination
 - [ ] archive pages
@@ -41,7 +41,8 @@ I'm testing it on [my website](https://unrelenting.technology).
 - [ ] microformats2 based [comments-presentation](http://indiewebcamp.com/comments-presentation)
 - [ ] Atom + PubSubHubbub (configurable delay for PuSH because privacy and general {notice typo - delete - post again} things)
 - [ ] posting [photos](http://indiewebcamp.com/photos)
-- [ ] posting and displaying in other formats supported by pandoc
+- [x] posting in other formats supported by pandoc
+- [ ] displaying in other formats supported by pandoc
 - [ ] custom non-entry html pages
 - [ ] caching headers
 - [ ] automatic git push when posting

@@ -10,6 +10,7 @@ import qualified Data.ByteString.Lazy.Char8 as B8
 import           Data.Text.Lazy (split, replace, strip)
 import           Data.Char (isSpace)
 import           Data.Aeson (decode)
+import           Text.Pandoc.Options
 import           Network.HTTP.Types.Status
 
 -- | Tries to parse a text ISO datetime into a UTCTime.
@@ -78,3 +79,13 @@ type SweetrollAction = ActionT LText IO
 -- | Returns an action that shows text with a Content-Type of application/x-www-form-urlencoded.
 showXForm :: LText -> SweetrollAction ()
 showXForm x = status ok200 >> setHeader "Content-Type" "application/x-www-form-urlencoded; charset=utf-8" >> text x
+
+pandocReaderOptions :: ReaderOptions
+pandocReaderOptions = def { readerExtensions = githubMarkdownExtensions
+                          , readerSmart = True }
+
+pandocWriterOptions :: WriterOptions
+pandocWriterOptions = def { writerHtml5 = True
+                          , writerEmailObfuscation = NoObfuscation
+                          , writerHighlight = True
+                          , writerIdentifierPrefix = "sr-" }

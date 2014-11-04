@@ -81,7 +81,7 @@ indexView cats =
 
 renderContent :: (WriterOptions -> Pandoc -> String) -> Entry -> LText
 renderContent writer e = case fromMaybe (Right "") $ entryContent e of
-  Left p -> pack $ writer def p
+  Left p -> pack $ writer pandocWriterOptions p
   Right t -> t
 
 renderRaw :: Template -> [Pair] -> Text

@@ -10,7 +10,7 @@ import           Network.Wai.Middleware.Static
 import           Network.HTTP.Types.Status
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
-import           Text.Pandoc (readMarkdown, def)
+import           Text.Pandoc
 import           Web.Scotty
 import           Gitson
 import           Gitson.Util (maybeReadIntString)
@@ -48,12 +48,13 @@ mkApp conf = scottyApp $ do
     now <- liftIO getCurrentTime
     let category = decideCategory allParams
         slug = decideSlug allParams now
+        readerF = decideReader allParams
         absURL = fromStrict $ mkURL (baseURL conf) $ map pack [category, slug]
         save x = liftIO $ transaction "./" $ saveNextDocument category slug x
         save' x = save x >> created absURL
     case asLText h of
       "entry" -> do
-        let entry = makeEntry allParams now absURL
+        let entry = makeEntry allParams now absURL readerF
             ifNotTest x = if testMode conf then (return Nothing) else x
             ifSyndicateTo x y = if isInfixOf x $ fromMaybe "" $ findByKey allParams "syndicate-to" then y else (return Nothing)
         adnPost <- ifNotTest $ ifSyndicateTo "app.net" $ postAppDotNet conf httpClientMgr entry
@@ -122,11 +123,21 @@ decideSlug pars now = unpack $ fromMaybe fallback $ findByKey pars "slug"
   where fallback = slugify $ fromMaybe (formatTimeSlug now) $ findFirstKey pars ["name", "summary"]
         formatTimeSlug = pack . formatTime defaultTimeLocale "%Y-%m-%d-%H-%M"
 
-makeEntry :: [Param] -> UTCTime -> LText -> Entry
-makeEntry pars now absURL = defaultEntry
+decideReader :: [Param] -> (ReaderOptions -> String -> Pandoc)
+decideReader pars | f == Just "textile"     = readTextile
+                  | f == Just "org"         = readOrg
+                  | f == Just "rst"         = readRST
+                  | f == Just "html"        = readHtml
+                  | f == Just "latex"       = readLaTeX
+                  | f == Just "tex"         = readLaTeX
+                  | otherwise               = readMarkdown
+  where f = findByKey pars "format"
+
+makeEntry :: [Param] -> UTCTime -> LText -> (ReaderOptions -> String -> Pandoc) -> Entry
+makeEntry pars now absURL readerF = defaultEntry
   { entryName         = par "name"
   , entrySummary      = par "summary"
-  , entryContent      = Left <$> readMarkdown def <$> unpack <$> par "content"
+  , entryContent      = Left <$> readerF pandocReaderOptions <$> unpack <$> par "content"
   , entryPublished    = Just $ fromMaybe now $ parseISOTime =<< par "published"
   , entryUpdated      = Just now
   , entryAuthor       = somewhereFromMaybe $ par "author"

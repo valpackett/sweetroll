@@ -26,7 +26,7 @@ I'm testing it on [my website](https://unrelenting.technology).
 - [x] [micropub](http://indiewebcamp.com/micropub) posting
 - [x] [token-endpoint](http://indiewebcamp.com/token-endpoint)
 - [x] previous/next [navigation](http://indiewebcamp.com/navigation)
-- [ ] aggressive slugify / use id/datetime as slug for notes
+- [x] aggressive slugify / use id/datetime as slug for notes
 - [ ] [POSSE](http://indiewebcamp.com/POSSE) to Twitter and App.net
 - [ ] autolinking in notes
 - [ ] a 404 page

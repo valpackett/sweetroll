@@ -7,6 +7,7 @@ import           ClassyPrelude
 import           Web.Scotty.Trans (ActionT)
 import qualified Data.ByteString.Lazy.Char8 as B8
 import           Data.Text.Lazy (split, replace, strip)
+import           Data.Char (isSpace)
 import           Data.Aeson (decode)
 
 -- | Tries to parse a text ISO datetime into a UTCTime.
@@ -42,10 +43,12 @@ findFirstKey _ [] = Nothing
 -- >>> slugify $ pack "Hello & World!"
 -- "hello-and-world"
 slugify :: LText -> LText
-slugify = intercalate "-" . words . replace "&" "and" . replace "+" "plus" .
+slugify = filter (not . isSpace) . intercalate "-" . words .
+          replace "&" "and" . replace "+" "plus" . replace "%" "percent" .
           replace "<" "lt" . replace ">" "gt" . replace "=" "eq" .
           replace "#" "hash" . replace "@" "at" . replace "$" "dollar" .
-          toLower . filter (`notElem` ("!^*?()" :: String)) . strip
+          filter (`notElem` ("!^*?()[]{}`./\\'\"~|" :: String)) .
+          toLower . strip
 
 -- | Parses comma-separated tags into a list.
 --

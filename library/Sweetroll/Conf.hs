@@ -32,8 +32,8 @@ $(declareSetters ''SweetrollConf)
 s :: SweetrollConf -> Text
 s conf = asText $ if httpsWorks conf then "s" else ""
 
-baseURL :: SweetrollConf -> Text
-baseURL conf = mconcat ["http", s conf, "://", domainName conf]
+baseUrl :: SweetrollConf -> Text
+baseUrl conf = mconcat ["http", s conf, "://", domainName conf]
 
 processTpl :: String -> Template
 processTpl x = case compileTemplate $ dropNonHtml $ pack x of

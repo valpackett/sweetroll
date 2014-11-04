@@ -36,7 +36,7 @@ data ADNLink = ADNLink { _adnLinkPos :: Int, _adnLinkLen :: Int, _adnLinkUrl :: 
 $(deriveJSON defaultOptions { fieldLabelModifier = toLower . drop 8 } ''ADNLink)
 
 postAppDotNet :: SyndicationPoster
-postAppDotNet conf httpClientMgr entry = do
+postAppDotNet conf mgr entry = do
   req <- liftIO $ parseUrl ((adnApiHost conf) ++ "/posts") >>= \x -> return $ x { method = "POST", secure = True }
   let (isArticle, txt) = trimmedText 250 entry
       pUrl = fromMaybe "" $ entryUrl entry
@@ -47,7 +47,7 @@ postAppDotNet conf httpClientMgr entry = do
   resp <- liftIO $ httpLbs (req { requestBody = RequestBodyLBS reqBody
                                 , requestHeaders = [ (hAuthorization, fromString $ "Bearer " ++ (adnApiToken conf))
                                                    , (hContentType, "application/json; charset=utf-8")
-                                                   , (hAccept, "application/json") ] }) httpClientMgr
+                                                   , (hAccept, "application/json") ] }) mgr
   if responseStatus resp /= ok200 then return Nothing
   else do
     let respData = decode $ responseBody resp :: Maybe ADNWrapper

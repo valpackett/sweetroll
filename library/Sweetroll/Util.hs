@@ -69,10 +69,10 @@ dropNonHtml = dropWhile (/= '<') . reverse . dropWhile (/= '>') . reverse
 
 -- | Makes a URL from a hostname and parts
 --
--- >>> mkURL "http://localhost:4200" ["yolo", "lol"]
+-- >>> mkUrl "http://localhost:4200" ["yolo", "lol"]
 -- "http://localhost:4200/yolo/lol"
-mkURL :: (IsString s, Monoid s) => s -> [s] -> s
-mkURL base parts = intercalate "/" $ [base] ++ parts
+mkUrl :: (IsString s, Monoid s) => s -> [s] -> s
+mkUrl base parts = intercalate "/" $ [base] ++ parts
 
 type SweetrollAction = ActionT LText IO
 

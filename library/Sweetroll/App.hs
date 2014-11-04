@@ -33,15 +33,15 @@ mkApp conf = scottyApp $ do
 
   httpClientMgr <- liftIO $ newManager tlsManagerSettings
 
-  let base = baseURL conf
+  let base = baseUrl conf
       hostInfo = [ "domain" .= domainName conf
                  , "s" .= s conf
                  , "base_url" .= base ]
       authorHtml = renderRaw (authorTemplate conf) hostInfo
       render = renderWithConf conf authorHtml hostInfo
       checkAuth' = if testMode conf then id else checkAuth conf unauthorized
-      links = [ Link (mkURL base ["micropub"])           [(Rel, "micropub")]
-              , Link (mkURL base ["login"])              [(Rel, "token_endpoint")]
+      links = [ Link (mkUrl base ["micropub"])           [(Rel, "micropub")]
+              , Link (mkUrl base ["login"])              [(Rel, "token_endpoint")]
               , Link "https://indieauth.com/auth"        [(Rel, "authorization_endpoint")] ]
       addLinks l x = addHeader "Link" (fromStrict $ writeLinkHeader l) >> x
 
@@ -56,12 +56,12 @@ mkApp conf = scottyApp $ do
     let category = decideCategory allParams
         slug = decideSlug allParams now
         readerF = decideReader allParams
-        absURL = fromStrict $ mkURL base $ map pack [category, slug]
+        absUrl = fromStrict $ mkUrl base $ map pack [category, slug]
         save x = liftIO $ transaction "./" $ saveNextDocument category slug x
-        save' x = save x >> created absURL
+        save' x = save x >> created absUrl
     case asLText h of
       "entry" -> do
-        let entry = makeEntry allParams now absURL readerF
+        let entry = makeEntry allParams now absUrl readerF
             ifNotTest x = if testMode conf then (return Nothing) else x
             ifSyndicateTo x y = if isInfixOf x $ fromMaybe "" $ findByKey allParams "syndicate-to" then y else (return Nothing)
         adnPost <- ifNotTest $ ifSyndicateTo "app.net" $ postAppDotNet conf httpClientMgr entry
@@ -141,7 +141,7 @@ decideReader pars | f == Just "textile"     = readTextile
   where f = findByKey pars "format"
 
 makeEntry :: [Param] -> UTCTime -> LText -> (ReaderOptions -> String -> Pandoc) -> Entry
-makeEntry pars now absURL readerF = defaultEntry
+makeEntry pars now absUrl readerF = defaultEntry
   { entryName         = par "name"
   , entrySummary      = par "summary"
   , entryContent      = Left <$> readerF pandocReaderOptions <$> unpack <$> par "content"
@@ -149,7 +149,7 @@ makeEntry pars now absURL readerF = defaultEntry
   , entryUpdated      = Just now
   , entryAuthor       = somewhereFromMaybe $ par "author"
   , entryCategory     = parseTags $ fromMaybe "" $ par "category"
-  , entryUrl          = Just absURL
+  , entryUrl          = Just absUrl
   , entryInReplyTo    = Right <$> par "in-reply-to"
   , entryLikeOf       = Right <$> par "like-of"
   , entryRepostOf     = Right <$> par "repost-of" }

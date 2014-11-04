@@ -53,15 +53,15 @@ makeAccessToken conf me = do
   setHeader "Content-Type" "application/jwt"
 
 doIndieAuth :: SweetrollConf -> SweetrollAction () -> Manager -> SweetrollAction ()
-doIndieAuth conf unauthorized httpClientMgr = do
+doIndieAuth conf unauthorized mgr = do
   allParams <- params
   let par x = toStrict <$> findByKey allParams x
       par' = fromMaybe "" . par
       valid = makeAccessToken conf $ par' "me"
   if testMode conf then valid else do
     let reqBody = encodeUtf8 $ mconcat ["code=", par' "code", "&redirect_uri=", par' "redirect_uri",
-                                        "&client_id=", fromMaybe (baseURL conf) $ par "client_id", "&state=", par' "state"]
+                                        "&client_id=", fromMaybe (baseUrl conf) $ par "client_id", "&state=", par' "state"]
     indieAuthReq <- liftIO $ parseUrl (indieAuthEndpoint conf) >>= \x -> return $ x { method = "POST", secure = True }
-    resp <- liftIO $ httpLbs (indieAuthReq { requestBody = RequestBodyBS reqBody }) httpClientMgr
+    resp <- liftIO $ httpLbs (indieAuthReq { requestBody = RequestBodyBS reqBody }) mgr
     if responseStatus resp /= ok200 then unauthorized
     else valid

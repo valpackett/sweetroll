@@ -12,15 +12,15 @@
 				$if(isNote)$</a>$endif$
 			</time>
 			$if(isReply)$
-			in reply to <a class="u-in-reply-to" rel="in-reply-to" href="$replyForURL$">$replyForName$</a>
+			in reply to <a class="u-in-reply-to" rel="in-reply-to" href="$replyForUrl$">$replyForName$</a>
 			$endif$
 			$if(isRepost)$
-			repost of <a class="u-repost-of" rel="repost-of" href="$repostOfURL$">$repostOfName$</a>
+			repost of <a class="u-repost-of" rel="repost-of" href="$repostOfUrl$">$repostOfName$</a>
 			$endif$
 		</header>
 		$if(isLike)$
 		<div class="entry-content">
-			Liked <a class="u-like-of" rel="like-of" href="$likeOfURL$">$likeOfName$</a>.
+			Liked <a class="u-like-of" rel="like-of" href="$likeOfUrl$">$likeOfName$</a>.
 		</div>
 		$else$
 		<div class="entry-content e-content$if(isNote)$ p-name$endif$">

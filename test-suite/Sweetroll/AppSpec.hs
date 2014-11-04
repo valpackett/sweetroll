@@ -85,21 +85,9 @@ spec = before setup $ after cleanup $ do
       simpleBody resp `shouldSatisfy` (`contains` "Hello, World!")
       simpleStatus resp `shouldBe` ok200
 
-  describe "GET /login & GET /micropub" $ do
-    it "does not allow access to invalid tokens" $ do
-      resp <- app >>= get "/micropub?access_token=1nval1d"
-      simpleStatus resp `shouldBe` unauthorized401
-
-    it "authenticates users" $ do
-      resp <- app >>= get "/login?code=h3ll0w0r1d"
-      simpleStatus resp `shouldBe` ok200
-      resp' <- app >>= get "/micropub?access_token=h3ll0w0r1d"
-      simpleStatus resp' `shouldBe` ok200
-
   describe "POST /micropub" $ do
     it "creates entries" $ do
-      _ <- app >>= get "/login?code=p0st"
-      resp <- app >>= post "/micropub?h=entry&name=First&slug=first&content=Hello&category=test,demo&access_token=p0st"
+      resp <- app >>= post "/micropub?h=entry&name=First&slug=first&content=Hello&category=test,demo"
       simpleStatus resp `shouldBe` created201
       header resp "Location" `shouldBe` "http://localhost/articles/first"
       written <- readDocumentById "articles" 1 :: IO (Maybe Entry)

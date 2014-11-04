@@ -36,7 +36,7 @@ mkApp conf = scottyApp $ do
                  , "base_url" .= baseURL conf ]
       authorHtml = renderTemplate (authorTemplate conf) mempty (object hostInfo)
       render = renderWithConf conf authorHtml hostInfo
-      checkAuth' = checkAuth conf unauthorized
+      checkAuth' = if testMode conf then id else checkAuth conf unauthorized
 
   post "/login" $ doIndieAuth conf unauthorized httpClientMgr
 

@@ -8,9 +8,10 @@ import           Network.Wai (Application)
 import           Network.Wai.Middleware.Autohead
 import           Network.Wai.Middleware.Static
 import           Network.HTTP.Types.Status
+import           Network.HTTP.Link
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
-import           Text.Pandoc
+import           Text.Pandoc hiding (Link)
 import           Web.Scotty
 import           Gitson
 import           Gitson.Util (maybeReadIntString)
@@ -31,12 +32,17 @@ mkApp conf = scottyApp $ do
 
   httpClientMgr <- liftIO $ newManager tlsManagerSettings
 
-  let hostInfo = [ "domain" .= domainName conf
+  let base = baseURL conf
+      hostInfo = [ "domain" .= domainName conf
                  , "s" .= s conf
-                 , "base_url" .= baseURL conf ]
+                 , "base_url" .= base ]
       authorHtml = renderRaw (authorTemplate conf) hostInfo
       render = renderWithConf conf authorHtml hostInfo
       checkAuth' = if testMode conf then id else checkAuth conf unauthorized
+      links = [ Link (mkURL base ["micropub"])           [(Rel, "micropub")]
+              , Link (mkURL base ["login"])              [(Rel, "token_endpoint")]
+              , Link "https://indieauth.com/auth"        [(Rel, "authorization_endpoint")] ]
+      addLinks l x = addHeader "Link" (fromStrict $ writeLinkHeader l) >> x
 
   post "/login" $ doIndieAuth conf unauthorized httpClientMgr
 
@@ -49,7 +55,7 @@ mkApp conf = scottyApp $ do
     let category = decideCategory allParams
         slug = decideSlug allParams now
         readerF = decideReader allParams
-        absURL = fromStrict $ mkURL (baseURL conf) $ map pack [category, slug]
+        absURL = fromStrict $ mkURL base $ map pack [category, slug]
         save x = liftIO $ transaction "./" $ saveNextDocument category slug x
         save' x = save x >> created absURL
     case asLText h of
@@ -61,17 +67,17 @@ mkApp conf = scottyApp $ do
         save' $ entry { entrySyndication = catMaybes [adnPost] }
       _ -> status badRequest400
 
-  get "/" $ do
+  get "/" $ addLinks links $ do
     catNames <- liftIO listCollections
     cats <- liftIO $ mapM readCategory catNames
     render indexTemplate $ indexView $ filter visibleCat cats
 
-  get "/:category" $ do
+  get "/:category" $ addLinks links $ do
     catName <- param "category"
     cat <- liftIO $ readCategory catName
     render categoryTemplate $ catView catName $ snd cat
 
-  get "/:category/:slug" $ do
+  get "/:category/:slug" $ addLinks links $ do
     category <- param "category"
     slug <- param "slug"
     entry <- liftIO (readDocumentByName category slug :: IO (Maybe Entry))
@@ -91,9 +97,9 @@ unauthorized :: SweetrollAction ()
 unauthorized = status unauthorized401
 
 visibleCat :: (CategoryName, [(EntrySlug, Entry)]) -> Bool
-visibleCat (slug, entries) =
-     not (null entries)
-  && slug /= "templates"
+visibleCat (slug, entries) = not (null entries)
+                          && slug /= "templates"
+                          && slug /= "static"
 
 readSlug :: String -> EntrySlug
 readSlug x = drop 1 $ fromMaybe "-404" $ snd <$> maybeReadIntString x -- errors should never happen
@@ -110,18 +116,16 @@ readCategory c = do
   return (c, reverse $ fromMaybe [] $ sequence maybes)
 
 decideCategory :: [Param] -> CategoryName
-decideCategory pars =
-  case par "name" of
-    Just _ -> "articles"
-    _ -> case par "in-reply-to" of
-      Just _ -> "replies"
-      _ -> "notes"
+decideCategory pars | isJust $ par "name"          = "articles"
+                    | isJust $ par "in-reply-to"   = "replies"
+                    | isJust $ par "like-of"       = "likes"
+                    | otherwise                    = "notes"
   where par = findByKey pars
 
 decideSlug :: [Param] -> UTCTime -> EntrySlug
 decideSlug pars now = unpack $ fromMaybe fallback $ findByKey pars "slug"
   where fallback = slugify $ fromMaybe (formatTimeSlug now) $ findFirstKey pars ["name", "summary"]
-        formatTimeSlug = pack . formatTime defaultTimeLocale "%Y-%m-%d-%H-%M"
+        formatTimeSlug = pack . formatTime defaultTimeLocale "%Y-%m-%d-%H-%M-%S"
 
 decideReader :: [Param] -> (ReaderOptions -> String -> Pandoc)
 decideReader pars | f == Just "textile"     = readTextile

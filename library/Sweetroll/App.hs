@@ -21,6 +21,7 @@ import           Data.Microformats2.Aeson()
 import           Sweetroll.Pages
 import           Sweetroll.Auth
 import           Sweetroll.Syndication
+import           Sweetroll.Webmention
 import           Sweetroll.Conf
 import           Sweetroll.Util
 
@@ -64,7 +65,9 @@ mkApp conf = scottyApp $ do
             ifNotTest x = if testMode conf then (return Nothing) else x
             ifSyndicateTo x y = if isInfixOf x $ fromMaybe "" $ findByKey allParams "syndicate-to" then y else (return Nothing)
         adnPost <- ifNotTest $ ifSyndicateTo "app.net" $ postAppDotNet conf httpClientMgr entry
-        save' $ entry { entrySyndication = catMaybes [adnPost] }
+        let entry' = entry { entrySyndication = catMaybes [adnPost] }
+        save' entry'
+        when (not $ testMode conf) $ void $ liftIO $ sendWebmentions httpClientMgr entry'
       _ -> status badRequest400
 
   get "/" $ addLinks links $ do

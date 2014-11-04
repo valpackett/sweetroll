@@ -46,8 +46,8 @@ postAppDotNet conf httpClientMgr entry = do
                                 , "entities" .= object [ "links" .= [ ADNLink 0 (if isArticle then length txt else 3) pUrl ] ] ]
   resp <- liftIO $ httpLbs (req { requestBody = RequestBodyLBS reqBody
                                 , requestHeaders = [ (hAuthorization, fromString $ "Bearer " ++ (adnApiToken conf))
-                                                   , (hContentType, "application/json; encoding=utf-8")
-                                                   , (hAccept, "application/json; encoding=utf-8") ] }) httpClientMgr
+                                                   , (hContentType, "application/json; charset=utf-8")
+                                                   , (hAccept, "application/json") ] }) httpClientMgr
   if responseStatus resp /= ok200 then return Nothing
   else do
     let respData = decode $ responseBody resp :: Maybe ADNWrapper

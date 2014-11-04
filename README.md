@@ -28,14 +28,14 @@ I'm testing it on [my website](https://unrelenting.technology).
 - [x] previous/next [navigation](http://indiewebcamp.com/navigation)
 - [x] aggressive slugify / use id/datetime as slug for notes
 - [x] [POSSE](http://indiewebcamp.com/POSSE) to App.net
-- [ ] POSSE to Twitter
+- [ ] POSSE to Twitter http://lpaste.net/99726
 - [x] autolinking in notes
 - [ ] a 404 page
 - [ ] pagination
 - [ ] archive pages
 - [ ] tags (add CSV support to gitson for storing stuff like this)
 - [ ] micropub updating and deleting
-- [ ] sending [webmention](http://indiewebcamp.com/webmention)
+- [x] sending [webmention](http://indiewebcamp.com/webmention)
 - [ ] receiving webmention (with some kind of anti [spam](http://indiewebcamp.com/spam), optional premoderation)
 - [ ] microformats2 parser (separate library)
 - [ ] microformats2 based [comments-presentation](http://indiewebcamp.com/comments-presentation)

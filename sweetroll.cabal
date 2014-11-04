@@ -48,7 +48,12 @@ library
       , http-client
       , http-client-tls
       , http-link-header
+      , network-uri
+      , hxt
+      , hxt-tagsoup
+      , async
       , pandoc == 1.13.*
+      , pandoc-types
       , raw-strings-qq == 1.*
     default-language: Haskell2010
     exposed-modules:
@@ -58,6 +63,7 @@ library
         Sweetroll.Syndication
         Sweetroll.Util
         Sweetroll.Conf
+        Sweetroll.Webmention
     ghc-prof-options: -auto-all -prof
     ghc-options: -Wall
     hs-source-dirs: library

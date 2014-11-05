@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
+{-# LANGUAGE PackageImports #-}
 
 -- | The module that contains the Sweetroll WAI application.
 module Sweetroll.App (mkApp, defaultSweetrollConf) where
@@ -11,7 +12,7 @@ import           Network.HTTP.Types.Status
 import           Network.HTTP.Link
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
-import           Crypto.Random
+import "crypto-random" Crypto.Random
 import           Text.Pandoc hiding (Link)
 import           Web.Scotty
 import           Gitson
@@ -76,12 +77,12 @@ mkApp conf = scottyApp $ do
   get "/" $ addLinks links $ do
     catNames <- liftIO listCollections
     cats <- liftIO $ mapM readCategory catNames
-    render indexTemplate $ indexView $ filter visibleCat cats
+    render indexTemplate $ indexView conf $ filter visibleCat cats
 
   get "/:category" $ addLinks links $ do
     catName <- param "category"
     cat <- liftIO $ readCategory catName
-    render categoryTemplate $ catView catName $ snd cat
+    render categoryTemplate $ catView conf catName $ snd cat
 
   get "/:category/:slug" $ addLinks links $ do
     category <- param "category"
@@ -91,7 +92,7 @@ mkApp conf = scottyApp $ do
       Nothing -> entryNotFound
       Just e  -> do
         otherSlugs <- liftIO $ listDocumentKeys category
-        render entryTemplate $ entryView category (map readSlug otherSlugs) (slug, e)
+        render entryTemplate $ entryView conf category (map readSlug otherSlugs) (slug, e)
 
 created :: LText -> SweetrollAction ()
 created url = status created201 >> setHeader "Location" url

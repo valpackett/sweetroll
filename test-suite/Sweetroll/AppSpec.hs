@@ -51,7 +51,7 @@ spec = before setup $ after cleanup $ do
         saveNextDocument "posts" "first" $ defaultEntry {
           entryName      = Just "Post 1" }
         saveNextDocument "thingies" "tweeeet" $ defaultEntry {
-          entryName      = Just "Something 1" }
+          entryContent   = Just $ Left $ readMarkdown def "Something 1" }
       resp <- app >>= get "/"
       simpleBody resp `shouldSatisfy` (`contains` "posts")
       simpleBody resp `shouldSatisfy` (`contains` "thingies")

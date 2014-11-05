@@ -34,8 +34,8 @@ data ViewResult = ViewResult
   { titleParts           :: [Text]
   , tplContext           :: Value }
 
-entryView :: CategoryName -> [EntrySlug] -> (EntrySlug, Entry) -> ViewResult
-entryView catName otherSlugs (slug, e) =
+entryView :: SweetrollConf -> CategoryName -> [EntrySlug] -> (EntrySlug, Entry) -> ViewResult
+entryView _ catName otherSlugs (slug, e) =
   ViewResult { titleParts = [toStrict (fromMaybe ("Note @ " ++ published) (entryName e)), pack catName]
              , tplContext = ctx }
   where content = renderContent writeHtmlString e
@@ -64,23 +64,24 @@ entryView catName otherSlugs (slug, e) =
           -- TODO: repost/like
           ]
 
-catView :: CategoryName -> [(EntrySlug, Entry)] -> ViewResult
-catView name entries =
+catView :: SweetrollConf -> CategoryName -> [(EntrySlug, Entry)] -> ViewResult
+catView conf name entries =
   ViewResult { titleParts = [pack name]
              , tplContext = ctx }
   where slugs = map fst entries
         ctx = object [
             "name"            .= name
           , "permalink"       .= mconcat ["/", name]
-          , "entries"         .= map (tplContext . entryView name slugs) entries
+          , "entries"         .= map (tplContext . entryView conf name slugs) entries
+          , "renderedEntries" .= map (renderTemplate (entryInListTemplate conf) helpers . tplContext . entryView conf name slugs) entries
           ]
 
-indexView :: [(CategoryName, [(EntrySlug, Entry)])] -> ViewResult
-indexView cats =
+indexView :: SweetrollConf -> [(CategoryName, [(EntrySlug, Entry)])] -> ViewResult
+indexView conf cats =
   ViewResult { titleParts = []
              , tplContext = ctx }
   where ctx = object [
-            "categories" .= map (tplContext . uncurry catView) cats
+            "categories" .= map (tplContext . uncurry (catView conf)) cats
           ]
 
 renderContent :: (WriterOptions -> Pandoc -> String) -> Entry -> LText

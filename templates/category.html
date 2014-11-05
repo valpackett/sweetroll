@@ -1,29 +1,8 @@
 <main class="site-main category-main">
 	<h1>$name$</h1>
 	<ul>
-		$for(entry in entries)$
-			$if(entry.isNote)$
-			<li class="h-entry entry-in-list note-in-list">
-				<div class="e-content p-name">$entry.content$</div>
-				<footer class="entry-footer">
-					<a class="u-url note-permalink" href="$entry.permalink$">
-						<time class="dt-published" datetime="$entry.publishedAttr$">$entry.published$</time>
-					</a>
-					$if(entry.isReply)$
-					in reply to <a class="u-in-reply-to" href="$entry.replyForUrl$">$entry.replyForName$</a>
-					$endif$
-				</footer>
-			</li>
-			$else$
-			<li class="h-entry entry-in-list article-in-list">
-				<a class="u-url p-name" href="$entry.permalink$">$entry.name$</a>
-				$if(entry.isReply)$
-				<footer class="entry-footer">
-					in reply to <a class="u-in-reply-to" href="$entry.replyForUrl$">$entry.replyForName$</a>
-				</footer>
-				$endif$
-			</li>
-			$endif$
+		$for(entryHtml in renderedEntries)$
+		$entryHtml$
 		$endfor$
 	</ul>
 </main>

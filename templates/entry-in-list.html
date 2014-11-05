@@ -1,0 +1,20 @@
+<li class="h-entry entry-in-list $if(isNote)$note$else$article$endif$-in-list">
+$if(isNote)$
+	<div class="e-content p-name">$content$</div>
+	<footer class="entry-footer">
+		<a class="u-url note-permalink" href="$permalink$">
+			<time class="dt-published" datetime="$publishedAttr$">$published$</time>
+		</a>
+		$if(isReply)$
+		in reply to <a class="u-in-reply-to" href="$replyForUrl$">$replyForName$</a>
+		$endif$
+	</footer>
+$else$
+	<a class="u-url p-name" href="$permalink$">$name$</a>
+	$if(isReply)$
+	<footer class="entry-footer">
+		in reply to <a class="u-in-reply-to" href="$replyForUrl$">$replyForName$</a>
+	</footer>
+	$endif$
+$endif$
+</li>

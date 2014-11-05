@@ -16,6 +16,7 @@ data SweetrollConf = SweetrollConf
   ,            entryTemplate :: Template
   ,         categoryTemplate :: Template
   ,            indexTemplate :: Template
+  ,      entryInListTemplate :: Template
   ,           authorTemplate :: Template
   ,                 siteName :: Text
   ,                secretKey :: Text
@@ -51,11 +52,12 @@ loadTemplates conf = foldM loadTpl conf tplsWithSetters
           readTpl c (setter, file) = do
             contents <- readFile $ "templates" </> file
             return $ setter (processTpl contents) c
-          tplsWithSetters = [ (setCategoryTemplate,   "category.html")
-                            , (setEntryTemplate,      "entry.html")
-                            , (setLayoutTemplate,     "layout.html")
-                            , (setIndexTemplate,      "index.html")
-                            , (setAuthorTemplate,     "author.html") ]
+          tplsWithSetters = [ (setCategoryTemplate,             "category.html")
+                            , (setEntryTemplate,                "entry.html")
+                            , (setLayoutTemplate,               "layout.html")
+                            , (setIndexTemplate,                "index.html")
+                            , (setEntryInListTemplate,          "entry-in-list.html")
+                            , (setAuthorTemplate,               "author.html") ]
 
 readFailHandler :: SweetrollConf -> IOError -> IO SweetrollConf
 readFailHandler c _ = return c
@@ -87,6 +89,8 @@ defaultSweetrollConf =  SweetrollConf {
 #include "../../templates/category.html"
 |], indexTemplate = processTpl [r|
 #include "../../templates/index.html"
+|], entryInListTemplate = processTpl [r|
+#include "../../templates/entry-in-list.html"
 |], authorTemplate = processTpl [r|
 #include "../../templates/author.html"
 |]}

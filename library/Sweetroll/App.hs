@@ -11,6 +11,7 @@ import           Network.HTTP.Types.Status
 import           Network.HTTP.Link
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
+import           Crypto.Random
 import           Text.Pandoc hiding (Link)
 import           Web.Scotty
 import           Gitson
@@ -32,6 +33,7 @@ mkApp conf = scottyApp $ do
   middleware $ staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
 
   httpClientMgr <- liftIO $ newManager tlsManagerSettings
+  sysRandom <- liftIO $ cprgCreate <$> createEntropyPool
 
   let base = baseUrl conf
       hostInfo = [ "domain" .= domainName conf
@@ -64,8 +66,9 @@ mkApp conf = scottyApp $ do
         let entry = makeEntry allParams now absUrl readerF
             ifNotTest x = if testMode conf then (return Nothing) else x
             ifSyndicateTo x y = if isInfixOf x $ fromMaybe "" $ findByKey allParams "syndicate-to" then y else (return Nothing)
-        adnPost <- ifNotTest $ ifSyndicateTo "app.net" $ postAppDotNet conf httpClientMgr entry
-        let entry' = entry { entrySyndication = catMaybes [adnPost] }
+        synd <- sequence [ ifNotTest $ ifSyndicateTo "app.net"     $ postAppDotNet conf httpClientMgr entry
+                         , ifNotTest $ ifSyndicateTo "twitter.com" $ postTwitter conf httpClientMgr sysRandom entry ]
+        let entry' = entry { entrySyndication = catMaybes synd }
         save' entry'
         when (not $ testMode conf) $ void $ liftIO $ sendWebmentions httpClientMgr entry'
       _ -> status badRequest400

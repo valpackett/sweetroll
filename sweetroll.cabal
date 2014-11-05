@@ -48,6 +48,8 @@ library
       , http-client
       , http-client-tls
       , http-link-header
+      , oauthenticated
+      , crypto-random
       , network-uri
       , hxt
       , hxt-tagsoup

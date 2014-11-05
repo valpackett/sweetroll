@@ -1,8 +1,9 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell, PackageImports #-}
 
 module Sweetroll.Syndication (
   postAppDotNet
+, postTwitter
 , showSyndication
 ) where
 
@@ -10,6 +11,8 @@ import           ClassyPrelude
 import           Network.HTTP.Client
 import           Network.HTTP.Types.Status
 import           Network.HTTP.Types.Header
+import           Network.OAuth
+import "crypto-random" Crypto.Random
 import           Web.Scotty (params)
 import           Data.Microformats2
 import           Data.Aeson
@@ -18,8 +21,6 @@ import           Text.Pandoc
 import           Sweetroll.Util
 import           Sweetroll.Pages (renderContent)
 import           Sweetroll.Conf
-
-type SyndicationPoster = SweetrollConf -> Manager -> Entry -> SweetrollAction (Maybe LText)
 
 trimmedText :: Index LText -> Entry -> (Bool, LText)
 trimmedText l entry = (isArticle, if isTrimmed then (take (l - 1) t) ++ "…" else t)
@@ -35,27 +36,57 @@ $(deriveJSON defaultOptions { fieldLabelModifier = toLower . drop 3 } ''ADNWrapp
 data ADNLink = ADNLink { _adnLinkPos :: Int, _adnLinkLen :: Int, _adnLinkUrl :: LText }
 $(deriveJSON defaultOptions { fieldLabelModifier = toLower . drop 8 } ''ADNLink)
 
-postAppDotNet :: SyndicationPoster
+postAppDotNet :: SweetrollConf -> Manager -> Entry -> SweetrollAction (Maybe LText)
 postAppDotNet conf mgr entry = do
-  req <- liftIO $ parseUrl ((adnApiHost conf) ++ "/posts") >>= \x -> return $ x { method = "POST", secure = True }
+  req <- liftIO $ parseUrl $ (adnApiHost conf) ++ "/posts"
   let (isArticle, txt) = trimmedText 250 entry
       pUrl = fromMaybe "" $ entryUrl entry
       reqBody = encode $ object [ "text" .= if isArticle then txt else "[x] " ++ txt
                                 , "annotations" .= [ object [ "type" .= asLText "net.app.core.crosspost"
                                                             , "value" .= ADNCanonicalData pUrl ] ]
                                 , "entities" .= object [ "links" .= [ ADNLink 0 (if isArticle then length txt else 3) pUrl ] ] ]
-  resp <- liftIO $ httpLbs (req { requestBody = RequestBodyLBS reqBody
-                                , requestHeaders = [ (hAuthorization, fromString $ "Bearer " ++ (adnApiToken conf))
-                                                   , (hContentType, "application/json; charset=utf-8")
-                                                   , (hAccept, "application/json") ] }) mgr
-  if responseStatus resp /= ok200 then return Nothing
+      req' = req { method = "POST"
+                 , requestBody = RequestBodyLBS reqBody
+                 , requestHeaders = [ (hAuthorization, fromString $ "Bearer " ++ (adnApiToken conf))
+                                    , (hContentType, "application/json; charset=utf-8")
+                                    , (hAccept, "application/json") ] }
+  resp <- liftIO $ httpLbs req' mgr
+  if not $ statusIsSuccessful $ responseStatus resp then return Nothing
   else do
     let respData = decode $ responseBody resp :: Maybe ADNWrapper
-    return $ respData >>= return . canonical_Url . adnData
+    return $ canonical_Url <$> adnData <$> respData
+
+data TwitterUser = TwitterUser { twitterScreen_Name :: LText }
+$(deriveJSON defaultOptions { fieldLabelModifier = toLower . drop 7 } ''TwitterUser)
+data TwitterPost = TwitterPost { twitterId_Str :: LText, twitterUser :: TwitterUser }
+$(deriveJSON defaultOptions { fieldLabelModifier = toLower . drop 7 } ''TwitterPost)
+
+postTwitter :: SweetrollConf -> Manager -> SystemRNG -> Entry -> SweetrollAction (Maybe LText)
+postTwitter conf mgr rng entry = do
+  req <- liftIO $ parseUrl $ (twitterApiHost conf) ++ "/statuses/update.json"
+  let (_, txt) = trimmedText 115 entry
+      pUrl = fromMaybe "" $ entryUrl entry
+      reqBody = encodeUtf8 $ mconcat ["status=", txt ++ pUrl ]
+      req' = req { method = "POST"
+                 , requestBody = RequestBodyLBS reqBody
+                 , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8")
+                                    , (hAccept, "application/json") ] }
+      accessToken = Token (twitterAccessToken conf) (twitterAccessSecret conf)
+      clientCreds = clientCred $ Token (twitterAppKey conf) (twitterAppSecret conf)
+      creds = permanentCred accessToken clientCreds
+  (signedReq, _rng) <- liftIO $ oauth creds defaultServer req' rng
+  resp <- liftIO $ httpLbs signedReq mgr
+  if not $ statusIsSuccessful $ responseStatus resp then return Nothing
+  else do
+    let respData = decode $ responseBody resp :: Maybe TwitterPost
+    return $ do
+      tweetId <- twitterId_Str <$> respData
+      tweetUsr <- twitterScreen_Name . twitterUser <$> respData
+      return $ mconcat ["https://twitter.com/", tweetUsr, "/status/", tweetId] -- Y U NO GIVE ME THE LINK
 
 showSyndication :: SweetrollAction () -> SweetrollAction ()
 showSyndication otherAction = do
   allParams <- params
   case findByKey allParams "q" of
-    Just "syndicate-to" -> showXForm "syndicate-to=app.net"
+    Just "syndicate-to" -> showXForm "syndicate-to=app.net,twitter.com"
     _ -> otherAction

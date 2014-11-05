@@ -24,6 +24,11 @@ data SweetrollConf = SweetrollConf
   ,        indieAuthEndpoint :: String
   ,               adnApiHost :: String
   ,              adnApiToken :: String
+  ,           twitterApiHost :: String
+  ,            twitterAppKey :: ByteString
+  ,         twitterAppSecret :: ByteString
+  ,       twitterAccessToken :: ByteString
+  ,      twitterAccessSecret :: ByteString
   ,                 testMode :: Bool
   ,           titleSeparator :: Text }
 
@@ -67,6 +72,11 @@ defaultSweetrollConf =  SweetrollConf {
   , indieAuthEndpoint = "http://127.0.0.1"
   , adnApiHost = "http://127.0.0.1"
   , adnApiToken = ""
+  , twitterApiHost = "http://127.0.0.1"
+  , twitterAppKey = ""
+  , twitterAppSecret = ""
+  , twitterAccessToken = ""
+  , twitterAccessSecret = ""
   , testMode = False
   , titleSeparator = " / "
   , layoutTemplate = processTpl [r|

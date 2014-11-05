@@ -28,7 +28,7 @@ I'm testing it on [my website](https://unrelenting.technology).
 - [x] previous/next [navigation](http://indiewebcamp.com/navigation)
 - [x] aggressive slugify / use id/datetime as slug for notes
 - [x] [POSSE](http://indiewebcamp.com/POSSE) to App.net
-- [ ] POSSE to Twitter http://lpaste.net/99726
+- [x] POSSE to Twitter
 - [x] autolinking in notes
 - [ ] a 404 page
 - [ ] pagination

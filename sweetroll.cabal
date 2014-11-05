@@ -41,18 +41,19 @@ library
       , jwt
       , gitson == 0.4.*
       , microformats2-types == 0.2.*
-      , http-types
       , wai
       , wai-extra
       , wai-middleware-static
       , scotty == 0.9.*
       , simple-templates == 0.8.*
+      , network-uri >= 2.6
+      , network >= 2.6
+      , http-types
       , http-client
       , http-client-tls
       , http-link-header
-      , oauthenticated
+      , oauthenticated == 0.1.3.3
       , crypto-random
-      , network-uri
       , hxt
       , hxt-tagsoup
       , async

@@ -10,6 +10,7 @@ import qualified Data.ByteString.Lazy.Char8 as B8
 import           Data.Text.Lazy (split, replace, strip)
 import           Data.Char (isSpace)
 import           Data.Aeson (decode)
+import           Data.Microformats2
 import           Text.Pandoc.Options
 import           Network.HTTP.Types.Status
 
@@ -89,3 +90,13 @@ pandocWriterOptions = def { writerHtml5 = True
                           , writerEmailObfuscation = NoObfuscation
                           , writerHighlight = True
                           , writerIdentifierPrefix = "sr-" }
+
+derefEntry :: EntryReference -> Maybe LText
+derefEntry (Left (Here c)) = citeUrl c
+derefEntry (Right l) = Just l
+derefEntry _ = Nothing
+
+derefEntryName :: EntryReference -> Maybe LText
+derefEntryName (Left (Here c)) = citeName c
+derefEntryName (Right l) = Just l
+derefEntryName _ = Nothing

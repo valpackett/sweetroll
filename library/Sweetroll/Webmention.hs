@@ -66,9 +66,6 @@ sendWebmentions :: Manager -> Entry -> IO [(String, Bool)]
 sendWebmentions mgr e = mapConcurrently (sendWebmention mgr from) $ S.toList links
   where links = S.fromList $ contentLinks ++ metaLinks
         metaLinks = map unpack $ catMaybes $ map derefEntry $ catMaybes [entryInReplyTo e, entryLikeOf e, entryRepostOf e]
-        derefEntry (Left (Here c)) = citeUrl c
-        derefEntry (Right l) = Just l
-        derefEntry _ = Nothing
         contentLinks = PW.query extractLink $ pandocContent $ entryContent e
         from = unpack $ fromMaybe "" $ entryUrl e
         pandocContent (Just (Left p)) = p

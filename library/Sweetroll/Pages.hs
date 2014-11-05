@@ -58,7 +58,10 @@ entryView catName otherSlugs (slug, e) =
           , "nextHref"         .= mconcat ["/", catName, "/", fromMaybe "" next]
           , "hasSyndication"   .= (not $ null $ entrySyndication e)
           , "syndication"      .= entrySyndication e
-          -- TODO: replyFor/repostOf/likeOf Url/Name
+          , "isReply"          .= isJust (entryInReplyTo e)
+          , "replyForUrl"      .= fromMaybe "" (derefEntry =<< entryInReplyTo e)
+          , "replyForName"     .= fromMaybe "" (derefEntryName =<< entryInReplyTo e)
+          -- TODO: repost/like
           ]
 
 catView :: CategoryName -> [(EntrySlug, Entry)] -> ViewResult

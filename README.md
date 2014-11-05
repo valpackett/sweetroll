@@ -39,6 +39,7 @@ I'm testing it on [my website](https://unrelenting.technology).
 - [ ] receiving webmention (with some kind of anti [spam](http://indiewebcamp.com/spam), optional premoderation)
 - [ ] microformats2 parser (separate library)
 - [ ] microformats2 based [comments-presentation](http://indiewebcamp.com/comments-presentation)
+- [ ] microformats2 parse reply target, store as cite instead of just a link
 - [ ] Atom + PubSubHubbub (configurable delay for PuSH because privacy and general {notice typo - delete - post again} things)
 - [ ] posting [photos](http://indiewebcamp.com/photos)
 - [x] posting in other formats supported by pandoc

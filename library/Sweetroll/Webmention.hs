@@ -17,8 +17,7 @@ import           Data.Microformats2
 import           Data.Foldable (asum)
 import qualified Data.Set as S
 import           Network.HTTP.Link
-import           Network.HTTP.Types.Header
-import           Network.HTTP.Types.Status
+import           Network.HTTP.Types
 import           Network.HTTP.Client
 import           Network.URI
 import           Sweetroll.Util
@@ -53,7 +52,7 @@ sendWebmention mgr from to = do
   case endp of
     Just u -> do
       eReq <- parseUrl $ uriToString id u ""
-      let reqBody = encodeUtf8 $ pack $ mconcat ["from=", from, "&to=", to]
+      let reqBody = writeForm [("from", from), ("to", to)]
       eResp <- httpLbs eReq { method = "POST"
                             , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
                             , requestBody = RequestBodyBS reqBody } mgr

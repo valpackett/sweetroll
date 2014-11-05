@@ -9,8 +9,7 @@ module Sweetroll.Syndication (
 
 import           ClassyPrelude
 import           Network.HTTP.Client
-import           Network.HTTP.Types.Status
-import           Network.HTTP.Types.Header
+import           Network.HTTP.Types
 import           Network.OAuth
 import "crypto-random" Crypto.Random
 import           Web.Scotty (params)
@@ -66,9 +65,9 @@ postTwitter conf mgr rng entry = do
   req <- liftIO $ parseUrl $ (twitterApiHost conf) ++ "/statuses/update.json"
   let (_, txt) = trimmedText 115 entry
       pUrl = fromMaybe "" $ entryUrl entry
-      reqBody = encodeUtf8 $ mconcat ["status=", txt ++ pUrl ]
+      reqBody = writeForm [("status", txt ++ pUrl)]
       req' = req { method = "POST"
-                 , requestBody = RequestBodyLBS reqBody
+                 , requestBody = RequestBodyBS reqBody
                  , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8")
                                     , (hAccept, "application/json") ] }
       accessToken = Token (twitterAccessToken conf) (twitterAccessSecret conf)
@@ -88,5 +87,5 @@ showSyndication :: SweetrollAction () -> SweetrollAction ()
 showSyndication otherAction = do
   allParams <- params
   case findByKey allParams "q" of
-    Just "syndicate-to" -> showXForm "syndicate-to=app.net,twitter.com"
+    Just "syndicate-to" -> showForm [("syndicate-to", asByteString "app.net,twitter.com")]
     _ -> otherAction

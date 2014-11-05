@@ -36,9 +36,10 @@ showAuth = do
   token <- getAccessToken
   case map claims $ decode token of
     Just cs ->
-      showXForm $ "me=" ++ case sub cs of
-        Just me -> pack $ show me
-        _ -> ""
+      showForm [("me", meVal)]
+          where meVal = case sub cs of
+                          Just me -> show me
+                          _ -> ""
     _ -> status unauthorized401
 
 makeAccessToken :: SweetrollConf -> Text -> SweetrollAction ()
@@ -48,9 +49,7 @@ makeAccessToken conf me = do
               , sub = stringOrURI me
               , iat = intDate $ utcTimeToPOSIXSeconds now }
       t' = encodeSigned HS256 (secret $ secretKey conf) t
-  status ok200
-  text $ fromStrict $ mconcat ["access_token=", t', "&scope=post&me=", me]
-  setHeader "Content-Type" "application/jwt"
+  showForm [("access_token", t'), ("scope", "post"), ("me", me)]
 
 doIndieAuth :: SweetrollConf -> SweetrollAction () -> Manager -> SweetrollAction ()
 doIndieAuth conf unauthorized mgr = do
@@ -59,9 +58,12 @@ doIndieAuth conf unauthorized mgr = do
       par' = fromMaybe "" . par
       valid = makeAccessToken conf $ par' "me"
   if testMode conf then valid else do
-    let reqBody = encodeUtf8 $ mconcat ["code=", par' "code", "&redirect_uri=", par' "redirect_uri",
-                                        "&client_id=", fromMaybe (baseUrl conf) $ par "client_id", "&state=", par' "state"]
-    indieAuthReq <- liftIO $ parseUrl (indieAuthEndpoint conf) >>= \x -> return $ x { method = "POST", secure = True }
-    resp <- liftIO $ httpLbs (indieAuthReq { requestBody = RequestBodyBS reqBody }) mgr
+    let reqBody = writeForm [ ("code",         par' "code")
+                            , ("redirect_uri", par' "redirect_uri")
+                            , ("client_id",    fromMaybe (baseUrl conf) $ par "client_id")
+                            , ("state",        par' "state") ]
+    indieAuthReq <- liftIO $ parseUrl $ indieAuthEndpoint conf
+    resp <- liftIO $ httpLbs (indieAuthReq { method = "POST"
+                                           , requestBody = RequestBodyBS reqBody }) mgr
     if responseStatus resp /= ok200 then unauthorized
     else valid

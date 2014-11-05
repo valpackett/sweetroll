@@ -43,7 +43,7 @@ spec = do
     it "renders notes" $ do
       let testNote = defaultEntry {
         entryContent      = Just $ Right "Hello, world!"
-      , entryPublished    = parseISOTime "2013-10-17T09:42:49.000Z" }
+      , entryPublished    = parseISOTime $ asString "2013-10-17T09:42:49.000Z" }
       testRender testEntryTpl (entryView def "articles" [] ("first", testNote)) `shouldBe` [r|<note>
   <p>Hello, world!</p>
   <time datetime="2013-10-17 09:42">17.10.2013 09:42 AM</time>
@@ -53,7 +53,7 @@ spec = do
       let testArticle = defaultEntry {
         entryName         = Just "First post"
       , entryContent      = Just $ Right "<p>This is the content</p>"
-      , entryPublished    = parseISOTime "2013-10-17T09:42:49.000Z" }
+      , entryPublished    = parseISOTime $ asString "2013-10-17T09:42:49.000Z" }
       testRender testEntryTpl (entryView def "articles" [] ("first", testArticle)) `shouldBe` [r|<article>
   <h1><a href="/articles/first">First post</a></h1>
   <p>This is the content</p>

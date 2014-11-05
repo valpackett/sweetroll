@@ -6,23 +6,23 @@ module Sweetroll.Util (module Sweetroll.Util) where
 import           ClassyPrelude
 import           Web.Scotty
 import           Web.Scotty.Trans (ActionT)
-import qualified Data.ByteString.Lazy.Char8 as B8
 import           Data.Text.Lazy (split, replace, strip)
 import           Data.Char (isSpace)
 import           Data.Aeson (decode)
+import           Data.Stringable
 import           Data.Microformats2
 import           Text.Pandoc.Options
-import           Network.HTTP.Types.Status
+import           Network.HTTP.Types
 
 -- | Tries to parse a text ISO datetime into a UTCTime.
 --
--- >>> parseISOTime $ pack "2013-10-17T09:42:49.007Z"
+-- >>> parseISOTime "2013-10-17T09:42:49.007Z"
 -- Just 2013-10-17 09:42:49.007 UTC
 --
--- >>> parseISOTime $ pack "yolo"
+-- >>> parseISOTime "yolo"
 -- Nothing
-parseISOTime :: LText -> Maybe UTCTime
-parseISOTime x = fmap unsafeHead $ decodeTime $ B8.pack $ unpack $ "[\"" ++ x ++ "\"]"
+parseISOTime :: Stringable a => a -> Maybe UTCTime
+parseISOTime x = fmap unsafeHead $ decodeTime $ "[\"" ++ toLazyByteString x ++ "\"]"
   where decodeTime y = decode y :: Maybe [UTCTime]
 
 -- | Tries to find a key-value pair by key and return the value.
@@ -44,15 +44,15 @@ findFirstKey _ [] = Nothing
 
 -- | Prepares a text for inclusion in a URL.
 --
--- >>> slugify $ pack "Hello & World!"
+-- >>> slugify "Hello & World!"
 -- "hello-and-world"
-slugify :: LText -> LText
+slugify :: Stringable a => a -> LText
 slugify = filter (not . isSpace) . intercalate "-" . words .
           replace "&" "and" . replace "+" "plus" . replace "%" "percent" .
           replace "<" "lt" . replace ">" "gt" . replace "=" "eq" .
           replace "#" "hash" . replace "@" "at" . replace "$" "dollar" .
           filter (`notElem` ("!^*?()[]{}`./\\'\"~|" :: String)) .
-          toLower . strip
+          toLower . strip . toLazyText
 
 -- | Parses comma-separated tags into a list.
 --
@@ -77,9 +77,14 @@ mkUrl base parts = intercalate "/" $ [base] ++ parts
 
 type SweetrollAction = ActionT LText IO
 
--- | Returns an action that shows text with a Content-Type of application/x-www-form-urlencoded.
-showXForm :: LText -> SweetrollAction ()
-showXForm x = status ok200 >> setHeader "Content-Type" "application/x-www-form-urlencoded; charset=utf-8" >> text x
+-- | Encodes key-value data as application/x-www-form-urlencoded.
+writeForm :: (Stringable a) => [(a, a)] -> ByteString
+writeForm ps = intercalate "&" $ map (\(k, v) -> enc k ++ "=" ++ enc v) ps
+  where enc = urlEncode True . toByteString
+
+-- | Returns an action that writes data as application/x-www-form-urlencoded.
+showForm :: (Stringable a) => [(a, a)] -> SweetrollAction ()
+showForm x = status ok200 >> setHeader "Content-Type" "application/x-www-form-urlencoded; charset=utf-8" >> raw (toLazyByteString $ writeForm x)
 
 pandocReaderOptions :: ReaderOptions
 pandocReaderOptions = def { readerExtensions = githubMarkdownExtensions

@@ -6,8 +6,7 @@ import           ClassyPrelude
 import           Test.Hspec
 import           System.Directory
 import           System.IO.Unsafe (unsafePerformIO)
-import           Network.HTTP.Types.Status
-import           Network.HTTP.Types.Method
+import           Network.HTTP.Types
 import           Network.Wai.Internal (requestMethod)
 import           Network.Wai.Test
 import qualified Network.Wai as Wai

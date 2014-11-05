@@ -35,6 +35,7 @@ library
       , bytestring
       , blaze-markup
       , blaze-builder
+      , stringable
       , time
       , aeson
       , jwt

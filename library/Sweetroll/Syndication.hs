@@ -65,7 +65,7 @@ postTwitter conf mgr rng entry = do
   req <- liftIO $ parseUrl $ (twitterApiHost conf) ++ "/statuses/update.json"
   let (_, txt) = trimmedText 115 entry
       pUrl = fromMaybe "" $ entryUrl entry
-      reqBody = writeForm [("status", txt ++ pUrl)]
+      reqBody = writeForm [("status", txt ++ " " ++ pUrl)]
       req' = req { method = "POST"
                  , queryString = reqBody -- Yes, queryString... WTF http://ox86.tumblr.com/post/36810273719/twitter-api-1-1-responds-with-status-401-code-32
                  , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8")

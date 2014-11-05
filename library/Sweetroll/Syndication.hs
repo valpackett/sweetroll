@@ -63,7 +63,7 @@ $(deriveJSON defaultOptions { fieldLabelModifier = toLower . drop 7 } ''TwitterP
 postTwitter :: SweetrollConf -> Manager -> SystemRNG -> Entry -> SweetrollAction (Maybe LText)
 postTwitter conf mgr rng entry = do
   req <- liftIO $ parseUrl $ (twitterApiHost conf) ++ "/statuses/update.json"
-  let (_, txt) = trimmedText 115 entry
+  let (_, txt) = trimmedText 100 entry -- TODO: Figure out the number based on mentions of urls/domains in the first (140 - 25) characters
       pUrl = fromMaybe "" $ entryUrl entry
       reqBody = writeForm [("status", txt ++ " " ++ pUrl)]
       req' = req { method = "POST"

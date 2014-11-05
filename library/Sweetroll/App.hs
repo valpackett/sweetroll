@@ -2,7 +2,7 @@
 {-# LANGUAGE PackageImports #-}
 
 -- | The module that contains the Sweetroll WAI application.
-module Sweetroll.App (mkApp, defaultSweetrollConf) where
+module Sweetroll.App (mkApp) where
 
 import           ClassyPrelude
 import           Network.Wai (Application)

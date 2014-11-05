@@ -69,7 +69,7 @@ main = runCommand $ \opts args -> do
   let secret' = case secret opts of
                   "RANDOM" -> decodeUtf8 $ B64.encode $ H.hash randBytes
                   k -> T.pack k
-  conf <- loadTemplates defaultSweetrollConf {
+  conf <- loadTemplates def {
     domainName                     = T.pack $ domain opts
   , secretKey                      = secret'
   , httpsWorks                     = https opts

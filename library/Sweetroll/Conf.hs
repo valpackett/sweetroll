@@ -3,11 +3,15 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 {-# LANGUAGE CPP, QuasiQuotes, TemplateHaskell #-}
 
-module Sweetroll.Conf (module Sweetroll.Conf) where
+module Sweetroll.Conf (
+  module Sweetroll.Conf
+, def
+) where
 
 import           ClassyPrelude
 import           Text.RawString.QQ
 import           Data.Setters
+import           Data.Default
 import           Web.Simple.Templates.Language
 import           Sweetroll.Util (dropNonHtml)
 
@@ -65,32 +69,32 @@ readFailHandler c _ = return c
 -- cpp screws up line numbering, so we put this at the end
 -- | The default SweetrollConf.
 -- Actual defaults are in the executable!
-defaultSweetrollConf :: SweetrollConf
-defaultSweetrollConf =  SweetrollConf {
-    siteName = ""
-  , secretKey = "SECRET" -- the executable sets to a secure random value by default
-  , httpsWorks = False
-  , domainName = ""
-  , indieAuthEndpoint = "http://127.0.0.1"
-  , adnApiHost = "http://127.0.0.1"
-  , adnApiToken = ""
-  , twitterApiHost = "http://127.0.0.1"
-  , twitterAppKey = ""
-  , twitterAppSecret = ""
-  , twitterAccessToken = ""
-  , twitterAccessSecret = ""
-  , testMode = False
-  , titleSeparator = " / "
-  , layoutTemplate = processTpl [r|
+instance Default SweetrollConf where
+  def = SweetrollConf {
+        siteName             = ""
+      , secretKey            = "SECRET" -- the executable sets to a secure random value by default
+      , httpsWorks           = False
+      , domainName           = ""
+      , indieAuthEndpoint    = "http://127.0.0.1"
+      , adnApiHost           = "http://127.0.0.1"
+      , adnApiToken          = ""
+      , twitterApiHost       = "http://127.0.0.1"
+      , twitterAppKey        = ""
+      , twitterAppSecret     = ""
+      , twitterAccessToken   = ""
+      , twitterAccessSecret  = ""
+      , testMode             = False
+      , titleSeparator       = " / "
+      , layoutTemplate       = processTpl [r|
 #include "../../templates/layout.html"
-|], entryTemplate = processTpl [r|
+    |], entryTemplate        = processTpl [r|
 #include "../../templates/entry.html"
-|], categoryTemplate = processTpl [r|
+    |], categoryTemplate     = processTpl [r|
 #include "../../templates/category.html"
-|], indexTemplate = processTpl [r|
+    |], indexTemplate        = processTpl [r|
 #include "../../templates/index.html"
-|], entryInListTemplate = processTpl [r|
+    |], entryInListTemplate  = processTpl [r|
 #include "../../templates/entry-in-list.html"
-|], authorTemplate = processTpl [r|
+    |], authorTemplate       = processTpl [r|
 #include "../../templates/author.html"
-|]}
+    |]}

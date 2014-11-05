@@ -30,6 +30,7 @@ library
       , safe
       , either
       , transformers
+      , data-default
       , text
       , bytestring
       , blaze-markup

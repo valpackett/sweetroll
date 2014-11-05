@@ -39,13 +39,12 @@ $endfor$  </category>$endfor$
 spec :: Spec
 spec = do
   describe "renderPage" $ do
-    let conf = defaultSweetrollConf
 
     it "renders notes" $ do
       let testNote = defaultEntry {
         entryContent      = Just $ Right "Hello, world!"
       , entryPublished    = parseISOTime "2013-10-17T09:42:49.000Z" }
-      testRender testEntryTpl (entryView conf "articles" [] ("first", testNote)) `shouldBe` [r|<note>
+      testRender testEntryTpl (entryView def "articles" [] ("first", testNote)) `shouldBe` [r|<note>
   <p>Hello, world!</p>
   <time datetime="2013-10-17 09:42">17.10.2013 09:42 AM</time>
 </note>|]
@@ -55,7 +54,7 @@ spec = do
         entryName         = Just "First post"
       , entryContent      = Just $ Right "<p>This is the content</p>"
       , entryPublished    = parseISOTime "2013-10-17T09:42:49.000Z" }
-      testRender testEntryTpl (entryView conf "articles" [] ("first", testArticle)) `shouldBe` [r|<article>
+      testRender testEntryTpl (entryView def "articles" [] ("first", testArticle)) `shouldBe` [r|<article>
   <h1><a href="/articles/first">First post</a></h1>
   <p>This is the content</p>
   <time datetime="2013-10-17 09:42">17.10.2013 09:42 AM</time>
@@ -64,7 +63,7 @@ spec = do
     it "renders categories" $ do
       let testEntries = [ ("f", defaultEntry { entryContent = Just $ Right "First note"  })
                         , ("s", defaultEntry { entryContent = Just $ Right "Second note" }) ]
-      testRender testCategoryTpl (catView conf "test" testEntries) `shouldBe` [r|<category name="test">
+      testRender testCategoryTpl (catView def "test" testEntries) `shouldBe` [r|<category name="test">
 <e href="/test/f">First note</e>
 <e href="/test/s">Second note</e>
 </category>|]
@@ -72,7 +71,7 @@ spec = do
     it "renders the index" $ do
       let testCats = [ ("stuff", [ ("first",  defaultEntry { entryContent = Just $ Right "First"  })
                                  , ("second", defaultEntry { entryContent = Just $ Right "Second" }) ]) ]
-      testRender testIndexTpl (indexView conf testCats) `shouldBe` [r|<index>
+      testRender testIndexTpl (indexView def testCats) `shouldBe` [r|<index>
   <category name="stuff">
     <e href="/stuff/first">First</e>
     <e href="/stuff/second">Second</e>

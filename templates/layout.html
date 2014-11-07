@@ -36,6 +36,8 @@
 			ul,ol{padding-left:0;list-style-position:inside;}
 			a { color: #0074df; transition: ease-in-out color 0.3s; }
 			a:hover,a:focus,a:active { color: #7fdbff; }
+			.fa-l { margin-right: 0.25em; }
+			.fa-r { margin-left: 0.25em; }
 			.site-content { flex: 1; }
 			.site-footer { padding: 1em 0; font-size: 95%; color: #777; }
 			.site-header { padding: 2em 0; }
@@ -53,25 +55,24 @@
 			.entry-in-list:last-child { border-bottom: none; }
 			.entry-in-list .entry-footer { font-size: 90%; }
 			.entry-in-list .entry-footer, .entry-in-list .entry-footer a { font-size: 90%; color: #aaa; }
-			.note-entry {
-				border: #39cccc solid 1px;
-				padding: 1em;
-			}
+			.note-entry { border: #39cccc solid 1px; padding: 1em; }
 			.note-entry .entry-header { font-size: 90%; }
 			.note-entry .entry-header, .note-entry .entry-header a { color: #aaa; }
 			.note-entry .entry-content { font-size: 110%; }
 			.note-entry .entry-footer { border-top: #39cccc solid 1px; padding: 0.5em 0 0; }
-			.entry-footer { color: #999; font-size: 95%; }
+			.entry-footer { color: #999; font-size: 95%; line-height: 1.6; }
 			.entry-footer a { text-decoration: none; }
+			.entry-main .entry-footer a { margin-left: 0.5em; }
+			.entry-main .entry-footer .entry-actions indie-action:first-child a { margin-left: 0; }
 			.entry-footer a:hover { text-decoration: underline; }
 			.entry-footer h2 { font-size: 100%; display: inline; }
 			.entry-syndication ul, .entry-syndication li { display: inline; }
-			.social-profiles { list-style-type: none; }
+			.social-profiles { list-style-type: none; line-height: 1.6; }
 			@media screen and (min-width:56em) {
 				h1 { font-size:2em; }
 				.site-content, .index-main { display: -webkit-flex; display: flex; }
 				.site-author { flex: 1; -webkit-flex: 1; }
-				.site-main { flex: 3; -webkit-flex: 3; }
+				.site-main { flex: 3; -webkit-flex: 3; padding-left: 1em; }
 				.index-main { overflow-x: scroll; }
 				.index-category { flex: 1; -webkit-flex: 1; min-width: 30%; max-width: 100%; padding: 0 1em 0 0; }
 				.index-category:last-child { padding: 0; }

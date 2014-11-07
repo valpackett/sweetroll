@@ -30,10 +30,13 @@
 		<footer class="entry-footer">
 			<div class="entry-actions">
 				<indie-action do="reply" with="$permalink$">
+					$if(hasTwitterId)$<a href="https://twitter.com/intent/tweet?in_reply_to=$twitterId$"><i class="fa fa-reply"></i> Reply</a>$endif$
 				</indie-action>
 				<indie-action do="repost" with="$permalink$">
+					$if(hasTwitterId)$<a href="https://twitter.com/intent/retweet?tweet_id=$twitterId$"><i class="fa fa-retweet"></i> Retweet</a>$endif$
 				</indie-action>
 				<indie-action do="like" with="$permalink$">
+					$if(hasTwitterId)$<a href="https://twitter.com/intent/favorite?tweet_id=$twitterId$"><i class="fa fa-star"></i> Favorite</a>$endif$
 				</indie-action>
 			</div>
 			$if(hasSyndication)$
@@ -48,9 +51,9 @@
 			$endif$
 			<nav class="entry-nav">
 				<h2>Navigation</h2>
-				$if(hasPrev)$<a href="$prevHref$" rel="prev">&larr; previous</a>$endif$
+				$if(hasPrev)$<a href="$prevHref$" rel="prev"><i class="fa fa-arrow-left"></i> previous</a>$endif$
 				<a rel="up category" class="p-category" href="$categoryHref$">$category$</a>
-				$if(hasNext)$<a href="$nextHref$" rel="next">next &rarr;</a>$endif$
+				$if(hasNext)$<a href="$nextHref$" rel="next">next <i class="fa fa-arrow-right"></i></a>$endif$
 			</nav>
 		</footer>
 	</article>

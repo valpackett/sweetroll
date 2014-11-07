@@ -22,6 +22,7 @@ import           Web.Simple.Templates.Language
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
 import           Data.Aeson.Types
+import qualified Data.Text.Lazy as LT
 import           Data.List (elemIndex)
 import           Safe (atMay)
 import           Sweetroll.Conf
@@ -43,6 +44,7 @@ entryView _ catName otherSlugs (slug, e) =
         slugIdx = fromMaybe (negate 1) $ elemIndex slug otherSlugs
         prev = atMay otherSlugs $ slugIdx - 1
         next = atMay otherSlugs $ slugIdx + 1
+        twitterId = lastMay =<< LT.splitOn "/" <$> find (isInfixOf "twitter.com") (entrySyndication e)
         ctx = object [
             "name"             .= fromMaybe "" (entryName e)
           , "content"          .= content
@@ -58,6 +60,8 @@ entryView _ catName otherSlugs (slug, e) =
           , "nextHref"         .= mconcat ["/", catName, "/", fromMaybe "" next]
           , "hasSyndication"   .= (not $ null $ entrySyndication e)
           , "syndication"      .= entrySyndication e
+          , "hasTwitterId"     .= isJust twitterId
+          , "twitterId"        .= fromMaybe "" twitterId
           , "isReply"          .= isJust (entryInReplyTo e)
           , "replyForUrl"      .= fromMaybe "" (derefEntry =<< entryInReplyTo e)
           , "replyForName"     .= fromMaybe "" (derefEntryName =<< entryInReplyTo e)

@@ -21,6 +21,7 @@ import           Network.HTTP.Types
 import           Network.HTTP.Client
 import           Network.URI
 import           Sweetroll.Util
+import           Sweetroll.Conf
 
 hLink :: HeaderName
 hLink = "Link"

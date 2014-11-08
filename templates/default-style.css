@@ -1,37 +1,134 @@
+/*! https://github.com/myfreeweb/sweetroll <3 https://necolas.github.io/normalize.css/ + http://typeplate.com + http://clrs.cc */
 html {
-	background: #fff; color: #343434;
-	font-family: "Helvetica Neue", sans-serif;
 	-ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;
+	font-family: "Helvetica Neue", sans-serif;
+	background: #fff;
+	color: #343434;
 }
-*{box-sizing:border-box;}
-body{margin:0;display:flex;min-height:100vh;flex-direction:column;}
-article,aside,details,figcaption,figure,footer,header,hgroup,main,menu,nav,section,summary{display:block;}
-audio,canvas,progress,video{display:inline-block;vertical-align:baseline;}
-abbr[title]{border-bottom:1px dotted;}
-b,strong{font-weight:bold;}
-dfn{font-style:italic;}
-h1{font-size:1.6em;}
-h1,h2,h3,h4,h5,h6{margin:0;}
-mark{background:#ff0;color:#000;}
-small{font-size:80%;}
-sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline;}
-sup{top:-0.5em;}
-sub{bottom:-0.25em;}
-img{border:0;max-width:100%;}
-pre{overflow:auto;}
-code,kbd,pre,samp {font-family:monospace, monospace;font-size:1em;}
-table{border-collapse:collapse;border-spacing:0;}
-td,th{padding:0;}
-ul{list-style:square;}
-ul,ol{padding-left:0;list-style-position:inside;}
-a { color: #0074df; transition: ease-in-out color 0.3s; }
-a:hover,a:focus,a:active { color: #7fdbff; }
-.fa-l { margin-right: 0.25em; }
-.fa-r { margin-left: 0.25em; }
-.site-content { flex: 1; }
-.site-footer { padding: 1em 0; font-size: 95%; color: #777; }
-.site-header { padding: 2em 0; }
-.site-author { padding: 0 0 2em; }
+* { box-sizing: border-box }
+body {
+	margin: 0;
+	display: flex;
+	min-height: 100vh;
+	flex-direction: column;
+	-webkit-hyphens: auto; -moz-hyphens: auto; -ms-hyphens: auto; hyphens: auto;
+	word-wrap: break-word;
+}
+input, abbr, acronym, blockquote, code, kbd, q, samp, var {
+	-webkit-hyphens: none; -moz-hyphens: none; -ms-hyphens: none; hyphens: none;
+}
+article, aside, details, figcaption, figure, footer, header, hgroup, main, menu, nav, section, summary { display: block }
+audio, canvas, progress, video {
+	display: inline-block;
+	vertical-align: baseline;
+}
+abbr {
+	-webkit-font-variant: small-caps; -moz-font-variant: small-caps; -ms-font-variant: small-caps; font-variant: small-caps;
+	font-weight: 600;
+	text-transform: lowercase;
+	color: gray;
+}
+abbr[title] { border-bottom: 1px dotted }
+abbr[title]:hover { cursor: help }
+b, strong { font-weight: bold }
+dfn { font-style: italic }
+h1, h2, h3, h4, h5, h6 {
+	margin-top: 0;
+	line-height: 1;
+	text-rendering: optimizeLegibility;
+}
+.giga {
+	font-size: 90px; font-size: 5rem; 
+	margin-bottom: 5.94px; margin-bottom: 0.33rem;
+}
+.mega {
+	font-size: 72px; font-size: 4rem; 
+	margin-bottom: 7.425px; margin-bottom: 0.4125rem;
+}
+.alpha {
+	font-size: 60px; font-size: 3.33333rem; 
+	margin-bottom: 8.91px; margin-bottom: 0.495rem;
+} 
+.beta {
+	font-size: 48px; font-size: 2.6667rem; 
+	margin-bottom: 11.1375px; margin-bottom: 0.61875rem;
+}
+h1, .gamma {
+	font-size: 36px; font-size: 2rem; 
+	margin-bottom: 14.85px; margin-bottom: 0.825rem;
+}
+h2, .delta {
+	font-size: 24px; font-size: 1.3333333333333333rem; 
+	margin-bottom: 22.275px; margin-bottom: 1.2375rem;
+}
+h3, .epsilon {
+	font-size: 21px; font-size: 1.16667rem; 
+	margin-bottom: 25.45714px; margin-bottom: 1.41429rem;
+} 
+h4, h5, h6, .zeta {
+	font-size: 18px; font-size: 1rem; 
+	margin-bottom: 29.7px; margin-bottom: 1.65rem;
+}
+p, pre, figure, blockquote { margin: auto auto 1.5em }
+p:last-child { margin-bottom: 0.5em; }
+mark {
+	background: #ff0;
+	color: #000;
+}
+small { font-size: 80% }
+sub, sup {
+	font-size: 75%;
+	line-height: 0;
+	position: relative;
+	vertical-align: baseline;
+}
+sup { top: -0.5em }
+sub { bottom: -0.25em }
+img {
+	border: 0;
+	max-width: 100%;
+}
+pre {
+	overflow: auto;
+	white-space: pre;
+}
+code, kbd, pre, samp {
+	font-family: Menlo, Consolas, monospace, monospace;
+	font-size: 1em;
+}
+pre code {
+	word-wrap: normal;
+	white-space: -moz-pre-wrap; white-space: pre-wrap;
+}
+code {
+	white-space: pre;
+	font-family: monospace;
+}
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+td, th { padding: 0 }
+ul { list-style: square }
+ul, ol {
+	padding-left: 0;
+	list-style-position: inside;
+}
+a {
+	color: #0074df;
+	transition: ease-in-out color 0.3s;
+}
+a:hover, a:focus, a:active { color: #7fdbff }
+.fa-l { margin-right: 0.25em }
+.fa-r { margin-left: 0.25em }
+.site-content { flex: 1 }
+.site-footer {
+	padding: 1em 0;
+	font-size: 95%;
+	color: #777;
+}
+.site-header { padding: 2em 0 }
+.site-author { padding: 0 0 2em }
 .site-header, .site-content, .site-footer {
 	width: 96%;
 	margin: 0 auto;
@@ -39,35 +136,66 @@ a:hover,a:focus,a:active { color: #7fdbff; }
 .entry-in-list {
 	list-style-type: none;
 	display: block;
-	padding: 0 0 1em;
-	border-bottom: #39cccc solid 1px;
+	padding: 1em 0 0.5em;
+	border-bottom: transparent solid 1px;
+	border-top: #39cccc solid 1px;
+	transition: ease-in-out border-color 0.3s;
 }
-.entry-in-list:last-child { border-bottom: none; }
-.entry-in-list .entry-footer { font-size: 90%; }
-.entry-in-list .entry-footer, .entry-in-list .entry-footer a { font-size: 90%; color: #aaa; }
-.note-entry { border: #39cccc solid 1px; padding: 1em; }
-.note-entry .entry-header { font-size: 90%; }
-.note-entry .entry-header, .note-entry .entry-header a { color: #aaa; }
-.note-entry .entry-content { font-size: 110%; }
+.entry-in-list:nth-child(even) { background: #fdfdfd }
+.entry-in-list:hover { border-color: #2ecc40 }
+.entry-in-list:hover + .entry-in-list { border-color: transparent }
+.entry-in-list:first-child { border-top: none }
+.entry-in-list .entry-footer { font-size: 90% }
+.entry-in-list .entry-footer, .entry-in-list .entry-footer a {
+	font-size: 90%;
+	color: #aaa;
+}
+.note-entry { border: #39cccc solid 1px }
+.note-entry .entry-header { font-size: 90%; margin-bottom: 1em; }
+.note-entry .entry-header, .note-entry .entry-header a { color: #aaa }
+.note-entry .entry-content { font-size: 110% }
 .note-entry .entry-footer { border-top: #39cccc solid 1px; padding: 0.5em 0 0; }
-.entry-footer { color: #999; font-size: 95%; line-height: 1.6; }
-.entry-footer a { text-decoration: none; }
-.entry-main .entry-footer a { margin-left: 0.5em; }
-.entry-main .entry-footer .entry-actions indie-action:first-child a { margin-left: 0; }
-.entry-footer a:hover { text-decoration: underline; }
-.entry-footer h2 { font-size: 100%; display: inline; }
-.entry-syndication ul, .entry-syndication li { display: inline; }
-.social-profiles { list-style-type: none; line-height: 1.6; }
-@media screen and (min-width:56em) {
-	h1 { font-size:2em; }
+.entry-footer {
+	color: #999;
+	font-size: 95%;
+	line-height: 1.6;
+}
+.entry-footer a { text-decoration: none }
+.entry-main .entry-header, .entry-main .entry-content, .entry-main .entry-footer { margin: 16px; margin: 1rem; }
+.entry-main .entry-footer a { margin-left: 0.5em }
+.entry-main .entry-footer .entry-actions indie-action:first-child a { margin-left: 0 }
+.entry-footer a:hover { text-decoration: underline }
+.entry-footer h2 {
+	font-size: 100%;
+	display: inline;
+}
+.entry-syndication ul, .entry-syndication li { display: inline }
+.social-profiles {
+	list-style-type: none;
+	line-height: 1.6;
+}
+@media screen and (min-width:32em) { 
+	.site-header, .site-content, .site-footer { width: 75% }
+}
+@media screen and (min-width:56em) { 
+	.site-header, .site-content, .site-footer { width: 90% }
+	body { font-size: 105% }
 	.site-content, .index-main { display: -webkit-flex; display: flex; }
 	.site-author { flex: 1; -webkit-flex: 1; }
 	.site-main { flex: 3; -webkit-flex: 3; padding-left: 1em; }
-	.index-main { overflow-x: scroll; }
-	.index-category { flex: 1; -webkit-flex: 1; min-width: 30%; max-width: 100%; padding: 0 1em 0 0; }
-	.index-category:last-child { padding: 0; }
+	.index-main { overflow-x: scroll }
+	.index-category {
+		flex: 1; -webkit-flex: 1;
+		min-width: 30%;
+		max-width: 100%;
+		padding: 0 1em 0 0;
+	}
+	.index-category:last-child { padding: 0 }
 }
-@media screen and (min-width:80em) {
-	.site-header, .site-content, .site-footer { width: 75%; }
-	.note-entry { max-width: 60em; }
+@media screen and (min-width:80em) { 
+	.site-header, .site-content, .site-footer { width: 75% }
+	.note-entry { max-width: 60em }
+}
+@media screen and (min-width:100em) { 
+	.site-header, .site-content, .site-footer { width: 60% }
 }

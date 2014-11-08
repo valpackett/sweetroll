@@ -58,6 +58,7 @@ library
       , hxt
       , hxt-tagsoup
       , async
+      , highlighting-kate
       , pandoc == 1.13.*
       , pandoc-types
       , raw-strings-qq == 1.*

@@ -10,6 +10,8 @@ module Sweetroll.Conf (
 
 import           ClassyPrelude
 import           Text.RawString.QQ
+import           Text.Pandoc.Options
+import           Text.Highlighting.Kate.Styles (tango)
 import           Data.Setters
 import           Data.Default
 import           Web.Simple.Templates.Language
@@ -106,3 +108,14 @@ instance Default SweetrollConf where
     |], defaultStyle         = dropIncludeCrap $ asLByteString [r|
 #include "../../templates/default-style.css"
 |]}
+
+pandocReaderOptions :: ReaderOptions
+pandocReaderOptions = def { readerExtensions = githubMarkdownExtensions
+                          , readerSmart = True }
+
+pandocWriterOptions :: WriterOptions
+pandocWriterOptions = def { writerHtml5 = True
+                          , writerEmailObfuscation = NoObfuscation
+                          , writerHighlight = True
+                          , writerHighlightStyle = tango
+                          , writerIdentifierPrefix = "sr-" }

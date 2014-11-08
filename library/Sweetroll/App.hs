@@ -14,9 +14,11 @@ import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
 import "crypto-random" Crypto.Random
 import           Text.Pandoc hiding (Link)
+import           Text.Highlighting.Kate.Format.HTML (styleToCss)
 import           Web.Scotty
 import           Gitson
 import           Gitson.Util (maybeReadIntString)
+import           Data.Stringable
 import           Data.Aeson.Types
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
@@ -49,7 +51,8 @@ mkApp conf = scottyApp $ do
       addLinks l x = addHeader "Link" (fromStrict $ writeLinkHeader l) >> x
       pageNotFound = status notFound404 >> render notFoundTemplate notFoundView
 
-  get "/default-style.css" $ setHeader "Content-Type" "text/css" >> raw (defaultStyle conf)
+  get "/default-style.css" $ setHeader "Content-Type" "text/css" >> raw (defaultStyle conf ++
+    (toLazyByteString $ styleToCss $ writerHighlightStyle pandocWriterOptions))
 
   post "/login" $ doIndieAuth conf unauthorized httpClientMgr
 

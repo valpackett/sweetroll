@@ -12,7 +12,6 @@ import           Data.Char (isSpace)
 import           Data.Aeson (decode)
 import           Data.Stringable
 import           Data.Microformats2
-import           Text.Pandoc.Options
 import           Text.Regex.PCRE
 import           Network.HTTP.Types
 import           Safe (headMay)
@@ -86,16 +85,6 @@ writeForm ps = intercalate "&" $ map (\(k, v) -> enc k ++ "=" ++ enc v) ps
 -- | Returns an action that writes data as application/x-www-form-urlencoded.
 showForm :: (Stringable a) => [(a, a)] -> SweetrollAction ()
 showForm x = status ok200 >> setHeader "Content-Type" "application/x-www-form-urlencoded; charset=utf-8" >> raw (toLazyByteString $ writeForm x)
-
-pandocReaderOptions :: ReaderOptions
-pandocReaderOptions = def { readerExtensions = githubMarkdownExtensions
-                          , readerSmart = True }
-
-pandocWriterOptions :: WriterOptions
-pandocWriterOptions = def { writerHtml5 = True
-                          , writerEmailObfuscation = NoObfuscation
-                          , writerHighlight = True
-                          , writerIdentifierPrefix = "sr-" }
 
 derefEntry :: EntryReference -> Maybe LText
 derefEntry (Left (Here c)) = citeUrl c

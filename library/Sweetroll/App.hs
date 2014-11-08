@@ -1,5 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
-{-# LANGUAGE PackageImports #-}
+{-# LANGUAGE PackageImports, ImplicitParams #-}
 
 -- | The module that contains the Sweetroll WAI application.
 module Sweetroll.App (mkApp) where
@@ -32,29 +32,33 @@ import           Sweetroll.Util
 -- | Makes the Sweetroll WAI application.
 mkApp :: SweetrollConf -> IO Application
 mkApp conf = scottyApp $ do
-  middleware autohead -- XXX: does not add Content-Length
-  middleware $ staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
-
   httpClientMgr <- liftIO $ newManager tlsManagerSettings
   sysRandom <- liftIO $ cprgCreate <$> createEntropyPool
 
+  let ?httpMgr = httpClientMgr
+      ?rng = sysRandom
+      ?conf = conf
+
   let base = baseUrl conf
-      hostInfo = [ "domain" .= domainName conf
-                 , "s" .= s conf
-                 , "base_url" .= base ]
-      authorHtml = renderRaw (authorTemplate conf) hostInfo
-      render = renderWithConf conf authorHtml hostInfo
-      checkAuth' = if testMode conf then id else checkAuth conf unauthorized
+      checkAuth' = if testMode conf then id else checkAuth unauthorized
       links = [ Link (mkUrl base ["micropub"])           [(Rel, "micropub")]
               , Link (mkUrl base ["login"])              [(Rel, "token_endpoint")]
               , Link (pack $ indieAuthEndpoint conf)     [(Rel, "authorization_endpoint")] ]
       addLinks l x = addHeader "Link" (fromStrict $ writeLinkHeader l) >> x
-      pageNotFound = status notFound404 >> render notFoundTemplate notFoundView
+
+  let ?hostInfo = [ "domain" .= domainName conf
+                  , "s" .= s conf
+                  , "base_url" .= base ]
+  let ?authorHtml = renderRaw (authorTemplate conf) ?hostInfo
+  let pageNotFound = status notFound404 >> render notFoundTemplate notFoundView
+
+  middleware autohead -- XXX: does not add Content-Length
+  middleware $ staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
 
   get "/default-style.css" $ setHeader "Content-Type" "text/css" >> raw (defaultStyle conf ++
     (toLazyByteString $ styleToCss $ writerHighlightStyle pandocWriterOptions))
 
-  post "/login" $ doIndieAuth conf unauthorized httpClientMgr
+  post "/login" $ doIndieAuth unauthorized
 
   get "/micropub" $ checkAuth' $ showSyndication $ showAuth
 
@@ -73,23 +77,23 @@ mkApp conf = scottyApp $ do
         let entry = makeEntry allParams now absUrl readerF
             ifNotTest x = if testMode conf then (return Nothing) else x
             ifSyndicateTo x y = if isInfixOf x $ fromMaybe "" $ findByKey allParams "syndicate-to" then y else (return Nothing)
-        synd <- sequence [ ifNotTest $ ifSyndicateTo "app.net"     $ postAppDotNet conf httpClientMgr entry
-                         , ifNotTest $ ifSyndicateTo "twitter.com" $ postTwitter conf httpClientMgr sysRandom entry ]
+        synd <- sequence [ ifNotTest $ ifSyndicateTo "app.net"     $ postAppDotNet entry
+                         , ifNotTest $ ifSyndicateTo "twitter.com" $ postTwitter entry ]
         let entry' = entry { entrySyndication = catMaybes synd }
         save' entry'
-        when (not $ testMode conf) $ void $ liftIO $ sendWebmentions httpClientMgr entry'
+        when (not $ testMode conf) $ void $ liftIO $ sendWebmentions entry'
       _ -> status badRequest400
 
   get "/" $ addLinks links $ do
     catNames <- liftIO listCollections
     cats <- liftIO $ mapM readCategory catNames
-    render indexTemplate $ indexView conf $ filter visibleCat cats
+    render indexTemplate $ indexView $ filter visibleCat cats
 
   get "/:category" $ addLinks links $ do
     catName <- param "category"
     cat <- liftIO $ readCategory catName
     if null (snd cat) then pageNotFound
-    else render categoryTemplate $ catView conf catName $ snd cat
+    else render categoryTemplate $ catView catName $ snd cat
 
   get "/:category/:slug" $ addLinks links $ do
     category <- param "category"
@@ -99,7 +103,7 @@ mkApp conf = scottyApp $ do
       Nothing -> pageNotFound
       Just e  -> do
         otherSlugs <- liftIO $ listDocumentKeys category
-        render entryTemplate $ entryView conf category (map readSlug otherSlugs) (slug, e)
+        render entryTemplate $ entryView category (map readSlug otherSlugs) (slug, e)
 
   notFound pageNotFound
 

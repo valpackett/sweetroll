@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
+{-# LANGUAGE ImplicitParams #-}
 
 -- | The module responsible for rendering pages into actual HTML
 module Sweetroll.Pages (
@@ -13,7 +14,7 @@ module Sweetroll.Pages (
 , notFoundView
 , renderContent
 , renderRaw
-, renderWithConf
+, render
 ) where
 
 import           ClassyPrelude
@@ -36,8 +37,8 @@ data ViewResult = ViewResult
   { titleParts           :: [Text]
   , tplContext           :: Value }
 
-entryView :: SweetrollConf -> CategoryName -> [EntrySlug] -> (EntrySlug, Entry) -> ViewResult
-entryView _ catName otherSlugs (slug, e) =
+entryView :: CategoryName -> [EntrySlug] -> (EntrySlug, Entry) -> ViewResult
+entryView catName otherSlugs (slug, e) =
   ViewResult { titleParts = [toStrict (fromMaybe ("Note @ " ++ published) (entryName e)), pack catName]
              , tplContext = ctx }
   where content = renderContent writeHtmlString e
@@ -69,24 +70,24 @@ entryView _ catName otherSlugs (slug, e) =
           -- TODO: repost/like
           ]
 
-catView :: SweetrollConf -> CategoryName -> [(EntrySlug, Entry)] -> ViewResult
-catView conf name entries =
+catView :: (?conf :: SweetrollConf) => CategoryName -> [(EntrySlug, Entry)] -> ViewResult
+catView name entries =
   ViewResult { titleParts = [pack name]
              , tplContext = ctx }
   where slugs = map fst entries
         ctx = object [
             "name"            .= name
           , "permalink"       .= mconcat ["/", name]
-          , "entries"         .= map (tplContext . entryView conf name slugs) entries
-          , "renderedEntries" .= map (renderTemplate (entryInListTemplate conf) helpers . tplContext . entryView conf name slugs) entries
+          , "entries"         .= map (tplContext . entryView name slugs) entries
+          , "renderedEntries" .= map (renderTemplate (entryInListTemplate ?conf) helpers . tplContext . entryView name slugs) entries
           ]
 
-indexView :: SweetrollConf -> [(CategoryName, [(EntrySlug, Entry)])] -> ViewResult
-indexView conf cats =
+indexView :: (?conf :: SweetrollConf) => [(CategoryName, [(EntrySlug, Entry)])] -> ViewResult
+indexView cats =
   ViewResult { titleParts = []
              , tplContext = ctx }
   where ctx = object [
-            "categories" .= map (tplContext . uncurry (catView conf)) cats
+            "categories" .= map (tplContext . uncurry catView) cats
           ]
 
 notFoundView :: ViewResult
@@ -100,13 +101,13 @@ renderContent writer e = case fromMaybe (Right "") $ entryContent e of
 renderRaw :: Template -> [Pair] -> Text
 renderRaw t c = renderTemplate t helpers $ object c
 
-renderWithConf :: SweetrollConf -> Text -> [Pair] -> (SweetrollConf -> Template) -> ViewResult -> SweetrollAction ()
-renderWithConf conf authorHtml hostInfo tplf stuff = SC.html $ fromStrict $ renderTemplate (layoutTemplate conf) helpers ctx
-  where ctx = object $ hostInfo ++ [
-                "content" .= renderTemplate (tplf conf) helpers (tplContext stuff)
-              , "author" .= authorHtml
-              , "website_title" .= siteName conf
-              , "meta_title" .= intercalate (titleSeparator conf) (titleParts stuff ++ [siteName conf])
+render :: (?conf :: SweetrollConf, ?authorHtml :: Text, ?hostInfo :: [Pair]) => (SweetrollConf -> Template) -> ViewResult -> SweetrollAction ()
+render tplf stuff = SC.html $ fromStrict $ renderTemplate (layoutTemplate ?conf) helpers ctx
+  where ctx = object $ ?hostInfo ++ [
+                "content" .= renderTemplate (tplf ?conf) helpers (tplContext stuff)
+              , "author" .= ?authorHtml
+              , "website_title" .= siteName ?conf
+              , "meta_title" .= intercalate (titleSeparator ?conf) (titleParts stuff ++ [siteName ?conf])
               ]
 
 helpers :: FunctionMap

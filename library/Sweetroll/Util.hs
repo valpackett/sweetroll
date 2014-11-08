@@ -1,5 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 {-# LANGUAGE GADTs, FlexibleContexts #-}
+{-# LANGUAGE PackageImports, ImplicitParams #-}
 
 -- | Various functions used inside Sweetroll.
 module Sweetroll.Util (module Sweetroll.Util) where
@@ -12,9 +13,15 @@ import           Data.Char (isSpace)
 import           Data.Aeson (decode)
 import           Data.Stringable
 import           Data.Microformats2
-import           Text.Regex.PCRE
+import "regex-pcre-builtin" Text.Regex.PCRE
 import           Network.HTTP.Types
+import           Network.HTTP.Client
 import           Safe (headMay)
+
+request :: (?httpMgr :: Manager, Stringable a) => Request -> IO (Response a)
+request req = do
+  resp <- httpLbs req ?httpMgr
+  return $ resp { responseBody = fromLazyByteString $ responseBody resp }
 
 -- | Tries to parse a text ISO datetime into a UTCTime.
 --

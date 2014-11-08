@@ -37,7 +37,7 @@ library
       , blaze-builder
       , stringable
       , time
-      , regex-pcre
+      , regex-pcre-builtin
       , aeson
       , jwt
       , gitson == 0.4.*

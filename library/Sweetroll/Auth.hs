@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
+{-# LANGUAGE ImplicitParams #-}
 
 -- | The IndieAuth/rel-me-auth implementation, using JSON Web Tokens.
 module Sweetroll.Auth (
@@ -10,7 +11,7 @@ module Sweetroll.Auth (
 
 import           ClassyPrelude
 import           Data.Time.Clock.POSIX
-import           Web.Scotty
+import           Web.Scotty hiding (request)
 import           Web.JWT hiding (header)
 import           Network.HTTP.Types.Status
 import           Network.HTTP.Client
@@ -23,10 +24,10 @@ getAccessToken = do
   tokenHeader <- header "Authorization" >>= \x -> return $ fromMaybe "" $ drop 7 <$> x -- Drop "Bearer "
   return $ toStrict $ fromMaybe tokenHeader $ findByKey allParams "access_token"
 
-checkAuth :: SweetrollConf -> SweetrollAction () -> SweetrollAction () -> SweetrollAction ()
-checkAuth conf unauthorized act = do
+checkAuth :: (?conf :: SweetrollConf) => SweetrollAction () -> SweetrollAction () -> SweetrollAction ()
+checkAuth unauthorized act = do
   token <- getAccessToken
-  let verResult = decodeAndVerifySignature (secret $ secretKey conf) token
+  let verResult = decodeAndVerifySignature (secret $ secretKey ?conf) token
   case verResult of
     Just _ -> act
     _ -> unauthorized
@@ -51,19 +52,19 @@ makeAccessToken conf me = do
       t' = encodeSigned HS256 (secret $ secretKey conf) t
   showForm [("access_token", t'), ("scope", "post"), ("me", me)]
 
-doIndieAuth :: SweetrollConf -> SweetrollAction () -> Manager -> SweetrollAction ()
-doIndieAuth conf unauthorized mgr = do
+doIndieAuth :: (?conf :: SweetrollConf, ?httpMgr :: Manager) => SweetrollAction () -> SweetrollAction ()
+doIndieAuth unauthorized = do
   allParams <- params
   let par x = toStrict <$> findByKey allParams x
       par' = fromMaybe "" . par
-      valid = makeAccessToken conf $ par' "me"
-  if testMode conf then valid else do
+      valid = makeAccessToken ?conf $ par' "me"
+  if testMode ?conf then valid else do
     let reqBody = writeForm [ ("code",         par' "code")
                             , ("redirect_uri", par' "redirect_uri")
-                            , ("client_id",    fromMaybe (baseUrl conf) $ par "client_id")
+                            , ("client_id",    fromMaybe (baseUrl ?conf) $ par "client_id")
                             , ("state",        par' "state") ]
-    indieAuthReq <- liftIO $ parseUrl $ indieAuthEndpoint conf
-    resp <- liftIO $ httpLbs (indieAuthReq { method = "POST"
-                                           , requestBody = RequestBodyBS reqBody }) mgr
+    indieAuthReq <- liftIO $ parseUrl $ indieAuthEndpoint ?conf
+    resp <- liftIO $ request (indieAuthReq { method = "POST"
+                                           , requestBody = RequestBodyBS reqBody }) :: SweetrollAction (Response LByteString)
     if responseStatus resp /= ok200 then unauthorized
     else valid

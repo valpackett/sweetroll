@@ -1,5 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell, PackageImports #-}
+{-# LANGUAGE TemplateHaskell, PackageImports, ImplicitParams #-}
 
 module Sweetroll.Syndication (
   postAppDotNet
@@ -35,9 +35,9 @@ $(deriveJSON defaultOptions { fieldLabelModifier = toLower . drop 3 } ''ADNWrapp
 data ADNLink = ADNLink { _adnLinkPos :: Int, _adnLinkLen :: Int, _adnLinkUrl :: LText }
 $(deriveJSON defaultOptions { fieldLabelModifier = toLower . drop 8 } ''ADNLink)
 
-postAppDotNet :: SweetrollConf -> Manager -> Entry -> SweetrollAction (Maybe LText)
-postAppDotNet conf mgr entry = do
-  req <- liftIO $ parseUrl $ (adnApiHost conf) ++ "/posts"
+postAppDotNet :: (?httpMgr :: Manager, ?conf :: SweetrollConf) => Entry -> SweetrollAction (Maybe LText)
+postAppDotNet entry = do
+  req <- liftIO $ parseUrl $ (adnApiHost ?conf) ++ "/posts"
   let (isArticle, txt) = trimmedText 250 entry
       pUrl = fromMaybe "" $ entryUrl entry
       reqBody = encode $ object [ "text" .= if isArticle then txt else "[x] " ++ txt
@@ -46,10 +46,10 @@ postAppDotNet conf mgr entry = do
                                 , "entities" .= object [ "links" .= [ ADNLink 0 (if isArticle then length txt else 3) pUrl ] ] ]
       req' = req { method = "POST"
                  , requestBody = RequestBodyLBS reqBody
-                 , requestHeaders = [ (hAuthorization, fromString $ "Bearer " ++ (adnApiToken conf))
+                 , requestHeaders = [ (hAuthorization, fromString $ "Bearer " ++ (adnApiToken ?conf))
                                     , (hContentType, "application/json; charset=utf-8")
                                     , (hAccept, "application/json") ] }
-  resp <- liftIO $ httpLbs req' mgr
+  resp <- liftIO $ request req'
   if not $ statusIsSuccessful $ responseStatus resp then return Nothing
   else do
     let respData = decode $ responseBody resp :: Maybe ADNWrapper
@@ -60,9 +60,9 @@ $(deriveJSON defaultOptions { fieldLabelModifier = toLower . drop 7 } ''TwitterU
 data TwitterPost = TwitterPost { twitterId_Str :: LText, twitterUser :: TwitterUser }
 $(deriveJSON defaultOptions { fieldLabelModifier = toLower . drop 7 } ''TwitterPost)
 
-postTwitter :: SweetrollConf -> Manager -> SystemRNG -> Entry -> SweetrollAction (Maybe LText)
-postTwitter conf mgr rng entry = do
-  req <- liftIO $ parseUrl $ (twitterApiHost conf) ++ "/statuses/update.json"
+postTwitter :: (?httpMgr :: Manager, ?rng :: SystemRNG, ?conf :: SweetrollConf) => Entry -> SweetrollAction (Maybe LText)
+postTwitter entry = do
+  req <- liftIO $ parseUrl $ (twitterApiHost ?conf) ++ "/statuses/update.json"
   let (_, txt) = trimmedText 100 entry -- TODO: Figure out the number based on mentions of urls/domains in the first (140 - 25) characters
       pUrl = fromMaybe "" $ entryUrl entry
       reqBody = writeForm [("status", txt ++ " " ++ pUrl)]
@@ -70,11 +70,11 @@ postTwitter conf mgr rng entry = do
                  , queryString = reqBody -- Yes, queryString... WTF http://ox86.tumblr.com/post/36810273719/twitter-api-1-1-responds-with-status-401-code-32
                  , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8")
                                     , (hAccept, "application/json") ] }
-      accessToken = Token (twitterAccessToken conf) (twitterAccessSecret conf)
-      clientCreds = clientCred $ Token (twitterAppKey conf) (twitterAppSecret conf)
+      accessToken = Token (twitterAccessToken ?conf) (twitterAccessSecret ?conf)
+      clientCreds = clientCred $ Token (twitterAppKey ?conf) (twitterAppSecret ?conf)
       creds = permanentCred accessToken clientCreds
-  (signedReq, _rng) <- liftIO $ oauth creds defaultServer req' rng
-  resp <- liftIO $ httpLbs signedReq mgr
+  (signedReq, _rng) <- liftIO $ oauth creds defaultServer req' ?rng
+  resp <- liftIO $ request signedReq
   if not $ statusIsSuccessful $ responseStatus resp then return Nothing
   else do
     let respData = decode $ responseBody resp :: Maybe TwitterPost

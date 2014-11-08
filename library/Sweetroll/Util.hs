@@ -4,7 +4,7 @@
 -- | Various functions used inside Sweetroll.
 module Sweetroll.Util (module Sweetroll.Util) where
 
-import           ClassyPrelude hiding (fromString)
+import           ClassyPrelude hiding (fromString, headMay)
 import           Web.Scotty
 import           Web.Scotty.Trans (ActionT)
 import           Data.Text.Lazy (split, replace, strip)
@@ -15,6 +15,7 @@ import           Data.Microformats2
 import           Text.Pandoc.Options
 import           Text.Regex.PCRE
 import           Network.HTTP.Types
+import           Safe (headMay)
 
 -- | Tries to parse a text ISO datetime into a UTCTime.
 --
@@ -24,7 +25,7 @@ import           Network.HTTP.Types
 -- >>> parseISOTime "yolo"
 -- Nothing
 parseISOTime :: Stringable a => a -> Maybe UTCTime
-parseISOTime x = fmap unsafeHead $ decodeTime $ "[\"" ++ toLazyByteString x ++ "\"]"
+parseISOTime x = headMay =<< (decodeTime $ "[\"" ++ toLazyByteString x ++ "\"]")
   where decodeTime y = decode y :: Maybe [UTCTime]
 
 -- | Tries to find a key-value pair by key and return the value.

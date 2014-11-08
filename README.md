@@ -48,6 +48,7 @@ I'm testing it on [my website](https://unrelenting.technology).
 - [ ] caching headers
 - [ ] automatic git push when posting
 - [ ] support for running on PaaS (automatic git pull when starting), [Heroku Button](https://blog.heroku.com/archives/2014/8/7/heroku-button) + GitHub user friendly setup process
+- [ ] built-in TLS server, since we depend on `tls` already because of the client
 
 ## License
 

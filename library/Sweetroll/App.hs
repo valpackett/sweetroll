@@ -45,8 +45,10 @@ mkApp conf = scottyApp $ do
       checkAuth' = if testMode conf then id else checkAuth conf unauthorized
       links = [ Link (mkUrl base ["micropub"])           [(Rel, "micropub")]
               , Link (mkUrl base ["login"])              [(Rel, "token_endpoint")]
-              , Link "https://indieauth.com/auth"        [(Rel, "authorization_endpoint")] ]
+              , Link (pack $ indieAuthEndpoint conf)     [(Rel, "authorization_endpoint")] ]
       addLinks l x = addHeader "Link" (fromStrict $ writeLinkHeader l) >> x
+
+  get "/default-style.css" $ setHeader "Content-Type" "text/css" >> raw (defaultStyle conf)
 
   post "/login" $ doIndieAuth conf unauthorized httpClientMgr
 

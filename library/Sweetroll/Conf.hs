@@ -13,7 +13,7 @@ import           Text.RawString.QQ
 import           Data.Setters
 import           Data.Default
 import           Web.Simple.Templates.Language
-import           Sweetroll.Util (dropNonHtml)
+import           Sweetroll.Util (dropIncludeCrap)
 
 data SweetrollConf = SweetrollConf
   {           layoutTemplate :: Template
@@ -22,6 +22,7 @@ data SweetrollConf = SweetrollConf
   ,            indexTemplate :: Template
   ,      entryInListTemplate :: Template
   ,           authorTemplate :: Template
+  ,             defaultStyle :: LByteString
   ,                 siteName :: Text
   ,                secretKey :: Text
   ,               httpsWorks :: Bool
@@ -46,7 +47,7 @@ baseUrl :: SweetrollConf -> Text
 baseUrl conf = mconcat ["http", s conf, "://", domainName conf]
 
 processTpl :: String -> Template
-processTpl x = case compileTemplate $ dropNonHtml $ pack x of
+processTpl x = case compileTemplate $ dropIncludeCrap $ pack x of
   Left e -> Template { renderTemplate = \_ _ -> "Template compilation error: " ++ pack e }
   Right t -> t
 
@@ -97,4 +98,6 @@ instance Default SweetrollConf where
 #include "../../templates/entry-in-list.html"
     |], authorTemplate       = processTpl [r|
 #include "../../templates/author.html"
-    |]}
+    |], defaultStyle         = dropIncludeCrap $ asLByteString [r|
+#include "../../templates/default-style.css"
+|]}

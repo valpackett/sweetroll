@@ -1,9 +1,10 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, GADTs #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
+{-# LANGUAGE GADTs, FlexibleContexts #-}
 
 -- | Various functions used inside Sweetroll.
 module Sweetroll.Util (module Sweetroll.Util) where
 
-import           ClassyPrelude
+import           ClassyPrelude hiding (fromString)
 import           Web.Scotty
 import           Web.Scotty.Trans (ActionT)
 import           Data.Text.Lazy (split, replace, strip)
@@ -12,6 +13,7 @@ import           Data.Aeson (decode)
 import           Data.Stringable
 import           Data.Microformats2
 import           Text.Pandoc.Options
+import           Text.Regex.PCRE
 import           Network.HTTP.Types
 
 -- | Tries to parse a text ISO datetime into a UTCTime.
@@ -61,12 +63,10 @@ slugify = filter (not . isSpace) . intercalate "-" . words .
 parseTags :: LText -> [LText]
 parseTags = split (== ',') . replace ", " ","
 
--- | Trims characters before HTML begins and after it ends
---
--- >>> dropNonHtml "something<!DOCTYPE html>...</html>something"
--- "<!DOCTYPE html>...</html>"
-dropNonHtml :: (IsSequence s, Element s ~ Char) => s -> s
-dropNonHtml = dropWhile (/= '<') . reverse . dropWhile (/= '>') . reverse
+-- | Removes lines that come from cpp include directive
+dropIncludeCrap :: (Stringable a) => a -> a
+dropIncludeCrap = fromString . unlines . filter (not . (=~ r)) . lines . toString
+  where r = "#\\s+\\d+\\s+\"[^\"]+\"\\s+\\d+\\s*" :: ByteString
 
 -- | Makes a URL from a hostname and parts
 --

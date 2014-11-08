@@ -30,7 +30,7 @@ I'm testing it on [my website](https://unrelenting.technology).
 - [x] [POSSE](http://indiewebcamp.com/POSSE) to App.net
 - [x] POSSE to Twitter
 - [x] autolinking in notes
-- [ ] a 404 page
+- [x] a 404 page
 - [ ] pagination
 - [ ] archive pages
 - [ ] tags (add CSV support to gitson for storing stuff like this)

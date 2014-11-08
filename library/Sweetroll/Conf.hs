@@ -22,6 +22,7 @@ data SweetrollConf = SweetrollConf
   ,            indexTemplate :: Template
   ,      entryInListTemplate :: Template
   ,           authorTemplate :: Template
+  ,         notFoundTemplate :: Template
   ,             defaultStyle :: LByteString
   ,                 siteName :: Text
   ,                secretKey :: Text
@@ -62,7 +63,9 @@ loadTemplates conf = foldM loadTpl conf tplsWithSetters
                             , (setLayoutTemplate,               "layout.html")
                             , (setIndexTemplate,                "index.html")
                             , (setEntryInListTemplate,          "entry-in-list.html")
-                            , (setAuthorTemplate,               "author.html") ]
+                            , (setAuthorTemplate,               "author.html")
+                            , (setNotFoundTemplate,             "404.html")
+                            ]
 
 readFailHandler :: SweetrollConf -> IOError -> IO SweetrollConf
 readFailHandler c _ = return c
@@ -98,6 +101,8 @@ instance Default SweetrollConf where
 #include "../../templates/entry-in-list.html"
     |], authorTemplate       = processTpl [r|
 #include "../../templates/author.html"
+    |], notFoundTemplate     = processTpl [r|
+#include "../../templates/404.html"
     |], defaultStyle         = dropIncludeCrap $ asLByteString [r|
 #include "../../templates/default-style.css"
 |]}

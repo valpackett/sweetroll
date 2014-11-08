@@ -10,6 +10,7 @@ module Sweetroll.Pages (
 , entryView
 , catView
 , indexView
+, notFoundView
 , renderContent
 , renderRaw
 , renderWithConf
@@ -87,6 +88,9 @@ indexView conf cats =
   where ctx = object [
             "categories" .= map (tplContext . uncurry (catView conf)) cats
           ]
+
+notFoundView :: ViewResult
+notFoundView = ViewResult { titleParts = ["404"], tplContext = object [] }
 
 renderContent :: (WriterOptions -> Pandoc -> String) -> Entry -> LText
 renderContent writer e = case fromMaybe (Right "") $ entryContent e of

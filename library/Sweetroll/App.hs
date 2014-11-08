@@ -47,6 +47,7 @@ mkApp conf = scottyApp $ do
               , Link (mkUrl base ["login"])              [(Rel, "token_endpoint")]
               , Link (pack $ indieAuthEndpoint conf)     [(Rel, "authorization_endpoint")] ]
       addLinks l x = addHeader "Link" (fromStrict $ writeLinkHeader l) >> x
+      pageNotFound = status notFound404 >> render notFoundTemplate notFoundView
 
   get "/default-style.css" $ setHeader "Content-Type" "text/css" >> raw (defaultStyle conf)
 
@@ -84,23 +85,23 @@ mkApp conf = scottyApp $ do
   get "/:category" $ addLinks links $ do
     catName <- param "category"
     cat <- liftIO $ readCategory catName
-    render categoryTemplate $ catView conf catName $ snd cat
+    if null (snd cat) then pageNotFound
+    else render categoryTemplate $ catView conf catName $ snd cat
 
   get "/:category/:slug" $ addLinks links $ do
     category <- param "category"
     slug <- param "slug"
     entry <- liftIO (readDocumentByName category slug :: IO (Maybe Entry))
     case entry of
-      Nothing -> entryNotFound
+      Nothing -> pageNotFound
       Just e  -> do
         otherSlugs <- liftIO $ listDocumentKeys category
         render entryTemplate $ entryView conf category (map readSlug otherSlugs) (slug, e)
 
+  notFound pageNotFound
+
 created :: LText -> SweetrollAction ()
 created url = status created201 >> setHeader "Location" url
-
-entryNotFound :: SweetrollAction ()
-entryNotFound = status notFound404
 
 unauthorized :: SweetrollAction ()
 unauthorized = status unauthorized401

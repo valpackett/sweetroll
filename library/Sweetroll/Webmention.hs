@@ -53,7 +53,7 @@ sendWebmention mgr from to = do
   case endp of
     Just u -> do
       eReq <- parseUrl $ uriToString id u ""
-      let reqBody = writeForm [("from", from), ("to", to)]
+      let reqBody = writeForm [("source", from), ("target", to)]
       eResp <- httpLbs eReq { method = "POST"
                             , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
                             , requestBody = RequestBodyBS reqBody } mgr

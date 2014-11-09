@@ -35,9 +35,9 @@ $(deriveJSON defaultOptions { fieldLabelModifier = toLower . drop 3 } ''ADNWrapp
 data ADNLink = ADNLink { _adnLinkPos :: Int, _adnLinkLen :: Int, _adnLinkUrl :: LText }
 $(deriveJSON defaultOptions { fieldLabelModifier = toLower . drop 8 } ''ADNLink)
 
-postAppDotNet :: (?httpMgr :: Manager, ?conf :: SweetrollConf) => Entry -> SweetrollAction (Maybe LText)
-postAppDotNet entry = do
-  req <- liftIO $ parseUrl $ (adnApiHost ?conf) ++ "/posts"
+postAppDotNet :: (?httpMgr :: Manager, ?conf :: SweetrollConf, MonadIO i) => Entry -> i (Maybe LText)
+postAppDotNet entry = liftIO $ do
+  req <- parseUrl $ (adnApiHost ?conf) ++ "/posts"
   let (isArticle, txt) = trimmedText 250 entry
       pUrl = fromMaybe "" $ entryUrl entry
       reqBody = encode $ object [ "text" .= if isArticle then txt else "[x] " ++ txt
@@ -49,7 +49,7 @@ postAppDotNet entry = do
                  , requestHeaders = [ (hAuthorization, fromString $ "Bearer " ++ (adnApiToken ?conf))
                                     , (hContentType, "application/json; charset=utf-8")
                                     , (hAccept, "application/json") ] }
-  resp <- liftIO $ request req'
+  resp <- request req'
   if not $ statusIsSuccessful $ responseStatus resp then return Nothing
   else do
     let respData = decode $ responseBody resp :: Maybe ADNWrapper
@@ -60,9 +60,9 @@ $(deriveJSON defaultOptions { fieldLabelModifier = toLower . drop 7 } ''TwitterU
 data TwitterPost = TwitterPost { twitterId_Str :: LText, twitterUser :: TwitterUser }
 $(deriveJSON defaultOptions { fieldLabelModifier = toLower . drop 7 } ''TwitterPost)
 
-postTwitter :: (?httpMgr :: Manager, ?rng :: SystemRNG, ?conf :: SweetrollConf) => Entry -> SweetrollAction (Maybe LText)
-postTwitter entry = do
-  req <- liftIO $ parseUrl $ (twitterApiHost ?conf) ++ "/statuses/update.json"
+postTwitter :: (?httpMgr :: Manager, ?rng :: SystemRNG, ?conf :: SweetrollConf, MonadIO i) => Entry -> i (Maybe LText)
+postTwitter entry = liftIO $ do
+  req <- parseUrl $ (twitterApiHost ?conf) ++ "/statuses/update.json"
   let (_, txt) = trimmedText 100 entry -- TODO: Figure out the number based on mentions of urls/domains in the first (140 - 25) characters
       pUrl = fromMaybe "" $ entryUrl entry
       reqBody = writeForm [("status", txt ++ " " ++ pUrl)]
@@ -73,8 +73,8 @@ postTwitter entry = do
       accessToken = Token (twitterAccessToken ?conf) (twitterAccessSecret ?conf)
       clientCreds = clientCred $ Token (twitterAppKey ?conf) (twitterAppSecret ?conf)
       creds = permanentCred accessToken clientCreds
-  (signedReq, _rng) <- liftIO $ oauth creds defaultServer req' ?rng
-  resp <- liftIO $ request signedReq
+  (signedReq, _rng) <- oauth creds defaultServer req' ?rng
+  resp <- request signedReq
   if not $ statusIsSuccessful $ responseStatus resp then return Nothing
   else do
     let respData = decode $ responseBody resp :: Maybe TwitterPost

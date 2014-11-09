@@ -46,8 +46,8 @@ discoverWebmentionEndpoint r to = asum [ lnk >>= parseAbsoluteURI
         htmlDoc = readString [withTagSoup] $ responseBody r
 
 -- | Sends one single webmention.
-sendWebmention :: (?httpMgr :: Manager) => String -> String -> IO (String, Bool)
-sendWebmention from to = do
+sendWebmention :: (?httpMgr :: Manager, MonadIO i) => String -> String -> i (String, Bool)
+sendWebmention from to = liftIO $ do
   tReq <- parseUrl to
   tResp <- request tReq
   let endp = discoverWebmentionEndpoint tResp $ getUri tReq
@@ -63,8 +63,8 @@ sendWebmention from to = do
 
 -- | Send all webmentions required for an entry, including the ones from
 -- metadata (in-reply-to, like-of, repost-of).
-sendWebmentions :: (?httpMgr :: Manager) => Entry -> IO [(String, Bool)]
-sendWebmentions e = mapConcurrently (sendWebmention from) $ S.toList links
+sendWebmentions :: (?httpMgr :: Manager, MonadIO i) => Entry -> i [(String, Bool)]
+sendWebmentions e = liftIO $ mapConcurrently (sendWebmention from) $ S.toList links
   where links = S.fromList $ contentLinks ++ metaLinks
         metaLinks = map unpack $ catMaybes $ map derefEntry $ catMaybes [entryInReplyTo e, entryLikeOf e, entryRepostOf e]
         contentLinks = PW.query extractLink $ pandocContent $ entryContent e

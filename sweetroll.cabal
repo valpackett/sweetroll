@@ -125,7 +125,7 @@ test-suite tests
       , case-insensitive
       , wai
       , directory
-      , gitson
+      , gitson >= 0.4.1
       , wai-extra
       , bytestring
       , raw-strings-qq

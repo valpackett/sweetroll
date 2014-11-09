@@ -70,8 +70,7 @@ mkApp conf = scottyApp $ do
         slug = decideSlug allParams now
         readerF = decideReader allParams
         absUrl = fromStrict $ mkUrl base $ map pack [category, slug]
-        save x = liftIO $ transaction "./" $ saveNextDocument category slug x
-        save' x = save x >> created absUrl
+        save x = (transaction "./" $ saveNextDocument category slug x) >> created absUrl
     case asLText h of
       "entry" -> do
         let entry = makeEntry allParams now absUrl readerF
@@ -80,29 +79,28 @@ mkApp conf = scottyApp $ do
         synd <- sequence [ ifNotTest $ ifSyndicateTo "app.net"     $ postAppDotNet entry
                          , ifNotTest $ ifSyndicateTo "twitter.com" $ postTwitter entry ]
         let entry' = entry { entrySyndication = catMaybes synd }
-        save' entry'
-        when (not $ testMode conf) $ void $ liftIO $ sendWebmentions entry'
+        save entry'
+        when (not $ testMode conf) $ void $ sendWebmentions entry'
       _ -> status badRequest400
 
   get "/" $ addLinks links $ do
-    catNames <- liftIO listCollections
-    cats <- liftIO $ mapM readCategory catNames
+    cats <- listCollections >>= mapM readCategory
     render indexTemplate $ indexView $ filter visibleCat cats
 
   get "/:category" $ addLinks links $ do
     catName <- param "category"
-    cat <- liftIO $ readCategory catName
+    cat <- readCategory catName
     if null (snd cat) then pageNotFound
     else render categoryTemplate $ catView catName $ snd cat
 
   get "/:category/:slug" $ addLinks links $ do
     category <- param "category"
     slug <- param "slug"
-    entry <- liftIO (readDocumentByName category slug :: IO (Maybe Entry))
+    entry <- readDocumentByName category slug :: SweetrollAction (Maybe Entry)
     case entry of
       Nothing -> pageNotFound
       Just e  -> do
-        otherSlugs <- liftIO $ listDocumentKeys category
+        otherSlugs <- listDocumentKeys category
         render entryTemplate $ entryView category (map readSlug otherSlugs) (slug, e)
 
   notFound pageNotFound
@@ -121,12 +119,12 @@ visibleCat (slug, entries) = not (null entries)
 readSlug :: String -> EntrySlug
 readSlug x = drop 1 $ fromMaybe "-404" $ snd <$> maybeReadIntString x -- errors should never happen
 
-readEntry :: CategoryName -> String -> IO (Maybe (EntrySlug, Entry))
+readEntry :: CategoryName -> String -> SweetrollAction (Maybe (EntrySlug, Entry))
 readEntry category fname = do
-  doc <- readDocument category fname :: IO (Maybe Entry)
+  doc <- readDocument category fname :: SweetrollAction (Maybe Entry)
   return $ (\x -> (readSlug fname, x)) <$> doc
 
-readCategory :: CategoryName -> IO (CategoryName, [(EntrySlug, Entry)])
+readCategory :: CategoryName -> SweetrollAction (CategoryName, [(EntrySlug, Entry)])
 readCategory c = do
   slugs <- listDocumentKeys c
   maybes <- mapM (readEntry c) slugs

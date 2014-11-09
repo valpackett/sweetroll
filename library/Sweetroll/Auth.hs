@@ -25,12 +25,12 @@ getAccessToken = do
   return $ toStrict $ fromMaybe tokenHeader $ findByKey allParams "access_token"
 
 checkAuth :: (?conf :: SweetrollConf) => SweetrollAction () -> SweetrollAction () -> SweetrollAction ()
-checkAuth unauthorized act = do
+checkAuth onFail act = do
   token <- getAccessToken
   let verResult = decodeAndVerifySignature (secret $ secretKey ?conf) token
   case verResult of
     Just _ -> act
-    _ -> unauthorized
+    _ -> onFail
 
 showAuth :: SweetrollAction ()
 showAuth = do
@@ -53,7 +53,7 @@ makeAccessToken conf me = do
   showForm [("access_token", t'), ("scope", "post"), ("me", me)]
 
 doIndieAuth :: (?conf :: SweetrollConf, ?httpMgr :: Manager) => SweetrollAction () -> SweetrollAction ()
-doIndieAuth unauthorized = do
+doIndieAuth onFail = do
   allParams <- params
   let par x = toStrict <$> findByKey allParams x
       par' = fromMaybe "" . par
@@ -66,5 +66,5 @@ doIndieAuth unauthorized = do
     indieAuthReq <- liftIO $ parseUrl $ indieAuthEndpoint ?conf
     resp <- liftIO $ request (indieAuthReq { method = "POST"
                                            , requestBody = RequestBodyBS reqBody }) :: SweetrollAction (Response LByteString)
-    if responseStatus resp /= ok200 then unauthorized
+    if responseStatus resp /= ok200 then onFail
     else valid

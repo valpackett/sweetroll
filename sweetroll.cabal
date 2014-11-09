@@ -66,10 +66,11 @@ library
     exposed-modules:
         Sweetroll.App
         Sweetroll.Auth
+        Sweetroll.Conf
+        Sweetroll.Micropub
         Sweetroll.Pages
         Sweetroll.Syndication
         Sweetroll.Util
-        Sweetroll.Conf
         Sweetroll.Webmention
     ghc-prof-options: -auto-all -prof
     ghc-options: -Wall

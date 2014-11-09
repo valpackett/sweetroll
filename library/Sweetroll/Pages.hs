@@ -30,9 +30,6 @@ import           Safe (atMay)
 import           Sweetroll.Conf
 import           Sweetroll.Util
 
-type CategoryName = String
-type EntrySlug = String
-
 data ViewResult = ViewResult
   { titleParts           :: [Text]
   , tplContext           :: Value }

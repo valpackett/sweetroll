@@ -22,12 +22,12 @@ import           Data.Stringable
 import           Data.Aeson.Types
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
-import           Sweetroll.Pages
-import           Sweetroll.Auth
-import           Sweetroll.Syndication
-import           Sweetroll.Webmention
-import           Sweetroll.Conf
 import           Sweetroll.Util
+import           Sweetroll.Conf
+import           Sweetroll.Auth
+import           Sweetroll.Pages
+import           Sweetroll.Micropub
+import           Sweetroll.Syndication (showSyndication)
 
 -- | Makes the Sweetroll WAI application.
 mkApp :: SweetrollConf -> IO Application
@@ -62,26 +62,7 @@ mkApp conf = scottyApp $ do
 
   get "/micropub" $ checkAuth' $ showSyndication $ showAuth
 
-  post "/micropub" $ checkAuth' $ do
-    h <- param "h"
-    allParams <- params
-    now <- liftIO getCurrentTime
-    let category = decideCategory allParams
-        slug = decideSlug allParams now
-        readerF = decideReader allParams
-        absUrl = fromStrict $ mkUrl base $ map pack [category, slug]
-        save x = (transaction "./" $ saveNextDocument category slug x) >> created absUrl
-    case asLText h of
-      "entry" -> do
-        let entry = makeEntry allParams now absUrl readerF
-            ifNotTest x = if testMode conf then (return Nothing) else x
-            ifSyndicateTo x y = if isInfixOf x $ fromMaybe "" $ findByKey allParams "syndicate-to" then y else (return Nothing)
-        synd <- sequence [ ifNotTest $ ifSyndicateTo "app.net"     $ postAppDotNet entry
-                         , ifNotTest $ ifSyndicateTo "twitter.com" $ postTwitter entry ]
-        let entry' = entry { entrySyndication = catMaybes synd }
-        save entry'
-        when (not $ testMode conf) $ void $ sendWebmentions entry'
-      _ -> status badRequest400
+  post "/micropub" $ checkAuth' $ doMicropub
 
   get "/" $ addLinks links $ do
     cats <- listCollections >>= mapM readCategory
@@ -105,12 +86,6 @@ mkApp conf = scottyApp $ do
 
   notFound pageNotFound
 
-created :: LText -> SweetrollAction ()
-created url = status created201 >> setHeader "Location" url
-
-unauthorized :: SweetrollAction ()
-unauthorized = status unauthorized401
-
 visibleCat :: (CategoryName, [(EntrySlug, Entry)]) -> Bool
 visibleCat (slug, entries) = not (null entries)
                           && slug /= "templates"
@@ -129,40 +104,3 @@ readCategory c = do
   slugs <- listDocumentKeys c
   maybes <- mapM (readEntry c) slugs
   return (c, reverse $ fromMaybe [] $ sequence maybes)
-
-decideCategory :: [Param] -> CategoryName
-decideCategory pars | isJust $ par "name"          = "articles"
-                    | isJust $ par "in-reply-to"   = "replies"
-                    | isJust $ par "like-of"       = "likes"
-                    | otherwise                    = "notes"
-  where par = findByKey pars
-
-decideSlug :: [Param] -> UTCTime -> EntrySlug
-decideSlug pars now = unpack $ fromMaybe fallback $ findByKey pars "slug"
-  where fallback = slugify $ fromMaybe (formatTimeSlug now) $ findFirstKey pars ["name", "summary"]
-        formatTimeSlug = pack . formatTime defaultTimeLocale "%Y-%m-%d-%H-%M-%S"
-
-decideReader :: [Param] -> (ReaderOptions -> String -> Pandoc)
-decideReader pars | f == Just "textile"     = readTextile
-                  | f == Just "org"         = readOrg
-                  | f == Just "rst"         = readRST
-                  | f == Just "html"        = readHtml
-                  | f == Just "latex"       = readLaTeX
-                  | f == Just "tex"         = readLaTeX
-                  | otherwise               = readMarkdown
-  where f = findByKey pars "format"
-
-makeEntry :: [Param] -> UTCTime -> LText -> (ReaderOptions -> String -> Pandoc) -> Entry
-makeEntry pars now absUrl readerF = defaultEntry
-  { entryName         = par "name"
-  , entrySummary      = par "summary"
-  , entryContent      = Left <$> readerF pandocReaderOptions <$> unpack <$> par "content"
-  , entryPublished    = Just $ fromMaybe now $ parseISOTime =<< par "published"
-  , entryUpdated      = Just now
-  , entryAuthor       = somewhereFromMaybe $ par "author"
-  , entryCategory     = parseTags $ fromMaybe "" $ par "category"
-  , entryUrl          = Just absUrl
-  , entryInReplyTo    = Right <$> par "in-reply-to"
-  , entryLikeOf       = Right <$> par "like-of"
-  , entryRepostOf     = Right <$> par "repost-of" }
-  where par = findByKey pars

@@ -82,7 +82,15 @@ dropIncludeCrap = fromString . unlines . filter (not . (=~ r)) . lines . toStrin
 mkUrl :: (IsString s, Monoid s) => s -> [s] -> s
 mkUrl base parts = intercalate "/" $ [base] ++ parts
 
+type CategoryName = String
+type EntrySlug = String
 type SweetrollAction = ActionT LText IO
+
+created :: LText -> SweetrollAction ()
+created url = status created201 >> setHeader "Location" url
+
+unauthorized :: SweetrollAction ()
+unauthorized = status unauthorized401
 
 -- | Encodes key-value data as application/x-www-form-urlencoded.
 writeForm :: (Stringable a) => [(a, a)] -> ByteString

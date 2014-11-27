@@ -28,6 +28,7 @@ import           Sweetroll.Util
 import           Sweetroll.Conf
 import           Sweetroll.Auth
 import           Sweetroll.Pages
+import           Sweetroll.Pagination
 import           Sweetroll.Micropub
 import           Sweetroll.Syndication (showSyndication)
 

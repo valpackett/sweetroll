@@ -69,6 +69,7 @@ library
         Sweetroll.Conf
         Sweetroll.Micropub
         Sweetroll.Pages
+        Sweetroll.Pagination
         Sweetroll.Syndication
         Sweetroll.Util
         Sweetroll.Webmention

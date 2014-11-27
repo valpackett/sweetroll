@@ -5,7 +5,8 @@ module Sweetroll.PagesSpec (spec) where
 
 import           ClassyPrelude
 import           Test.Hspec
-import           Sweetroll.Util (parseISOTime, paginate)
+import           Sweetroll.Util (parseISOTime)
+import           Sweetroll.Pagination (paginate)
 import           Sweetroll.Pages
 import           Sweetroll.Conf
 import           Text.RawString.QQ

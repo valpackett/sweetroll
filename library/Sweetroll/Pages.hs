@@ -27,6 +27,7 @@ import           Data.Aeson.Types
 import qualified Data.Text.Lazy as LT
 import           Data.List (elemIndex)
 import           Safe (atMay)
+import           Sweetroll.Pagination
 import           Sweetroll.Conf
 import           Sweetroll.Util
 

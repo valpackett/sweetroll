@@ -30,6 +30,7 @@ data SweetrollConf = SweetrollConf
   ,                secretKey :: Text
   ,               httpsWorks :: Bool
   ,               domainName :: Text
+  ,             itemsPerPage :: Int
   ,        indieAuthEndpoint :: String
   ,               adnApiHost :: String
   ,              adnApiToken :: String
@@ -81,6 +82,7 @@ instance Default SweetrollConf where
       , secretKey            = "SECRET" -- the executable sets to a secure random value by default
       , httpsWorks           = False
       , domainName           = ""
+      , itemsPerPage         = 20
       , indieAuthEndpoint    = "http://127.0.0.1"
       , adnApiHost           = "http://127.0.0.1"
       , adnApiToken          = ""

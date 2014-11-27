@@ -67,19 +67,31 @@ entryView catName otherSlugs (slug, e) =
           -- TODO: repost/like
           ]
 
-catView :: (?conf :: SweetrollConf) => CategoryName -> [(EntrySlug, Entry)] -> ViewResult
-catView name entries =
+catView :: (?conf :: SweetrollConf) => CategoryName -> Page (EntrySlug, Entry) -> ViewResult
+catView name page =
   ViewResult { titleParts = [pack name]
              , tplContext = ctx }
-  where slugs = map fst entries
+  where entries = items page
+        slugs = map fst entries
         ctx = object [
             "name"            .= name
           , "permalink"       .= mconcat ["/", name]
           , "entries"         .= map (tplContext . entryView name slugs) entries
           , "renderedEntries" .= map (renderTemplate (entryInListTemplate ?conf) helpers . tplContext . entryView name slugs) entries
+          , "firstHref"       .= (pageLink  $ firstPage page)
+          , "shouldFirst"     .= (thisPage page > firstPage page)
+          , "hasPrev"         .= (isJust    $ prevPage page)
+          , "prevHref"        .= (pageLink' $ prevPage page)
+          , "allPages"        .= map pageLink [firstPage page .. lastPage page]
+          , "hasNext"         .= (isJust    $ nextPage page)
+          , "nextHref"        .= (pageLink' $ nextPage page)
+          , "lastHref"        .= (pageLink  $ lastPage page)
+          , "shouldLast"      .= (thisPage page < lastPage page)
           ]
+        pageLink n = mconcat ["/", name, "?page=", show n]
+        pageLink' = pageLink . fromMaybe 0
 
-indexView :: (?conf :: SweetrollConf) => [(CategoryName, [(EntrySlug, Entry)])] -> ViewResult
+indexView :: (?conf :: SweetrollConf) => [(CategoryName, Page (EntrySlug, Entry))] -> ViewResult
 indexView cats =
   ViewResult { titleParts = []
              , tplContext = ctx }

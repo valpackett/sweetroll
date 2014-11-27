@@ -20,6 +20,7 @@ data AppOptions = AppOptions
   , protocol                 :: String
   , domain                   :: String
   , sitename                 :: String
+  , itemsperpage             :: Int
   , indieauth                :: String
   , adnhost                  :: String
   , adntoken                 :: String
@@ -38,6 +39,7 @@ instance Options AppOptions where
     <*> simpleOption "protocol"          "http"                         "The protocol for the server. One of: http, cgi"
     <*> simpleOption "domain"            "localhost:3000"               "The domain on which the server will run"
     <*> simpleOption "sitename"          "A new Sweetroll website"      "The name of the website"
+    <*> simpleOption "itemsperpage"      20                             "The number of items displayed on each page"
     <*> simpleOption "indieauth"         "https://indieauth.com/auth"   "The IndieAuth endpoint to use"
     <*> simpleOption "adnhost"           "https://api.app.net"          "The App.net API host to use"
     <*> simpleOption "adntoken"          ""                             "The App.net API access token to use"
@@ -74,6 +76,7 @@ main = runCommand $ \opts args -> do
   , secretKey                      = secret'
   , httpsWorks                     = https opts
   , siteName                       = T.pack $ sitename opts
+  , itemsPerPage                   = itemsperpage opts
   , indieAuthEndpoint              = indieauth opts
   , adnApiHost                     = adnhost opts
   , adnApiToken                    = adntoken opts

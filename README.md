@@ -31,7 +31,7 @@ I'm testing it on [my website](https://unrelenting.technology).
 - [x] POSSE to Twitter
 - [x] autolinking in notes
 - [x] a 404 page
-- [ ] pagination
+- [x] pagination
 - [ ] archive pages
 - [ ] tags (add CSV support to gitson for storing stuff like this)
 - [ ] micropub updating and deleting

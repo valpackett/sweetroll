@@ -15,9 +15,11 @@ import           Network.HTTP.Client.TLS
 import "crypto-random" Crypto.Random
 import           Text.Pandoc hiding (Link)
 import           Text.Highlighting.Kate.Format.HTML (styleToCss)
+import           Text.Read (readMaybe)
 import           Web.Scotty
 import           Gitson
 import           Gitson.Util (maybeReadIntString)
+import           Data.Maybe (fromJust)
 import           Data.Stringable
 import           Data.Aeson.Types
 import           Data.Microformats2
@@ -65,14 +67,17 @@ mkApp conf = scottyApp $ do
   post "/micropub" $ checkAuth' $ doMicropub
 
   get "/" $ addLinks links $ do
-    cats <- listCollections >>= mapM readCategory
-    render indexTemplate $ indexView $ filter visibleCat cats
+    cats <- listCollections >>= mapM (readCategory (itemsPerPage conf) (-1))
+    render indexTemplate $ indexView $ map (\(x, y) -> (x, fromJust y)) $ filter visibleCat cats
 
   get "/:category" $ addLinks links $ do
     catName <- param "category"
-    cat <- readCategory catName
-    if null (snd cat) then pageNotFound
-    else render categoryTemplate $ catView catName $ snd cat
+    allParams <- params
+    let pageNumber = fromMaybe (-1) (readMaybe . toString =<< findByKey allParams "page")
+    cat <- readCategory (itemsPerPage conf) pageNumber catName
+    case snd cat of
+      Nothing -> pageNotFound
+      Just p -> render categoryTemplate $ catView catName p
 
   get "/:category/:slug" $ addLinks links $ do
     category <- param "category"
@@ -86,10 +91,11 @@ mkApp conf = scottyApp $ do
 
   notFound pageNotFound
 
-visibleCat :: (CategoryName, [(EntrySlug, Entry)]) -> Bool
-visibleCat (slug, entries) = not (null entries)
-                          && slug /= "templates"
-                          && slug /= "static"
+visibleCat :: (CategoryName, Maybe (Page (EntrySlug, Entry))) -> Bool
+visibleCat (slug, Just cat) = (not $ null $ items cat)
+                              && slug /= "templates"
+                              && slug /= "static"
+visibleCat (_, Nothing) = False
 
 readSlug :: String -> EntrySlug
 readSlug x = drop 1 $ fromMaybe "-404" $ snd <$> maybeReadIntString x -- errors should never happen
@@ -99,8 +105,11 @@ readEntry category fname = do
   doc <- readDocument category fname :: SweetrollAction (Maybe Entry)
   return $ (\x -> (readSlug fname, x)) <$> doc
 
-readCategory :: CategoryName -> SweetrollAction (CategoryName, [(EntrySlug, Entry)])
-readCategory c = do
+readCategory :: Int -> Int -> CategoryName -> SweetrollAction (CategoryName, Maybe (Page (EntrySlug, Entry)))
+readCategory perPage pageNumber c = do
   slugs <- listDocumentKeys c
-  maybes <- mapM (readEntry c) slugs
-  return (c, reverse $ fromMaybe [] $ sequence maybes)
+  case paginate True perPage pageNumber slugs of
+    Nothing -> return (c, Nothing)
+    Just page -> do
+      maybes <- mapM (readEntry c) $ items page
+      return (c, Just $ changeItems page $ fromMaybe [] $ sequence maybes)

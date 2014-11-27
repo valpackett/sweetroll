@@ -119,12 +119,13 @@ a {
 	transition: ease-in-out color 0.3s;
 }
 a:hover, a:focus, a:active { color: #7fdbff }
+a.self-link { color: #343434; text-decoration: none; }
 .fa-l { margin-right: 0.25em }
 .fa-r { margin-left: 0.25em }
 .site-content { flex: 1 }
 .site-footer {
 	padding: 1em 0;
-	font-size: 95%;
+	font-size: 90%;
 	color: #777;
 }
 .site-header { padding: 2em 0 }

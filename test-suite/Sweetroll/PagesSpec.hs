@@ -5,10 +5,11 @@ module Sweetroll.PagesSpec (spec) where
 
 import           ClassyPrelude
 import           Test.Hspec
-import           Sweetroll.Util (parseISOTime)
+import           Sweetroll.Util (parseISOTime, paginate)
 import           Sweetroll.Pages
 import           Sweetroll.Conf
 import           Text.RawString.QQ
+import           Data.Maybe (fromJust)
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
 import           Web.Simple.Templates.Language
@@ -64,15 +65,16 @@ spec = do
     it "renders categories" $ do
       let testEntries = [ ("f", defaultEntry { entryContent = Just $ Right "First note"  })
                         , ("s", defaultEntry { entryContent = Just $ Right "Second note" }) ]
-      testRender testCategoryTpl (catView "test" testEntries) `shouldBe` [r|<category name="test">
+      testRender testCategoryTpl (catView "test" $ fromJust $ paginate False 10 1 testEntries) `shouldBe` [r|<category name="test">
 <e href="/test/f">First note</e>
 <e href="/test/s">Second note</e>
 </category>|]
 
     it "renders the index" $ do
-      let testCats = [ ("stuff", [ ("first",  defaultEntry { entryContent = Just $ Right "First"  })
+      let testCats = [ ("stuff", fromJust $ paginate False 10 1
+                                 [ ("first",  defaultEntry { entryContent = Just $ Right "First"  })
                                  , ("second", defaultEntry { entryContent = Just $ Right "Second" }) ]) ]
-      testRender testIndexTpl (indexView testCats) `shouldBe` [r|<index>
+      testRender testIndexTpl (indexView $ testCats) `shouldBe` [r|<index>
   <category name="stuff">
     <e href="/stuff/first">First</e>
     <e href="/stuff/second">Second</e>

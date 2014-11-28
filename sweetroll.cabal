@@ -83,6 +83,8 @@ executable sweetroll
       , classy-prelude
       , options == 1.*
       , warp == 3.0.*
+      , network == 2.6.*
+      , streaming-commons
       , wai-extra
       , ansi-terminal
       , directory

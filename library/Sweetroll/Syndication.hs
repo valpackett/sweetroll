@@ -1,5 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell, PackageImports, ImplicitParams #-}
+{-# LANGUAGE ExistentialQuantification, KindSignatures #-}
+{-# LANGUAGE PackageImports, ImplicitParams #-}
 
 module Sweetroll.Syndication (
   postAppDotNet
@@ -8,14 +9,16 @@ module Sweetroll.Syndication (
 ) where
 
 import           ClassyPrelude
+import           Control.Lens ((^?))
 import           Network.HTTP.Client
 import           Network.HTTP.Types
 import           Network.OAuth
 import "crypto-random" Crypto.Random
 import           Web.Scotty (params)
 import           Data.Microformats2
+import qualified Data.Stringable as S
 import           Data.Aeson
-import           Data.Aeson.TH
+import           Data.Aeson.Lens
 import           Text.Pandoc
 import           Sweetroll.Util
 import           Sweetroll.Pages (renderContent)
@@ -28,37 +31,31 @@ trimmedText l entry = (isArticle, if isTrimmed then (take (l - 1) t) ++ "…" el
                            Just n -> (True, n)
                            _ -> (False, renderContent writePlain entry)
 
-data ADNCanonicalData = ADNCanonicalData { canonical_Url :: LText }
-$(deriveJSON defaultOptions { fieldLabelModifier = toLower } ''ADNCanonicalData)
-data ADNWrapper = ADNWrapper { adnData :: ADNCanonicalData }
-$(deriveJSON defaultOptions { fieldLabelModifier = toLower . drop 3 } ''ADNWrapper)
-data ADNLink = ADNLink { _adnLinkPos :: Int, _adnLinkLen :: Int, _adnLinkUrl :: LText }
-$(deriveJSON defaultOptions { fieldLabelModifier = toLower . drop 8 } ''ADNLink)
+ifSuccess :: forall (m :: * -> *) body a. Monad m => Response body -> Maybe a -> m (Maybe a)
+ifSuccess resp what = return $ if not $ statusIsSuccessful $ responseStatus resp then Nothing else what
 
 postAppDotNet :: (?httpMgr :: Manager, ?conf :: SweetrollConf, MonadIO i) => Entry -> i (Maybe LText)
 postAppDotNet entry = liftIO $ do
   req <- parseUrl $ (adnApiHost ?conf) ++ "/posts"
   let (isArticle, txt) = trimmedText 250 entry
       pUrl = fromMaybe "" $ entryUrl entry
-      reqBody = encode $ object [ "text" .= if isArticle then txt else "[x] " ++ txt
-                                , "annotations" .= [ object [ "type" .= asLText "net.app.core.crosspost"
-                                                            , "value" .= ADNCanonicalData pUrl ] ]
-                                , "entities" .= object [ "links" .= [ ADNLink 0 (if isArticle then length txt else 3) pUrl ] ] ]
+      o = object
+      reqData = o [ "text" .= if isArticle then txt else "[x] " ++ txt
+                  , "annotations" .= [ o [ "type" .= asLText "net.app.core.crosspost"
+                                         , "value" .= o [ "canonical_url" .= pUrl ] ] ]
+                  , "entities" .= o [ "links" .= [ o [ "pos" .= (0 :: Int)
+                                                     , "len" .= (if isArticle then length txt else 3)
+                                                     , "url" .= pUrl ] ] ] ]
       req' = req { method = "POST"
-                 , requestBody = RequestBodyLBS reqBody
+                 , requestBody = RequestBodyLBS $ encode reqData
                  , requestHeaders = [ (hAuthorization, fromString $ "Bearer " ++ (adnApiToken ?conf))
                                     , (hContentType, "application/json; charset=utf-8")
                                     , (hAccept, "application/json") ] }
   resp <- request req'
-  if not $ statusIsSuccessful $ responseStatus resp then return Nothing
-  else do
-    let respData = decode $ responseBody resp :: Maybe ADNWrapper
-    return $ canonical_Url <$> adnData <$> respData
+  ifSuccess resp $ appDotNetUrl $ decode $ responseBody resp
 
-data TwitterUser = TwitterUser { twitterScreen_Name :: LText }
-$(deriveJSON defaultOptions { fieldLabelModifier = toLower . drop 7 } ''TwitterUser)
-data TwitterPost = TwitterPost { twitterId_Str :: LText, twitterUser :: TwitterUser }
-$(deriveJSON defaultOptions { fieldLabelModifier = toLower . drop 7 } ''TwitterPost)
+appDotNetUrl :: (S.Stringable s) => Maybe Value -> Maybe s
+appDotNetUrl x = (return . S.fromText) =<< (^? key "data" . key "canonical_url" . _String) =<< x
 
 postTwitter :: (?httpMgr :: Manager, ?rng :: SystemRNG, ?conf :: SweetrollConf, MonadIO i) => Entry -> i (Maybe LText)
 postTwitter entry = liftIO $ do
@@ -75,13 +72,18 @@ postTwitter entry = liftIO $ do
       creds = permanentCred accessToken clientCreds
   (signedReq, _rng) <- oauth creds defaultServer req' ?rng
   resp <- request signedReq
-  if not $ statusIsSuccessful $ responseStatus resp then return Nothing
-  else do
-    let respData = decode $ responseBody resp :: Maybe TwitterPost
-    return $ do
-      tweetId <- twitterId_Str <$> respData
-      tweetUsr <- twitterScreen_Name . twitterUser <$> respData
-      return $ mconcat ["https://twitter.com/", tweetUsr, "/status/", tweetId] -- Y U NO GIVE ME THE LINK
+  ifSuccess resp $ tweetUrl $ decode $ responseBody resp
+
+-- | Constructs a tweet URL from tweet JSON.
+--
+-- >>> (tweetUrl $ decode $ fromString "{\"id_str\": \"1234\", \"user\": {\"screen_name\": \"username\"}}") :: Maybe String
+-- Just "https://twitter.com/username/status/1234"
+tweetUrl :: (S.Stringable s) => Maybe Value -> Maybe s
+tweetUrl root' = do
+  root <- root'
+  tweetId <- root ^? key "id_str" . _String
+  tweetUsr <- root ^? key "user" . key "screen_name" . _String
+  return $ S.fromText $ mconcat ["https://twitter.com/", tweetUsr, "/status/", tweetId]
 
 showSyndication :: SweetrollAction () -> SweetrollAction ()
 showSyndication otherAction = do

@@ -25,20 +25,22 @@ library
     build-depends:
         base >= 4.0.0.0 && < 5
       , classy-prelude
+      , transformers
       , containers
+      , either
+      , lens
       , setters
       , safe
-      , either
-      , transformers
       , data-default
+      , stringable
       , text
       , bytestring
       , blaze-markup
       , blaze-builder
-      , stringable
       , time
       , regex-pcre-builtin
       , aeson
+      , lens-aeson
       , jwt
       , gitson == 0.4.*
       , microformats2-types == 0.2.*
@@ -95,7 +97,7 @@ executable sweetroll
       , sweetroll
     default-language: Haskell2010
     ghc-prof-options: -auto-all -prof
-    ghc-options: -threaded -rtsopts
+    ghc-options: -threaded -rtsopts -with-rtsopts=-N
     hs-source-dirs: executable
     main-is: Main.hs
 

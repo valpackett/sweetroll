@@ -111,7 +111,7 @@ renderContent writer e = case fromMaybe (Right "") $ entryContent e of
 renderRaw :: Template -> [Pair] -> Text
 renderRaw t c = renderTemplate t helpers $ object c
 
-render :: (?conf :: SweetrollConf, ?authorHtml :: Text, ?hostInfo :: [Pair]) => (SweetrollConf -> Template) -> ViewResult -> SweetrollAction ()
+render :: (?conf :: SweetrollConf, ?authorHtml :: Text, ?hostInfo :: [Pair]) => (SweetrollConf -> Template) -> ViewResult -> Sweetroll ()
 render tplf stuff = SC.html $ fromStrict $ renderTemplate (layoutTemplate ?conf) helpers ctx
   where ctx = object $ ?hostInfo ++ [
                 "content" .= renderTemplate (tplf ?conf) helpers (tplContext stuff)

@@ -1,14 +1,15 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
-{-# LANGUAGE GADTs, FlexibleContexts #-}
+{-# LANGUAGE GADTs, FlexibleContexts, QuasiQuotes #-}
 {-# LANGUAGE PackageImports, ImplicitParams #-}
 
 -- | Various functions used inside Sweetroll.
 module Sweetroll.Util (module Sweetroll.Util) where
 
 import           ClassyPrelude hiding (fromString, headMay)
+import           Text.RawString.QQ
 import           Web.Scotty
 import           Web.Scotty.Trans (ActionT)
-import           Data.Text.Lazy (split, replace, strip)
+import           Data.Text.Lazy (replace, strip)
 import           Data.Char (isSpace)
 import           Data.Aeson (decode)
 import           Data.Stringable hiding (length)
@@ -20,11 +21,11 @@ import           Safe (headMay)
 
 type CategoryName = String
 type EntrySlug = String
-type SweetrollAction = ActionT LText IO
+type Sweetroll = ActionT LText IO
 
 -- | Convenient wrapper around Network.HTTP requests.
-request :: (?httpMgr :: Manager, Stringable a) => Request -> IO (Response a)
-request req = do
+request :: (?httpMgr :: Manager, MonadIO i, Stringable a) => Request -> i (Response a)
+request req = liftIO $ do
   resp <- httpLbs req ?httpMgr
   return $ resp { responseBody = fromLazyByteString $ responseBody resp }
 
@@ -60,25 +61,33 @@ findFirstKey _ [] = Nothing
 --
 -- >>> slugify "Hello & World!"
 -- "hello-and-world"
-slugify :: Stringable a => a -> LText
-slugify = filter (not . isSpace) . intercalate "-" . words .
-          replace "&" "and" . replace "+" "plus" . replace "%" "percent" .
-          replace "<" "lt" . replace ">" "gt" . replace "=" "eq" .
-          replace "#" "hash" . replace "@" "at" . replace "$" "dollar" .
+slugify :: Stringable a => a -> a
+slugify = fromLazyText . filter (not . isSpace) . intercalate "-" . words .
+          replace "&" "and"  . replace "+" "plus" . replace "%" "percent" .
+          replace "<" "lt"   . replace ">" "gt"   . replace "=" "eq" .
+          replace "#" "hash" . replace "@" "at"   . replace "$" "dollar" .
           filter (`notElem` ("!^*?()[]{}`./\\'\"~|" :: String)) .
           toLower . strip . toLazyText
 
 -- | Parses comma-separated tags into a list.
 --
--- >>> parseTags $ pack "article,note, first post"
+-- >>> parseTags "article,note, first post"
 -- ["article","note","first post"]
-parseTags :: LText -> [LText]
-parseTags = split (== ',') . replace ", " ","
+-- 
+-- >>> parseTags "one tag"
+-- ["one tag"]
+--
+-- >>> parseTags ""
+-- []
+parseTags :: Stringable a => a -> [a]
+parseTags = map fromString . matches . toString
+  where matches ts = map (fromMaybe "" . headMay . drop 1) (ts =~ re :: [[String]])
+        re = [r|([^,]+),?\s?|] :: ByteString
 
 -- | Removes lines that come from cpp include directive
-dropIncludeCrap :: (Stringable a) => a -> a
-dropIncludeCrap = fromString . unlines . filter (not . (=~ r)) . lines . toString
-  where r = "#\\s+\\d+\\s+\"[^\"]+\"\\s+\\d+\\s*" :: ByteString
+dropIncludeCrap :: Stringable a => a -> a
+dropIncludeCrap = fromString . unlines . filter (not . (=~ re)) . lines . toString
+  where re = [r|#\s+\d+\s+"[^"]+"\s+\d+\s*|] :: ByteString
 
 -- | Makes a URL from a hostname and parts
 --
@@ -87,10 +96,10 @@ dropIncludeCrap = fromString . unlines . filter (not . (=~ r)) . lines . toStrin
 mkUrl :: (IsString s, Monoid s) => s -> [s] -> s
 mkUrl base parts = intercalate "/" $ [base] ++ parts
 
-created :: LText -> SweetrollAction ()
+created :: LText -> Sweetroll ()
 created url = status created201 >> setHeader "Location" url
 
-unauthorized :: SweetrollAction ()
+unauthorized :: Sweetroll ()
 unauthorized = status unauthorized401
 
 -- | Encodes key-value data as application/x-www-form-urlencoded.
@@ -99,8 +108,11 @@ writeForm ps = intercalate "&" $ map (\(k, v) -> enc k ++ "=" ++ enc v) ps
   where enc = urlEncode True . toByteString
 
 -- | Returns an action that writes data as application/x-www-form-urlencoded.
-showForm :: (Stringable a) => [(a, a)] -> SweetrollAction ()
-showForm x = status ok200 >> setHeader "Content-Type" "application/x-www-form-urlencoded; charset=utf-8" >> raw (toLazyByteString $ writeForm x)
+showForm :: (Stringable a) => [(a, a)] -> Sweetroll ()
+showForm x = do
+  status ok200
+  setHeader "Content-Type" "application/x-www-form-urlencoded; charset=utf-8"
+  raw $ toLazyByteString $ writeForm x
 
 derefEntry :: EntryReference -> Maybe LText
 derefEntry (Left (Here c)) = citeUrl c

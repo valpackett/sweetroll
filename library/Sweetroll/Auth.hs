@@ -18,13 +18,13 @@ import           Network.HTTP.Client
 import           Sweetroll.Util
 import           Sweetroll.Conf
 
-getAccessToken :: SweetrollAction Text
+getAccessToken :: Sweetroll Text
 getAccessToken = do
   allParams <- params
   tokenHeader <- header "Authorization" >>= \x -> return $ fromMaybe "" $ drop 7 <$> x -- Drop "Bearer "
   return $ toStrict $ fromMaybe tokenHeader $ findByKey allParams "access_token"
 
-checkAuth :: (?conf :: SweetrollConf) => SweetrollAction () -> SweetrollAction () -> SweetrollAction ()
+checkAuth :: (?conf :: SweetrollConf) => Sweetroll () -> Sweetroll () -> Sweetroll ()
 checkAuth onFail act = do
   token <- getAccessToken
   let verResult = decodeAndVerifySignature (secret $ secretKey ?conf) token
@@ -32,7 +32,7 @@ checkAuth onFail act = do
     Just _ -> act
     _ -> onFail
 
-showAuth :: SweetrollAction ()
+showAuth :: Sweetroll ()
 showAuth = do
   token <- getAccessToken
   case map claims $ decode token of
@@ -43,7 +43,7 @@ showAuth = do
                           _ -> ""
     _ -> status unauthorized401
 
-makeAccessToken :: SweetrollConf -> Text -> SweetrollAction ()
+makeAccessToken :: SweetrollConf -> Text -> Sweetroll ()
 makeAccessToken conf me = do
   now <- liftIO getCurrentTime
   let t = def { iss = stringOrURI $ domainName conf
@@ -52,7 +52,7 @@ makeAccessToken conf me = do
       t' = encodeSigned HS256 (secret $ secretKey conf) t
   showForm [("access_token", t'), ("scope", "post"), ("me", me)]
 
-doIndieAuth :: (?conf :: SweetrollConf, ?httpMgr :: Manager) => SweetrollAction () -> SweetrollAction ()
+doIndieAuth :: (?conf :: SweetrollConf, ?httpMgr :: Manager) => Sweetroll () -> Sweetroll ()
 doIndieAuth onFail = do
   allParams <- params
   let par x = toStrict <$> findByKey allParams x
@@ -64,7 +64,7 @@ doIndieAuth onFail = do
                             , ("client_id",    fromMaybe (baseUrl ?conf) $ par "client_id")
                             , ("state",        par' "state") ]
     indieAuthReq <- liftIO $ parseUrl $ indieAuthEndpoint ?conf
-    resp <- liftIO $ request (indieAuthReq { method = "POST"
-                                           , requestBody = RequestBodyBS reqBody }) :: SweetrollAction (Response LByteString)
+    resp <- request (indieAuthReq { method = "POST"
+                                  , requestBody = RequestBodyBS reqBody }) :: Sweetroll (Response LByteString)
     if responseStatus resp /= ok200 then onFail
     else valid

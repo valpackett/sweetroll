@@ -85,7 +85,7 @@ tweetUrl root' = do
   tweetUsr <- root ^? key "user" . key "screen_name" . _String
   return $ S.fromText $ mconcat ["https://twitter.com/", tweetUsr, "/status/", tweetId]
 
-showSyndication :: SweetrollAction () -> SweetrollAction ()
+showSyndication :: Sweetroll () -> Sweetroll ()
 showSyndication otherAction = do
   allParams <- params
   case findByKey allParams "q" of

@@ -19,7 +19,7 @@ import           Sweetroll.Util
 import           Sweetroll.Syndication
 import           Sweetroll.Webmention
 
-doMicropub :: (?httpMgr :: Manager, ?rng :: SystemRNG, ?conf :: SweetrollConf) => SweetrollAction ()
+doMicropub :: (?httpMgr :: Manager, ?rng :: SystemRNG, ?conf :: SweetrollConf) => Sweetroll ()
 doMicropub = do
   h <- param "h"
   allParams <- params

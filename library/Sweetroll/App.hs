@@ -83,7 +83,7 @@ mkApp conf = scottyApp $ do
   get "/:category/:slug" $ addLinks links $ do
     category <- param "category"
     slug <- param "slug"
-    entry <- readDocumentByName category slug :: SweetrollAction (Maybe Entry)
+    entry <- readDocumentByName category slug :: Sweetroll (Maybe Entry)
     case entry of
       Nothing -> pageNotFound
       Just e  -> do
@@ -101,12 +101,12 @@ visibleCat (_, Nothing) = False
 readSlug :: String -> EntrySlug
 readSlug x = drop 1 $ fromMaybe "-404" $ snd <$> maybeReadIntString x -- errors should never happen
 
-readEntry :: CategoryName -> String -> SweetrollAction (Maybe (EntrySlug, Entry))
+readEntry :: CategoryName -> String -> Sweetroll (Maybe (EntrySlug, Entry))
 readEntry category fname = do
-  doc <- readDocument category fname :: SweetrollAction (Maybe Entry)
+  doc <- readDocument category fname :: Sweetroll (Maybe Entry)
   return $ (\x -> (readSlug fname, x)) <$> doc
 
-readCategory :: Int -> Int -> CategoryName -> SweetrollAction (CategoryName, Maybe (Page (EntrySlug, Entry)))
+readCategory :: Int -> Int -> CategoryName -> Sweetroll (CategoryName, Maybe (Page (EntrySlug, Entry)))
 readCategory perPage pageNumber c = do
   slugs <- listDocumentKeys c
   case paginate True perPage pageNumber slugs of

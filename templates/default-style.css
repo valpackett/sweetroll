@@ -123,7 +123,9 @@ a:hover, a:focus, a:active { color: #7fdbff }
 a.self-link { color: #343434; text-decoration: none; }
 .fa-l { margin-right: 0.25em }
 .fa-r { margin-left: 0.25em }
-.site-content { flex: 1 }
+.site-content, .index-main { display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column }
+.site-content { -webkit-flex: 1; flex: 1 }
+.site-author { -webkit-order: 10; order: 10 }
 .site-footer {
 	padding: 1em 0;
 	font-size: 90%;
@@ -184,10 +186,10 @@ a.self-link { color: #343434; text-decoration: none; }
 @media screen and (min-width:56em) { 
 	.site-header, .site-content, .site-footer { width: 90% }
 	body { font-size: 105% }
-	.site-content, .index-main { display: -webkit-flex; display: flex; }
-	.site-author { flex: 1; -webkit-flex: 1; }
-	.site-main { flex: 3; -webkit-flex: 3; padding-left: 1.5em; }
-	.index-main { overflow-x: auto }
+	.site-content, .index-main { -webkit-flex-direction: row; flex-direction: row }
+	.site-author { -webkit-flex: 1; flex: 1; -webkit-order: 0; order: 0 }
+	.site-main { -webkit-flex: 3; flex: 3; padding-left: 1em; }
+	.index-main { overflow-x: scroll }
 	.index-category {
 		flex: 1; -webkit-flex: 1;
 		min-width: 30%;

@@ -31,7 +31,8 @@ data SweetrollConf = SweetrollConf
   ,               httpsWorks :: Bool
   ,               domainName :: Text
   ,             itemsPerPage :: Int
-  ,        indieAuthEndpoint :: String
+  ,   indieAuthRedirEndpoint :: String
+  ,   indieAuthCheckEndpoint :: String -- Separated for debugging
   ,               adnApiHost :: String
   ,              adnApiToken :: String
   ,           twitterApiHost :: String
@@ -78,36 +79,37 @@ readFailHandler c _ = return c
 -- Actual defaults are in the executable!
 instance Default SweetrollConf where
   def = SweetrollConf {
-        siteName             = ""
-      , secretKey            = "SECRET" -- the executable sets to a secure random value by default
-      , httpsWorks           = False
-      , domainName           = ""
-      , itemsPerPage         = 20
-      , indieAuthEndpoint    = "http://127.0.0.1"
-      , adnApiHost           = "http://127.0.0.1"
-      , adnApiToken          = ""
-      , twitterApiHost       = "http://127.0.0.1"
-      , twitterAppKey        = ""
-      , twitterAppSecret     = ""
-      , twitterAccessToken   = ""
-      , twitterAccessSecret  = ""
-      , testMode             = False
-      , titleSeparator       = " / "
-      , layoutTemplate       = processTpl [r|
+        siteName                 = ""
+      , secretKey                = "SECRET" -- the executable sets to a secure random value by default
+      , httpsWorks               = False
+      , domainName               = ""
+      , itemsPerPage             = 20
+      , indieAuthCheckEndpoint   = "http://127.0.0.1"
+      , indieAuthRedirEndpoint   = "http://127.0.0.1"
+      , adnApiHost               = "http://127.0.0.1"
+      , adnApiToken              = ""
+      , twitterApiHost           = "http://127.0.0.1"
+      , twitterAppKey            = ""
+      , twitterAppSecret         = ""
+      , twitterAccessToken       = ""
+      , twitterAccessSecret      = ""
+      , testMode                 = False
+      , titleSeparator           = " / "
+      , layoutTemplate           = processTpl [r|
 #include "../../templates/layout.html"
-    |], entryTemplate        = processTpl [r|
+    |], entryTemplate            = processTpl [r|
 #include "../../templates/entry.html"
-    |], categoryTemplate     = processTpl [r|
+    |], categoryTemplate         = processTpl [r|
 #include "../../templates/category.html"
-    |], indexTemplate        = processTpl [r|
+    |], indexTemplate            = processTpl [r|
 #include "../../templates/index.html"
-    |], entryInListTemplate  = processTpl [r|
+    |], entryInListTemplate      = processTpl [r|
 #include "../../templates/entry-in-list.html"
-    |], authorTemplate       = processTpl [r|
+    |], authorTemplate           = processTpl [r|
 #include "../../templates/author.html"
-    |], notFoundTemplate     = processTpl [r|
+    |], notFoundTemplate         = processTpl [r|
 #include "../../templates/404.html"
-    |], defaultStyle         = dropIncludeCrap $ asLByteString [r|
+    |], defaultStyle             = dropIncludeCrap $ asLByteString [r|
 #include "../../templates/default-style.css"
 |]}
 

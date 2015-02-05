@@ -5,7 +5,7 @@ synopsis:        A micro+blogging (IndieWeb) engine with curved swords. Curved! 
 category:        Web
 homepage:        https://github.com/myfreeweb/sweetroll
 author:          Greg V
-copyright:       2014 Greg V <greg@unrelenting.technology>
+copyright:       2014-2015 Greg V <greg@unrelenting.technology>
 maintainer:      greg@unrelenting.technology
 license:         Apache-2.0
 license-file:    COPYING
@@ -14,8 +14,7 @@ cabal-version:   >= 1.18
 extra-source-files:
     README.md
 tested-with:
-    GHC == 7.6.3
-  , GHC == 7.8.2
+    GHC == 7.8.3
 
 source-repository head
     type: git

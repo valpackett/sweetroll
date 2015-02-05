@@ -11,9 +11,11 @@ module Sweetroll.Auth (
 
 import           ClassyPrelude
 import           Data.Time.Clock.POSIX
+import           Data.Stringable
 import           Web.Scotty hiding (request)
 import           Web.JWT hiding (header)
 import           Network.HTTP.Types.Status
+import           Network.HTTP.Types
 import           Network.HTTP.Client
 import           Sweetroll.Util
 import           Sweetroll.Conf
@@ -63,8 +65,10 @@ doIndieAuth onFail = do
                             , ("redirect_uri", par' "redirect_uri")
                             , ("client_id",    fromMaybe (baseUrl ?conf) $ par "client_id")
                             , ("state",        par' "state") ]
-    indieAuthReq <- liftIO $ parseUrl $ indieAuthEndpoint ?conf
+    liftIO $ putStrLn $ toText reqBody
+    indieAuthReq <- liftIO $ parseUrl $ indieAuthCheckEndpoint ?conf
     resp <- request (indieAuthReq { method = "POST"
+                                  , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ] -- "indieauth suddenly stopped working" *facepalm*
                                   , requestBody = RequestBodyBS reqBody }) :: Sweetroll (Response LByteString)
     if responseStatus resp /= ok200 then onFail
     else valid

@@ -8,6 +8,7 @@ import           ClassyPrelude
 import           Network.Wai (Application)
 import           Network.Wai.Middleware.Autohead
 import           Network.Wai.Middleware.Static
+import           Network.Wai.Middleware.RequestLogger
 import           Network.HTTP.Types.Status
 import           Network.HTTP.Link
 import           Network.HTTP.Client
@@ -44,9 +45,9 @@ mkApp conf = scottyApp $ do
 
   let base = baseUrl conf
       checkAuth' = if testMode conf then id else checkAuth unauthorized
-      links = [ Link (mkUrl base ["micropub"])           [(Rel, "micropub")]
-              , Link (mkUrl base ["login"])              [(Rel, "token_endpoint")]
-              , Link (pack $ indieAuthEndpoint conf)     [(Rel, "authorization_endpoint")] ]
+      links = [ Link (mkUrl base ["micropub"])                [(Rel, "micropub")]
+              , Link (mkUrl base ["login"])                   [(Rel, "token_endpoint")]
+              , Link (pack $ indieAuthRedirEndpoint conf)     [(Rel, "authorization_endpoint")] ]
       addLinks l x = addHeader "Link" (fromStrict $ writeLinkHeader l) >> x
 
   let ?hostInfo = [ "domain" .= domainName conf
@@ -57,6 +58,7 @@ mkApp conf = scottyApp $ do
 
   middleware autohead -- XXX: does not add Content-Length
   middleware $ staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
+  middleware logStdoutDev
 
   get "/default-style.css" $ setHeader "Content-Type" "text/css" >> raw (defaultStyle conf ++
     (toLazyByteString $ styleToCss $ writerHighlightStyle pandocWriterOptions))

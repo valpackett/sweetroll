@@ -25,6 +25,7 @@ library
         base >= 4.0.0.0 && < 5
       , classy-prelude
       , transformers
+      , mtl
       , containers
       , either
       , lens
@@ -69,6 +70,7 @@ library
         Sweetroll.Auth
         Sweetroll.Conf
         Sweetroll.Micropub
+        Sweetroll.Monads
         Sweetroll.Pages
         Sweetroll.Pagination
         Sweetroll.Syndication

@@ -10,7 +10,8 @@ import           Control.Exception
 import           System.Directory
 import           System.Entropy
 import           Sweetroll.Conf
-import           Sweetroll.App
+import qualified Sweetroll.App as A
+import qualified Sweetroll.Monads as M
 import qualified Data.Text as T
 import           Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import           Data.Streaming.Network (bindPath)
@@ -98,7 +99,7 @@ main = runCommand $ \opts args -> do
   , twitterAccessToken             = encodeUtf8 $ T.pack $ twiacctoken opts
   , twitterAccessSecret            = encodeUtf8 $ T.pack $ twiaccsecret opts
   }
-  let app = mkApp conf
+  let app = M.sweetrollApp conf A.app
   case protocol opts of
     "http" -> putSweetroll >> app >>= runSettings warpSettings
     "unix" -> putSweetroll >>

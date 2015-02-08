@@ -1,47 +1,39 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
-{-# LANGUAGE PackageImports, ImplicitParams #-}
 
 -- | The module that contains the Sweetroll WAI application.
-module Sweetroll.App (mkApp) where
+module Sweetroll.App (app) where
 
 import           ClassyPrelude
-import           Network.Wai (Application)
 import           Network.Wai.Middleware.Autohead
 import           Network.Wai.Middleware.Static
 import           Network.Wai.Middleware.RequestLogger
 import           Network.HTTP.Types.Status
 import           Network.HTTP.Link
-import           Network.HTTP.Client
-import           Network.HTTP.Client.TLS
-import "crypto-random" Crypto.Random
 import           Text.Pandoc hiding (Link)
 import           Text.Highlighting.Kate.Format.HTML (styleToCss)
 import           Text.Read (readMaybe)
-import           Web.Scotty
+import           Web.Scotty.Trans
 import           Gitson
 import           Gitson.Util (maybeReadIntString)
 import           Data.Maybe (fromJust)
 import           Data.Stringable
-import           Data.Aeson.Types
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
 import           Sweetroll.Util
+import           Sweetroll.Monads
 import           Sweetroll.Conf
 import           Sweetroll.Auth
-import           Sweetroll.Pages
+import           Sweetroll.Pages hiding (render)
+import qualified Sweetroll.Pages as P
 import           Sweetroll.Pagination
 import           Sweetroll.Micropub
 import           Sweetroll.Syndication (showSyndication)
 
--- | Makes the Sweetroll WAI application.
-mkApp :: SweetrollConf -> IO Application
-mkApp conf = scottyApp $ do
-  httpClientMgr <- liftIO $ newManager tlsManagerSettings
-  sysRandom <- liftIO $ cprgCreate <$> createEntropyPool
+app :: SweetrollApp
+app = do
 
-  let ?httpMgr = httpClientMgr
-      ?rng = sysRandom
-      ?conf = conf
+  conf <- getConf
+  hostInfo <- getHostInfo
 
   let base = baseUrl conf
       checkAuth' = if testMode conf then id else checkAuth unauthorized
@@ -49,12 +41,9 @@ mkApp conf = scottyApp $ do
               , Link (mkUrl base ["login"])                   [(Rel, "token_endpoint")]
               , Link (pack $ indieAuthRedirEndpoint conf)     [(Rel, "authorization_endpoint")] ]
       addLinks l x = addHeader "Link" (fromStrict $ writeLinkHeader l) >> x
-
-  let ?hostInfo = [ "domain" .= domainName conf
-                  , "s" .= s conf
-                  , "base_url" .= base ]
-  let ?authorHtml = renderRaw (authorTemplate conf) ?hostInfo
-  let pageNotFound = status notFound404 >> render notFoundTemplate notFoundView
+      authorHtml = renderRaw (authorTemplate conf) hostInfo
+      render = P.render conf authorHtml
+      pageNotFound = status notFound404 >> render notFoundTemplate notFoundView
 
   middleware autohead -- XXX: does not add Content-Length
   middleware $ staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
@@ -71,7 +60,7 @@ mkApp conf = scottyApp $ do
 
   get "/" $ addLinks links $ do
     cats <- listCollections >>= mapM (readCategory (itemsPerPage conf) (-1))
-    render indexTemplate $ indexView $ map (\(x, y) -> (x, fromJust y)) $ filter visibleCat cats
+    render indexTemplate $ indexView conf $ map (\(x, y) -> (x, fromJust y)) $ filter visibleCat cats
 
   get "/:category" $ addLinks links $ do
     catName <- param "category"
@@ -80,12 +69,12 @@ mkApp conf = scottyApp $ do
     cat <- readCategory (itemsPerPage conf) pageNumber catName
     case snd cat of
       Nothing -> pageNotFound
-      Just p -> render categoryTemplate $ catView catName p
+      Just p -> render categoryTemplate $ catView conf catName p
 
   get "/:category/:slug" $ addLinks links $ do
     category <- param "category"
     slug <- param "slug"
-    entry <- readDocumentByName category slug :: Sweetroll (Maybe Entry)
+    entry <- readDocumentByName category slug :: SweetrollAction (Maybe Entry)
     case entry of
       Nothing -> pageNotFound
       Just e  -> do
@@ -103,13 +92,13 @@ visibleCat (_, Nothing) = False
 readSlug :: String -> EntrySlug
 readSlug x = drop 1 $ fromMaybe "-404" $ snd <$> maybeReadIntString x -- errors should never happen
 
-readEntry :: CategoryName -> String -> Sweetroll (Maybe (EntrySlug, Entry))
-readEntry category fname = do
-  doc <- readDocument category fname :: Sweetroll (Maybe Entry)
+readEntry :: MonadIO i => CategoryName -> String -> i (Maybe (EntrySlug, Entry))
+readEntry category fname = liftIO $ do
+  doc <- readDocument category fname :: IO (Maybe Entry)
   return $ (\x -> (readSlug fname, x)) <$> doc
 
-readCategory :: Int -> Int -> CategoryName -> Sweetroll (CategoryName, Maybe (Page (EntrySlug, Entry)))
-readCategory perPage pageNumber c = do
+readCategory :: MonadIO i => Int -> Int -> CategoryName -> i (CategoryName, Maybe (Page (EntrySlug, Entry)))
+readCategory perPage pageNumber c = liftIO $ do
   slugs <- listDocumentKeys c
   case paginate True perPage pageNumber slugs of
     Nothing -> return (c, Nothing)

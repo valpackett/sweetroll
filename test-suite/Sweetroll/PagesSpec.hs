@@ -1,5 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude, NoMonomorphismRestriction #-}
-{-# LANGUAGE OverloadedStrings, QuasiQuotes, ImplicitParams #-}
+{-# LANGUAGE OverloadedStrings, QuasiQuotes #-}
 
 module Sweetroll.PagesSpec (spec) where
 
@@ -41,7 +41,6 @@ $endfor$  </category>$endfor$
 spec :: Spec
 spec = do
   describe "renderPage" $ do
-    let ?conf = def
 
     it "renders notes" $ do
       let testNote = defaultEntry {
@@ -66,7 +65,7 @@ spec = do
     it "renders categories" $ do
       let testEntries = [ ("f", defaultEntry { entryContent = Just $ Right "First note"  })
                         , ("s", defaultEntry { entryContent = Just $ Right "Second note" }) ]
-      testRender testCategoryTpl (catView "test" $ fromJust $ paginate False 10 1 testEntries) `shouldBe` [r|<category name="test">
+      testRender testCategoryTpl (catView def "test" $ fromJust $ paginate False 10 1 testEntries) `shouldBe` [r|<category name="test">
 <e href="/test/f">First note</e>
 <e href="/test/s">Second note</e>
 </category>|]
@@ -75,7 +74,7 @@ spec = do
       let testCats = [ ("stuff", fromJust $ paginate False 10 1
                                  [ ("first",  defaultEntry { entryContent = Just $ Right "First"  })
                                  , ("second", defaultEntry { entryContent = Just $ Right "Second" }) ]) ]
-      testRender testIndexTpl (indexView $ testCats) `shouldBe` [r|<index>
+      testRender testIndexTpl (indexView def testCats) `shouldBe` [r|<index>
   <category name="stuff">
     <e href="/stuff/first">First</e>
     <e href="/stuff/second">Second</e>

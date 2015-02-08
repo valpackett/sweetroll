@@ -1,33 +1,23 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 {-# LANGUAGE GADTs, FlexibleContexts, QuasiQuotes #-}
-{-# LANGUAGE PackageImports, ImplicitParams #-}
+{-# LANGUAGE PackageImports #-}
 
 -- | Various functions used inside Sweetroll.
 module Sweetroll.Util (module Sweetroll.Util) where
 
 import           ClassyPrelude hiding (fromString, headMay)
 import           Text.RawString.QQ
-import           Web.Scotty
-import           Web.Scotty.Trans (ActionT)
 import           Data.Text.Lazy (replace, strip)
 import           Data.Char (isSpace)
 import           Data.Aeson (decode)
 import           Data.Stringable hiding (length)
 import           Data.Microformats2
+import           Network.HTTP.Types (urlEncode)
 import "regex-pcre-builtin" Text.Regex.PCRE
-import           Network.HTTP.Types
-import           Network.HTTP.Client
 import           Safe (headMay)
 
 type CategoryName = String
 type EntrySlug = String
-type Sweetroll = ActionT LText IO
-
--- | Convenient wrapper around Network.HTTP requests.
-request :: (?httpMgr :: Manager, MonadIO i, Stringable a) => Request -> i (Response a)
-request req = liftIO $ do
-  resp <- httpLbs req ?httpMgr
-  return $ resp { responseBody = fromLazyByteString $ responseBody resp }
 
 -- | Tries to parse a text ISO datetime into a UTCTime.
 --
@@ -96,23 +86,10 @@ dropIncludeCrap = fromString . unlines . filter (not . (=~ re)) . lines . toStri
 mkUrl :: (IsString s, Monoid s) => s -> [s] -> s
 mkUrl base parts = intercalate "/" $ [base] ++ parts
 
-created :: LText -> Sweetroll ()
-created url = status created201 >> setHeader "Location" url
-
-unauthorized :: Sweetroll ()
-unauthorized = status unauthorized401
-
 -- | Encodes key-value data as application/x-www-form-urlencoded.
 writeForm :: (Stringable a) => [(a, a)] -> ByteString
 writeForm ps = intercalate "&" $ map (\(k, v) -> enc k ++ "=" ++ enc v) ps
   where enc = urlEncode True . toByteString
-
--- | Returns an action that writes data as application/x-www-form-urlencoded.
-showForm :: (Stringable a) => [(a, a)] -> Sweetroll ()
-showForm x = do
-  status ok200
-  setHeader "Content-Type" "application/x-www-form-urlencoded; charset=utf-8"
-  raw $ toLazyByteString $ writeForm x
 
 derefEntry :: EntryReference -> Maybe LText
 derefEntry (Left (Here c)) = citeUrl c

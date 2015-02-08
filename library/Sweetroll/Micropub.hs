@@ -1,5 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
-{-# LANGUAGE PackageImports, ImplicitParams #-}
+{-# LANGUAGE PackageImports #-}
 
 module Sweetroll.Micropub (
   doMicropub
@@ -10,35 +10,36 @@ import           Data.Microformats2
 import           Data.Microformats2.Aeson()
 import           Text.Pandoc hiding (Link)
 import           Network.HTTP.Types.Status
-import "crypto-random" Crypto.Random (SystemRNG)
-import           Network.HTTP.Client (Manager)
-import           Web.Scotty
+import           Web.Scotty.Trans
 import           Gitson
 import           Sweetroll.Conf
 import           Sweetroll.Util
+import           Sweetroll.Monads
 import           Sweetroll.Syndication
 import           Sweetroll.Webmention
 
-doMicropub :: (?httpMgr :: Manager, ?rng :: SystemRNG, ?conf :: SweetrollConf) => Sweetroll ()
+doMicropub :: SweetrollAction ()
 doMicropub = do
   h <- param "h"
   allParams <- params
   now <- liftIO getCurrentTime
+  isTest <- getConfOpt testMode
+  base <- getConfOpt baseUrl
   let category = decideCategory allParams
       slug = decideSlug allParams now
       readerF = decideReader allParams
-      absUrl = fromStrict $ mkUrl (baseUrl ?conf) $ map pack [category, slug]
+      absUrl = fromStrict $ mkUrl base $ map pack [category, slug]
       save x = (transaction "./" $ saveNextDocument category slug x) >> created absUrl
   case asLText h of
     "entry" -> do
       let entry = makeEntry allParams now absUrl readerF
-          ifNotTest x = if testMode ?conf then (return Nothing) else x
+          ifNotTest x = if isTest then (return Nothing) else x
           ifSyndicateTo x y = if isInfixOf x $ fromMaybe "" $ findByKey allParams "syndicate-to" then y else (return Nothing)
       synd <- sequence [ ifNotTest $ ifSyndicateTo "app.net"     $ postAppDotNet entry
                        , ifNotTest $ ifSyndicateTo "twitter.com" $ postTwitter entry ]
       let entry' = entry { entrySyndication = catMaybes synd }
       save entry'
-      when (not $ testMode ?conf) $ void $ sendWebmentions entry'
+      when (not isTest) $ void $ runSweetrollBase $ sendWebmentions entry'
     _ -> status badRequest400
 
 decideCategory :: [Param] -> CategoryName

@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 {-# LANGUAGE ExistentialQuantification, KindSignatures #-}
-{-# LANGUAGE PackageImports, ImplicitParams #-}
+{-# LANGUAGE PackageImports, FlexibleContexts #-}
 
 module Sweetroll.Syndication (
   postAppDotNet
@@ -13,14 +13,14 @@ import           Control.Lens ((^?))
 import           Network.HTTP.Client
 import           Network.HTTP.Types
 import           Network.OAuth
-import "crypto-random" Crypto.Random
-import           Web.Scotty (params)
+import           Web.Scotty.Trans (params)
 import           Data.Microformats2
 import qualified Data.Stringable as S
 import           Data.Aeson
 import           Data.Aeson.Lens
 import           Text.Pandoc
 import           Sweetroll.Util
+import           Sweetroll.Monads
 import           Sweetroll.Pages (renderContent)
 import           Sweetroll.Conf
 
@@ -34,9 +34,10 @@ trimmedText l entry = (isArticle, if isTrimmed then (take (l - 1) t) ++ "…" el
 ifSuccess :: forall (m :: * -> *) body a. Monad m => Response body -> Maybe a -> m (Maybe a)
 ifSuccess resp what = return $ if not $ statusIsSuccessful $ responseStatus resp then Nothing else what
 
-postAppDotNet :: (?httpMgr :: Manager, ?conf :: SweetrollConf, MonadIO i) => Entry -> i (Maybe LText)
-postAppDotNet entry = liftIO $ do
-  req <- parseUrl $ (adnApiHost ?conf) ++ "/posts"
+postAppDotNet :: (MonadSweetroll m, MonadIO m) => Entry -> m (Maybe LText)
+postAppDotNet entry = do
+  req <- parseUrlP "/posts" =<< getConfOpt adnApiHost
+  bearer <- getConfOpt adnApiToken
   let (isArticle, txt) = trimmedText 250 entry
       pUrl = fromMaybe "" $ entryUrl entry
       o = object
@@ -48,7 +49,7 @@ postAppDotNet entry = liftIO $ do
                                                      , "url" .= pUrl ] ] ] ]
       req' = req { method = "POST"
                  , requestBody = RequestBodyLBS $ encode reqData
-                 , requestHeaders = [ (hAuthorization, fromString $ "Bearer " ++ (adnApiToken ?conf))
+                 , requestHeaders = [ (hAuthorization, fromString $ "Bearer " ++ bearer)
                                     , (hContentType, "application/json; charset=utf-8")
                                     , (hAccept, "application/json") ] }
   resp <- request req'
@@ -57,9 +58,10 @@ postAppDotNet entry = liftIO $ do
 appDotNetUrl :: (S.Stringable s) => Maybe Value -> Maybe s
 appDotNetUrl x = (return . S.fromText) =<< (^? key "data" . key "canonical_url" . _String) =<< x
 
-postTwitter :: (?httpMgr :: Manager, ?rng :: SystemRNG, ?conf :: SweetrollConf, MonadIO i) => Entry -> i (Maybe LText)
-postTwitter entry = liftIO $ do
-  req <- parseUrl $ (twitterApiHost ?conf) ++ "/statuses/update.json"
+postTwitter :: (MonadSweetroll m, MonadIO m) => Entry -> m (Maybe LText)
+postTwitter entry = do
+  req <- parseUrlP "/statuses/update.json" =<< getConfOpt twitterApiHost
+  conf <- getConf
   let (_, txt) = trimmedText 100 entry -- TODO: Figure out the number based on mentions of urls/domains in the first (140 - 25) characters
       pUrl = fromMaybe "" $ entryUrl entry
       reqBody = writeForm [("status", txt ++ " " ++ pUrl)]
@@ -67,10 +69,10 @@ postTwitter entry = liftIO $ do
                  , queryString = reqBody -- Yes, queryString... WTF http://ox86.tumblr.com/post/36810273719/twitter-api-1-1-responds-with-status-401-code-32
                  , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8")
                                     , (hAccept, "application/json") ] }
-      accessToken = Token (twitterAccessToken ?conf) (twitterAccessSecret ?conf)
-      clientCreds = clientCred $ Token (twitterAppKey ?conf) (twitterAppSecret ?conf)
+      accessToken = Token (twitterAccessToken conf) (twitterAccessSecret conf)
+      clientCreds = clientCred $ Token (twitterAppKey conf) (twitterAppSecret conf)
       creds = permanentCred accessToken clientCreds
-  (signedReq, _rng) <- oauth creds defaultServer req' ?rng
+  (signedReq, _rng) <- liftIO . oauth creds defaultServer req' =<< getRng
   resp <- request signedReq
   ifSuccess resp $ tweetUrl $ decode $ responseBody resp
 
@@ -85,7 +87,7 @@ tweetUrl root' = do
   tweetUsr <- root ^? key "user" . key "screen_name" . _String
   return $ S.fromText $ mconcat ["https://twitter.com/", tweetUsr, "/status/", tweetId]
 
-showSyndication :: Sweetroll () -> Sweetroll ()
+showSyndication :: SweetrollAction () -> SweetrollAction ()
 showSyndication otherAction = do
   allParams <- params
   case findByKey allParams "q" of

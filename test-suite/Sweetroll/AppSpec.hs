@@ -5,7 +5,6 @@ module Sweetroll.AppSpec (spec) where
 import           ClassyPrelude
 import           Test.Hspec
 import           System.Directory
-import           System.IO.Unsafe (unsafePerformIO)
 import           Network.HTTP.Types
 import           Network.Wai.Internal (requestMethod)
 import           Network.Wai.Test
@@ -17,7 +16,8 @@ import           Data.Microformats2
 import           Text.Pandoc
 import           Sweetroll.Util (findByKey)
 import           Sweetroll.Conf
-import           Sweetroll.App
+import           Sweetroll.Monads (sweetrollApp)
+import qualified Sweetroll.App as A
 import           Gitson
 
 {-# ANN module ("HLint: ignore Redundant do"::String) #-}
@@ -40,8 +40,7 @@ spec = before setup $ after cleanup $ do
   -- inside the app. Fsck it, just use unsafePerformIO here :D
   -- Spent a couple hours before realizing what's been stored here :-(
   -- And then realized the TVar was not needed, because JWT.
-  let app' = unsafePerformIO $ mkApp def { testMode = True, domainName = "localhost" }
-      app = (return app') :: IO Wai.Application
+  let app = sweetrollApp (def { testMode = True, domainName = "localhost" }) A.app
       transaction' = transaction "./"
 
   describe "GET /" $ do

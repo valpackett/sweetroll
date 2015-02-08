@@ -1,5 +1,4 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
-{-# LANGUAGE ImplicitParams #-}
 
 module Sweetroll.Webmention (
   discoverWebmentionEndpoint
@@ -13,7 +12,6 @@ import           Text.XML.HXT.Core hiding (trace)
 import           Text.XML.HXT.TagSoup
 import qualified Text.Pandoc as P
 import qualified Text.Pandoc.Walk as PW
-import           Control.Concurrent.Async
 import           Data.Microformats2
 import           Data.Foldable (asum)
 import qualified Data.Set as S
@@ -22,6 +20,7 @@ import           Network.HTTP.Types
 import           Network.HTTP.Client
 import           Network.URI
 import           Sweetroll.Util
+import           Sweetroll.Monads
 import           Sweetroll.Conf
 
 hLink :: HeaderName
@@ -46,26 +45,26 @@ discoverWebmentionEndpoint r to = asum [ lnk >>= parseAbsoluteURI
         htmlDoc = readString [withTagSoup] $ responseBody r
 
 -- | Sends one single webmention.
-sendWebmention :: (?httpMgr :: Manager, MonadIO i) => String -> String -> i (String, Bool)
-sendWebmention from to = liftIO $ do
-  tReq <- parseUrl to
+sendWebmention :: String -> String -> SweetrollBase (String, Bool)
+sendWebmention from to = do
+  tReq <- liftIO $ parseUrl to
   tResp <- request tReq
   let endp = discoverWebmentionEndpoint tResp $ getUri tReq
   case endp of
     Just u -> do
-      eReq <- parseUrl $ uriToString id u ""
+      eReq <- liftIO $ parseUrl $ uriToString id u ""
       let reqBody = writeForm [("source", from), ("target", to)]
       eResp <- request eReq { method = "POST"
                             , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
-                            , requestBody = RequestBodyBS reqBody } :: IO (Response String)
+                            , requestBody = RequestBodyBS reqBody } :: SweetrollBase (Response String)
       return $ (to, responseStatus eResp == ok200 || responseStatus eResp == accepted202)
     _ -> return (to, False)
 
 -- | Send all webmentions required for an entry, including the ones from
 -- metadata (in-reply-to, like-of, repost-of).
-sendWebmentions :: (?httpMgr :: Manager, MonadIO i) => Entry -> i [(String, Bool)]
-sendWebmentions e = liftIO $ mapConcurrently (sendWebmention from) $ S.toList links
-  where links = S.fromList $ contentLinks ++ metaLinks
+sendWebmentions :: Entry -> SweetrollBase [(String, Bool)]
+sendWebmentions e = mapM (sendWebmention from) links
+  where links = S.toList $ S.fromList $ contentLinks ++ metaLinks
         metaLinks = map unpack $ catMaybes $ map derefEntry $ catMaybes [entryInReplyTo e, entryLikeOf e, entryRepostOf e]
         contentLinks = PW.query extractLink $ pandocContent $ entryContent e
         from = unpack $ fromMaybe "" $ entryUrl e

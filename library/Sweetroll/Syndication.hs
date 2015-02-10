@@ -91,5 +91,5 @@ showSyndication :: SweetrollAction () -> SweetrollAction ()
 showSyndication otherAction = do
   allParams <- params
   case findByKey allParams "q" of
-    Just "syndicate-to" -> showForm [("syndicate-to", asByteString "app.net,twitter.com")]
+    Just "syndicate-to" -> showForm $ map (\x -> ("syndicate-to[]", asByteString x)) ["app.net", "twitter.com"]
     _ -> otherAction

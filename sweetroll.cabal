@@ -26,6 +26,7 @@ library
       , classy-prelude
       , transformers
       , mtl
+      , lifted-base
       , containers
       , either
       , lens
@@ -42,7 +43,7 @@ library
       , aeson
       , lens-aeson
       , jwt
-      , gitson == 0.4.*
+      , gitson == 0.5.*
       , microformats2-types == 0.2.*
       , wai
       , wai-extra

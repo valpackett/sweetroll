@@ -91,5 +91,8 @@ showForm x = do
 created :: LText -> SweetrollAction ()
 created url = status created201 >> setHeader "Location" url
 
+updated :: LText -> SweetrollAction ()
+updated url = status ok200 >> setHeader "Location" url
+
 unauthorized :: SweetrollAction ()
 unauthorized = status unauthorized401

@@ -6,6 +6,7 @@ module Sweetroll.Micropub (
 ) where
 
 import           ClassyPrelude
+import           Control.Concurrent.Lifted (fork)
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
 import           Text.Pandoc hiding (Link)
@@ -29,17 +30,21 @@ doMicropub = do
       slug = decideSlug allParams now
       readerF = decideReader allParams
       absUrl = fromStrict $ mkUrl base $ map pack [category, slug]
-      save x = (transaction "./" $ saveNextDocument category slug x) >> created absUrl
+      create x = transaction "./" $ saveNextDocument category slug x
+      update x = transaction "./" $ saveDocumentByName category slug x
   case asLText h of
     "entry" -> do
       let entry = makeEntry allParams now absUrl readerF
           ifNotTest x = if isTest then (return Nothing) else x
-          ifSyndicateTo x y = if isInfixOf x $ fromMaybe "" $ findByKey allParams "syndicate-to" then y else (return Nothing)
-      synd <- sequence [ ifNotTest $ ifSyndicateTo "app.net"     $ postAppDotNet entry
-                       , ifNotTest $ ifSyndicateTo "twitter.com" $ postTwitter entry ]
-      let entry' = entry { entrySyndication = catMaybes synd }
-      save entry'
-      when (not isTest) $ void $ runSweetrollBase $ sendWebmentions entry'
+          ifSyndicateTo x y = if any ((isInfixOf x) . snd) $ filter ((isInfixOf "syndicate-to") . fst) allParams then y else (return Nothing)
+      create entry
+      created absUrl
+      void $ fork $ do
+        synd <- sequence [ ifNotTest $ ifSyndicateTo "app.net"     $ postAppDotNet entry
+                         , ifNotTest $ ifSyndicateTo "twitter.com" $ postTwitter entry ]
+        let entry' = entry { entrySyndication = catMaybes synd }
+        update entry'
+        when (not isTest) $ void $ runSweetrollBase $ sendWebmentions entry'
     _ -> status badRequest400
 
 decideCategory :: [Param] -> CategoryName

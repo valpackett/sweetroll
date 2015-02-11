@@ -6,14 +6,13 @@
 module Sweetroll.Util (module Sweetroll.Util) where
 
 import           ClassyPrelude hiding (fromString, headMay)
-import           Text.RawString.QQ
 import           Data.Text.Lazy (replace, strip)
 import           Data.Char (isSpace)
 import           Data.Aeson (decode)
 import           Data.Stringable hiding (length)
 import           Data.Microformats2
 import           Network.HTTP.Types (urlEncode)
-import "regex-pcre-builtin" Text.Regex.PCRE
+import           Text.Regex.PCRE.Heavy
 import           Safe (headMay)
 
 type CategoryName = String
@@ -70,14 +69,13 @@ slugify = fromLazyText . filter (not . isSpace) . intercalate "-" . words .
 -- >>> parseTags ""
 -- []
 parseTags :: Stringable a => a -> [a]
-parseTags = map fromString . matches . toString
-  where matches ts = map (fromMaybe "" . headMay . drop 1) (ts =~ re :: [[String]])
-        re = [r|([^,]+),?\s?|] :: ByteString
+parseTags ts = catMaybes . map (headMay . drop 1) $ scan r ts
+  where r = [re|([^,]+),?\s?|]
 
 -- | Removes lines that come from cpp include directive
 dropIncludeCrap :: Stringable a => a -> a
-dropIncludeCrap = fromString . unlines . filter (not . (=~ re)) . lines . toString
-  where re = [r|#\s+\d+\s+"[^"]+"\s+\d+\s*|] :: ByteString
+dropIncludeCrap = fromString . unlines . filter (not . (=~ r)) . lines . toString
+  where r = [re|#\s+\d+\s+"[^"]+"\s+\d+\s*|]
 
 -- | Makes a URL from a hostname and parts
 --

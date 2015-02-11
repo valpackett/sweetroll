@@ -39,7 +39,7 @@ library
       , blaze-markup
       , blaze-builder
       , time
-      , regex-pcre-builtin
+      , pcre-heavy
       , aeson
       , lens-aeson
       , jwt

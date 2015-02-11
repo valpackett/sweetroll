@@ -1,4 +1,4 @@
-# sweetroll [![Apache License 2.0](https://img.shields.io/badge/license-Apache%202.0-brightgreen.svg?style=flat)](https://www.tldrlegal.com/l/apache2)
+# sweetroll [![ISC License](https://img.shields.io/badge/license-ISC-red.svg?style=flat)](https://tldrlegal.com/license/-isc-license)
 
 A personal website / [#IndieWeb] engine with curved swords. *Curved! Swords!*
 
@@ -6,19 +6,27 @@ Written in [Haskell], uses Git (via [gitson]) for storage and [pandoc] for marku
 
 *Privacy notice*: if you post your git repo on a public host like GitHub or Bitbucket, your "deleted" entries are not really deleted.
 
+## Libraries I made for this project
+
+- [gitson], a git-backed storage engine
+- [http-link-header], a parser for the Link header (RFC 5988)
+- [pcre-heavy], a usable regular expressions library
+- [microformats2-types], the type definitions for Microformats 2
+
 [#IndieWeb]: http://indiewebcamp.com
 [Haskell]: http://haskell.org
 [gitson]: https://github.com/myfreeweb/gitson
+[http-link-header]: https://github.com/myfreeweb/http-link-header
+[pcre-heavy]: https://github.com/myfreeweb/pcre-heavy
+[microformats2-types]: https://github.com/myfreeweb/microformats2-types
 [pandoc]: http://johnmacfarlane.net/pandoc/
 
 ## WORK IN PROGRESS
 
-This is not a stable release!
+It's not feature complete, but it hasn't crashed on me ever :D
 The current version is 0.0.0.
 
-**Do not touch it yet!**
-But you can look ;-)
-I'm testing it on [my website](https://unrelenting.technology).
+I'm running it on [my website](https://unrelenting.technology).
 
 ### Massive TODO list
 
@@ -52,16 +60,5 @@ I'm testing it on [my website](https://unrelenting.technology).
 
 ## License
 
-Copyright 2014 Greg V <greg@unrelenting.technology>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Copyright 2015 Greg V <greg@unrelenting.technology>  
+Available under the ISC license, see the `COPYING` file

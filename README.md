@@ -60,5 +60,5 @@ I'm running it on [my website](https://unrelenting.technology).
 
 ## License
 
-Copyright 2015 Greg V <greg@unrelenting.technology>  
+Copyright 2014-2015 Greg V <greg@unrelenting.technology>
 Available under the ISC license, see the `COPYING` file

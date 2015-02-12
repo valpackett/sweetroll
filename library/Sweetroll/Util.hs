@@ -69,7 +69,7 @@ slugify = fromLazyText . filter (not . isSpace) . intercalate "-" . words .
 -- >>> parseTags ""
 -- []
 parseTags :: Stringable a => a -> [a]
-parseTags ts = catMaybes . map (headMay . drop 1) $ scan r ts
+parseTags ts = catMaybes . map (headMay . snd) $ scan r ts
   where r = [re|([^,]+),?\s?|]
 
 -- | Removes lines that come from cpp include directive

@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
 {-# LANGUAGE ExistentialQuantification, KindSignatures #-}
 {-# LANGUAGE PackageImports, FlexibleContexts #-}
 
@@ -31,7 +31,7 @@ trimmedText l entry = (isArticle, if isTrimmed then (take (l - 1) t) ++ "…" el
                            Just n -> (True, n)
                            _ -> (False, renderContent writePlain entry)
 
-ifSuccess :: forall (m :: * -> *) body a. Monad m => Response body -> Maybe a -> m (Maybe a)
+ifSuccess :: ∀ (m :: * -> *) body a. Monad m => Response body -> Maybe a -> m (Maybe a)
 ifSuccess resp what = return $ if not $ statusIsSuccessful $ responseStatus resp then Nothing else what
 
 postAppDotNet :: (MonadSweetroll m, MonadIO m) => Entry -> m (Maybe LText)

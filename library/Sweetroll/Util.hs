@@ -55,7 +55,7 @@ slugify = fromLazyText . filter (not . isSpace) . intercalate "-" . words .
           replace "&" "and"  . replace "+" "plus" . replace "%" "percent" .
           replace "<" "lt"   . replace ">" "gt"   . replace "=" "eq" .
           replace "#" "hash" . replace "@" "at"   . replace "$" "dollar" .
-          filter (`notElem` ("!^*?()[]{}`./\\'\"~|" :: String)) .
+          filter (`onotElem` ("!^*?()[]{}`./\\'\"~|" :: String)) .
           toLower . strip . toLazyText
 
 -- | Parses comma-separated tags into a list.

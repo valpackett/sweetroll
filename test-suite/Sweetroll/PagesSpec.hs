@@ -11,6 +11,7 @@ import           Sweetroll.Pages
 import           Sweetroll.Conf
 import           Text.RawString.QQ
 import           Data.Maybe (fromJust)
+import           Data.Default()
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
 import           Web.Simple.Templates.Language
@@ -43,7 +44,7 @@ spec = do
   describe "renderPage" $ do
 
     it "renders notes" $ do
-      let testNote = defaultEntry {
+      let testNote = def {
         entryContent      = Just $ Right "Hello, world!"
       , entryPublished    = parseISOTime ("2013-10-17T09:42:49.000Z" :: String) }
       testRender testEntryTpl (entryView "articles" [] ("first", testNote)) `shouldBe` [r|<note>
@@ -52,7 +53,7 @@ spec = do
 </note>|]
 
     it "renders articles" $ do
-      let testArticle = defaultEntry {
+      let testArticle = def {
         entryName         = Just "First post"
       , entryContent      = Just $ Right "<p>This is the content</p>"
       , entryPublished    = parseISOTime ("2013-10-17T09:42:49.000Z" :: String) }
@@ -63,8 +64,8 @@ spec = do
 </article>|]
 
     it "renders categories" $ do
-      let testEntries = [ ("f", defaultEntry { entryContent = Just $ Right "First note"  })
-                        , ("s", defaultEntry { entryContent = Just $ Right "Second note" }) ]
+      let testEntries = [ ("f", def { entryContent = Just $ Right "First note"  })
+                        , ("s", def { entryContent = Just $ Right "Second note" }) ]
       testRender testCategoryTpl (catView def "test" $ fromJust $ paginate False 10 1 testEntries) `shouldBe` [r|<category name="test">
 <e href="/test/f">First note</e>
 <e href="/test/s">Second note</e>
@@ -72,8 +73,8 @@ spec = do
 
     it "renders the index" $ do
       let testCats = [ ("stuff", fromJust $ paginate False 10 1
-                                 [ ("first",  defaultEntry { entryContent = Just $ Right "First"  })
-                                 , ("second", defaultEntry { entryContent = Just $ Right "Second" }) ]) ]
+                                 [ ("first",  def { entryContent = Just $ Right "First"  })
+                                 , ("second", def { entryContent = Just $ Right "Second" }) ]) ]
       testRender testIndexTpl (indexView def testCats) `shouldBe` [r|<index>
   <category name="stuff">
     <e href="/stuff/first">First</e>

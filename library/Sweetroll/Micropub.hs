@@ -7,6 +7,7 @@ module Sweetroll.Micropub (
 
 import           ClassyPrelude
 import           Control.Concurrent.Lifted (fork)
+import           Data.Default
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
 import           Text.Pandoc hiding (Link)
@@ -70,7 +71,7 @@ decideReader pars | f == "textile"     = readTextile
   where f = fromMaybe "" $ findByKey pars "format"
 
 makeEntry :: [Param] -> UTCTime -> LText -> (ReaderOptions -> String -> Pandoc) -> Entry
-makeEntry pars now absUrl readerF = defaultEntry
+makeEntry pars now absUrl readerF = def
   { entryName         = par "name"
   , entrySummary      = par "summary"
   , entryContent      = Left <$> readerF pandocReaderOptions <$> unpack <$> par "content"

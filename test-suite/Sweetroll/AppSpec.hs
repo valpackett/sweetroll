@@ -13,6 +13,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.CaseInsensitive as CI
 import           Data.Microformats2
+import           Data.Default
 import           Text.Pandoc
 import           Sweetroll.Util (findByKey)
 import           Sweetroll.Conf
@@ -46,9 +47,9 @@ spec = before setup $ after cleanup $ do
   describe "GET /" $ do
     it "renders the index" $ do
       transaction' $ do
-        saveNextDocument "posts" "first" $ defaultEntry {
+        saveNextDocument "posts" "first" $ def {
           entryName      = Just "Post 1" }
-        saveNextDocument "thingies" "tweeeet" $ defaultEntry {
+        saveNextDocument "thingies" "tweeeet" $ def {
           entryContent   = Just $ Left $ readMarkdown def "Something 1" }
       resp <- app >>= get "/"
       simpleBody resp `shouldSatisfy` (`contains` "posts")
@@ -60,9 +61,9 @@ spec = before setup $ after cleanup $ do
   describe "GET /:category" $ do
     it "renders categories" $ do
       transaction' $ do
-        saveNextDocument "articles" "first" $ defaultEntry {
+        saveNextDocument "articles" "first" $ def {
           entryName      = Just "First" }
-        saveNextDocument "articles" "second" $ defaultEntry {
+        saveNextDocument "articles" "second" $ def {
           entryName      = Just "Second" }
       resp <- app >>= get "/articles"
       simpleBody resp `shouldSatisfy` (`contains` "articles")
@@ -76,7 +77,7 @@ spec = before setup $ after cleanup $ do
       simpleStatus resp `shouldBe` notFound404
 
     it "renders entries" $ do
-      transaction' $ saveNextDocument "articles" "hello-world" $ defaultEntry {
+      transaction' $ saveNextDocument "articles" "hello-world" $ def {
               entryName      = Just "Hello, World!"
             , entryAuthor    = Somewhere "/" }
       resp <- app >>= get "/articles/hello-world"

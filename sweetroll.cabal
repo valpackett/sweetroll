@@ -23,7 +23,8 @@ source-repository head
 library
     build-depends:
         base >= 4.0.0.0 && < 5
-      , classy-prelude
+      , classy-prelude >= 0.10.3
+      , mono-traversable >= 0.8.0
       , transformers
       , mtl
       , lifted-base
@@ -44,7 +45,7 @@ library
       , lens-aeson
       , jwt
       , gitson == 0.5.*
-      , microformats2-types == 0.2.*
+      , microformats2-types == 0.3.*
       , wai
       , wai-extra
       , wai-middleware-static
@@ -130,6 +131,7 @@ test-suite tests
       , pandoc
       , simple-templates == 0.8.*
       , aeson
+      , data-default
       , hspec == 1.*
         , HUnit
         , QuickCheck

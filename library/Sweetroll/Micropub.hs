@@ -29,7 +29,7 @@ doMicropub = do
   let category = decideCategory allParams
       slug = decideSlug allParams now
       readerF = decideReader allParams
-      absUrl = fromStrict $ mkUrl base $ map pack [category, slug]
+      absUrl = fromStrict . mkUrl base $ map pack [category, slug]
       create x = transaction "./" $ saveNextDocument category slug x
       update x = transaction "./" $ saveDocumentByName category slug x
   case asLText h of
@@ -40,11 +40,11 @@ doMicropub = do
       create entry
       created absUrl
       void $ fork $ do
-        synd <- sequence [ ifNotTest $ ifSyndicateTo "app.net"     $ postAppDotNet entry
-                         , ifNotTest $ ifSyndicateTo "twitter.com" $ postTwitter entry ]
+        synd <- sequence [ ifNotTest . ifSyndicateTo "app.net"     $ postAppDotNet entry
+                         , ifNotTest . ifSyndicateTo "twitter.com" $ postTwitter entry ]
         let entry' = entry { entrySyndication = catMaybes synd }
         update entry'
-        when (not isTest) $ void $ runSweetrollBase $ sendWebmentions entry'
+        when (not isTest) . void . runSweetrollBase $ sendWebmentions entry'
     _ -> status badRequest400
 
 decideCategory :: [Param] -> CategoryName
@@ -55,8 +55,8 @@ decideCategory pars | hasPar "name"          = "articles"
   where hasPar = isJust . findByKey pars
 
 decideSlug :: [Param] -> UTCTime -> EntrySlug
-decideSlug pars now = unpack $ fromMaybe fallback $ findByKey pars "slug"
-  where fallback = slugify $ fromMaybe (formatTimeSlug now) $ findFirstKey pars ["name", "summary"]
+decideSlug pars now = unpack . fromMaybe fallback $ findByKey pars "slug"
+  where fallback = slugify . fromMaybe (formatTimeSlug now) $ findFirstKey pars ["name", "summary"]
         formatTimeSlug = pack . formatTime defaultTimeLocale "%Y-%m-%d-%H-%M-%S"
 
 decideReader :: [Param] -> (ReaderOptions -> String -> Pandoc)

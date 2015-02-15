@@ -14,6 +14,7 @@ import qualified Text.Pandoc as P
 import qualified Text.Pandoc.Walk as PW
 import           Data.Microformats2
 import           Data.Foldable (asum)
+import           Data.Stringable (toText)
 import qualified Data.Set as S
 import           Network.HTTP.Link
 import           Network.HTTP.Types
@@ -57,8 +58,11 @@ sendWebmention from to = do
       eResp <- request eReq { method = "POST"
                             , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
                             , requestBody = RequestBodyBS reqBody } :: SweetrollBase (Response String)
+      putStrLn $ "Webmention status for <" ++ (asText . pack $ to) ++ ">: " ++ (toText . show . statusCode $ responseStatus eResp)
       return $ (to, responseStatus eResp == ok200 || responseStatus eResp == accepted202)
-    _ -> return (to, False)
+    _ -> do
+      putStrLn $ "No webmention endpoint found for <" ++ (asText . pack $ to) ++ ">"
+      return (to, False)
 
 -- | Send all webmentions required for an entry, including the ones from
 -- metadata (in-reply-to, like-of, repost-of).

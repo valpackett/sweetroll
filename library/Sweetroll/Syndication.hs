@@ -53,6 +53,7 @@ postAppDotNet entry = do
                                     , (hContentType, "application/json; charset=utf-8")
                                     , (hAccept, "application/json") ] }
   resp <- request req'
+  putStrLn $ "App.net status for <" ++ (S.toText pUrl) ++ ">: " ++ (S.toText . show . statusCode $ responseStatus resp)
   ifSuccess resp $ appDotNetUrl $ decode $ responseBody resp
 
 appDotNetUrl :: (S.Stringable s) => Maybe Value -> Maybe s
@@ -74,6 +75,7 @@ postTwitter entry = do
       creds = permanentCred accessToken clientCreds
   (signedReq, _rng) <- liftIO . oauth creds defaultServer req' =<< getRng
   resp <- request signedReq
+  putStrLn $ "Twitter status for <" ++ (S.toText pUrl) ++ ">: " ++ (S.toText . show . statusCode $ responseStatus resp)
   ifSuccess resp $ tweetUrl $ decode $ responseBody resp
 
 -- | Constructs a tweet URL from tweet JSON.

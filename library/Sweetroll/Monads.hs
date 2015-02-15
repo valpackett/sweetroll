@@ -47,8 +47,8 @@ initCtx conf = do
                         , _ctxHttpMgr  = httpClientMgr
                         , _ctxRng      = sysRandom }
 
-runSweetrollBase :: MonadSweetroll m => SweetrollBase a -> m (IO a)
-runSweetrollBase x = ask >>= return . runReaderT x
+runSweetrollBase :: (MonadSweetroll m, MonadIO m) => SweetrollBase a -> m a
+runSweetrollBase x = ask >>= liftIO . runReaderT x
 
 sweetrollApp :: SweetrollConf -> SweetrollApp -> IO Application
 sweetrollApp conf app = do

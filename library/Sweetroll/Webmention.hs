@@ -7,18 +7,18 @@ module Sweetroll.Webmention (
 ) where
 
 import           ClassyPrelude
-import           System.IO.Unsafe (unsafePerformIO)
-import           Text.XML.HXT.Core hiding (trace)
-import           Text.XML.HXT.TagSoup
+import           Text.HTML.DOM
+import           Text.XML.Lens hiding (to, from)
 import qualified Text.Pandoc as P
 import qualified Text.Pandoc.Walk as PW
+import           Data.Conduit
 import           Data.Microformats2
 import           Data.Foldable (asum)
 import           Data.Stringable (toText)
 import qualified Data.Set as S
 import           Network.HTTP.Link
 import           Network.HTTP.Types
-import           Network.HTTP.Client
+import           Network.HTTP.Client.Conduit
 import           Network.URI
 import           Sweetroll.Util
 import           Sweetroll.Monads
@@ -30,27 +30,26 @@ hLink = "Link"
 isWebmentionRel :: (EqSequence seq, IsString seq) => seq -> Bool
 isWebmentionRel = isInfixOf "webmention"
 
--- AWESOME: this is probably my favorite function ever
--- MAYBE: properly resolve URLs relative to <base>
 -- | Discovers a webmention endpoint for an address.
-discoverWebmentionEndpoint :: Response String -> URI -> Maybe URI
-discoverWebmentionEndpoint r to = asum [ lnk >>= parseAbsoluteURI
-                                       , lnk >>= parseRelativeReference >>= return . (`relativeTo` to) ]
-  where lnk = asum [findInHeader, findInBody]
-        findInHeader = (lookup hLink $ responseHeaders r)
-                       >>= parseLinkHeader . decodeUtf8
-                       >>= find (isWebmentionRel . fromMaybe "" . lookup Rel . linkParams)
-                       >>= return . unpack . href
-        findInBody = listToMaybe $ unsafePerformIO $ runX $
-                       htmlDoc //> hasAttrValue "rel" isWebmentionRel >>> getAttrValue "href"
-        htmlDoc = readString [withTagSoup] $ responseBody r
+discoverWebmentionEndpoint :: URI -> Response (Source SweetrollBase ByteString) -> SweetrollBase (Maybe URI)
+discoverWebmentionEndpoint to r = do
+  htmlDoc <- responseBody r $$ sinkDoc
+  let findInHeader = (lookup hLink $ responseHeaders r)
+                     >>= parseLinkHeader . decodeUtf8
+                     >>= find (isWebmentionRel . fromMaybe "" . lookup Rel . linkParams)
+                     >>= return . unpack . href
+      findInBody = unpack <$> htmlDoc ^. root . entire ./ attributeSatisfies "rel" isWebmentionRel . attribute "href"
+      baseInBody = parseAbsoluteURI =<< unpack <$> htmlDoc ^. root . entire ./ el "base" . attribute "href"
+      lnk = asum [findInHeader, findInBody]
+      base = fromMaybe to baseInBody
+  return $ asum [ lnk >>= parseAbsoluteURI
+                , lnk >>= parseRelativeReference >>= return . (`relativeTo` base) ]
 
 -- | Sends one single webmention.
 sendWebmention :: String -> String -> SweetrollBase (String, Bool)
 sendWebmention from to = do
   tReq <- liftIO $ parseUrl to
-  tResp <- request tReq
-  let endp = discoverWebmentionEndpoint tResp $ getUri tReq
+  endp <- withResponse tReq $ discoverWebmentionEndpoint $ getUri tReq
   case endp of
     Just u -> do
       eReq <- liftIO $ parseUrl $ uriToString id u ""

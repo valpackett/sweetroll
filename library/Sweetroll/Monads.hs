@@ -12,8 +12,7 @@ import           Data.Aeson.Types
 import           Control.Monad.Reader
 import           Network.Wai (Application)
 import           Network.HTTP.Types
-import qualified Network.HTTP.Client as H
-import           Network.HTTP.Client.TLS
+import qualified Network.HTTP.Client.Conduit as H
 import "crypto-random" Crypto.Random
 import           Web.Scotty.Trans hiding (request)
 import           Sweetroll.Util (writeForm)
@@ -38,7 +37,7 @@ instance (MonadReader r m, ScottyError e) => MonadReader r (ScottyT e m) where
 
 initCtx :: SweetrollConf -> IO SweetrollCtx
 initCtx conf = do
-  httpClientMgr <- H.newManager tlsManagerSettings
+  httpClientMgr <- H.newManager
   sysRandom <- cprgCreate <$> createEntropyPool
   return $ SweetrollCtx { _ctxConf     = conf
                         , _ctxHostInfo = [ "domain" .= domainName conf
@@ -65,17 +64,16 @@ getConfOpt f = asks $ f . _ctxConf
 getHostInfo :: MonadSweetroll m => m [Pair]
 getHostInfo = asks _ctxHostInfo
 
-getHttpMgr :: MonadSweetroll m => m H.Manager
-getHttpMgr = asks _ctxHttpMgr
-
 getRng :: MonadSweetroll m => m SystemRNG
 getRng = asks _ctxRng
+
+instance H.HasHttpManager SweetrollCtx where
+  getHttpManager = _ctxHttpMgr
 
 -- | Convenient wrapper around Network.HTTP requests.
 request :: (MonadSweetroll m, MonadIO m, Stringable a) => H.Request -> m (H.Response a)
 request req = do
-  mgr <- getHttpMgr
-  resp <- liftIO $ H.httpLbs req mgr
+  resp <- H.httpLbs req
   return $ resp { H.responseBody = fromLazyByteString $ H.responseBody resp }
 
 parseUrlP :: (MonadIO m) => String -> String -> m H.Request

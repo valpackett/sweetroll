@@ -53,14 +53,16 @@ library
       , simple-templates == 0.8.*
       , network-uri >= 2.6
       , network >= 2.6
+      , conduit
       , http-types
       , http-client
       , http-client-tls
+      , http-conduit
       , http-link-header
+      , html-conduit
+      , xml-lens
       , oauthenticated == 0.1.3.3
       , crypto-random
-      , hxt
-      , hxt-tagsoup
       , async
       , highlighting-kate
       , pandoc == 1.13.*

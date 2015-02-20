@@ -25,7 +25,7 @@ type EntrySlug = String
 -- >>> parseISOTime "yolo"
 -- Nothing
 parseISOTime ∷ Stringable a ⇒ a → Maybe UTCTime
-parseISOTime x = headMay =<< (decodeTime $ "[\"" ++ toLazyByteString x ++ "\"]")
+parseISOTime x = headMay =<< decodeTime ("[\"" ++ toLazyByteString x ++ "\"]")
   where decodeTime y = decode y ∷ Maybe [UTCTime]
 
 -- | Tries to find a key-value pair by key and return the value.
@@ -68,7 +68,7 @@ slugify = fromLazyText . filter (not . isSpace) . intercalate "-" . words .
 -- >>> parseTags ""
 -- []
 parseTags ∷ Stringable a ⇒ a → [a]
-parseTags ts = catMaybes . map (headMay . snd) $ scan r ts
+parseTags ts = mapMaybe (headMay . snd) $ scan r ts
   where r = [re|([^,]+),?\s?|]
 
 -- | Removes lines that come from cpp include directive
@@ -81,7 +81,7 @@ dropIncludeCrap = fromString . unlines . filter (not . (=~ r)) . lines . toStrin
 -- >>> mkUrl "http://localhost:4200" ["yolo", "lol"]
 -- "http://localhost:4200/yolo/lol"
 mkUrl ∷ (IsString s, Monoid s) ⇒ s → [s] → s
-mkUrl base parts = intercalate "/" $ [base] ++ parts
+mkUrl base parts = intercalate "/" $ base : parts
 
 -- | Encodes key-value data as application/x-www-form-urlencoded.
 writeForm ∷ (Stringable a) ⇒ [(a, a)] → ByteString

@@ -34,7 +34,7 @@ isWebmentionRel = isInfixOf "webmention"
 discoverWebmentionEndpoint ∷ URI → Response (Source SweetrollBase ByteString) → SweetrollBase (Maybe URI)
 discoverWebmentionEndpoint to r = do
   htmlDoc ← responseBody r $$ sinkDoc
-  let findInHeader = (lookup hLink $ responseHeaders r)
+  let findInHeader = lookup hLink (responseHeaders r)
                      >>= parseLinkHeader . decodeUtf8
                      >>= find (isWebmentionRel . fromMaybe "" . lookup Rel . linkParams)
                      >>= return . unpack . href
@@ -58,7 +58,7 @@ sendWebmention from to = do
                             , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
                             , requestBody = RequestBodyBS reqBody } ∷ SweetrollBase (Response String)
       putStrLn $ "Webmention status for <" ++ (asText . pack $ to) ++ ">: " ++ (toText . show . statusCode $ responseStatus eResp)
-      return $ (to, responseStatus eResp == ok200 || responseStatus eResp == accepted202)
+      return (to, responseStatus eResp == ok200 || responseStatus eResp == accepted202)
     _ → do
       putStrLn $ "No webmention endpoint found for <" ++ (asText . pack $ to) ++ ">"
       return (to, False)
@@ -68,7 +68,7 @@ sendWebmention from to = do
 sendWebmentions ∷ Entry → SweetrollBase [(String, Bool)]
 sendWebmentions e = mapM (sendWebmention from) links
   where links = S.toList $ S.fromList $ contentLinks ++ metaLinks
-        metaLinks = map unpack $ catMaybes $ map derefEntry $ catMaybes [entryInReplyTo e, entryLikeOf e, entryRepostOf e]
+        metaLinks = map unpack $ mapMaybe derefEntry $ catMaybes [entryInReplyTo e, entryLikeOf e, entryRepostOf e]
         contentLinks = PW.query extractLink $ pandocContent $ entryContent e
         from = unpack $ fromMaybe "" $ entryUrl e
         pandocContent (Just (Left p)) = p

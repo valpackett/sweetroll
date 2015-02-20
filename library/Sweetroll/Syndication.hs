@@ -24,27 +24,27 @@ import           Sweetroll.Monads
 import           Sweetroll.Pages (renderContent)
 import           Sweetroll.Conf
 
-trimmedText :: Index LText -> Entry -> (Bool, LText)
+trimmedText ∷ Index LText → Entry → (Bool, LText)
 trimmedText l entry = (isArticle, if isTrimmed then (take (l - 1) t) ++ "…" else t)
   where isTrimmed = length t > fromIntegral l
         (isArticle, t) = case entryName entry of
-                           Just n -> (True, n)
-                           _ -> (False, renderContent writePlain entry)
+                           Just n → (True, n)
+                           _ → (False, renderContent writePlain entry)
 
-ifSuccess :: ∀ (m :: * -> *) body a. Monad m => Response body -> Maybe a -> m (Maybe a)
+ifSuccess ∷ ∀ (m ∷ * → *) body a. Monad m ⇒ Response body → Maybe a → m (Maybe a)
 ifSuccess resp what = return $ if not $ statusIsSuccessful $ responseStatus resp then Nothing else what
 
-postAppDotNet :: (MonadSweetroll m, MonadIO m) => Entry -> m (Maybe LText)
+postAppDotNet ∷ (MonadSweetroll m, MonadIO m) ⇒ Entry → m (Maybe LText)
 postAppDotNet entry = do
-  req <- parseUrlP "/posts" =<< getConfOpt adnApiHost
-  bearer <- getConfOpt adnApiToken
+  req ← parseUrlP "/posts" =<< getConfOpt adnApiHost
+  bearer ← getConfOpt adnApiToken
   let (isArticle, txt) = trimmedText 250 entry
       pUrl = fromMaybe "" $ entryUrl entry
       o = object
       reqData = o [ "text" .= if isArticle then txt else "[x] " ++ txt
                   , "annotations" .= [ o [ "type" .= asLText "net.app.core.crosspost"
                                          , "value" .= o [ "canonical_url" .= pUrl ] ] ]
-                  , "entities" .= o [ "links" .= [ o [ "pos" .= (0 :: Int)
+                  , "entities" .= o [ "links" .= [ o [ "pos" .= (0 ∷ Int)
                                                      , "len" .= (if isArticle then length txt else 3)
                                                      , "url" .= pUrl ] ] ] ]
       req' = req { method = "POST"
@@ -52,17 +52,17 @@ postAppDotNet entry = do
                  , requestHeaders = [ (hAuthorization, fromString $ "Bearer " ++ bearer)
                                     , (hContentType, "application/json; charset=utf-8")
                                     , (hAccept, "application/json") ] }
-  resp <- request req'
+  resp ← request req'
   putStrLn $ "App.net status for <" ++ (S.toText pUrl) ++ ">: " ++ (S.toText . show . statusCode $ responseStatus resp)
   ifSuccess resp $ appDotNetUrl $ decode $ responseBody resp
 
-appDotNetUrl :: (S.Stringable s) => Maybe Value -> Maybe s
+appDotNetUrl ∷ (S.Stringable s) ⇒ Maybe Value → Maybe s
 appDotNetUrl x = (return . S.fromText) =<< (^? key "data" . key "canonical_url" . _String) =<< x
 
-postTwitter :: (MonadSweetroll m, MonadIO m) => Entry -> m (Maybe LText)
+postTwitter ∷ (MonadSweetroll m, MonadIO m) ⇒ Entry → m (Maybe LText)
 postTwitter entry = do
-  req <- parseUrlP "/statuses/update.json" =<< getConfOpt twitterApiHost
-  conf <- getConf
+  req ← parseUrlP "/statuses/update.json" =<< getConfOpt twitterApiHost
+  conf ← getConf
   let (_, txt) = trimmedText 100 entry -- TODO: Figure out the number based on mentions of urls/domains in the first (140 - 25) characters
       pUrl = fromMaybe "" $ entryUrl entry
       reqBody = writeForm [("status", txt ++ " " ++ pUrl)]
@@ -73,25 +73,25 @@ postTwitter entry = do
       accessToken = Token (twitterAccessToken conf) (twitterAccessSecret conf)
       clientCreds = clientCred $ Token (twitterAppKey conf) (twitterAppSecret conf)
       creds = permanentCred accessToken clientCreds
-  (signedReq, _rng) <- liftIO . oauth creds defaultServer req' =<< getRng
-  resp <- request signedReq
+  (signedReq, _rng) ← liftIO . oauth creds defaultServer req' =<< getRng
+  resp ← request signedReq
   putStrLn $ "Twitter status for <" ++ (S.toText pUrl) ++ ">: " ++ (S.toText . show . statusCode $ responseStatus resp)
   ifSuccess resp $ tweetUrl $ decode $ responseBody resp
 
 -- | Constructs a tweet URL from tweet JSON.
 --
--- >>> (tweetUrl $ decode $ fromString "{\"id_str\": \"1234\", \"user\": {\"screen_name\": \"username\"}}") :: Maybe String
+-- >>> (tweetUrl $ decode $ fromString "{\"id_str\": \"1234\", \"user\": {\"screen_name\": \"username\"}}") ∷ Maybe String
 -- Just "https://twitter.com/username/status/1234"
-tweetUrl :: (S.Stringable s) => Maybe Value -> Maybe s
+tweetUrl ∷ (S.Stringable s) ⇒ Maybe Value → Maybe s
 tweetUrl root' = do
-  root <- root'
-  tweetId <- root ^? key "id_str" . _String
-  tweetUsr <- root ^? key "user" . key "screen_name" . _String
+  root ← root'
+  tweetId ← root ^? key "id_str" . _String
+  tweetUsr ← root ^? key "user" . key "screen_name" . _String
   return $ S.fromText $ mconcat ["https://twitter.com/", tweetUsr, "/status/", tweetId]
 
-showSyndication :: SweetrollAction () -> SweetrollAction ()
+showSyndication ∷ SweetrollAction () → SweetrollAction ()
 showSyndication otherAction = do
-  allParams <- params
+  allParams ← params
   case findByKey allParams "q" of
-    Just "syndicate-to" -> showForm $ map (\x -> ("syndicate-to[]", asByteString x)) ["app.net", "twitter.com"]
-    _ -> otherAction
+    Just "syndicate-to" → showForm $ map (\x → ("syndicate-to[]", asByteString x)) ["app.net", "twitter.com"]
+    _ → otherAction

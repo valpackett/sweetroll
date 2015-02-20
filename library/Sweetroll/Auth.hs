@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
 
 -- | The IndieAuth/rel-me-auth implementation, using JSON Web Tokens.
 module Sweetroll.Auth (
@@ -20,46 +20,46 @@ import           Sweetroll.Util
 import           Sweetroll.Monads
 import           Sweetroll.Conf
 
-getAccessToken :: SweetrollAction Text
+getAccessToken ∷ SweetrollAction Text
 getAccessToken = do
-  allParams <- params
-  tokenHeader <- header "Authorization" >>= \x -> return $ fromMaybe "" $ drop 7 <$> x -- Drop "Bearer "
+  allParams ← params
+  tokenHeader ← header "Authorization" >>= \x → return $ fromMaybe "" $ drop 7 <$> x -- Drop "Bearer "
   return $ toStrict $ fromMaybe tokenHeader $ findByKey allParams "access_token"
 
-checkAuth :: SweetrollAction () -> SweetrollAction () -> SweetrollAction ()
+checkAuth ∷ SweetrollAction () → SweetrollAction () → SweetrollAction ()
 checkAuth onFail act = do
-  token <- getAccessToken
-  sKey <- getConfOpt secretKey
+  token ← getAccessToken
+  sKey ← getConfOpt secretKey
   let verResult = decodeAndVerifySignature (secret sKey) token
   case verResult of
-    Just _ -> act
-    _ -> onFail
+    Just _ → act
+    _ → onFail
 
-showAuth :: SweetrollAction ()
+showAuth ∷ SweetrollAction ()
 showAuth = do
-  token <- getAccessToken
+  token ← getAccessToken
   case map claims $ decode token of
-    Just cs ->
+    Just cs →
       showForm [("me", meVal)]
           where meVal = case sub cs of
-                          Just me -> show me
-                          _ -> ""
-    _ -> status unauthorized401
+                          Just me → show me
+                          _ → ""
+    _ → status unauthorized401
 
-makeAccessToken :: Text -> SweetrollAction ()
+makeAccessToken ∷ Text → SweetrollAction ()
 makeAccessToken me = do
-  conf <- getConf
-  now <- liftIO getCurrentTime
+  conf ← getConf
+  now ← liftIO getCurrentTime
   let t = def { iss = stringOrURI $ domainName conf
               , sub = stringOrURI me
               , iat = intDate $ utcTimeToPOSIXSeconds now }
       t' = encodeSigned HS256 (secret $ secretKey conf) t
   showForm [("access_token", t'), ("scope", "post"), ("me", me)]
 
-doIndieAuth :: SweetrollAction () -> SweetrollAction ()
+doIndieAuth ∷ SweetrollAction () → SweetrollAction ()
 doIndieAuth onFail = do
-  conf <- getConf
-  allParams <- params
+  conf ← getConf
+  allParams ← params
   let par x = toStrict <$> findByKey allParams x
       par' = fromMaybe "" . par
       valid = makeAccessToken $ par' "me"
@@ -69,9 +69,9 @@ doIndieAuth onFail = do
                             , ("client_id",    fromMaybe (baseUrl conf) $ par "client_id")
                             , ("state",        par' "state") ]
     liftIO $ putStrLn $ toText reqBody
-    indieAuthReq <- liftIO $ parseUrl $ indieAuthCheckEndpoint conf
-    resp <- request (indieAuthReq { method = "POST"
+    indieAuthReq ← liftIO $ parseUrl $ indieAuthCheckEndpoint conf
+    resp ← request (indieAuthReq { method = "POST"
                                   , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ] -- "indieauth suddenly stopped working" *facepalm*
-                                  , requestBody = RequestBodyBS reqBody }) :: SweetrollAction (Response LByteString)
+                                  , requestBody = RequestBodyBS reqBody }) ∷ SweetrollAction (Response LByteString)
     if responseStatus resp /= ok200 then onFail
     else valid

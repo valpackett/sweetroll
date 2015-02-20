@@ -1,5 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude, NoMonomorphismRestriction #-}
-{-# LANGUAGE OverloadedStrings, QuasiQuotes #-}
+{-# LANGUAGE OverloadedStrings, QuasiQuotes, UnicodeSyntax #-}
 
 module Sweetroll.PagesSpec (spec) where
 
@@ -16,9 +16,9 @@ import           Data.Microformats2
 import           Data.Microformats2.Aeson()
 import           Web.Simple.Templates.Language
 
-{-# ANN module ("HLint: ignore Redundant do"::String) #-}
+{-# ANN module ("HLint: ignore Redundant do"∷String) #-}
 
-testEntryTpl :: Either String Template
+testEntryTpl ∷ Either String Template
 testEntryTpl = compileTemplate [r|<$if(isNote)$note$else$article$endif$>$if(isNote)$
   <p>$content$</p>
 $else$
@@ -27,26 +27,26 @@ $else$
 $endif$  <time datetime="$publishedAttr$">$published$</time>
 </$if(isNote)$note$else$article$endif$>|]
 
-testCategoryTpl :: Either String Template
+testCategoryTpl ∷ Either String Template
 testCategoryTpl = compileTemplate [r|<category name="$name$">
 $for(entry in entries)$<e href="$entry.permalink$">$entry.content$</e>
 $endfor$</category>|]
 
-testIndexTpl :: Either String Template
+testIndexTpl ∷ Either String Template
 testIndexTpl = compileTemplate [r|<index>
 $for(cat in categories)$  <category name="$cat.name$">
 $for(entry in cat.entries)$    <e href="$entry.permalink$">$entry.content$</e>
 $endfor$  </category>$endfor$
 </index>|]
 
-spec :: Spec
+spec ∷ Spec
 spec = do
   describe "renderPage" $ do
 
     it "renders notes" $ do
       let testNote = def {
         entryContent      = Just $ Right "Hello, world!"
-      , entryPublished    = parseISOTime ("2013-10-17T09:42:49.000Z" :: String) }
+      , entryPublished    = parseISOTime ("2013-10-17T09:42:49.000Z" ∷ String) }
       testRender testEntryTpl (entryView "articles" [] ("first", testNote)) `shouldBe` [r|<note>
   <p>Hello, world!</p>
   <time datetime="2013-10-17 09:42">17.10.2013 09:42 AM</time>
@@ -56,7 +56,7 @@ spec = do
       let testArticle = def {
         entryName         = Just "First post"
       , entryContent      = Just $ Right "<p>This is the content</p>"
-      , entryPublished    = parseISOTime ("2013-10-17T09:42:49.000Z" :: String) }
+      , entryPublished    = parseISOTime ("2013-10-17T09:42:49.000Z" ∷ String) }
       testRender testEntryTpl (entryView "articles" [] ("first", testArticle)) `shouldBe` [r|<article>
   <h1><a href="/articles/first">First post</a></h1>
   <p>This is the content</p>
@@ -82,6 +82,6 @@ spec = do
   </category>
 </index>|]
 
-testRender :: Either String Template -> ViewResult -> Text
+testRender ∷ Either String Template → ViewResult → Text
 testRender (Left  l) _ = error l
 testRender (Right t) v = renderTemplate t mempty $ tplContext v

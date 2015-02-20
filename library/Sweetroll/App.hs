@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
 
 -- | The module that contains the Sweetroll WAI application.
 module Sweetroll.App (app) where
@@ -29,11 +29,11 @@ import           Sweetroll.Pagination
 import           Sweetroll.Micropub
 import           Sweetroll.Syndication (showSyndication)
 
-app :: SweetrollApp
+app ∷ SweetrollApp
 app = do
 
-  conf <- getConf
-  hostInfo <- getHostInfo
+  conf ← getConf
+  hostInfo ← getHostInfo
 
   let base = baseUrl conf
       checkAuth' = if testMode conf then id else checkAuth unauthorized
@@ -59,49 +59,49 @@ app = do
   post "/micropub" $ checkAuth' $ doMicropub
 
   get "/" $ addLinks links $ do
-    cats <- listCollections >>= mapM (readCategory (itemsPerPage conf) (-1))
-    render indexTemplate $ indexView conf $ map (\(x, y) -> (x, fromJust y)) $ filter visibleCat cats
+    cats ← listCollections >>= mapM (readCategory (itemsPerPage conf) (-1))
+    render indexTemplate $ indexView conf $ map (\(x, y) → (x, fromJust y)) $ filter visibleCat cats
 
   get "/:category" $ addLinks links $ do
-    catName <- param "category"
-    allParams <- params
+    catName ← param "category"
+    allParams ← params
     let pageNumber = fromMaybe (-1) (readMaybe . toString =<< findByKey allParams "page")
-    cat <- readCategory (itemsPerPage conf) pageNumber catName
+    cat ← readCategory (itemsPerPage conf) pageNumber catName
     case snd cat of
-      Nothing -> pageNotFound
-      Just p -> render categoryTemplate $ catView conf catName p
+      Nothing → pageNotFound
+      Just p → render categoryTemplate $ catView conf catName p
 
   get "/:category/:slug" $ addLinks links $ do
-    category <- param "category"
-    slug <- param "slug"
-    entry <- readDocumentByName category slug :: SweetrollAction (Maybe Entry)
+    category ← param "category"
+    slug ← param "slug"
+    entry ← readDocumentByName category slug ∷ SweetrollAction (Maybe Entry)
     case entry of
-      Nothing -> pageNotFound
-      Just e  -> do
-        otherSlugs <- listDocumentKeys category
+      Nothing → pageNotFound
+      Just e  → do
+        otherSlugs ← listDocumentKeys category
         render entryTemplate $ entryView category (map readSlug otherSlugs) (slug, e)
 
   notFound pageNotFound
 
-visibleCat :: (CategoryName, Maybe (Page (EntrySlug, Entry))) -> Bool
+visibleCat ∷ (CategoryName, Maybe (Page (EntrySlug, Entry))) → Bool
 visibleCat (slug, Just cat) = (not $ null $ items cat)
                               && slug /= "templates"
                               && slug /= "static"
 visibleCat (_, Nothing) = False
 
-readSlug :: String -> EntrySlug
+readSlug ∷ String → EntrySlug
 readSlug x = drop 1 $ fromMaybe "-404" $ snd <$> maybeReadIntString x -- errors should never happen
 
-readEntry :: MonadIO i => CategoryName -> String -> i (Maybe (EntrySlug, Entry))
+readEntry ∷ MonadIO i ⇒ CategoryName → String → i (Maybe (EntrySlug, Entry))
 readEntry category fname = liftIO $ do
-  doc <- readDocument category fname :: IO (Maybe Entry)
-  return $ (\x -> (readSlug fname, x)) <$> doc
+  doc ← readDocument category fname ∷ IO (Maybe Entry)
+  return $ (\x → (readSlug fname, x)) <$> doc
 
-readCategory :: MonadIO i => Int -> Int -> CategoryName -> i (CategoryName, Maybe (Page (EntrySlug, Entry)))
+readCategory ∷ MonadIO i ⇒ Int → Int → CategoryName → i (CategoryName, Maybe (Page (EntrySlug, Entry)))
 readCategory perPage pageNumber c = liftIO $ do
-  slugs <- listDocumentKeys c
+  slugs ← listDocumentKeys c
   case paginate True perPage pageNumber slugs of
-    Nothing -> return (c, Nothing)
-    Just page -> do
-      maybes <- mapM (readEntry c) $ items page
+    Nothing → return (c, Nothing)
+    Just page → do
+      maybes ← mapM (readEntry c) $ items page
       return (c, Just $ changeItems page $ fromMaybe [] $ sequence maybes)

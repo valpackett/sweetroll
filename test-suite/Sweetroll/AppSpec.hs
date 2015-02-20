@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
 
 module Sweetroll.AppSpec (spec) where
 
@@ -21,21 +21,21 @@ import           Sweetroll.Monads (sweetrollApp)
 import qualified Sweetroll.App as A
 import           Gitson
 
-{-# ANN module ("HLint: ignore Redundant do"::String) #-}
+{-# ANN module ("HLint: ignore Redundant do"∷String) #-}
 
-contains :: EqSequence a => a -> a -> Bool
+contains ∷ EqSequence a ⇒ a → a → Bool
 contains = flip isInfixOf
 
-get  :: B.ByteString -> Wai.Application -> IO SResponse
+get  ∷ B.ByteString → Wai.Application → IO SResponse
 get  = runSession . request . setPath defaultRequest { requestMethod = renderStdMethod GET }
 
-post :: B.ByteString -> Wai.Application -> IO SResponse
+post ∷ B.ByteString → Wai.Application → IO SResponse
 post = runSession . request . setPath defaultRequest { requestMethod = renderStdMethod POST }
 
-header :: SResponse -> String -> String
+header ∷ SResponse → String → String
 header resp x = B8.unpack $ fromMaybe "" $ findByKey (simpleHeaders resp) (CI.mk $ B8.pack x)
 
-spec :: Spec
+spec ∷ Spec
 spec = before setup $ after cleanup $ do
   -- Storing an action that returns the app == not persisting TVar state
   -- inside the app. Fsck it, just use unsafePerformIO here :D
@@ -51,7 +51,7 @@ spec = before setup $ after cleanup $ do
           entryName      = Just "Post 1" }
         saveNextDocument "thingies" "tweeeet" $ def {
           entryContent   = Just $ Left $ readMarkdown def "Something 1" }
-      resp <- app >>= get "/"
+      resp ← app >>= get "/"
       simpleBody resp `shouldSatisfy` (`contains` "posts")
       simpleBody resp `shouldSatisfy` (`contains` "thingies")
       simpleBody resp `shouldSatisfy` (`contains` "Post 1")
@@ -65,7 +65,7 @@ spec = before setup $ after cleanup $ do
           entryName      = Just "First" }
         saveNextDocument "articles" "second" $ def {
           entryName      = Just "Second" }
-      resp <- app >>= get "/articles"
+      resp ← app >>= get "/articles"
       simpleBody resp `shouldSatisfy` (`contains` "articles")
       simpleBody resp `shouldSatisfy` (`contains` "First")
       simpleBody resp `shouldSatisfy` (`contains` "Second")
@@ -73,31 +73,31 @@ spec = before setup $ after cleanup $ do
 
   describe "GET /:category/:name" $ do
     it "returns 404 for nonexistent entries" $ do
-      resp <- app >>= get "/things/not-a-thing"
+      resp ← app >>= get "/things/not-a-thing"
       simpleStatus resp `shouldBe` notFound404
 
     it "renders entries" $ do
       transaction' $ saveNextDocument "articles" "hello-world" $ def {
               entryName      = Just "Hello, World!"
             , entryAuthor    = Somewhere "/" }
-      resp <- app >>= get "/articles/hello-world"
+      resp ← app >>= get "/articles/hello-world"
       simpleBody resp `shouldSatisfy` (`contains` "Hello, World!")
       simpleStatus resp `shouldBe` ok200
 
   describe "POST /micropub" $ do
     it "creates entries" $ do
-      resp <- app >>= post "/micropub?h=entry&name=First&slug=first&content=Hello&category=test,demo"
+      resp ← app >>= post "/micropub?h=entry&name=First&slug=first&content=Hello&category=test,demo"
       simpleStatus resp `shouldBe` created201
       header resp "Location" `shouldBe` "http://localhost/articles/first"
-      written <- readDocumentById "articles" 1 :: IO (Maybe Entry)
+      written ← readDocumentById "articles" 1 ∷ IO (Maybe Entry)
       case written of
-        Just article -> do
+        Just article → do
           entryContent article `shouldBe` (Just $ Left $ readMarkdown def "Hello")
           entryCategory article `shouldBe` ["test", "demo"]
-        Nothing -> error "article not written"
+        Nothing → error "article not written"
 
-setup :: IO ()
+setup ∷ IO ()
 setup = createRepo "tmp/repo" >> setCurrentDirectory "tmp/repo"
 
-cleanup :: IO ()
-cleanup = setCurrentDirectory "../.."  >> void (try (removeDirectoryRecursive "tmp/repo") :: IO (Either IOException ()))
+cleanup ∷ IO ()
+cleanup = setCurrentDirectory "../.."  >> void (try (removeDirectoryRecursive "tmp/repo") ∷ IO (Either IOException ()))

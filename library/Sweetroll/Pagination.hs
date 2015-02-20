@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
 
 -- | The pagination algorithm used by Sweetroll.
 module Sweetroll.Pagination (module Sweetroll.Pagination) where
@@ -6,15 +6,15 @@ module Sweetroll.Pagination (module Sweetroll.Pagination) where
 import           ClassyPrelude
 
 data Page a = Page {
-    items     :: [a]
-  , firstPage :: Int
-  , prevPage  :: Maybe Int
-  , thisPage  :: Int
-  , nextPage  :: Maybe Int
-  , lastPage  :: Int
+    items     ∷ [a]
+  , firstPage ∷ Int
+  , prevPage  ∷ Maybe Int
+  , thisPage  ∷ Int
+  , nextPage  ∷ Maybe Int
+  , lastPage  ∷ Int
   } deriving (Show, Eq)
 
-changeItems :: Page a -> [b] -> Page b
+changeItems ∷ Page a → [b] → Page b
 changeItems (Page _ f p t n l) nI = Page nI f p t n l
 
 -- | Paginates a list of items.
@@ -27,7 +27,7 @@ changeItems (Page _ f p t n l) nI = Page nI f p t n l
 --
 -- >>> paginate False 10 6 [1..50]
 -- Nothing
-paginate :: Bool -> Int -> Int -> [a] -> Maybe (Page a)
+paginate ∷ Bool → Int → Int → [a] → Maybe (Page a)
 paginate isReverse perPage pageNumber allItems =
   if length its > 0 then
     Just $ Page its 1 prv' pgn nxt' lst

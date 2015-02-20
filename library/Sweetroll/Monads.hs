@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
 {-# LANGUAGE PackageImports, ConstraintKinds, FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, UndecidableInstances #-}
 
@@ -19,26 +19,26 @@ import           Sweetroll.Util (writeForm)
 import           Sweetroll.Conf
 
 data SweetrollCtx = SweetrollCtx
-  { _ctxConf     :: SweetrollConf
-  , _ctxHostInfo :: [Pair]
-  , _ctxHttpMgr  :: H.Manager
-  , _ctxRng      :: SystemRNG }
+  { _ctxConf     ∷ SweetrollConf
+  , _ctxHostInfo ∷ [Pair]
+  , _ctxHttpMgr  ∷ H.Manager
+  , _ctxRng      ∷ SystemRNG }
 
 type MonadSweetroll  = MonadReader SweetrollCtx
 type SweetrollBase   = ReaderT SweetrollCtx IO
 type SweetrollAction = ActionT LText SweetrollBase
 type SweetrollApp    = ScottyT LText SweetrollBase ()
 
-instance (MonadReader r m, ScottyError e) => MonadReader r (ActionT e m) where
+instance (MonadReader r m, ScottyError e) ⇒ MonadReader r (ActionT e m) where
   ask = lift ask
 
-instance (MonadReader r m, ScottyError e) => MonadReader r (ScottyT e m) where
+instance (MonadReader r m, ScottyError e) ⇒ MonadReader r (ScottyT e m) where
   ask = lift ask
 
-initCtx :: SweetrollConf -> IO SweetrollCtx
+initCtx ∷ SweetrollConf → IO SweetrollCtx
 initCtx conf = do
-  httpClientMgr <- H.newManager
-  sysRandom <- cprgCreate <$> createEntropyPool
+  httpClientMgr ← H.newManager
+  sysRandom ← cprgCreate <$> createEntropyPool
   return $ SweetrollCtx { _ctxConf     = conf
                         , _ctxHostInfo = [ "domain" .= domainName conf
                                          , "s" .= s conf
@@ -46,51 +46,51 @@ initCtx conf = do
                         , _ctxHttpMgr  = httpClientMgr
                         , _ctxRng      = sysRandom }
 
-runSweetrollBase :: (MonadSweetroll m, MonadIO m) => SweetrollBase a -> m a
+runSweetrollBase ∷ (MonadSweetroll m, MonadIO m) ⇒ SweetrollBase a → m a
 runSweetrollBase x = ask >>= liftIO . runReaderT x
 
-sweetrollApp :: SweetrollConf -> SweetrollApp -> IO Application
+sweetrollApp ∷ SweetrollConf → SweetrollApp → IO Application
 sweetrollApp conf app = do
-  ctx <- initCtx conf
+  ctx ← initCtx conf
   let run x = runReaderT x ctx
   scottyAppT run run app
 
-getConf :: MonadSweetroll m => m SweetrollConf
+getConf ∷ MonadSweetroll m ⇒ m SweetrollConf
 getConf = asks _ctxConf
 
-getConfOpt :: MonadSweetroll m => (SweetrollConf -> a) -> m a
+getConfOpt ∷ MonadSweetroll m ⇒ (SweetrollConf → a) → m a
 getConfOpt f = asks $ f . _ctxConf
 
-getHostInfo :: MonadSweetroll m => m [Pair]
+getHostInfo ∷ MonadSweetroll m ⇒ m [Pair]
 getHostInfo = asks _ctxHostInfo
 
-getRng :: MonadSweetroll m => m SystemRNG
+getRng ∷ MonadSweetroll m ⇒ m SystemRNG
 getRng = asks _ctxRng
 
 instance H.HasHttpManager SweetrollCtx where
   getHttpManager = _ctxHttpMgr
 
 -- | Convenient wrapper around Network.HTTP requests.
-request :: (MonadSweetroll m, MonadIO m, Stringable a) => H.Request -> m (H.Response a)
+request ∷ (MonadSweetroll m, MonadIO m, Stringable a) ⇒ H.Request → m (H.Response a)
 request req = do
-  resp <- H.httpLbs req
+  resp ← H.httpLbs req
   return $ resp { H.responseBody = fromLazyByteString $ H.responseBody resp }
 
-parseUrlP :: (MonadIO m) => String -> String -> m H.Request
+parseUrlP ∷ (MonadIO m) ⇒ String → String → m H.Request
 parseUrlP postfix url = liftIO $ H.parseUrl $ url ++ postfix
 
 -- | Returns an action that writes data as application/x-www-form-urlencoded.
-showForm :: (Stringable a) => [(a, a)] -> SweetrollAction ()
+showForm ∷ (Stringable a) ⇒ [(a, a)] → SweetrollAction ()
 showForm x = do
   status ok200
   setHeader "Content-Type" "application/x-www-form-urlencoded; charset=utf-8"
   raw $ toLazyByteString $ writeForm x
 
-created :: LText -> SweetrollAction ()
+created ∷ LText → SweetrollAction ()
 created url = status created201 >> setHeader "Location" url
 
-updated :: LText -> SweetrollAction ()
+updated ∷ LText → SweetrollAction ()
 updated url = status ok200 >> setHeader "Location" url
 
-unauthorized :: SweetrollAction ()
+unauthorized ∷ SweetrollAction ()
 unauthorized = status unauthorized401

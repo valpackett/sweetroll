@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
 
 -- | The module responsible for rendering pages into actual HTML
 module Sweetroll.Pages (
@@ -32,10 +32,10 @@ import           Sweetroll.Util
 import           Sweetroll.Monads
 
 data ViewResult = ViewResult
-  { titleParts           :: [Text]
-  , tplContext           :: Value }
+  { titleParts           ∷ [Text]
+  , tplContext           ∷ Value }
 
-entryView :: CategoryName -> [EntrySlug] -> (EntrySlug, Entry) -> ViewResult
+entryView ∷ CategoryName → [EntrySlug] → (EntrySlug, Entry) → ViewResult
 entryView catName otherSlugs (slug, e) =
   ViewResult { titleParts = [toStrict (fromMaybe ("Note @ " ++ published) (entryName e)), pack catName]
              , tplContext = ctx }
@@ -68,7 +68,7 @@ entryView catName otherSlugs (slug, e) =
           -- TODO: repost/like
           ]
 
-catView :: SweetrollConf -> CategoryName -> Page (EntrySlug, Entry) -> ViewResult
+catView ∷ SweetrollConf → CategoryName → Page (EntrySlug, Entry) → ViewResult
 catView conf name page =
   ViewResult { titleParts = [pack name]
              , tplContext = ctx }
@@ -92,7 +92,7 @@ catView conf name page =
         pageLink n = mconcat ["/", name, "?page=", show n]
         pageLink' = pageLink . fromMaybe 0
 
-indexView :: SweetrollConf -> [(CategoryName, Page (EntrySlug, Entry))] -> ViewResult
+indexView ∷ SweetrollConf → [(CategoryName, Page (EntrySlug, Entry))] → ViewResult
 indexView conf cats =
   ViewResult { titleParts = []
              , tplContext = ctx }
@@ -100,20 +100,20 @@ indexView conf cats =
             "categories" .= map (tplContext . uncurry (catView conf)) cats
           ]
 
-notFoundView :: ViewResult
+notFoundView ∷ ViewResult
 notFoundView = ViewResult { titleParts = ["404"], tplContext = object [] }
 
-renderContent :: (WriterOptions -> Pandoc -> String) -> Entry -> LText
+renderContent ∷ (WriterOptions → Pandoc → String) → Entry → LText
 renderContent writer e = case fromMaybe (Right "") $ entryContent e of
-  Left p -> pack $ writer pandocWriterOptions p
-  Right t -> t
+  Left p → pack $ writer pandocWriterOptions p
+  Right t → t
 
-renderRaw :: Template -> [Pair] -> Text
+renderRaw ∷ Template → [Pair] → Text
 renderRaw t c = renderTemplate t helpers $ object c
 
-render :: SweetrollConf -> Text -> (SweetrollConf -> Template) -> ViewResult -> SweetrollAction ()
+render ∷ SweetrollConf → Text → (SweetrollConf → Template) → ViewResult → SweetrollAction ()
 render conf authorHtml tplf stuff = do
-  hostInfo <- getHostInfo
+  hostInfo ← getHostInfo
   let ctx = object $ hostInfo ++ [
                 "content" .= renderTemplate (tplf conf) helpers (tplContext stuff)
               , "author" .= authorHtml
@@ -122,16 +122,16 @@ render conf authorHtml tplf stuff = do
               ]
   SC.html $ fromStrict $ renderTemplate (layoutTemplate conf) helpers ctx
 
-helpers :: FunctionMap
+helpers ∷ FunctionMap
 helpers = mapFromList [ ("syndicationName", toFunction syndicationName) ]
 
-syndicationName :: Text -> Value
+syndicationName ∷ Text → Value
 syndicationName u | isInfixOf "app.net"     u = toJSON $ asText "App.net"
                   | isInfixOf "twitter.com" u = toJSON $ asText "Twitter"
                   | otherwise                 = toJSON $ u
 
-formatTimeText :: UTCTime -> LText
+formatTimeText ∷ UTCTime → LText
 formatTimeText = asLText . pack . formatTime defaultTimeLocale "%d.%m.%Y %I:%M %p"
 
-formatTimeAttr :: UTCTime -> LText
+formatTimeAttr ∷ UTCTime → LText
 formatTimeAttr = asLText . pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M"

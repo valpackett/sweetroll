@@ -1,6 +1,6 @@
 -- here be dragons
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-} -- because Data.Setters
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
 {-# LANGUAGE CPP, QuasiQuotes, TemplateHaskell #-}
 
 module Sweetroll.Conf (
@@ -18,45 +18,45 @@ import           Web.Simple.Templates.Language
 import           Sweetroll.Util (dropIncludeCrap)
 
 data SweetrollConf = SweetrollConf
-  {           layoutTemplate :: Template
-  ,            entryTemplate :: Template
-  ,         categoryTemplate :: Template
-  ,            indexTemplate :: Template
-  ,      entryInListTemplate :: Template
-  ,           authorTemplate :: Template
-  ,         notFoundTemplate :: Template
-  ,             defaultStyle :: LByteString
-  ,                 siteName :: Text
-  ,                secretKey :: Text
-  ,               httpsWorks :: Bool
-  ,               domainName :: Text
-  ,             itemsPerPage :: Int
-  ,   indieAuthRedirEndpoint :: String
-  ,   indieAuthCheckEndpoint :: String -- Separated for debugging
-  ,               adnApiHost :: String
-  ,              adnApiToken :: String
-  ,           twitterApiHost :: String
-  ,            twitterAppKey :: ByteString
-  ,         twitterAppSecret :: ByteString
-  ,       twitterAccessToken :: ByteString
-  ,      twitterAccessSecret :: ByteString
-  ,                 testMode :: Bool
-  ,           titleSeparator :: Text }
+  {           layoutTemplate ∷ Template
+  ,            entryTemplate ∷ Template
+  ,         categoryTemplate ∷ Template
+  ,            indexTemplate ∷ Template
+  ,      entryInListTemplate ∷ Template
+  ,           authorTemplate ∷ Template
+  ,         notFoundTemplate ∷ Template
+  ,             defaultStyle ∷ LByteString
+  ,                 siteName ∷ Text
+  ,                secretKey ∷ Text
+  ,               httpsWorks ∷ Bool
+  ,               domainName ∷ Text
+  ,             itemsPerPage ∷ Int
+  ,   indieAuthRedirEndpoint ∷ String
+  ,   indieAuthCheckEndpoint ∷ String -- Separated for debugging
+  ,               adnApiHost ∷ String
+  ,              adnApiToken ∷ String
+  ,           twitterApiHost ∷ String
+  ,            twitterAppKey ∷ ByteString
+  ,         twitterAppSecret ∷ ByteString
+  ,       twitterAccessToken ∷ ByteString
+  ,      twitterAccessSecret ∷ ByteString
+  ,                 testMode ∷ Bool
+  ,           titleSeparator ∷ Text }
 
 $(declareSetters ''SweetrollConf)
 
-s :: SweetrollConf -> Text
+s ∷ SweetrollConf → Text
 s conf = asText $ if httpsWorks conf then "s" else ""
 
-baseUrl :: SweetrollConf -> Text
+baseUrl ∷ SweetrollConf → Text
 baseUrl conf = mconcat ["http", s conf, "://", domainName conf]
 
-processTpl :: String -> Template
+processTpl ∷ String → Template
 processTpl x = case compileTemplate $ dropIncludeCrap $ pack x of
-  Left e -> Template { renderTemplate = \_ _ -> "Template compilation error: " ++ pack e }
-  Right t -> t
+  Left e → Template { renderTemplate = \_ _ → "Template compilation error: " ++ pack e }
+  Right t → t
 
-loadTemplates :: SweetrollConf -> IO SweetrollConf
+loadTemplates ∷ SweetrollConf → IO SweetrollConf
 loadTemplates conf = foldM loadTpl conf tplsWithSetters
     where loadTpl c sf = readTpl c sf `catch` readFailHandler c
           readTpl c (setter, file) = do
@@ -71,7 +71,7 @@ loadTemplates conf = foldM loadTpl conf tplsWithSetters
                             , (setNotFoundTemplate,             "404.html")
                             ]
 
-readFailHandler :: SweetrollConf -> IOError -> IO SweetrollConf
+readFailHandler ∷ SweetrollConf → IOError → IO SweetrollConf
 readFailHandler c _ = return c
 
 -- cpp screws up line numbering, so we put this at the end
@@ -113,11 +113,11 @@ instance Default SweetrollConf where
 #include "../../templates/default-style.css"
 |]}
 
-pandocReaderOptions :: ReaderOptions
+pandocReaderOptions ∷ ReaderOptions
 pandocReaderOptions = def { readerExtensions = githubMarkdownExtensions
                           , readerSmart = True }
 
-pandocWriterOptions :: WriterOptions
+pandocWriterOptions ∷ WriterOptions
 pandocWriterOptions = def { writerHtml5 = True
                           , writerEmailObfuscation = NoObfuscation
                           , writerHighlight = True

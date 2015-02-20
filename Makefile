@@ -27,7 +27,7 @@ install:
 	cabal install --enable-tests --only-dependencies --reorder-goals
 
 repl:
-	cabal repl lib:sweetroll
+	cabal repl lib:sweetroll --ghc-options="-fno-hpc"
 
 run:
 	touch library/Sweetroll/Conf.hs

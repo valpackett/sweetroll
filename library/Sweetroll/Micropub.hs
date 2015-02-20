@@ -1,5 +1,4 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE PackageImports #-}
 
 module Sweetroll.Micropub (
   doMicropub
@@ -36,8 +35,8 @@ doMicropub = do
   case asLText h of
     "entry" → do
       let entry = makeEntry allParams now absUrl readerF
-          ifNotTest x = if isTest then (return Nothing) else x
-          ifSyndicateTo x y = if any ((isInfixOf x) . snd) $ filter ((isInfixOf "syndicate-to") . fst) allParams then y else (return Nothing)
+          ifNotTest x = if isTest then return Nothing else x
+          ifSyndicateTo x y = if any (isInfixOf x . snd) $ filter (isInfixOf "syndicate-to" . fst) allParams then y else return Nothing
       create entry
       created absUrl
       void $ fork $ do
@@ -45,7 +44,7 @@ doMicropub = do
                          , ifNotTest . ifSyndicateTo "twitter.com" $ postTwitter entry ]
         let entry' = entry { entrySyndication = catMaybes synd }
         update entry'
-        when (not isTest) . void . runSweetrollBase $ sendWebmentions entry'
+        unless isTest . void . runSweetrollBase $ sendWebmentions entry'
     _ → status badRequest400
 
 decideCategory ∷ [Param] → CategoryName
@@ -60,7 +59,7 @@ decideSlug pars now = unpack . fromMaybe fallback $ findByKey pars "slug"
   where fallback = slugify . fromMaybe (formatTimeSlug now) $ findFirstKey pars ["name", "summary"]
         formatTimeSlug = pack . formatTime defaultTimeLocale "%Y-%m-%d-%H-%M-%S"
 
-decideReader ∷ [Param] → (ReaderOptions → String → Pandoc)
+decideReader ∷ [Param] → ReaderOptions → String → Pandoc
 decideReader pars | f == "textile"     = readTextile
                   | f == "org"         = readOrg
                   | f == "rst"         = readRST

@@ -58,7 +58,7 @@ entryView catName otherSlugs (slug, e) =
           , "prevHref"         .= mconcat ["/", catName, "/", fromMaybe "" prev]
           , "hasNext"          .= isJust next
           , "nextHref"         .= mconcat ["/", catName, "/", fromMaybe "" next]
-          , "hasSyndication"   .= (not $ null $ entrySyndication e)
+          , "hasSyndication"   .= (not . null $ entrySyndication e)
           , "syndication"      .= entrySyndication e
           , "hasTwitterId"     .= isJust twitterId
           , "twitterId"        .= fromMaybe "" twitterId
@@ -126,9 +126,9 @@ helpers ∷ FunctionMap
 helpers = mapFromList [ ("syndicationName", toFunction syndicationName) ]
 
 syndicationName ∷ Text → Value
-syndicationName u | isInfixOf "app.net"     u = toJSON $ asText "App.net"
-                  | isInfixOf "twitter.com" u = toJSON $ asText "Twitter"
-                  | otherwise                 = toJSON $ u
+syndicationName u | "app.net"     `isInfixOf` u = toJSON $ asText "App.net"
+                  | "twitter.com" `isInfixOf` u = toJSON $ asText "Twitter"
+                  | otherwise                   = toJSON u
 
 formatTimeText ∷ UTCTime → LText
 formatTimeText = asLText . pack . formatTime defaultTimeLocale "%d.%m.%Y %I:%M %p"

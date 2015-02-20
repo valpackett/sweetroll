@@ -50,7 +50,7 @@ app = do
   middleware logStdoutDev
 
   get "/default-style.css" $ setHeader "Content-Type" "text/css" >> raw (defaultStyle conf ++
-    (toLazyByteString $ styleToCss $ writerHighlightStyle pandocWriterOptions))
+    (toLazyByteString . styleToCss $ writerHighlightStyle pandocWriterOptions))
 
   post "/login" $ doIndieAuth unauthorized
 
@@ -60,7 +60,7 @@ app = do
 
   get "/" $ addLinks links $ do
     cats ← listCollections >>= mapM (readCategory (itemsPerPage conf) (-1))
-    render indexTemplate $ indexView conf $ map (\(x, y) → (x, fromJust y)) $ filter visibleCat cats
+    render indexTemplate $ indexView conf $ map (second fromJust) $ filter visibleCat cats
 
   get "/:category" $ addLinks links $ do
     catName ← param "category"
@@ -84,7 +84,7 @@ app = do
   notFound pageNotFound
 
 visibleCat ∷ (CategoryName, Maybe (Page (EntrySlug, Entry))) → Bool
-visibleCat (slug, Just cat) = (not $ null $ items cat)
+visibleCat (slug, Just cat) = (not . null $ items cat)
                               && slug /= "templates"
                               && slug /= "static"
 visibleCat (_, Nothing) = False

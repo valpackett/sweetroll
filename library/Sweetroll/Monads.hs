@@ -39,12 +39,12 @@ initCtx ∷ SweetrollConf → IO SweetrollCtx
 initCtx conf = do
   httpClientMgr ← H.newManager
   sysRandom ← cprgCreate <$> createEntropyPool
-  return $ SweetrollCtx { _ctxConf     = conf
-                        , _ctxHostInfo = [ "domain" .= domainName conf
-                                         , "s" .= s conf
-                                         , "base_url" .= baseUrl conf ]
-                        , _ctxHttpMgr  = httpClientMgr
-                        , _ctxRng      = sysRandom }
+  return SweetrollCtx { _ctxConf     = conf
+                      , _ctxHostInfo = [ "domain" .= domainName conf
+                                       , "s" .= s conf
+                                       , "base_url" .= baseUrl conf ]
+                      , _ctxHttpMgr  = httpClientMgr
+                      , _ctxRng      = sysRandom }
 
 runSweetrollBase ∷ (MonadSweetroll m, MonadIO m) ⇒ SweetrollBase a → m a
 runSweetrollBase x = ask >>= liftIO . runReaderT x

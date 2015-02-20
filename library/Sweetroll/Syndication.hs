@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
 {-# LANGUAGE ExistentialQuantification, KindSignatures #-}
-{-# LANGUAGE PackageImports, FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Sweetroll.Syndication (
   postAppDotNet
@@ -25,7 +25,7 @@ import           Sweetroll.Pages (renderContent)
 import           Sweetroll.Conf
 
 trimmedText ∷ Index LText → Entry → (Bool, LText)
-trimmedText l entry = (isArticle, if isTrimmed then (take (l - 1) t) ++ "…" else t)
+trimmedText l entry = (isArticle, if isTrimmed then take (l - 1) t ++ "…" else t)
   where isTrimmed = length t > fromIntegral l
         (isArticle, t) = case entryName entry of
                            Just n → (True, n)
@@ -53,7 +53,7 @@ postAppDotNet entry = do
                                     , (hContentType, "application/json; charset=utf-8")
                                     , (hAccept, "application/json") ] }
   resp ← request req'
-  putStrLn $ "App.net status for <" ++ (S.toText pUrl) ++ ">: " ++ (S.toText . show . statusCode $ responseStatus resp)
+  putStrLn $ "App.net status for <" ++ S.toText pUrl ++ ">: " ++ (S.toText . show . statusCode $ responseStatus resp)
   ifSuccess resp $ appDotNetUrl $ decode $ responseBody resp
 
 appDotNetUrl ∷ (S.Stringable s) ⇒ Maybe Value → Maybe s
@@ -75,7 +75,7 @@ postTwitter entry = do
       creds = permanentCred accessToken clientCreds
   (signedReq, _rng) ← liftIO . oauth creds defaultServer req' =<< getRng
   resp ← request signedReq
-  putStrLn $ "Twitter status for <" ++ (S.toText pUrl) ++ ">: " ++ (S.toText . show . statusCode $ responseStatus resp)
+  putStrLn $ "Twitter status for <" ++ S.toText pUrl ++ ">: " ++ (S.toText . show . statusCode $ responseStatus resp)
   ifSuccess resp $ tweetUrl $ decode $ responseBody resp
 
 -- | Constructs a tweet URL from tweet JSON.

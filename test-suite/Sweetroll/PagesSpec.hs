@@ -16,7 +16,7 @@ import           Data.Microformats2
 import           Data.Microformats2.Aeson()
 import           Web.Simple.Templates.Language
 
-{-# ANN module ("HLint: ignore Redundant do"∷String) #-}
+{-# ANN module ("HLint: ignore Redundant do" :: String) #-}
 
 testEntryTpl ∷ Either String Template
 testEntryTpl = compileTemplate [r|<$if(isNote)$note$else$article$endif$>$if(isNote)$

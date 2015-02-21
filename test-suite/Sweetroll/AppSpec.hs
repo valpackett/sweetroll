@@ -20,8 +20,9 @@ import           Sweetroll.Conf
 import           Sweetroll.Monads (sweetrollApp)
 import qualified Sweetroll.App as A
 import           Gitson
+import           Gitson.Util (insideDirectory)
 
-{-# ANN module ("HLint: ignore Redundant do"∷String) #-}
+{-# ANN module ("HLint: ignore Redundant do" :: String) #-}
 
 contains ∷ EqSequence a ⇒ a → a → Bool
 contains = flip isInfixOf
@@ -36,7 +37,7 @@ header ∷ SResponse → String → String
 header resp x = B8.unpack $ fromMaybe "" $ findByKey (simpleHeaders resp) (CI.mk $ B8.pack x)
 
 spec ∷ Spec
-spec = before setup $ after cleanup $ do
+spec = around_ inDir $ do
   -- Storing an action that returns the app == not persisting TVar state
   -- inside the app. Fsck it, just use unsafePerformIO here :D
   -- Spent a couple hours before realizing what's been stored here :-(
@@ -96,8 +97,7 @@ spec = before setup $ after cleanup $ do
           entryCategory article `shouldBe` ["test", "demo"]
         Nothing → error "article not written"
 
-setup ∷ IO ()
-setup = createRepo "tmp/repo" >> setCurrentDirectory "tmp/repo"
-
-cleanup ∷ IO ()
-cleanup = setCurrentDirectory "../.."  >> void (try (removeDirectoryRecursive "tmp/repo") ∷ IO (Either IOException ()))
+inDir ∷ IO () → IO ()
+inDir x = createRepo dirPath >> insideDirectory dirPath x >> cleanup
+  where cleanup = void (try (removeDirectoryRecursive dirPath) ∷ IO (Either IOException ()))
+        dirPath = "tmp/repo"

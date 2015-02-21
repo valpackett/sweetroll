@@ -35,16 +35,15 @@ doMicropub = do
   case asLText h of
     "entry" → do
       let entry = makeEntry allParams now absUrl readerF
-          ifNotTest x = if isTest then return Nothing else x
           ifSyndicateTo x y = if any (isInfixOf x . snd) $ filter (isInfixOf "syndicate-to" . fst) allParams then y else return Nothing
       create entry
       created absUrl
-      void $ fork $ do
-        synd ← sequence [ ifNotTest . ifSyndicateTo "app.net"     $ postAppDotNet entry
-                         , ifNotTest . ifSyndicateTo "twitter.com" $ postTwitter entry ]
+      unless isTest . void . fork $ do
+        synd ← sequence [ ifSyndicateTo "app.net"     $ postAppDotNet entry
+                        , ifSyndicateTo "twitter.com" $ postTwitter entry ]
         let entry' = entry { entrySyndication = catMaybes synd }
         update entry'
-        unless isTest . void . runSweetrollBase $ sendWebmentions entry'
+        void . runSweetrollBase $ sendWebmentions entry'
     _ → status badRequest400
 
 decideCategory ∷ [Param] → CategoryName

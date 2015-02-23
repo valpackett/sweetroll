@@ -12,6 +12,7 @@ Written in [Haskell], uses Git (via [gitson]) for storage and [pandoc] for marku
 - [http-link-header], a parser for the Link header (RFC 5988)
 - [pcre-heavy], a usable regular expressions library
 - [microformats2-types], the type definitions for Microformats 2
+- [microformats2-parser], the Microformats 2 parser
 
 [#IndieWeb]: http://indiewebcamp.com
 [Haskell]: http://haskell.org
@@ -19,6 +20,7 @@ Written in [Haskell], uses Git (via [gitson]) for storage and [pandoc] for marku
 [http-link-header]: https://github.com/myfreeweb/http-link-header
 [pcre-heavy]: https://github.com/myfreeweb/pcre-heavy
 [microformats2-types]: https://github.com/myfreeweb/microformats2-types
+[microformats2-parser]: https://github.com/myfreeweb/microformats2-parser
 [pandoc]: http://johnmacfarlane.net/pandoc/
 
 ## WORK IN PROGRESS
@@ -44,17 +46,20 @@ I'm running it on [my website](https://unrelenting.technology).
 - [ ] tags (add CSV support to gitson for storing stuff like this)
 - [ ] micropub updating and deleting
 - [x] sending [webmention](http://indiewebcamp.com/webmention)
-- [ ] receiving webmention (with some kind of anti [spam](http://indiewebcamp.com/spam), optional premoderation)
-- [ ] microformats2 parser (separate library)
+- [ ] receiving webmention
+- [ ] storing and sending [vouch](http://indiewebcamp.com/vouch) with webmention
+- [x] microformats2 parser
 - [ ] microformats2 based [comments-presentation](http://indiewebcamp.com/comments-presentation)
-- [ ] microformats2 parse reply target, store as cite instead of just a link
-- [ ] Atom + PubSubHubbub (configurable delay for PuSH because privacy and general {notice typo - delete - post again} things)
+- [ ] microformats2 parse reply target, store as cite instead of just a linktype definitions for
+- [ ] special POSSE for likes and reposts to App.net/Twitter
+- [ ] Atom feed
+- [ ] PubSubHubbub (w/ configurable delay because privacy and general {notice typo - delete - post again} things)
 - [ ] posting [photos](http://indiewebcamp.com/photos)
 - [x] posting in other formats supported by pandoc
 - [ ] displaying in other formats supported by pandoc
 - [ ] custom non-entry html pages
 - [ ] caching headers
-- [ ] automatic git push when posting
+- [ ] automatic git push when posting (in gitson)
 - [ ] support for running on PaaS (automatic git pull when starting), [Heroku Button](https://blog.heroku.com/archives/2014/8/7/heroku-button) + GitHub user friendly setup process
 - [ ] built-in TLS server, since we depend on `tls` already because of the client
 

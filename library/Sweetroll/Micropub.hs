@@ -72,13 +72,13 @@ makeEntry ∷ [Param] → UTCTime → LText → (ReaderOptions → String → Pa
 makeEntry pars now absUrl readerF = def
   { entryName         = par "name"
   , entrySummary      = par "summary"
-  , entryContent      = Left <$> readerF pandocReaderOptions <$> unpack <$> par "content"
-  , entryPublished    = Just $ fromMaybe now $ parseISOTime =<< par "published"
-  , entryUpdated      = Just now
-  , entryAuthor       = somewhereFromMaybe $ par "author"
-  , entryCategory     = parseTags $ fromMaybe "" $ par "category"
-  , entryUrl          = Just absUrl
-  , entryInReplyTo    = Right <$> par "in-reply-to"
-  , entryLikeOf       = Right <$> par "like-of"
-  , entryRepostOf     = Right <$> par "repost-of" }
-  where par = findByKey pars
+  , entryContent      = PandocContent <$> readerF pandocReaderOptions <$> unpack <$> par "content"
+  , entryPublished    = pure . fromMaybe now . headMay . catMaybes $ parseISOTime <$> par "published"
+  , entryUpdated      = pure now
+  , entryAuthor       = TextCard <$> par "author"
+  , entryCategory     = join $ parseTags <$> par "category"
+  , entryUrl          = pure absUrl
+  , entryInReplyTo    = UrlEntry <$> par "in-reply-to"
+  , entryLikeOf       = UrlEntry <$> par "like-of"
+  , entryRepostOf     = UrlEntry <$> par "repost-of" }
+  where par = maybeToList . findByKey pars

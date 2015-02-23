@@ -45,8 +45,8 @@ spec = do
 
     it "renders notes" $ do
       let testNote = def {
-        entryContent      = Just $ Right "Hello, world!"
-      , entryPublished    = parseISOTime ("2013-10-17T09:42:49.000Z" ∷ String) }
+        entryContent      = pure . TextContent $ "Hello, world!"
+      , entryPublished    = maybeToList . parseISOTime $ ("2013-10-17T09:42:49.000Z" ∷ String) }
       testRender testEntryTpl (entryView "articles" [] ("first", testNote)) `shouldBe` [r|<note>
   <p>Hello, world!</p>
   <time datetime="2013-10-17 09:42">17.10.2013 09:42 AM</time>
@@ -54,9 +54,9 @@ spec = do
 
     it "renders articles" $ do
       let testArticle = def {
-        entryName         = Just "First post"
-      , entryContent      = Just $ Right "<p>This is the content</p>"
-      , entryPublished    = parseISOTime ("2013-10-17T09:42:49.000Z" ∷ String) }
+        entryName         = pure "First post"
+      , entryContent      = pure . TextContent $ "<p>This is the content</p>"
+      , entryPublished    = maybeToList . parseISOTime $ ("2013-10-17T09:42:49.000Z" ∷ String) }
       testRender testEntryTpl (entryView "articles" [] ("first", testArticle)) `shouldBe` [r|<article>
   <h1><a href="/articles/first">First post</a></h1>
   <p>This is the content</p>
@@ -64,8 +64,8 @@ spec = do
 </article>|]
 
     it "renders categories" $ do
-      let testEntries = [ ("f", def { entryContent = Just $ Right "First note"  })
-                        , ("s", def { entryContent = Just $ Right "Second note" }) ]
+      let testEntries = [ ("f", def { entryContent = pure . TextContent $ "First note"  })
+                        , ("s", def { entryContent = pure . TextContent $ "Second note" }) ]
       testRender testCategoryTpl (catView def "test" $ fromJust $ paginate False 10 1 testEntries) `shouldBe` [r|<category name="test">
 <e href="/test/f">First note</e>
 <e href="/test/s">Second note</e>
@@ -73,8 +73,8 @@ spec = do
 
     it "renders the index" $ do
       let testCats = [ ("stuff", fromJust $ paginate False 10 1
-                                 [ ("first",  def { entryContent = Just $ Right "First"  })
-                                 , ("second", def { entryContent = Just $ Right "Second" }) ]) ]
+                                 [ ("first",  def { entryContent = pure . TextContent $ "First"  })
+                                 , ("second", def { entryContent = pure . TextContent $ "Second" }) ]) ]
       testRender testIndexTpl (indexView def testCats) `shouldBe` [r|<index>
   <category name="stuff">
     <e href="/stuff/first">First</e>

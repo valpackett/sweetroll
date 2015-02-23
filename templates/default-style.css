@@ -118,8 +118,9 @@ ul, ol {
 a {
 	color: #0074df;
 	transition: ease-in-out color 0.3s;
+	text-decoration: none;
 }
-a:hover, a:focus, a:active { color: #7fdbff }
+a:hover, a:focus, a:active { color: #7fdbff; text-decoration: underline }
 a.self-link { color: #343434; text-decoration: none; }
 .fa-l { margin-right: 0.25em }
 .fa-r { margin-left: 0.25em }
@@ -154,7 +155,7 @@ a.self-link { color: #343434; text-decoration: none; }
 	font-size: 90%;
 	color: #aaa;
 }
-.note-entry { border: 1px solid; border-color: #39cccc; border-color: rgba(57, 204, 204, 0.7) }
+.note-entry { border: 1px solid; border-color: #39cccc; border-color: rgba(57, 204, 204, 0.3) }
 .note-entry .entry-header { font-size: 90%; margin-bottom: 1em; }
 .note-entry .entry-header, .note-entry .entry-header a { color: #aaa }
 .note-entry .entry-content { font-size: 110% }
@@ -164,11 +165,9 @@ a.self-link { color: #343434; text-decoration: none; }
 	font-size: 95%;
 	line-height: 1.7;
 }
-.entry-footer a { text-decoration: none }
 .entry-main .entry-header, .entry-main .entry-content, .entry-main .entry-footer { margin: 16px; margin: 1rem; }
 .entry-main .entry-footer a { margin-left: 0.5em }
 .entry-main .entry-footer .entry-actions indie-action:first-child a { margin-left: 0 }
-.entry-footer a:hover { text-decoration: underline }
 .entry-footer h2 {
 	font-size: 100%;
 	display: inline;
@@ -197,6 +196,7 @@ a.self-link { color: #343434; text-decoration: none; }
 		padding: 0 1em 0 0;
 	}
 	.index-category:last-child { padding: 0 }
+	#author-link { display: none; }
 }
 @media screen and (min-width:80em) { 
 	.site-header, .site-content, .site-footer { width: 80% }

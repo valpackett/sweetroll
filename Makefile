@@ -5,6 +5,7 @@ all: install configure build haddock test hpc
 build:
 	touch library/Sweetroll/Conf.hs
 	cabal build
+	strip dist/build/sweetroll/sweetroll
 
 clean:
 	cabal clean

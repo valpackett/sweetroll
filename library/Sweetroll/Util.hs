@@ -89,11 +89,16 @@ writeForm ps = intercalate "&" $ map (\(k, v) → enc k ++ "=" ++ enc v) ps
   where enc = urlEncode True . toByteString
 
 derefEntry ∷ EntryReference → Maybe LText
-derefEntry (Left (Here c)) = citeUrl c
-derefEntry (Right l) = Just l
-derefEntry _ = Nothing
+derefEntry (EntryEntry e) = headMay . entryUrl $ e
+derefEntry (CiteEntry c)  = headMay . citeUrl $ c
+derefEntry (TextEntry l)  = Just l
+derefEntry (UrlEntry l)   = Just l
 
 derefEntryName ∷ EntryReference → Maybe LText
-derefEntryName (Left (Here c)) = citeName c
-derefEntryName (Right l) = Just l
-derefEntryName _ = Nothing
+derefEntryName (EntryEntry e) = headMay . entryName $ e
+derefEntryName (CiteEntry c)  = headMay . citeName $ c
+derefEntryName (TextEntry l)  = Just l
+derefEntryName (UrlEntry l)   = Just l
+
+orEmpty ∷ [LText] → LText
+orEmpty = fromMaybe "" . headMay

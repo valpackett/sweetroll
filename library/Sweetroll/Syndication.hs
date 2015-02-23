@@ -28,7 +28,7 @@ trimmedText ∷ Index LText → Entry → (Bool, LText)
 trimmedText l entry = (isArticle, if isTrimmed then take (l - 1) t ++ "…" else t)
   where isTrimmed = length t > fromIntegral l
         (isArticle, t) = case entryName entry of
-                           Just n → (True, n)
+                           n : _ → (True, n)
                            _ → (False, renderContent writePlain entry)
 
 ifSuccess ∷ ∀ (m ∷ * → *) body a. Monad m ⇒ Response body → Maybe a → m (Maybe a)
@@ -39,7 +39,7 @@ postAppDotNet entry = do
   req ← parseUrlP "/posts" =<< getConfOpt adnApiHost
   bearer ← getConfOpt adnApiToken
   let (isArticle, txt) = trimmedText 250 entry
-      pUrl = fromMaybe "" $ entryUrl entry
+      pUrl = orEmpty . entryUrl $ entry
       o = object
       reqData = o [ "text" .= if isArticle then txt else "[x] " ++ txt
                   , "annotations" .= [ o [ "type" .= asLText "net.app.core.crosspost"
@@ -64,7 +64,7 @@ postTwitter entry = do
   req ← parseUrlP "/statuses/update.json" =<< getConfOpt twitterApiHost
   conf ← getConf
   let (_, txt) = trimmedText 100 entry -- TODO: Figure out the number based on mentions of urls/domains in the first (140 - 25) characters
-      pUrl = fromMaybe "" $ entryUrl entry
+      pUrl = orEmpty . entryUrl $ entry
       reqBody = writeForm [("status", txt ++ " " ++ pUrl)]
       req' = req { method = "POST"
                  , queryString = reqBody -- Yes, queryString... WTF http://ox86.tumblr.com/post/36810273719/twitter-api-1-1-responds-with-status-401-code-32
@@ -80,7 +80,7 @@ postTwitter entry = do
 
 -- | Constructs a tweet URL from tweet JSON.
 --
--- >>> (tweetUrl $ decode $ fromString "{\"id_str\": \"1234\", \"user\": {\"screen_name\": \"username\"}}") ∷ Maybe String
+-- >>> (tweetUrl $ decode $ fromString "{\"id_str\": \"1234\", \"user\": {\"screen_name\": \"username\"}}") :: Maybe String
 -- Just "https://twitter.com/username/status/1234"
 tweetUrl ∷ (S.Stringable s) ⇒ Maybe Value → Maybe s
 tweetUrl root' = do

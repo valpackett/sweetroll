@@ -37,34 +37,34 @@ data ViewResult = ViewResult
 
 entryView ∷ CategoryName → [EntrySlug] → (EntrySlug, Entry) → ViewResult
 entryView catName otherSlugs (slug, e) =
-  ViewResult { titleParts = [toStrict (fromMaybe ("Note @ " ++ published) (entryName e)), pack catName]
+  ViewResult { titleParts = [toStrict (fromMaybe ("Note @ " ++ published) . headMay $ entryName e), pack catName]
              , tplContext = ctx }
   where content = renderContent writeHtmlString e
-        published = fromMaybe "" (formatTimeText <$> entryPublished e)
+        published = orEmpty $ formatTimeText <$> entryPublished e
         slugIdx = fromMaybe (negate 1) $ elemIndex slug otherSlugs
         prev = atMay otherSlugs $ slugIdx - 1
         next = atMay otherSlugs $ slugIdx + 1
         twitterId = lastMay =<< LT.splitOn "/" <$> find (isInfixOf "twitter.com") (entrySyndication e)
         ctx = object [
-            "name"             .= fromMaybe "" (entryName e)
+            "name"             .= orEmpty (entryName e)
           , "content"          .= content
           , "published"        .= published
-          , "publishedAttr"    .= fromMaybe "" (formatTimeAttr <$> entryPublished e)
+          , "publishedAttr"    .= orEmpty (formatTimeAttr <$> entryPublished e)
           , "permalink"        .= mconcat ["/", catName, "/", pack slug]
-          , "isNote"           .= isNothing (entryName e)
+          , "isNote"           .= (null . entryName $ e)
           , "category"         .= catName
           , "categoryHref"     .= mconcat ["/", catName]
           , "hasPrev"          .= isJust prev
           , "prevHref"         .= mconcat ["/", catName, "/", fromMaybe "" prev]
           , "hasNext"          .= isJust next
           , "nextHref"         .= mconcat ["/", catName, "/", fromMaybe "" next]
-          , "hasSyndication"   .= (not . null $ entrySyndication e)
+          , "hasSyndication"   .= (not . null . entrySyndication $ e)
           , "syndication"      .= entrySyndication e
           , "hasTwitterId"     .= isJust twitterId
           , "twitterId"        .= fromMaybe "" twitterId
-          , "isReply"          .= isJust (entryInReplyTo e)
-          , "replyForUrl"      .= fromMaybe "" (derefEntry =<< entryInReplyTo e)
-          , "replyForName"     .= fromMaybe "" (derefEntryName =<< entryInReplyTo e)
+          , "isReply"          .= (not . null . entryInReplyTo $ e)
+          , "replyForUrl"      .= fromMaybe "" (derefEntry =<< headMay (entryInReplyTo e))
+          , "replyForName"     .= fromMaybe "" (derefEntryName =<< headMay (entryInReplyTo e))
           -- TODO: repost/like
           ]
 
@@ -104,9 +104,10 @@ notFoundView ∷ ViewResult
 notFoundView = ViewResult { titleParts = ["404"], tplContext = object [] }
 
 renderContent ∷ (WriterOptions → Pandoc → String) → Entry → LText
-renderContent writer e = case fromMaybe (Right "") $ entryContent e of
-  Left p → pack $ writer pandocWriterOptions p
-  Right t → t
+renderContent writer e = case headMay $ entryContent e of
+  Just (PandocContent p) → pack $ writer pandocWriterOptions p
+  Just (TextContent t) → t
+  _ -> ""
 
 renderRaw ∷ Template → [Pair] → Text
 renderRaw t c = renderTemplate t helpers $ object c

@@ -67,12 +67,12 @@ sendWebmention from to = do
 -- metadata (in-reply-to, like-of, repost-of).
 sendWebmentions ∷ Entry → SweetrollBase [(String, Bool)]
 sendWebmentions e = mapM (sendWebmention from) links
-  where links = S.toList $ S.fromList $ contentLinks ++ metaLinks
-        metaLinks = map unpack $ mapMaybe derefEntry $ catMaybes [entryInReplyTo e, entryLikeOf e, entryRepostOf e]
-        contentLinks = PW.query extractLink $ pandocContent $ entryContent e
-        from = unpack $ fromMaybe "" $ entryUrl e
-        pandocContent (Just (Left p)) = p
-        pandocContent (Just (Right t)) = P.readMarkdown pandocReaderOptions $ unpack t
+  where links = S.toList . S.fromList $ contentLinks ++ metaLinks
+        metaLinks = map unpack . mapMaybe derefEntry . catMaybes . map headMay $ [entryInReplyTo e, entryLikeOf e, entryRepostOf e]
+        contentLinks = PW.query extractLink . pandocContent $ entryContent e
+        from = unpack . orEmpty . entryUrl $ e
+        pandocContent ((PandocContent p) : _) = p
+        pandocContent ((TextContent t)   : _) = P.readMarkdown pandocReaderOptions . unpack $ t
         pandocContent _ = P.readMarkdown pandocReaderOptions ""
         extractLink (P.Link _ (u, _)) = [u]
         extractLink _ = []

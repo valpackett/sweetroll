@@ -49,9 +49,9 @@ spec = around_ inDir $ do
     it "renders the index" $ do
       transaction' $ do
         saveNextDocument "posts" "first" $ def {
-          entryName      = Just "Post 1" }
+          entryName      = pure "Post 1" }
         saveNextDocument "thingies" "tweeeet" $ def {
-          entryContent   = Just $ Left $ readMarkdown def "Something 1" }
+          entryContent   = pure . PandocContent . readMarkdown def $ "Something 1" }
       resp ← app >>= get "/"
       simpleBody resp `shouldSatisfy` (`contains` "posts")
       simpleBody resp `shouldSatisfy` (`contains` "thingies")
@@ -63,9 +63,9 @@ spec = around_ inDir $ do
     it "renders categories" $ do
       transaction' $ do
         saveNextDocument "articles" "first" $ def {
-          entryName      = Just "First" }
+          entryName      = pure "First" }
         saveNextDocument "articles" "second" $ def {
-          entryName      = Just "Second" }
+          entryName      = pure "Second" }
       resp ← app >>= get "/articles"
       simpleBody resp `shouldSatisfy` (`contains` "articles")
       simpleBody resp `shouldSatisfy` (`contains` "First")
@@ -79,8 +79,8 @@ spec = around_ inDir $ do
 
     it "renders entries" $ do
       transaction' $ saveNextDocument "articles" "hello-world" $ def {
-              entryName      = Just "Hello, World!"
-            , entryAuthor    = Somewhere "/" }
+              entryName      = pure "Hello, World!"
+            , entryAuthor    = pure . TextCard $ "/" }
       resp ← app >>= get "/articles/hello-world"
       simpleBody resp `shouldSatisfy` (`contains` "Hello, World!")
       simpleStatus resp `shouldBe` ok200
@@ -93,7 +93,7 @@ spec = around_ inDir $ do
       written ← readDocumentById "articles" 1 ∷ IO (Maybe Entry)
       case written of
         Just article → do
-          entryContent article `shouldBe` (Just $ Left $ readMarkdown def "Hello")
+          entryContent article `shouldBe` (pure . PandocContent . readMarkdown def $ "Hello")
           entryCategory article `shouldBe` ["test", "demo"]
         Nothing → error "article not written"
 

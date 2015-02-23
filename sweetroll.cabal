@@ -40,12 +40,12 @@ library
       , blaze-markup
       , blaze-builder
       , time
-      , pcre-heavy == 0.2.*
+      , pcre-heavy >= 0.2.2
       , aeson
       , lens-aeson
       , jwt
       , gitson == 0.5.*
-      , microformats2-types == 0.3.*
+      , microformats2-types == 0.4.*
       , wai
       , wai-extra
       , wai-middleware-static
@@ -134,9 +134,7 @@ test-suite tests
       , simple-templates == 0.8.*
       , aeson
       , data-default
-      , hspec == 1.*
-        , HUnit
-        , QuickCheck
+      , hspec == 2.1.*
     default-language: Haskell2010
     ghc-options: -threaded -fhpc -Wall -Werror
     hs-source-dirs: test-suite

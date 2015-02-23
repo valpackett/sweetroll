@@ -79,7 +79,7 @@ app = do
       Nothing → pageNotFound
       Just e  → do
         otherSlugs ← listDocumentKeys category
-        render entryTemplate $ entryView category (map readSlug otherSlugs) (slug, e)
+        render entryTemplate $ entryView category (map readSlug $ sort otherSlugs) (slug, e)
 
   notFound pageNotFound
 
@@ -100,7 +100,7 @@ readEntry category fname = liftIO $ do
 readCategory ∷ MonadIO i ⇒ Int → Int → CategoryName → i (CategoryName, Maybe (Page (EntrySlug, Entry)))
 readCategory perPage pageNumber c = liftIO $ do
   slugs ← listDocumentKeys c
-  case paginate True perPage pageNumber slugs of
+  case paginate True perPage pageNumber $ sort slugs of
     Nothing → return (c, Nothing)
     Just page → do
       maybes ← mapM (readEntry c) $ items page

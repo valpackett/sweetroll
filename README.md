@@ -53,7 +53,7 @@ I'm running it on [my website](https://unrelenting.technology).
 - [ ] microformats2 parse reply target, store as cite instead of just a linktype definitions for
 - [ ] special POSSE for likes and reposts to App.net/Twitter
 - [ ] Atom feed
-- [ ] PubSubHubbub (w/ configurable delay because privacy and general {notice typo - delete - post again} things)
+- [x] PubSubHubbub (w/ configurable delay because privacy and general {notice typo - delete - post again} things)
 - [ ] posting [photos](http://indiewebcamp.com/photos)
 - [x] posting in other formats supported by pandoc
 - [ ] displaying in other formats supported by pandoc

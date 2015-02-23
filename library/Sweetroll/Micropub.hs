@@ -5,13 +5,16 @@ module Sweetroll.Micropub (
 ) where
 
 import           ClassyPrelude
-import           Control.Concurrent.Lifted (fork)
+import           Control.Concurrent.Lifted (fork, threadDelay)
 import           Data.Default
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
+import           Data.Stringable (toText)
 import           Text.Pandoc hiding (Link)
+import           Network.HTTP.Client
+import           Network.HTTP.Types
 import           Network.HTTP.Types.Status
-import           Web.Scotty.Trans
+import           Web.Scotty.Trans hiding (request)
 import           Gitson
 import           Sweetroll.Conf
 import           Sweetroll.Util
@@ -38,12 +41,18 @@ doMicropub = do
           ifSyndicateTo x y = if any (isInfixOf x . snd) $ filter (isInfixOf "syndicate-to" . fst) allParams then y else return Nothing
       create entry
       created absUrl
-      unless isTest . void . fork $ do
-        synd ← sequence [ ifSyndicateTo "app.net"     $ postAppDotNet entry
-                        , ifSyndicateTo "twitter.com" $ postTwitter entry ]
-        let entry' = entry { entrySyndication = catMaybes synd }
-        update entry'
-        void . runSweetrollBase $ sendWebmentions entry'
+      unless isTest . void $ do
+        fork $ do
+          threadDelay =<< return . (*1000000) =<< getConfOpt pushDelay
+          notifyPuSH []
+          notifyPuSH [pack category]
+        fork $ do
+          let ps = [ ifSyndicateTo "app.net"     $ postAppDotNet entry
+                   , ifSyndicateTo "twitter.com" $ postTwitter entry ]
+          synd ← sequence ps
+          let entry' = entry { entrySyndication = catMaybes synd }
+          update entry'
+          void . runSweetrollBase $ sendWebmentions entry'
     _ → status badRequest400
 
 decideCategory ∷ [Param] → CategoryName
@@ -82,3 +91,12 @@ makeEntry pars now absUrl readerF = def
   , entryLikeOf       = UrlEntry <$> par "like-of"
   , entryRepostOf     = UrlEntry <$> par "repost-of" }
   where par = maybeToList . findByKey pars
+
+notifyPuSH ∷ [Text] → SweetrollAction ()
+notifyPuSH url = do
+  base ← getConfOpt baseUrl
+  req ← parseUrlP "" =<< getConfOpt pushHub
+  resp ← request $ req { method = "POST"
+                       , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
+                       , requestBody = RequestBodyBS . writeForm $ [("hub.mode", "publish"), ("hub.url", mkUrl base url)]} ∷ SweetrollAction (Response LByteString)
+  putStrLn $ "PubSubHubbub status: " ++ (toText . show . statusCode . responseStatus $ resp)

@@ -33,6 +33,8 @@ data SweetrollConf = SweetrollConf
   ,             itemsPerPage ∷ Int
   ,   indieAuthRedirEndpoint ∷ String
   ,   indieAuthCheckEndpoint ∷ String -- Separated for debugging
+  ,                  pushHub ∷ String
+  ,                pushDelay ∷ Int
   ,               adnApiHost ∷ String
   ,              adnApiToken ∷ String
   ,           twitterApiHost ∷ String
@@ -86,6 +88,8 @@ instance Default SweetrollConf where
       , itemsPerPage             = 20
       , indieAuthCheckEndpoint   = "http://127.0.0.1"
       , indieAuthRedirEndpoint   = "http://127.0.0.1"
+      , pushHub                  = "http://127.0.0.1"
+      , pushDelay                = 1
       , adnApiHost               = "http://127.0.0.1"
       , adnApiToken              = ""
       , twitterApiHost           = "http://127.0.0.1"

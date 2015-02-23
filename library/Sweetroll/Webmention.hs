@@ -55,8 +55,8 @@ sendWebmention from to = do
       eReq ← liftIO $ parseUrl $ uriToString id u ""
       let reqBody = writeForm [("source", from), ("target", to)]
       eResp ← request eReq { method = "POST"
-                            , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
-                            , requestBody = RequestBodyBS reqBody } ∷ SweetrollBase (Response String)
+                           , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
+                           , requestBody = RequestBodyBS reqBody } ∷ SweetrollBase (Response String)
       putStrLn $ "Webmention status for <" ++ (asText . pack $ to) ++ ">: " ++ (toText . show . statusCode $ responseStatus eResp)
       return (to, responseStatus eResp == ok200 || responseStatus eResp == accepted202)
     _ → do

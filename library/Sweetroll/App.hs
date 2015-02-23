@@ -39,8 +39,9 @@ app = do
       checkAuth' = if testMode conf then id else checkAuth unauthorized
       links = [ Link (mkUrl base ["micropub"])                [(Rel, "micropub")]
               , Link (mkUrl base ["login"])                   [(Rel, "token_endpoint")]
-              , Link (pack $ indieAuthRedirEndpoint conf)     [(Rel, "authorization_endpoint")] ]
-      addLinks l x = addHeader "Link" (fromStrict $ writeLinkHeader l) >> x
+              , Link (pack $ indieAuthRedirEndpoint conf)     [(Rel, "authorization_endpoint")]
+              , Link (pack $ pushHub conf)                    [(Rel, "hub")] ]
+      addLinks = addHeader "Link" . fromStrict . writeLinkHeader
       authorHtml = renderRaw (authorTemplate conf) hostInfo
       render = P.render conf authorHtml
       pageNotFound = status notFound404 >> render notFoundTemplate notFoundView
@@ -58,12 +59,14 @@ app = do
 
   post "/micropub" $ checkAuth' $ doMicropub
 
-  get "/" $ addLinks links $ do
+  get "/" $ do
+    addLinks $ (Link (mkUrl base []) [(Rel, "self")]) : links
     cats ← listCollections >>= mapM (readCategory (itemsPerPage conf) (-1))
     render indexTemplate $ indexView conf $ map (second fromJust) $ filter visibleCat cats
 
-  get "/:category" $ addLinks links $ do
+  get "/:category" $ do
     catName ← param "category"
+    addLinks $ (Link (mkUrl base [pack catName]) [(Rel, "self")]) : links
     allParams ← params
     let pageNumber = fromMaybe (-1) (readMaybe . toString =<< findByKey allParams "page")
     cat ← readCategory (itemsPerPage conf) pageNumber catName
@@ -71,7 +74,8 @@ app = do
       Nothing → pageNotFound
       Just p → render categoryTemplate $ catView conf catName p
 
-  get "/:category/:slug" $ addLinks links $ do
+  get "/:category/:slug" $ do
+    addLinks links
     category ← param "category"
     slug ← param "slug"
     entry ← readDocumentByName category slug ∷ SweetrollAction (Maybe Entry)

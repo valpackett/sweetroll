@@ -28,6 +28,8 @@ data AppOptions = AppOptions
   , itemsperpage             :: Int
   , indieauthc               :: String
   , indieauthr               :: String
+  , pushhub                  :: String
+  , pushdelay                :: Int
   , adnhost                  :: String
   , adntoken                 :: String
   , twihost                  :: String
@@ -49,6 +51,8 @@ instance Options AppOptions where
     <*> simpleOption "itemsperpage"      20                                    "The number of items displayed on each page"
     <*> simpleOption "indieauthc"        "https://indieauth.com/auth"          "The IndieAuth check endpoint to use"
     <*> simpleOption "indieauthr"        "https://indieauth.com/auth"          "The IndieAuth redirect endpoint to use"
+    <*> simpleOption "pushhub"           "https://pubsubhubbub.superfeedr.com" "The PubSubHubbub hub to use"
+    <*> simpleOption "pushdelay"         1                                     "Delay before sending PubSubHubbub notifications (in seconds)"
     <*> simpleOption "adnhost"           "https://api.app.net"                 "The App.net API host to use"
     <*> simpleOption "adntoken"          ""                                    "The App.net API access token to use"
     <*> simpleOption "twihost"           "https://api.twitter.com/1.1"         "The Twitter API 1.1 host to use"
@@ -91,6 +95,8 @@ main = runCommand $ \opts args -> do
   , itemsPerPage                   = itemsperpage opts
   , indieAuthCheckEndpoint         = indieauthc opts
   , indieAuthRedirEndpoint         = indieauthr opts
+  , pushHub                        = pushhub opts
+  , pushDelay                      = pushdelay opts
   , adnApiHost                     = adnhost opts
   , adnApiToken                    = adntoken opts
   , twitterApiHost                 = twihost opts

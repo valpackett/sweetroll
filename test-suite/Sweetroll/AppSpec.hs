@@ -27,8 +27,11 @@ import           Gitson.Util (insideDirectory)
 contains ∷ EqSequence a ⇒ a → a → Bool
 contains = flip isInfixOf
 
+get' ∷ Wai.Request → B.ByteString → Wai.Application → IO SResponse
+get' r = runSession . request . setPath r { requestMethod = renderStdMethod GET }
+
 get  ∷ B.ByteString → Wai.Application → IO SResponse
-get  = runSession . request . setPath defaultRequest { requestMethod = renderStdMethod GET }
+get  = get' defaultRequest
 
 post ∷ B.ByteString → Wai.Application → IO SResponse
 post = runSession . request . setPath defaultRequest { requestMethod = renderStdMethod POST }
@@ -84,6 +87,18 @@ spec = around_ inDir $ do
       resp ← app >>= get "/articles/hello-world"
       simpleBody resp `shouldSatisfy` (`contains` "Hello, World!")
       simpleStatus resp `shouldBe` ok200
+
+    it "returns last-modified / 304" $ do
+      transaction' $ saveNextDocument "articles" "hello-cache" $ def {
+              entryUpdated = pure $ UTCTime (fromGregorian 2015 1 2) 0 }
+      resp1 ← app >>= get "/articles/hello-cache"
+      header resp1 "Last-Modified" `shouldBe` "Fri, 02 Jan 2015 00:00:00 GMT"
+      resp2 ← app >>= get' defaultRequest { Wai.requestHeaders = [("If-Modified-Since", "Thu, 01 Jan 2015 00:00:00 GMT")] } "/articles/hello-cache"
+      simpleStatus resp2 `shouldBe` ok200
+      header resp2 "Last-Modified" `shouldBe` "Fri, 02 Jan 2015 00:00:00 GMT"
+      resp3 ← app >>= get' defaultRequest { Wai.requestHeaders = [("If-Modified-Since", "Sat, 03 Jan 2015 00:00:00 GMT")] } "/articles/hello-cache"
+      simpleStatus resp3 `shouldBe` notModified304
+      header resp3 "Last-Modified" `shouldBe` "Fri, 02 Jan 2015 00:00:00 GMT"
 
   describe "POST /micropub" $ do
     it "creates entries" $ do

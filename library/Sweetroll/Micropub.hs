@@ -13,7 +13,6 @@ import           Data.Stringable (toText)
 import           Text.Pandoc hiding (Link)
 import           Network.HTTP.Client
 import           Network.HTTP.Types
-import           Network.HTTP.Types.Status
 import           Web.Scotty.Trans hiding (request)
 import           Gitson
 import           Sweetroll.Conf
@@ -41,12 +40,12 @@ doMicropub = do
           ifSyndicateTo x y = if any (isInfixOf x . snd) $ filter (isInfixOf "syndicate-to" . fst) allParams then y else return Nothing
       create entry
       created absUrl
-      unless isTest . void $ do
-        fork $ do
+      unless isTest $ do
+        void . fork $ do
           threadDelay =<< return . (*1000000) =<< getConfOpt pushDelay
           notifyPuSH []
           notifyPuSH [pack category]
-        fork $ do
+        void . fork $ do
           let ps = [ ifSyndicateTo "app.net"     $ postAppDotNet entry
                    , ifSyndicateTo "twitter.com" $ postTwitter entry ]
           synd ← sequence ps

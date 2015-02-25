@@ -8,6 +8,7 @@ import           Network.Wai.Middleware.Autohead
 import           Network.Wai.Middleware.Static
 import           Network.Wai.Middleware.RequestLogger
 import           Network.HTTP.Types.Status
+import           Network.HTTP.Date
 import           Network.HTTP.Link
 import           Text.Pandoc hiding (Link)
 import           Text.Highlighting.Kate.Format.HTML (styleToCss)
@@ -19,6 +20,9 @@ import           Data.Maybe (fromJust)
 import           Data.Stringable
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
+import           Data.Time.Lens
+import           Data.Time.Calendar.WeekDate
+import           Control.Lens
 import           Sweetroll.Util
 import           Sweetroll.Monads
 import           Sweetroll.Conf
@@ -81,7 +85,7 @@ app = do
     entry ← readDocumentByName category slug ∷ SweetrollAction (Maybe Entry)
     case entry of
       Nothing → pageNotFound
-      Just e  → do
+      Just e  → cacheHTTPDate (maximumMay $ entryUpdated e) $ do
         otherSlugs ← listDocumentKeys category
         render entryTemplate $ entryView category (map readSlug $ sort otherSlugs) (slug, e)
 
@@ -108,4 +112,28 @@ readCategory perPage pageNumber c = liftIO $ do
     Nothing → return (c, Nothing)
     Just page → do
       maybes ← mapM (readEntry c) $ items page
-      return (c, Just $ changeItems page $ fromMaybe [] $ sequence maybes)
+      return (c, Just . changeItems page . fromMaybe [] . sequence $ maybes)
+
+cacheHTTPDate ∷ Maybe UTCTime → SweetrollAction () → SweetrollAction ()
+cacheHTTPDate mlmd a =
+  case mlmd of
+    Just lmd → do
+      addHeader "Last-Modified" . toLazyText . formatHTTPDate . utcToHTTPDate $ lmd
+      imsHdr ← header "If-Modified-Since"
+      case parseHTTPDate =<< toByteString <$> imsHdr of
+        Just d → do
+          if lmd > utcFromHTTPDate d then a
+          else status notModified304
+        _ → a
+    _ → a
+
+utcToHTTPDate ∷ UTCTime → HTTPDate
+utcToHTTPDate d = defaultHTTPDate {
+    hdYear = fromIntegral $ d ^. years, hdMonth = d ^. months, hdDay = d ^. days
+  , hdHour = d ^. hours, hdMinute = d ^. minutes, hdSecond = round $ d ^. seconds
+  , hdWkday = wd }
+  where (_, _, wd) = toWeekDate $ utctDay d
+
+utcFromHTTPDate ∷ HTTPDate → UTCTime
+utcFromHTTPDate d = (UTCTime day 0) & hours .~ (fromIntegral $ hdHour d) & minutes .~ (fromIntegral $ hdMinute d) & seconds .~ (fromIntegral $ hdSecond d)
+  where day = fromGregorian (fromIntegral $ hdYear d) (fromIntegral $ hdMonth d) (fromIntegral $ hdDay d)

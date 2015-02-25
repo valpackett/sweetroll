@@ -40,6 +40,8 @@ library
       , blaze-markup
       , blaze-builder
       , time
+      , lens-datetime
+      , http-date >= 0.0.5
       , pcre-heavy >= 0.2.2
       , aeson
       , lens-aeson

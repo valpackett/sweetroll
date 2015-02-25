@@ -17,7 +17,7 @@ import           Data.Default
 import           Web.Simple.Templates.Language
 import           Sweetroll.Util (dropIncludeCrap)
 
-data SweetrollConf = SweetrollConf
+data SweetrollTemplates = SweetrollTemplates
   {           layoutTemplate ∷ Template
   ,            entryTemplate ∷ Template
   ,         categoryTemplate ∷ Template
@@ -25,8 +25,12 @@ data SweetrollConf = SweetrollConf
   ,      entryInListTemplate ∷ Template
   ,           authorTemplate ∷ Template
   ,         notFoundTemplate ∷ Template
-  ,             defaultStyle ∷ LByteString
-  ,                 siteName ∷ Text
+  ,             defaultStyle ∷ LByteString }
+
+$(declareSetters ''SweetrollTemplates)
+
+data SweetrollConf = SweetrollConf
+  {                 siteName ∷ Text
   ,                secretKey ∷ Text
   ,               httpsWorks ∷ Bool
   ,               domainName ∷ Text
@@ -45,8 +49,6 @@ data SweetrollConf = SweetrollConf
   ,                 testMode ∷ Bool
   ,           titleSeparator ∷ Text }
 
-$(declareSetters ''SweetrollConf)
-
 s ∷ SweetrollConf → Text
 s conf = asText $ if httpsWorks conf then "s" else ""
 
@@ -58,11 +60,11 @@ processTpl x = case compileTemplate $ dropIncludeCrap $ pack x of
   Left e → Template { renderTemplate = \_ _ → "Template compilation error: " ++ pack e }
   Right t → t
 
-loadTemplates ∷ SweetrollConf → IO SweetrollConf
-loadTemplates conf = foldM loadTpl conf tplsWithSetters
+loadTemplates ∷ IO SweetrollTemplates
+loadTemplates = foldM loadTpl def tplsWithSetters
     where loadTpl c sf = readTpl c sf `catch` readFailHandler c
           readTpl c (setter, file) = do
-            contents <- readFile $ "templates" </> file
+            contents ← readFile $ "templates" </> file
             return $ setter (processTpl contents) c
           tplsWithSetters = [ (setCategoryTemplate,             "category.html")
                             , (setEntryTemplate,                "entry.html")
@@ -73,10 +75,20 @@ loadTemplates conf = foldM loadTpl conf tplsWithSetters
                             , (setNotFoundTemplate,             "404.html")
                             ]
 
-readFailHandler ∷ SweetrollConf → IOError → IO SweetrollConf
+readFailHandler ∷ SweetrollTemplates → IOError → IO SweetrollTemplates
 readFailHandler c _ = return c
 
--- cpp screws up line numbering, so we put this at the end
+pandocReaderOptions ∷ ReaderOptions
+pandocReaderOptions = def { readerExtensions = githubMarkdownExtensions
+                          , readerSmart = True }
+
+pandocWriterOptions ∷ WriterOptions
+pandocWriterOptions = def { writerHtml5 = True
+                          , writerEmailObfuscation = NoObfuscation
+                          , writerHighlight = True
+                          , writerHighlightStyle = tango
+                          , writerIdentifierPrefix = "sr-" }
+
 -- | The default SweetrollConf.
 -- Actual defaults are in the executable!
 instance Default SweetrollConf where
@@ -98,8 +110,12 @@ instance Default SweetrollConf where
       , twitterAccessToken       = ""
       , twitterAccessSecret      = ""
       , testMode                 = False
-      , titleSeparator           = " / "
-      , layoutTemplate           = processTpl [r|
+      , titleSeparator           = " / " }
+
+-- cpp screws up line numbering, so we put this at the end
+instance Default SweetrollTemplates where
+  def = SweetrollTemplates {
+        layoutTemplate           = processTpl [r|
 #include "../../templates/layout.html"
     |], entryTemplate            = processTpl [r|
 #include "../../templates/entry.html"
@@ -116,14 +132,3 @@ instance Default SweetrollConf where
     |], defaultStyle             = dropIncludeCrap $ asLByteString [r|
 #include "../../templates/default-style.css"
 |]}
-
-pandocReaderOptions ∷ ReaderOptions
-pandocReaderOptions = def { readerExtensions = githubMarkdownExtensions
-                          , readerSmart = True }
-
-pandocWriterOptions ∷ WriterOptions
-pandocWriterOptions = def { writerHtml5 = True
-                          , writerEmailObfuscation = NoObfuscation
-                          , writerHighlight = True
-                          , writerHighlightStyle = tango
-                          , writerIdentifierPrefix = "sr-" }

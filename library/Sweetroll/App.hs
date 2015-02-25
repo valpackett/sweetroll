@@ -27,8 +27,7 @@ import           Sweetroll.Util
 import           Sweetroll.Monads
 import           Sweetroll.Conf
 import           Sweetroll.Auth
-import           Sweetroll.Pages hiding (render)
-import qualified Sweetroll.Pages as P
+import           Sweetroll.Pages
 import           Sweetroll.Pagination
 import           Sweetroll.Micropub
 import           Sweetroll.Syndication (showSyndication)
@@ -37,7 +36,7 @@ app ∷ SweetrollApp
 app = do
 
   conf ← getConf
-  hostInfo ← getHostInfo
+  tpls ← getTpls
 
   let base = baseUrl conf
       checkAuth' = if testMode conf then id else checkAuth unauthorized
@@ -46,16 +45,15 @@ app = do
               , Link (pack $ indieAuthRedirEndpoint conf)     [(Rel, "authorization_endpoint")]
               , Link (pack $ pushHub conf)                    [(Rel, "hub")] ]
       addLinks = addHeader "Link" . fromStrict . writeLinkHeader
-      authorHtml = renderRaw (authorTemplate conf) hostInfo
-      render = P.render conf authorHtml
       pageNotFound = status notFound404 >> render notFoundTemplate notFoundView
 
   middleware autohead -- XXX: does not add Content-Length
   middleware $ staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
   middleware logStdoutDev
 
-  get "/default-style.css" $ setHeader "Content-Type" "text/css" >> raw (defaultStyle conf ++
-    (toLazyByteString . styleToCss $ writerHighlightStyle pandocWriterOptions))
+  get "/default-style.css" $ do
+    setHeader "Content-Type" "text/css"
+    raw $ (defaultStyle tpls) ++ (toLazyByteString . styleToCss . writerHighlightStyle $ pandocWriterOptions)
 
   post "/login" $ doIndieAuth unauthorized
 
@@ -66,7 +64,7 @@ app = do
   get "/" $ do
     addLinks $ (Link (mkUrl base []) [(Rel, "self")]) : links
     cats ← listCollections >>= mapM (readCategory (itemsPerPage conf) (-1))
-    render indexTemplate $ indexView conf $ map (second fromJust) $ filter visibleCat cats
+    render indexTemplate $ indexView tpls $ map (second fromJust) $ filter visibleCat cats
 
   get "/:category" $ do
     catName ← param "category"
@@ -76,7 +74,7 @@ app = do
     cat ← readCategory (itemsPerPage conf) pageNumber catName
     case snd cat of
       Nothing → pageNotFound
-      Just p → render categoryTemplate $ catView conf catName p
+      Just p → render categoryTemplate $ catView tpls catName p
 
   get "/:category/:slug" $ do
     addLinks links

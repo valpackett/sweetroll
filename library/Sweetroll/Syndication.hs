@@ -37,7 +37,7 @@ ifSuccess resp what = return $ if not $ statusIsSuccessful $ responseStatus resp
 postAppDotNet ∷ (MonadSweetroll m, MonadIO m) ⇒ Entry → m (Maybe LText)
 postAppDotNet entry = do
   req ← parseUrlP "/posts" =<< getConfOpt adnApiHost
-  bearer ← getConfOpt adnApiToken
+  bearer ← getSec adnApiToken
   let (isArticle, txt) = trimmedText 250 entry
       pUrl = orEmpty . entryUrl $ entry
       o = object
@@ -62,7 +62,7 @@ appDotNetUrl x = (return . S.fromText) =<< (^? key "data" . key "canonical_url" 
 postTwitter ∷ (MonadSweetroll m, MonadIO m) ⇒ Entry → m (Maybe LText)
 postTwitter entry = do
   req ← parseUrlP "/statuses/update.json" =<< getConfOpt twitterApiHost
-  conf ← getConf
+  secs ← getSecs
   let (_, txt) = trimmedText 100 entry -- TODO: Figure out the number based on mentions of urls/domains in the first (140 - 25) characters
       pUrl = orEmpty . entryUrl $ entry
       reqBody = writeForm [("status", txt ++ " " ++ pUrl)]
@@ -70,8 +70,8 @@ postTwitter entry = do
                  , queryString = reqBody -- Yes, queryString... WTF http://ox86.tumblr.com/post/36810273719/twitter-api-1-1-responds-with-status-401-code-32
                  , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8")
                                     , (hAccept, "application/json") ] }
-      accessToken = Token (twitterAccessToken conf) (twitterAccessSecret conf)
-      clientCreds = clientCred $ Token (twitterAppKey conf) (twitterAppSecret conf)
+      accessToken = Token (twitterAccessToken secs) (twitterAccessSecret secs)
+      clientCreds = clientCred $ Token (twitterAppKey secs) (twitterAppSecret secs)
       creds = permanentCred accessToken clientCreds
   (signedReq, _rng) ← liftIO . oauth creds defaultServer req' =<< getRng
   resp ← request signedReq

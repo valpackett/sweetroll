@@ -21,6 +21,7 @@ import           Sweetroll.Conf
 data SweetrollCtx = SweetrollCtx
   { _ctxConf     ∷ SweetrollConf
   , _ctxTpls     ∷ SweetrollTemplates
+  , _ctxSecs     ∷ SweetrollSecrets
   , _ctxHostInfo ∷ [Pair]
   , _ctxHttpMgr  ∷ H.Manager
   , _ctxRng      ∷ SystemRNG }
@@ -36,12 +37,13 @@ instance (MonadReader r m, ScottyError e) ⇒ MonadReader r (ActionT e m) where
 instance (MonadReader r m, ScottyError e) ⇒ MonadReader r (ScottyT e m) where
   ask = lift ask
 
-initCtx ∷ SweetrollConf → SweetrollTemplates → IO SweetrollCtx
-initCtx conf tpls = do
+initCtx ∷ SweetrollConf → SweetrollTemplates → SweetrollSecrets → IO SweetrollCtx
+initCtx conf tpls secs = do
   httpClientMgr ← H.newManager
   sysRandom ← cprgCreate <$> createEntropyPool
   return SweetrollCtx { _ctxConf     = conf
                       , _ctxTpls     = tpls
+                      , _ctxSecs     = secs
                       , _ctxHostInfo = [ "domain"   .= domainName conf
                                        , "s"        .= s conf
                                        , "base_url" .= baseUrl conf ]
@@ -51,9 +53,9 @@ initCtx conf tpls = do
 runSweetrollBase ∷ (MonadSweetroll m, MonadIO m) ⇒ SweetrollBase a → m a
 runSweetrollBase x = ask >>= liftIO . runReaderT x
 
-sweetrollApp ∷ SweetrollConf → SweetrollTemplates → SweetrollApp → IO Application
-sweetrollApp conf tpls app = do
-  ctx ← initCtx conf tpls
+sweetrollApp ∷ SweetrollConf → SweetrollTemplates → SweetrollSecrets → SweetrollApp → IO Application
+sweetrollApp conf tpls secs app = do
+  ctx ← initCtx conf tpls secs
   let run x = runReaderT x ctx
   scottyAppT run run app
 
@@ -65,6 +67,12 @@ getConfOpt f = asks $ f . _ctxConf
 
 getTpls ∷ MonadSweetroll m ⇒ m SweetrollTemplates
 getTpls = asks _ctxTpls
+
+getSecs ∷ MonadSweetroll m ⇒ m SweetrollSecrets
+getSecs = asks _ctxSecs
+
+getSec ∷ MonadSweetroll m ⇒ (SweetrollSecrets → a) → m a
+getSec f = asks $ f . _ctxSecs
 
 getHostInfo ∷ MonadSweetroll m ⇒ m [Pair]
 getHostInfo = asks _ctxHostInfo

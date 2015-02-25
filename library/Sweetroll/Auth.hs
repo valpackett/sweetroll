@@ -29,7 +29,7 @@ getAccessToken = do
 checkAuth ∷ SweetrollAction () → SweetrollAction () → SweetrollAction ()
 checkAuth onFail act = do
   token ← getAccessToken
-  sKey ← getConfOpt secretKey
+  sKey ← getSec secretKey
   let verResult = decodeAndVerifySignature (secret sKey) token
   case verResult of
     Just _ → act
@@ -49,11 +49,12 @@ showAuth = do
 makeAccessToken ∷ Text → SweetrollAction ()
 makeAccessToken me = do
   conf ← getConf
+  secs ← getSecs
   now ← liftIO getCurrentTime
   let t = def { iss = stringOrURI $ domainName conf
               , sub = stringOrURI me
               , iat = intDate $ utcTimeToPOSIXSeconds now }
-      t' = encodeSigned HS256 (secret $ secretKey conf) t
+      t' = encodeSigned HS256 (secret $ secretKey secs) t
   showForm [("access_token", t'), ("scope", "post"), ("me", me)]
 
 doIndieAuth ∷ SweetrollAction () → SweetrollAction ()

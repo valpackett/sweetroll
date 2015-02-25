@@ -14,6 +14,7 @@ import           Text.Pandoc.Options
 import           Text.Highlighting.Kate.Styles (tango)
 import           Data.Setters
 import           Data.Default
+import           Data.Aeson.TH
 import           Web.Simple.Templates.Language
 import           Sweetroll.Util (dropIncludeCrap)
 
@@ -29,34 +30,39 @@ data SweetrollTemplates = SweetrollTemplates
 
 $(declareSetters ''SweetrollTemplates)
 
+data SweetrollSecrets = SweetrollSecrets
+  {                secretKey ∷ Text
+  ,              adnApiToken ∷ String
+  ,            twitterAppKey ∷ ByteString
+  ,         twitterAppSecret ∷ ByteString
+  ,       twitterAccessToken ∷ ByteString
+  ,      twitterAccessSecret ∷ ByteString }
+
 data SweetrollConf = SweetrollConf
   {                 siteName ∷ Text
-  ,                secretKey ∷ Text
-  ,               httpsWorks ∷ Bool
   ,               domainName ∷ Text
+  ,               httpsWorks ∷ Bool
   ,             itemsPerPage ∷ Int
+  ,           titleSeparator ∷ Text
   ,   indieAuthRedirEndpoint ∷ String
   ,   indieAuthCheckEndpoint ∷ String -- Separated for debugging
   ,                  pushHub ∷ String
   ,                pushDelay ∷ Int
   ,               adnApiHost ∷ String
-  ,              adnApiToken ∷ String
   ,           twitterApiHost ∷ String
-  ,            twitterAppKey ∷ ByteString
-  ,         twitterAppSecret ∷ ByteString
-  ,       twitterAccessToken ∷ ByteString
-  ,      twitterAccessSecret ∷ ByteString
-  ,                 testMode ∷ Bool
-  ,           titleSeparator ∷ Text }
+  ,                 testMode ∷ Bool }
+
+$(declareSetters ''SweetrollConf)
+$(deriveJSON defaultOptions ''SweetrollConf)
 
 s ∷ SweetrollConf → Text
-s conf = asText $ if httpsWorks conf then "s" else ""
+s conf = if httpsWorks conf then "s" else ""
 
 baseUrl ∷ SweetrollConf → Text
 baseUrl conf = mconcat ["http", s conf, "://", domainName conf]
 
 processTpl ∷ String → Template
-processTpl x = case compileTemplate $ dropIncludeCrap $ pack x of
+processTpl x = case compileTemplate . dropIncludeCrap . pack $ x of
   Left e → Template { renderTemplate = \_ _ → "Template compilation error: " ++ pack e }
   Right t → t
 
@@ -74,9 +80,8 @@ loadTemplates = foldM loadTpl def tplsWithSetters
                             , (setAuthorTemplate,               "author.html")
                             , (setNotFoundTemplate,             "404.html")
                             ]
-
-readFailHandler ∷ SweetrollTemplates → IOError → IO SweetrollTemplates
-readFailHandler c _ = return c
+          readFailHandler ∷ SweetrollTemplates → IOError → IO SweetrollTemplates
+          readFailHandler c _ = return c
 
 pandocReaderOptions ∷ ReaderOptions
 pandocReaderOptions = def { readerExtensions = githubMarkdownExtensions
@@ -89,28 +94,29 @@ pandocWriterOptions = def { writerHtml5 = True
                           , writerHighlightStyle = tango
                           , writerIdentifierPrefix = "sr-" }
 
--- | The default SweetrollConf.
--- Actual defaults are in the executable!
 instance Default SweetrollConf where
   def = SweetrollConf {
-        siteName                 = ""
-      , secretKey                = "SECRET" -- the executable sets to a secure random value by default
+        siteName                 = "A new Sweetroll website"
       , httpsWorks               = False
       , domainName               = ""
       , itemsPerPage             = 20
-      , indieAuthCheckEndpoint   = "http://127.0.0.1"
-      , indieAuthRedirEndpoint   = "http://127.0.0.1"
-      , pushHub                  = "http://127.0.0.1"
+      , indieAuthCheckEndpoint   = "https://indieauth.com/auth"
+      , indieAuthRedirEndpoint   = "https://indieauth.com/auth"
+      , pushHub                  = "https://pubsubhubbub.superfeedr.com"
       , pushDelay                = 1
-      , adnApiHost               = "http://127.0.0.1"
+      , adnApiHost               = "https://api.app.net"
+      , twitterApiHost           = "https://api.twitter.com/1.1"
+      , testMode                 = False
+      , titleSeparator           = " / " }
+
+instance Default SweetrollSecrets where
+  def = SweetrollSecrets {
+        secretKey                = "SECRET" -- the executable sets to a secure random value by default
       , adnApiToken              = ""
-      , twitterApiHost           = "http://127.0.0.1"
       , twitterAppKey            = ""
       , twitterAppSecret         = ""
       , twitterAccessToken       = ""
-      , twitterAccessSecret      = ""
-      , testMode                 = False
-      , titleSeparator           = " / " }
+      , twitterAccessSecret      = "" }
 
 -- cpp screws up line numbering, so we put this at the end
 instance Default SweetrollTemplates where

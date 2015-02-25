@@ -42,8 +42,8 @@ initCtx conf tpls = do
   sysRandom ← cprgCreate <$> createEntropyPool
   return SweetrollCtx { _ctxConf     = conf
                       , _ctxTpls     = tpls
-                      , _ctxHostInfo = [ "domain" .= domainName conf
-                                       , "s" .= s conf
+                      , _ctxHostInfo = [ "domain"   .= domainName conf
+                                       , "s"        .= s conf
                                        , "base_url" .= baseUrl conf ]
                       , _ctxHttpMgr  = httpClientMgr
                       , _ctxRng      = sysRandom }
@@ -82,14 +82,14 @@ request req = do
   return $ resp { H.responseBody = fromLazyByteString $ H.responseBody resp }
 
 parseUrlP ∷ (MonadIO m) ⇒ String → String → m H.Request
-parseUrlP postfix url = liftIO $ H.parseUrl $ url ++ postfix
+parseUrlP postfix url = liftIO . H.parseUrl $ url ++ postfix
 
 -- | Returns an action that writes data as application/x-www-form-urlencoded.
 showForm ∷ (Stringable a) ⇒ [(a, a)] → SweetrollAction ()
 showForm x = do
   status ok200
   setHeader "Content-Type" "application/x-www-form-urlencoded; charset=utf-8"
-  raw $ toLazyByteString $ writeForm x
+  raw . toLazyByteString . writeForm $ x
 
 created ∷ LText → SweetrollAction ()
 created url = status created201 >> setHeader "Location" url

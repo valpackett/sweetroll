@@ -45,7 +45,6 @@ app = do
               , Link (pack $ indieAuthRedirEndpoint conf)     [(Rel, "authorization_endpoint")]
               , Link (pack $ pushHub conf)                    [(Rel, "hub")] ]
       addLinks = addHeader "Link" . fromStrict . writeLinkHeader
-      pageNotFound = status notFound404 >> render notFoundTemplate notFoundView
 
   middleware autohead -- XXX: does not add Content-Length
   middleware $ staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
@@ -111,6 +110,9 @@ readCategory perPage pageNumber c = liftIO $ do
     Just page → do
       maybes ← mapM (readEntry c) $ items page
       return (c, Just . changeItems page . fromMaybe [] . sequence $ maybes)
+
+pageNotFound ∷ SweetrollAction ()
+pageNotFound = status notFound404 >> render notFoundTemplate notFoundView
 
 cacheHTTPDate ∷ Maybe UTCTime → SweetrollAction () → SweetrollAction ()
 cacheHTTPDate mlmd a =

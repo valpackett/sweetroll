@@ -25,8 +25,7 @@ data SweetrollTemplates = SweetrollTemplates
   ,            indexTemplate ∷ Template
   ,      entryInListTemplate ∷ Template
   ,           authorTemplate ∷ Template
-  ,         notFoundTemplate ∷ Template
-  ,             defaultStyle ∷ LByteString }
+  ,         notFoundTemplate ∷ Template }
 
 $(declareSetters ''SweetrollTemplates)
 
@@ -135,6 +134,4 @@ instance Default SweetrollTemplates where
 #include "../../templates/author.html"
     |], notFoundTemplate         = processTpl [r|
 #include "../../templates/404.html"
-    |], defaultStyle             = dropIncludeCrap $ asLByteString [r|
-#include "../../templates/default-style.css"
-|]}
+    |]}

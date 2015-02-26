@@ -10,8 +10,6 @@ import           Network.Wai.Middleware.RequestLogger
 import           Network.HTTP.Types.Status
 import           Network.HTTP.Date
 import           Network.HTTP.Link
-import           Text.Pandoc hiding (Link)
-import           Text.Highlighting.Kate.Format.HTML (styleToCss)
 import           Text.Read (readMaybe)
 import           Web.Scotty.Trans
 import           Gitson
@@ -31,6 +29,7 @@ import           Sweetroll.Pages
 import           Sweetroll.Pagination
 import           Sweetroll.Micropub
 import           Sweetroll.Syndication (showSyndication)
+import           Sweetroll.Style
 
 app ∷ SweetrollApp
 app = do
@@ -52,7 +51,7 @@ app = do
 
   get "/default-style.css" $ do
     setHeader "Content-Type" "text/css"
-    raw $ (defaultStyle tpls) ++ (toLazyByteString . styleToCss . writerHighlightStyle $ pandocWriterOptions)
+    raw allCss
 
   post "/login" $ doIndieAuth unauthorized
 

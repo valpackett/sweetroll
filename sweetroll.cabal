@@ -53,6 +53,7 @@ library
       , wai-middleware-static
       , scotty == 0.9.*
       , simple-templates == 0.8.*
+      , clay
       , network-uri >= 2.6
       , network >= 2.6
       , conduit
@@ -79,6 +80,7 @@ library
         Sweetroll.Monads
         Sweetroll.Pages
         Sweetroll.Pagination
+        Sweetroll.Style
         Sweetroll.Syndication
         Sweetroll.Util
         Sweetroll.Webmention

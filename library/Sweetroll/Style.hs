@@ -2,6 +2,7 @@
 
 module Sweetroll.Style (
   allCss
+, sweetrollStyle
 ) where
 
 import           ClassyPrelude hiding (rem, (**), (<>))
@@ -9,6 +10,7 @@ import           Text.Highlighting.Kate.Format.HTML (styleToCss)
 import           Clay hiding (round)
 import           Clay.Stylesheet
 import qualified Clay.Media as M
+import qualified Clay.Text as T
 import           Data.Stringable
 import           Text.Pandoc
 import           Sweetroll.Conf
@@ -32,7 +34,7 @@ sweetrollStyle = do
     color "#343434"
 
   body ? do
-    "margin" -: "0"
+    sym margin nil
     "min-height" -: "100vh"
     display flex
     "flex-direction" -: "column"
@@ -40,7 +42,7 @@ sweetrollStyle = do
     "word-wrap" -: "break-word"
 
   h1 <> h2 <> h3 <> h4 <> h5 <> h6 ? do
-    "margin-top" -: "0"
+    marginTop nil
     "line-height" -: "1"
     textRendering optimizeLegibility
 
@@ -56,7 +58,7 @@ sweetrollStyle = do
   dfn ? fontStyle italic
   b <> strong ? fontWeight bold
   input <> abbr <> blockquote <> code <> kbd <> q <> samp <> var ? hyphens noHyphens
-  article <> aside <> details <> figcaption <> figure <> footer <> header <> hgroup <> "main" <> menu <> nav <> section <> summary ? display block
+  article <> aside <> details <> figcaption <> figure <> footer <> header <> hgroup <> main_ <> menu <> nav <> section <> summary ? display block
   audio <> canvas <> progress <> video ? do
     display inlineBlock
     verticalAlign baseline
@@ -66,7 +68,7 @@ sweetrollStyle = do
     color gray
     "@title" & do
       "border-bottom" -: "dotted 1px"
-      ":hover" & cursor help
+      hover & cursor help
   p <> pre <> figure <> blockquote ? do
     margin auto auto (em 1.5) auto
     lastChild & marginBottom (em 0.5)
@@ -76,30 +78,29 @@ sweetrollStyle = do
   small ? fontSize (pct 80)
   sub <> sup ? do
     fontSize $ pct 80
-    "line-height" -: "0"
+    lineHeight nil
     position relative
     verticalAlign baseline
   sub ? top (em (-0.5))
   sup ? bottom (em (-0.25))
   img ? do
-    borderWidth $ px 0
+    borderWidth nil
     maxWidth $ pct 100
   pre ? do
     overflow auto
-    "white-space" -: "pre"
+    whiteSpace T.pre
   code <> kbd <> pre <> samp ? do
     fontSize $ em 1
     fontFamily ["Menlo", "Consolas"] [monospace]
   pre ** code ? do
     overflow auto
-    "white-space" -: "pre"
+    whiteSpace T.pre
   table ? do
     borderCollapse collapse
-    "border-spacing" -: "0"
-  td <> th ? ("padding" -: "0")
+  td <> th ? sym padding nil
   ul ? listStyleType square
   ul <> ol ? do
-    "padding-left" -: "0"
+    paddingLeft nil
     listStylePosition inside
   ".fa-l" ? marginRight (em 0.25)
   ".fa-r" ? marginLeft (em 0.25)
@@ -107,7 +108,7 @@ sweetrollStyle = do
     color "#0074df"
     transition "color" (sec 0.3) easeInOut (sec 0)
     textDecoration none
-  (a # ":hover") <> (a # ":focus") <> (a # ":active") ? do
+  (a # hover) <> (a # focus) <> (a # active) ? do
     color "#7fdbff"
     textDecoration underline
   a # ".self-link" ? do
@@ -120,16 +121,11 @@ sweetrollStyle = do
     "-webkit-flex-direction" -: "column"
     "flex-direction" -: "column"
 
-  ".site-content" ? do
-    "-webkit-flex" -: "1"
-    "flex" -: "1"
-
-  ".site-author" ? do
-    "-webkit-order" -: "10"
-    "order" -: "10"
+  ".site-content" ? flexValue 1
+  ".site-author" ? orderValue 10
 
   ".site-footer" ? do
-    "padding" -: "1em 0"
+    sym2 padding (em 1) nil
     fontSize $ pct 90
     color "#777"
 
@@ -147,8 +143,7 @@ sweetrollStyle = do
     borderTop solid (px 1) $ rgb  57 204 204
     borderTop solid (px 1) $ rgba 57 204 204 134
     transition "border-color" (sec 0.3) easeInOut (sec 0)
-    ":hover" & borderColor "#2ecc40"
-    ".entry-in-list:hover" |+ ".entry-in-list" ? borderColor transparent
+    hover & borderColor "#2ecc40"
     firstChild & ("border-top" -: "none")
     ".entry-footer" ? do
       fontSize $ pct 90
@@ -156,6 +151,7 @@ sweetrollStyle = do
     ".entry-footer" <> ".entry-footer a" ? do
       fontSize $ pct 90
       color "#aaa"
+  ".entry-in-list" # hover |+ ".entry-in-list" ? borderColor transparent
 
   ".note-entry" ? do
     border solid (px 1) $ rgb 57 204 204
@@ -163,8 +159,8 @@ sweetrollStyle = do
     ".entry-header" ? do
       fontSize $ pct 90
       marginBottom $ em 1
-    ".entry-header" <> ".entry-header a" ? (color "#aaa")
-    ".entry-content" ? (fontSize $ pct 110)
+    ".entry-header" <> ".entry-header a" ? color "#aaa"
+    ".entry-content" ? fontSize (pct 110)
     ".entry-footer" ? do
       borderTop solid (px 1) $ rgb 57 204 204
       borderColor $ rgba 57 204 204 82
@@ -176,11 +172,11 @@ sweetrollStyle = do
 
   ".entry-main" ? do
     ".entry-header" <> ".entry-content" <> ".entry-footer" ? do
-      "margin" -: "16px"
-      "margin" -: "1rem"
+      sym margin $ px 16
+      sym margin $ rem 1
     ".entry-footer" ? do
       "a" ? marginLeft (em 0.5)
-      ".entry-actions" ** "indie-action" # firstChild ** a ? marginLeft (px 0)
+      ".entry-actions" ** "indie-action" # firstChild ** a ? marginLeft nil
 
   ".entry-footer" ** h2 ? do
     fontSize $ pct 100
@@ -204,31 +200,27 @@ sweetrollStyle = do
       "-webkit-flex-direction" -: "row"
       "flex-direction" -: "row"
     ".site-author" ? do
-      "-webkit-flex" -: "1"
-      "flex" -: "1"
-      "-webkit-order" -: "0"
-      "order" -: "0"
+      flexValue 1
+      orderValue 0
     ".site-main" ? do
-      "-webkit-flex" -: "3"
-      "flex" -: "3"
+      flexValue 3
       paddingLeft $ em 1
     ".index-main" ? overflowX auto
     ".index-category" ? do
-      "-webkit-flex" -: "1"
-      "flex" -: "1"
+      flexValue 1
       minWidth $ pct 30
       maxWidth $ pct 100
-      padding 0 (em 1) 0 0
+      padding nil (em 1) nil nil
       lastChild & ("padding" -: "0")
     "#author-link" ? display none
 
   query M.screen [M.minWidth $ em 80] $ do
     pageParts ? width (pct 90)
-    ".site-header" ? ("padding" -: "3em 0")
+    ".site-header" ? sym2 padding (em 3) nil
     ".site-main" ? paddingLeft (em 3.4)
     ".note-entry" ? maxWidth (em 60)
     ".entry-in-list" ? do
-      padding (em 2) 0 (em 1) 0
+      padding (em 2) nil (em 1) nil
       ".entry-footer" ? marginTop (em 1)
 
   query M.screen [M.minWidth $ em 80] $ do
@@ -237,12 +229,20 @@ sweetrollStyle = do
 pageParts ∷ Selector
 pageParts = ".site-header" <> ".site-content" <> ".site-footer"
 
-fSize ∷ Integer → Css
-fSize f = do
-  fontSize . px  $ f
-  fontSize . rem $ fromIntegral f / 18.0
-  marginBottom . px . round $ 29.7 / fromIntegral f * (18.0 ∷ Double)
-  marginBottom . rem $ 29.7 / fromIntegral f
+fSize, flexValue, orderValue ∷ Integer → Css
+fSize x = do
+  fontSize . px  $ x
+  fontSize . rem $ fromIntegral x / 18.0
+  marginBottom . px . round $ 29.7 / fromIntegral x * (18.0 ∷ Double)
+  marginBottom . rem $ 29.7 / fromIntegral x
+
+flexValue x = do
+  "-webkit-flex" -: pack (show x)
+  "flex" -: pack (show x)
+
+orderValue x = do
+  "-webkit-order" -: pack (show x)
+  "order" -: pack (show x)
 
 newtype HyphensType = HyphensType Value
   deriving (Val, Inherit)

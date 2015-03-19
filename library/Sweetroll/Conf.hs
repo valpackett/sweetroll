@@ -1,7 +1,7 @@
 -- here be dragons
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-} -- because Data.Setters
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE CPP, QuasiQuotes, TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Sweetroll.Conf (
   module Sweetroll.Conf
@@ -9,14 +9,15 @@ module Sweetroll.Conf (
 ) where
 
 import           ClassyPrelude
-import           Text.RawString.QQ
 import           Text.Pandoc.Options
 import           Text.Highlighting.Kate.Styles (tango)
+import           Data.Stringable
+import           Data.Maybe (fromJust)
 import           Data.Setters
 import           Data.Default
 import           Data.Aeson.TH
+import           Data.FileEmbed
 import           Web.Simple.Templates.Language
-import           Sweetroll.Util (dropIncludeCrap)
 
 data SweetrollTemplates = SweetrollTemplates
   {           layoutTemplate ∷ Template
@@ -60,8 +61,8 @@ s conf = if httpsWorks conf then "s" else ""
 baseUrl ∷ SweetrollConf → Text
 baseUrl conf = mconcat ["http", s conf, "://", domainName conf]
 
-processTpl ∷ String → Template
-processTpl x = case compileTemplate . dropIncludeCrap . pack $ x of
+processTpl ∷ Stringable α ⇒ α → Template
+processTpl x = case compileTemplate . toText $ x of
   Left e → Template { renderTemplate = \_ _ → "Template compilation error: " ++ pack e }
   Right t → t
 
@@ -69,7 +70,7 @@ loadTemplates ∷ IO SweetrollTemplates
 loadTemplates = foldM loadTpl def tplsWithSetters
     where loadTpl c sf = readTpl c sf `catch` readFailHandler c
           readTpl c (setter, file) = do
-            contents ← readFile $ "templates" </> file
+            contents ← readFile $ "templates" </> file ∷ IO Text
             return $ setter (processTpl contents) c
           tplsWithSetters = [ (setCategoryTemplate,             "category.html")
                             , (setEntryTemplate,                "entry.html")
@@ -117,21 +118,14 @@ instance Default SweetrollSecrets where
       , twitterAccessToken       = ""
       , twitterAccessSecret      = "" }
 
--- cpp screws up line numbering, so we put this at the end
 instance Default SweetrollTemplates where
   def = SweetrollTemplates {
-        layoutTemplate           = processTpl [r|
-#include "../../templates/layout.html"
-    |], entryTemplate            = processTpl [r|
-#include "../../templates/entry.html"
-    |], categoryTemplate         = processTpl [r|
-#include "../../templates/category.html"
-    |], indexTemplate            = processTpl [r|
-#include "../../templates/index.html"
-    |], entryInListTemplate      = processTpl [r|
-#include "../../templates/entry-in-list.html"
-    |], authorTemplate           = processTpl [r|
-#include "../../templates/author.html"
-    |], notFoundTemplate         = processTpl [r|
-#include "../../templates/404.html"
-    |]}
+        layoutTemplate           = tpl "layout.html"
+      , entryTemplate            = tpl "entry.html"
+      , categoryTemplate         = tpl "category.html"
+      , indexTemplate            = tpl "index.html"
+      , entryInListTemplate      = tpl "entry-in-list.html"
+      , authorTemplate           = tpl "author.html"
+      , notFoundTemplate         = tpl "404.html" }
+      where tpl x = processTpl . snd . fromJust . find ((== x) . fst) $ files
+            files = $(embedDir "templates")

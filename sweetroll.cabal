@@ -71,6 +71,7 @@ library
       , pandoc == 1.13.*
       , pandoc-types
       , raw-strings-qq == 1.*
+      , file-embed
     default-language: Haskell2010
     exposed-modules:
         Sweetroll.App

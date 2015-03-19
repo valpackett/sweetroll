@@ -71,11 +71,6 @@ parseTags ∷ Stringable a ⇒ a → [a]
 parseTags ts = mapMaybe (headMay . snd) $ scan r ts
   where r = [re|([^,]+),?\s?|]
 
--- | Removes lines that come from cpp include directive
-dropIncludeCrap ∷ Stringable a ⇒ a → a
-dropIncludeCrap = fromString . unlines . filter (not . (=~ r)) . lines . toString
-  where r = [re|#\s+\d+\s+"[^"]+"\s+\d+\s*|]
-
 -- | Makes a URL from a hostname and parts
 --
 -- >>> mkUrl "http://localhost:4200" ["yolo", "lol"]

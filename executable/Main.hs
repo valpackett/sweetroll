@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
-{-# LANGUAGE UnicodeSyntax #-}
+{-# LANGUAGE UnicodeSyntax, TemplateHaskell #-}
 
 module Main (main) where
 
@@ -21,6 +21,8 @@ import           Data.Streaming.Network (bindPath)
 import           Data.Maybe
 import qualified Data.ByteString.Base64 as B64
 import qualified Crypto.Hash.RIPEMD160 as H
+import           Distribution.PackageDescription.TH
+import           Git.Embed
 import           Options
 import           Gitson
 
@@ -85,7 +87,8 @@ main = runCommand $ \opts args → do
                      "http" → reset " port "   >> boldMagenta (show $ port opts)
                      "unix" → reset " socket " >> boldMagenta (show $ socket opts)
                      _      → setReset
-      printListening = boldYellow "         Sweetroll " >> red "0.0.0" >> reset " running on " >> blue (protocol opts) >> printProto >> setReset >> putStrLn ""
+      version = $(packageVariable $ pkgVersion . package) ++ "/" ++ $(embedGitShortRevision)
+      printListening = boldYellow "     Sweetroll " >> red version >> reset " running on " >> blue (protocol opts) >> printProto >> setReset >> putStrLn ""
       warpSettings = setBeforeMainLoop printListening $ setPort (port opts) defaultSettings
 
   origConf ← readDocument "conf" "sweetroll" ∷ IO (Maybe SweetrollConf)

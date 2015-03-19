@@ -93,6 +93,8 @@ executable sweetroll
     build-depends:
         base >= 4.0.0.0 && < 5
       , classy-prelude
+      , git-embed
+      , cabal-file-th
       , options == 1.*
       , warp == 3.0.*
       , network == 2.6.*

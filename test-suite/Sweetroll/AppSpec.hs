@@ -15,7 +15,7 @@ import qualified Data.CaseInsensitive as CI
 import           Data.Microformats2
 import           Data.Default
 import           Text.Pandoc
-import           Sweetroll.Util (findByKey)
+import           Sweetroll.Util (findByKey, pandocRead)
 import           Sweetroll.Conf
 import           Sweetroll.Monads (sweetrollApp)
 import qualified Sweetroll.App as A
@@ -54,7 +54,7 @@ spec = around_ inDir $ do
         saveNextDocument "posts" "first" $ def {
           entryName      = pure "Post 1" }
         saveNextDocument "thingies" "tweeeet" $ def {
-          entryContent   = pure . PandocContent . readMarkdown def $ "Something 1" }
+          entryContent   = pure . PandocContent . (pandocRead readMarkdown) $ "Something 1" }
       resp ← app >>= get "/"
       simpleBody resp `shouldSatisfy` (`contains` "posts")
       simpleBody resp `shouldSatisfy` (`contains` "thingies")
@@ -108,7 +108,7 @@ spec = around_ inDir $ do
       written ← readDocumentById "articles" 1 ∷ IO (Maybe Entry)
       case written of
         Just article → do
-          entryContent article `shouldBe` (pure . PandocContent . readMarkdown def $ "Hello")
+          entryContent article `shouldBe` (pure . PandocContent . (pandocRead readMarkdown) $ "Hello")
           entryCategory article `shouldBe` ["test", "demo"]
         Nothing → error "article not written"
 

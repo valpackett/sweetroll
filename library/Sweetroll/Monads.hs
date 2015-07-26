@@ -29,13 +29,13 @@ data SweetrollCtx = SweetrollCtx
 type MonadSweetroll  = MonadReader SweetrollCtx
 type SweetrollBase   = ReaderT SweetrollCtx IO
 type SweetrollAction = ActionT LText SweetrollBase
-type SweetrollApp    = ScottyT LText SweetrollBase ()
+type SweetrollApp    = ReaderT SweetrollCtx (ScottyT LText SweetrollBase) ()
 
 instance (MonadReader r m, ScottyError e) ⇒ MonadReader r (ActionT e m) where
   ask = lift ask
 
-instance (MonadReader r m, ScottyError e) ⇒ MonadReader r (ScottyT e m) where
-  ask = lift ask
+-- instance (MonadReader r m, ScottyError e) ⇒ MonadReader r (ScottyT e m) where
+--   ask = lift ask
 
 initCtx ∷ SweetrollConf → SweetrollTemplates → SweetrollSecrets → IO SweetrollCtx
 initCtx conf tpls secs = do
@@ -57,7 +57,7 @@ sweetrollApp ∷ SweetrollConf → SweetrollTemplates → SweetrollSecrets → S
 sweetrollApp conf tpls secs app = do
   ctx ← initCtx conf tpls secs
   let run x = runReaderT x ctx
-  scottyAppT run run app
+  scottyAppT run $ run app
 
 getConf ∷ MonadSweetroll m ⇒ m SweetrollConf
 getConf = asks _ctxConf

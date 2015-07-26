@@ -1,0 +1,14 @@
+flags: {}
+packages:
+  - '.'
+  - location:
+      git: https://github.com/tel/oauthenticated
+      commit: 495afad3f07c9d4a408a11a96c2d5451bf21162f
+    extra-dep: true
+extra-deps:
+  - http-link-header-0.1.0
+  - microformats2-types-0.4.0
+  - lens-datetime-0.2.1
+  - setters-0.1
+  - simple-templates-0.8.0.0
+resolver: nightly-2015-07-26

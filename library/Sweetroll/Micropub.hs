@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, FlexibleContexts #-}
 
 module Sweetroll.Micropub (
   doMicropub
@@ -11,6 +11,7 @@ import           Data.Microformats2
 import           Data.Microformats2.Aeson()
 import           Data.Stringable (toText)
 import           Text.Pandoc hiding (Link)
+import qualified Text.Pandoc.Error as PE
 import           Network.HTTP.Client
 import           Network.HTTP.Types
 import           Web.Scotty.Trans hiding (request)
@@ -30,7 +31,7 @@ doMicropub = do
   base ← getConfOpt baseUrl
   let category = decideCategory allParams
       slug = decideSlug allParams now
-      readerF = decideReader allParams
+      readerF = pandocRead $ decideReader allParams
       absUrl = fromStrict . mkUrl base $ map pack [category, slug]
       create x = transaction "./" $ saveNextDocument category slug x
       update x = transaction "./" $ saveDocumentByName category slug x
@@ -66,7 +67,7 @@ decideSlug pars now = unpack . fromMaybe fallback $ findByKey pars "slug"
   where fallback = slugify . fromMaybe (formatTimeSlug now) $ findFirstKey pars ["name", "summary"]
         formatTimeSlug = pack . formatTime defaultTimeLocale "%Y-%m-%d-%H-%M-%S"
 
-decideReader ∷ [Param] → ReaderOptions → String → Pandoc
+decideReader ∷ [Param] → (ReaderOptions → String → Either PE.PandocError Pandoc)
 decideReader pars | f == "textile"     = readTextile
                   | f == "org"         = readOrg
                   | f == "rst"         = readRST
@@ -76,11 +77,11 @@ decideReader pars | f == "textile"     = readTextile
                   | otherwise          = readMarkdown
   where f = fromMaybe "" $ findByKey pars "format"
 
-makeEntry ∷ [Param] → UTCTime → LText → (ReaderOptions → String → Pandoc) → Entry
+makeEntry ∷ [Param] → UTCTime → LText → (String → Pandoc) → Entry
 makeEntry pars now absUrl readerF = def
   { entryName         = par "name"
   , entrySummary      = par "summary"
-  , entryContent      = PandocContent <$> readerF pandocReaderOptions <$> unpack <$> par "content"
+  , entryContent      = PandocContent <$> readerF <$> unpack <$> par "content"
   , entryPublished    = pure . fromMaybe now . headMay . catMaybes $ parseISOTime <$> par "published"
   , entryUpdated      = pure now
   , entryAuthor       = TextCard <$> par "author"

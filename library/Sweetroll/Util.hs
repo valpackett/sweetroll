@@ -12,7 +12,10 @@ import           Data.Stringable hiding (length)
 import           Data.Microformats2
 import           Network.HTTP.Types (urlEncode)
 import           Text.Regex.PCRE.Heavy
+import qualified Text.Pandoc as P
+import qualified Text.Pandoc.Error as PE
 import           Safe (headMay)
+import           Sweetroll.Conf (pandocReaderOptions)
 
 type CategoryName = String
 type EntrySlug = String
@@ -97,3 +100,6 @@ derefEntryName (UrlEntry l)   = Just l
 
 orEmpty ∷ [LText] → LText
 orEmpty = fromMaybe "" . headMay
+
+pandocRead ∷ (P.ReaderOptions → String → Either PE.PandocError P.Pandoc) → String → P.Pandoc
+pandocRead x = PE.handleError . x pandocReaderOptions

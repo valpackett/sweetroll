@@ -46,49 +46,50 @@ app = do
               , Link (pack $ pushHub conf)                    [(Rel, "hub")] ]
       addLinks = addHeader "Link" . fromStrict . writeLinkHeader
 
-  middleware autohead -- XXX: does not add Content-Length
-  middleware $ staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
-  middleware logStdoutDev
+  lift $ do -- Scotty 0.10 was THE WORST RELEASE :-(
+    middleware autohead -- XXX: does not add Content-Length
+    middleware $ staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
+    middleware logStdoutDev
 
-  get "/default-style.css" $ do
-    setHeader "Content-Type" "text/css"
-    raw allCss
+    get "/default-style.css" $ do
+      setHeader "Content-Type" "text/css"
+      raw allCss
 
-  post "/login" $ doIndieAuth unauthorized
+    post "/login" $ doIndieAuth unauthorized
 
-  get "/micropub" $ checkAuth' $ showSyndication $ showAuth
+    get "/micropub" $ checkAuth' $ showSyndication $ showAuth
 
-  post "/micropub" $ checkAuth' $ doMicropub
+    post "/micropub" $ checkAuth' $ doMicropub
 
-  get "/indie-config" $ indieConfigHtml conf
+    get "/indie-config" $ indieConfigHtml conf
 
-  get "/" $ do
-    addLinks $ (Link (mkUrl base []) [(Rel, "self")]) : links
-    cats ← listCollections >>= mapM (readCategory (itemsPerPage conf) (-1))
-    render indexTemplate $ indexView tpls $ map (second fromJust) $ filter visibleCat cats
+    get "/" $ do
+      addLinks $ (Link (mkUrl base []) [(Rel, "self")]) : links
+      cats ← listCollections >>= mapM (readCategory (itemsPerPage conf) (-1))
+      render indexTemplate $ indexView tpls $ map (second fromJust) $ filter visibleCat cats
 
-  get "/:category" $ do
-    catName ← param "category"
-    addLinks $ (Link (mkUrl base [pack catName]) [(Rel, "self")]) : links
-    allParams ← params
-    let pageNumber = fromMaybe (-1) (readMaybe . toString =<< findByKey allParams "page")
-    cat ← readCategory (itemsPerPage conf) pageNumber catName
-    case snd cat of
-      Nothing → pageNotFound
-      Just p → render categoryTemplate $ catView tpls catName p
+    get "/:category" $ do
+      catName ← param "category"
+      addLinks $ (Link (mkUrl base [pack catName]) [(Rel, "self")]) : links
+      allParams ← params
+      let pageNumber = fromMaybe (-1) (readMaybe . toString =<< findByKey allParams "page")
+      cat ← readCategory (itemsPerPage conf) pageNumber catName
+      case snd cat of
+        Nothing → pageNotFound
+        Just p → render categoryTemplate $ catView tpls catName p
 
-  get "/:category/:slug" $ do
-    addLinks links
-    category ← param "category"
-    slug ← param "slug"
-    entry ← readDocumentByName category slug ∷ SweetrollAction (Maybe Entry)
-    case entry of
-      Nothing → pageNotFound
-      Just e  → cacheHTTPDate (maximumMay $ entryUpdated e) $ do
-        otherSlugs ← listDocumentKeys category
-        render entryTemplate $ entryView category (map readSlug $ sort otherSlugs) (slug, e)
+    get "/:category/:slug" $ do
+      addLinks links
+      category ← param "category"
+      slug ← param "slug"
+      entry ← readDocumentByName category slug ∷ SweetrollAction (Maybe Entry)
+      case entry of
+        Nothing → pageNotFound
+        Just e  → cacheHTTPDate (maximumMay $ entryUpdated e) $ do
+          otherSlugs ← listDocumentKeys category
+          render entryTemplate $ entryView category (map readSlug $ sort otherSlugs) (slug, e)
 
-  notFound pageNotFound
+    notFound pageNotFound
 
 visibleCat ∷ (CategoryName, Maybe (Page (EntrySlug, Entry))) → Bool
 visibleCat (slug, Just cat) = (not . null $ items cat)

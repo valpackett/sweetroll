@@ -51,7 +51,7 @@ library
       , wai
       , wai-extra
       , wai-middleware-static
-      , scotty == 0.9.*
+      , scotty
       , simple-templates == 0.8.*
       , clay
       , network-uri >= 2.6
@@ -64,11 +64,11 @@ library
       , http-link-header
       , html-conduit
       , xml-lens
-      , oauthenticated == 0.1.3.3
+      , oauthenticated
       , crypto-random
       , async
       , highlighting-kate
-      , pandoc == 1.13.*
+      , pandoc
       , pandoc-types
       , raw-strings-qq == 1.*
       , file-embed

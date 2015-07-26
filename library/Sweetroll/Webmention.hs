@@ -22,7 +22,6 @@ import           Network.HTTP.Client.Conduit
 import           Network.URI
 import           Sweetroll.Util
 import           Sweetroll.Monads
-import           Sweetroll.Conf
 
 hLink ∷ HeaderName
 hLink = "Link"
@@ -72,7 +71,7 @@ sendWebmentions e = mapM (sendWebmention from) links
         contentLinks = PW.query extractLink . pandocContent $ entryContent e
         from = unpack . orEmpty . entryUrl $ e
         pandocContent ((PandocContent p) : _) = p
-        pandocContent ((TextContent t)   : _) = P.readMarkdown pandocReaderOptions . unpack $ t
-        pandocContent _ = P.readMarkdown pandocReaderOptions ""
+        pandocContent ((TextContent t)   : _) = (pandocRead P.readMarkdown) $ unpack t
+        pandocContent _ = (pandocRead P.readMarkdown) ""
         extractLink (P.Link _ (u, _)) = [u]
         extractLink _ = []

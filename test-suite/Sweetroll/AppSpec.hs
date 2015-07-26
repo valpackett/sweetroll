@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Sweetroll.AppSpec (spec) where
 

@@ -15,6 +15,7 @@ import           Data.Stringable
 import           Data.Maybe (fromJust)
 import           Data.Setters
 import           Data.Default
+import           Data.Aeson (Value, object, (.=))
 import           Data.Aeson.TH
 import           Data.FileEmbed
 import           Web.Simple.Templates.Language
@@ -44,6 +45,7 @@ data SweetrollConf = SweetrollConf
   ,               httpsWorks ∷ Bool
   ,             itemsPerPage ∷ Int
   ,           titleSeparator ∷ Text
+  ,              indieConfig ∷ Value
   ,   indieAuthRedirEndpoint ∷ String
   ,   indieAuthCheckEndpoint ∷ String -- Separated for debugging
   ,                  pushHub ∷ String
@@ -100,14 +102,18 @@ instance Default SweetrollConf where
       , httpsWorks               = False
       , domainName               = ""
       , itemsPerPage             = 20
+      , titleSeparator           = " / "
+      , indieConfig              = object [ "reply"    .= asText "https://quill.p3k.io/new?reply={url}"
+                                          , "bookmark" .= asText "https://quill.p3k.io/bookmark?url={url}"
+                                          , "like"     .= asText "https://quill.p3k.io/favorite?url={url}"
+                                          , "repost"   .= asText "https://quill.p3k.io/repost?url={url}" ]
       , indieAuthCheckEndpoint   = "https://indieauth.com/auth"
       , indieAuthRedirEndpoint   = "https://indieauth.com/auth"
       , pushHub                  = "https://pubsubhubbub.superfeedr.com"
       , pushDelay                = 1
       , adnApiHost               = "https://api.app.net"
       , twitterApiHost           = "https://api.twitter.com/1.1"
-      , testMode                 = False
-      , titleSeparator           = " / " }
+      , testMode                 = False }
 
 instance Default SweetrollSecrets where
   def = SweetrollSecrets {

@@ -16,6 +16,7 @@ import           Gitson
 import           Gitson.Util (maybeReadIntString)
 import           Data.Maybe (fromJust)
 import           Data.Stringable
+import           Data.Aeson (encode)
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
 import           Data.Time.Lens
@@ -58,6 +59,8 @@ app = do
   get "/micropub" $ checkAuth' $ showSyndication $ showAuth
 
   post "/micropub" $ checkAuth' $ doMicropub
+
+  get "/indie-config" $ indieConfigHtml conf
 
   get "/" $ do
     addLinks $ (Link (mkUrl base []) [(Rel, "self")]) : links
@@ -136,3 +139,9 @@ utcToHTTPDate d = defaultHTTPDate {
 utcFromHTTPDate ∷ HTTPDate → UTCTime
 utcFromHTTPDate d = (UTCTime day 0) & hours .~ (fromIntegral $ hdHour d) & minutes .~ (fromIntegral $ hdMinute d) & seconds .~ (fromIntegral $ hdSecond d)
   where day = fromGregorian (fromIntegral $ hdYear d) (fromIntegral $ hdMonth d) (fromIntegral $ hdDay d)
+
+indieConfigHtml ∷ SweetrollConf → SweetrollAction ()
+indieConfigHtml conf =
+  raw $ "<!DOCTYPE html><meta charset=utf-8><script>(window.parent!==window)?window.parent.postMessage(JSON.stringify("
+         ++ encode (indieConfig conf) ++ "),'*'):window.navigator.registerProtocolHandler('web+action','"
+         ++ (toLazyByteString $ mkUrl (baseUrl conf) ["indie-config"]) ++ "?handler=%s','Sweetroll')</script>"

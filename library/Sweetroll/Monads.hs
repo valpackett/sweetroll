@@ -26,6 +26,8 @@ import           Sweetroll.Conf
 -- XXX: Temporary workaround because servant doesn't pass context yet
 jwtSecret ∷ IORef Text
 jwtSecret = unsafePerformIO $ newIORef ""
+{-# NOINLINE jwtSecret #-}
+
 
 data SweetrollCtx = SweetrollCtx
   { _ctxConf     ∷ SweetrollConf
@@ -67,54 +69,38 @@ initCtx conf tpls secs = do
                       , _ctxHttpMgr  = httpClientMgr
                       , _ctxRng      = sysRandom }
 
-getCtx ∷ MonadSweetroll m ⇒ m SweetrollCtx
+getCtx ∷ MonadSweetroll μ ⇒ μ SweetrollCtx
 getCtx = ask
 
-getConf ∷ MonadSweetroll m ⇒ m SweetrollConf
+getConf ∷ MonadSweetroll μ ⇒ μ SweetrollConf
 getConf = asks _ctxConf
 
-getConfOpt ∷ MonadSweetroll m ⇒ (SweetrollConf → a) → m a
+getConfOpt ∷ MonadSweetroll μ ⇒ (SweetrollConf → α) → μ α
 getConfOpt f = asks $ f . _ctxConf
 
-getTpls ∷ MonadSweetroll m ⇒ m SweetrollTemplates
+getTpls ∷ MonadSweetroll μ ⇒ μ SweetrollTemplates
 getTpls = asks _ctxTpls
 
-getSecs ∷ MonadSweetroll m ⇒ m SweetrollSecrets
+getSecs ∷ MonadSweetroll μ ⇒ μ SweetrollSecrets
 getSecs = asks _ctxSecs
 
-getSec ∷ MonadSweetroll m ⇒ (SweetrollSecrets → a) → m a
+getSec ∷ MonadSweetroll μ ⇒ (SweetrollSecrets → α) → μ α
 getSec f = asks $ f . _ctxSecs
 
-getHostInfo ∷ MonadSweetroll m ⇒ m [Pair]
+getHostInfo ∷ MonadSweetroll μ ⇒ μ [Pair]
 getHostInfo = asks _ctxHostInfo
 
-getRng ∷ MonadSweetroll m ⇒ m SystemRNG
+getRng ∷ MonadSweetroll μ ⇒ μ SystemRNG
 getRng = asks _ctxRng
 
 instance H.HasHttpManager SweetrollCtx where
   getHttpManager = _ctxHttpMgr
 
 -- | Convenient wrapper around Network.HTTP requests.
-request ∷ (MonadSweetroll m, MonadIO m, Stringable a) ⇒ H.Request → m (H.Response a)
+request ∷ (MonadSweetroll μ, MonadIO μ, Stringable α) ⇒ H.Request → μ (H.Response α)
 request req = do
   resp ← H.httpLbs req
   return $ resp { H.responseBody = fromLazyByteString $ H.responseBody resp }
 
-parseUrlP ∷ (MonadIO m) ⇒ String → String → m H.Request
+parseUrlP ∷ (MonadIO μ) ⇒ String → String → μ H.Request
 parseUrlP postfix url = liftIO . H.parseUrl $ url ++ postfix
-
--- | Returns an action that writes data as application/x-www-form-urlencoded.
--- showForm ∷ (Stringable a) ⇒ [(a, a)] → SweetrollAction ()
--- showForm x = do
---   status ok200
---   setHeader "Content-Type" "application/x-www-form-urlencoded; charset=utf-8"
---   raw . toLazyByteString . writeForm $ x
-
--- created ∷ LText → SweetrollAction ()
--- created url = status created201 >> setHeader "Location" url
-
--- updated ∷ LText → SweetrollAction ()
--- updated url = status ok200 >> setHeader "Location" url
-
--- unauthorized ∷ SweetrollAction ()
--- unauthorized = status unauthorized401

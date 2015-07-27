@@ -5,7 +5,6 @@ module Sweetroll.Api where
 
 import           ClassyPrelude
 import           Control.Monad.Except (throwError)
--- import           Data.Stringable
 import           Data.Maybe (fromJust)
 import           Data.Microformats2
 import           Data.Microformats2.Aeson ()
@@ -14,7 +13,6 @@ import           Network.Wai.Middleware.Autohead
 import           Network.Wai.Middleware.Static
 import           Network.Wai.Middleware.RequestLogger
 import           Servant
--- import           Servant.Server.Internal
 import           Gitson
 import           Gitson.Util (maybeReadIntString)
 import           Sweetroll.Conf
@@ -95,12 +93,12 @@ initSweetrollApp conf tpls secs = initCtx conf tpls secs >>= return . sweetrollA
 readSlug ∷ String → EntrySlug
 readSlug x = drop 1 $ fromMaybe "-404" $ snd <$> maybeReadIntString x -- errors should never happen
 
-readEntry ∷ MonadIO i ⇒ CategoryName → String → i (Maybe (EntrySlug, Entry))
+readEntry ∷ MonadIO μ ⇒ CategoryName → String → μ (Maybe (EntrySlug, Entry))
 readEntry category fname = liftIO $ do
   doc ← readDocument category fname ∷ IO (Maybe Entry)
   return $ (\x → (readSlug fname, x)) <$> doc
 
-readCategory ∷ MonadIO i ⇒ Int → Int → CategoryName → i (CategoryName, Maybe (Page (EntrySlug, Entry)))
+readCategory ∷ MonadIO μ ⇒ Int → Int → CategoryName → μ (CategoryName, Maybe (Page (EntrySlug, Entry)))
 readCategory perPage pageNumber c = liftIO $ do
   slugs ← listDocumentKeys c
   case paginate True perPage pageNumber $ sort slugs of

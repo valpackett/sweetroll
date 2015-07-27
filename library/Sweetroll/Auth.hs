@@ -47,13 +47,13 @@ fromHeader "" = Nothing
 fromHeader au = return $ drop 7 au -- 7 chars in "Bearer "
 
 getAuth ∷ JWT VerifiedJWT → Sweetroll [(Text, Text)]
-getAuth token = return $ [("me", S.toText meVal)]
+getAuth token = return [("me", S.toText meVal)]
   where meVal = case sub $ claims token of
                   Just me → show me
                   _ → ""
 
 signAccessToken ∷ Text → Text → Text → UTCTime → Text
-signAccessToken key domain me now = encodeSigned HS256 (secret $ key) t
+signAccessToken key domain me now = encodeSigned HS256 (secret key) t
   where t = def { iss = stringOrURI domain
                 , sub = stringOrURI me
                 , iat = intDate $ utcTimeToPOSIXSeconds now }
@@ -75,7 +75,7 @@ postLogin me code redirectUri clientId state = do
     let reqBody = writeForm [
                     ("code",         opt code)
                   , ("redirect_uri", opt redirectUri)
-                  , ("client_id",    fromMaybe (baseUrl conf) $ clientId)
+                  , ("client_id",    fromMaybe (baseUrl conf) clientId)
                   , (asText "state", opt state) ]
     -- liftIO $ putStrLn $ toText reqBody
     indieAuthReq ← liftIO $ HC.parseUrl $ indieAuthCheckEndpoint conf

@@ -28,7 +28,7 @@ type EntrySlug = String
 --
 -- >>> parseISOTime "yolo"
 -- Nothing
-parseISOTime ∷ Stringable a ⇒ a → Maybe UTCTime
+parseISOTime ∷ Stringable α ⇒ α → Maybe UTCTime
 parseISOTime x = headMay =<< decodeTime ("[\"" ++ toLazyByteString x ++ "\"]")
   where decodeTime y = decode y ∷ Maybe [UTCTime]
 
@@ -36,7 +36,7 @@ parseISOTime x = headMay =<< decodeTime ("[\"" ++ toLazyByteString x ++ "\"]")
 --
 -- >>> lookupFirst ["hdd", "ram"] [("cpus", 1), ("ram", 1024)]
 -- Just 1024
-lookupFirst ∷ Eq a ⇒ [a] → [(a, b)] → Maybe b
+lookupFirst ∷ Eq α ⇒ [α] → [(α, β)] → Maybe β
 lookupFirst (x:xs) ps = case lookup x ps of
   Nothing → lookupFirst xs ps
   m → m
@@ -46,7 +46,7 @@ lookupFirst [] _ = Nothing
 --
 -- >>> slugify "Hello & World!"
 -- "hello-and-world"
-slugify ∷ Stringable a ⇒ a → a
+slugify ∷ Stringable α ⇒ α → α
 slugify = fromLazyText . filter (not . isSpace) . intercalate "-" . words .
           replace "&" "and"  . replace "+" "plus" . replace "%" "percent" .
           replace "<" "lt"   . replace ">" "gt"   . replace "=" "eq" .
@@ -64,7 +64,7 @@ slugify = fromLazyText . filter (not . isSpace) . intercalate "-" . words .
 --
 -- >>> parseTags ""
 -- []
-parseTags ∷ Stringable a ⇒ a → [a]
+parseTags ∷ Stringable α ⇒ α → [α]
 parseTags ts = mapMaybe (headMay . snd) $ scan r ts
   where r = [re|([^,]+),?\s?|]
 
@@ -72,12 +72,12 @@ parseTags ts = mapMaybe (headMay . snd) $ scan r ts
 --
 -- >>> mkUrl "http://localhost:4200" ["yolo", "lol"]
 -- "http://localhost:4200/yolo/lol"
-mkUrl ∷ (IsString s, Monoid s) ⇒ s → [s] → s
+mkUrl ∷ (IsString α, Monoid α) ⇒ α → [α] → α
 mkUrl base parts = intercalate "/" $ base : parts
 
 -- | Encodes key-value data as application/x-www-form-urlencoded.
 writeForm ∷ (Stringable α, Stringable β, Stringable γ) ⇒ [(α, β)] → γ
-writeForm = fromLazyByteString . mimeRender (Proxy ∷ Proxy FormUrlEncoded) . map (\(k, v) → (toText k, toText v))
+writeForm = fromLazyByteString . mimeRender (Proxy ∷ Proxy FormUrlEncoded) . map (toText *** toText)
 
 derefEntry ∷ EntryReference → Maybe LText
 derefEntry (EntryEntry e) = headMay . entryUrl $ e

@@ -169,7 +169,7 @@ render tplf vr = do
               , "website_title"  .= siteName conf
               , "meta_title"     .= intercalate (titleSeparator conf) (titleParts vr ++ [siteName conf])
               ]
-  return $ renderTemplate (layoutTemplate tpls) helpers $ ctx
+  return $ renderTemplate (layoutTemplate tpls) helpers ctx
 
 helpers ∷ FunctionMap
 helpers = mapFromList [ ("syndicationName", toFunction syndicationName) ]

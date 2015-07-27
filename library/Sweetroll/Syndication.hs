@@ -30,10 +30,10 @@ trimmedText l entry = (isArticle, if isTrimmed then take (l - 1) t ++ "…" else
                            n : _ → (True, n)
                            _ → (False, renderContent writePlain entry)
 
-ifSuccess ∷ ∀ (m ∷ * → *) body a. Monad m ⇒ Response body → Maybe a → m (Maybe a)
+ifSuccess ∷ ∀ (μ ∷ * → *) body α. Monad μ ⇒ Response body → Maybe α → μ (Maybe α)
 ifSuccess resp what = return $ if not $ statusIsSuccessful $ responseStatus resp then Nothing else what
 
-postAppDotNet ∷ (MonadSweetroll m, MonadIO m) ⇒ Entry → m (Maybe LText)
+postAppDotNet ∷ (MonadSweetroll μ, MonadIO μ) ⇒ Entry → μ (Maybe LText)
 postAppDotNet entry = do
   req ← parseUrlP "/posts" =<< getConfOpt adnApiHost
   bearer ← getSec adnApiToken
@@ -55,10 +55,10 @@ postAppDotNet entry = do
   putStrLn $ "App.net status for <" ++ S.toText pUrl ++ ">: " ++ (S.toText . show . statusCode $ responseStatus resp)
   ifSuccess resp $ appDotNetUrl $ decode $ responseBody resp
 
-appDotNetUrl ∷ (S.Stringable s) ⇒ Maybe Value → Maybe s
+appDotNetUrl ∷ (S.Stringable α) ⇒ Maybe Value → Maybe α
 appDotNetUrl x = (return . S.fromText) =<< (^? key "data" . key "canonical_url" . _String) =<< x
 
-postTwitter ∷ (MonadSweetroll m, MonadIO m) ⇒ Entry → m (Maybe LText)
+postTwitter ∷ (MonadSweetroll μ, MonadIO μ) ⇒ Entry → μ (Maybe LText)
 postTwitter entry = do
   req ← parseUrlP "/statuses/update.json" =<< getConfOpt twitterApiHost
   secs ← getSecs
@@ -81,7 +81,7 @@ postTwitter entry = do
 --
 -- >>> (tweetUrl $ decode $ fromString "{\"id_str\": \"1234\", \"user\": {\"screen_name\": \"username\"}}") :: Maybe String
 -- Just "https://twitter.com/username/status/1234"
-tweetUrl ∷ (S.Stringable s) ⇒ Maybe Value → Maybe s
+tweetUrl ∷ (S.Stringable α) ⇒ Maybe Value → Maybe α
 tweetUrl root' = do
   root ← root'
   tweetId ← root ^? key "id_str" . _String

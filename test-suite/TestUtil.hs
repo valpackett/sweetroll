@@ -13,7 +13,7 @@ import           Network.HTTP.Types
 import           Sweetroll.Conf (secretKey)
 import           Sweetroll.Auth (signAccessToken)
 
-contains ∷ EqSequence a ⇒ a → a → Bool
+contains ∷ EqSequence α ⇒ α → α → Bool
 contains = flip isInfixOf
 
 get' ∷ Request → ByteString → Application → IO SResponse

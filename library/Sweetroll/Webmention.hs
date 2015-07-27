@@ -26,7 +26,7 @@ import           Sweetroll.Monads
 hLink ∷ HeaderName
 hLink = "Link"
 
-isWebmentionRel ∷ (EqSequence seq, IsString seq) ⇒ seq → Bool
+isWebmentionRel ∷ (EqSequence α, IsString α) ⇒ α → Bool
 isWebmentionRel = isInfixOf "webmention"
 
 -- | Discovers a webmention endpoint for an address.
@@ -67,11 +67,11 @@ sendWebmention from to = do
 sendWebmentions ∷ Entry → Sweetroll [(String, Bool)]
 sendWebmentions e = mapM (sendWebmention from) links
   where links = S.toList . S.fromList $ contentLinks ++ metaLinks
-        metaLinks = map unpack . mapMaybe derefEntry . catMaybes . map headMay $ [entryInReplyTo e, entryLikeOf e, entryRepostOf e]
+        metaLinks = map unpack . mapMaybe derefEntry . mapMaybe headMay $ [entryInReplyTo e, entryLikeOf e, entryRepostOf e]
         contentLinks = PW.query extractLink . pandocContent $ entryContent e
         from = unpack . orEmpty . entryUrl $ e
-        pandocContent ((PandocContent p) : _) = p
-        pandocContent ((TextContent t)   : _) = (pandocRead P.readMarkdown) $ unpack t
-        pandocContent _ = (pandocRead P.readMarkdown) ""
+        pandocContent (PandocContent p : _) = p
+        pandocContent (TextContent t   : _) = pandocRead P.readMarkdown $ unpack t
+        pandocContent _ = pandocRead P.readMarkdown ""
         extractLink (P.Link _ (u, _)) = [u]
         extractLink _ = []

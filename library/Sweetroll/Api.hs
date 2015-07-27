@@ -17,7 +17,6 @@ import           Network.URI
 import           Network.Wai
 import           Network.Wai.Middleware.Autohead
 import           Network.Wai.Middleware.Static
-import           Network.Wai.Middleware.RequestLogger
 import           Servant
 import           Gitson
 import           Gitson.Util (maybeReadIntString)
@@ -93,8 +92,7 @@ sweetrollAPI = Proxy
 
 sweetrollApp ∷ SweetrollCtx → Application
 sweetrollApp ctx = foldr ($) (sweetrollApp' ctx) [
-                     logStdoutDev
-                   , staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
+                     staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
                    , autohead]
   where sweetrollApp' ∷ SweetrollCtx → Application
         sweetrollApp' = serve sweetrollAPI . sweetrollServer

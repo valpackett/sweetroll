@@ -5,6 +5,7 @@ module Main (main) where
 
 import qualified Network.Wai.Handler.CGI as CGI
 import           Network.Wai.Handler.Warp
+import           Network.Wai.Middleware.RequestLogger
 import qualified Network.Socket as S
 import           System.Console.ANSI
 import           Control.Applicative
@@ -29,6 +30,7 @@ data AppOptions = AppOptions
   { port                     ∷ Int
   , socket                   ∷ String
   , protocol                 ∷ String
+  , devlogging               ∷ Maybe Bool
   , domain                   ∷ Maybe String
   , indieauthc               ∷ Maybe String
   , indieauthr               ∷ Maybe String
@@ -49,6 +51,7 @@ instance Options AppOptions where
     <*> simpleOption "port"              3000                                  "The port the app should listen for connections on (for http protocol)"
     <*> simpleOption "socket"            "/var/run/sweetroll/sweetroll.sock"   "The UNIX domain socket the app should listen for connections on (for unix protocol)"
     <*> simpleOption "protocol"          "http"                                "The protocol for the server. One of: http, unix, cgi"
+    <*> simpleOption "devlogging"        Nothing                               "Whether development logging should be enabled"
     <*> simpleOption "domain"            Nothing                               "The domain on which the server will run"
     <*> simpleOption "indieauthc"        Nothing                               "The IndieAuth check endpoint to use"
     <*> simpleOption "indieauthr"        Nothing                               "The IndieAuth redirect endpoint to use"
@@ -115,12 +118,15 @@ main = runCommand $ \opts args → do
   , twitterAccessSecret            = encodeUtf8 . T.pack . twiaccsecret $ opts }
 
   tpls ← loadTemplates
-  let app = initSweetrollApp conf tpls secs
+  let app' = initSweetrollApp conf tpls secs
+      app = case devlogging opts of
+              Just True → return . logStdoutDev =<< app'
+              _ → app'
   case protocol opts of
     "http" → putSweetroll >> app >>= runSettings warpSettings
     "unix" → putSweetroll >>
       bracket (bindPath $ socket opts)
               S.close
               (\socket → app >>= runSettingsSocket warpSettings socket)
-    "cgi" → app >>= CGI.run
+    "cgi" → app' >>= CGI.run
     _ → putStrLn $ "Unsupported protocol: " ++ protocol opts

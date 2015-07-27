@@ -7,7 +7,7 @@ homepage:        https://github.com/myfreeweb/sweetroll
 author:          Greg V
 copyright:       2014-2015 Greg V <greg@unrelenting.technology>
 maintainer:      greg@unrelenting.technology
-license:         Unlicense
+license:         PublicDomain
 license-file:    UNLICENSE
 build-type:      Simple
 cabal-version:   >= 1.18

@@ -1,4 +1,5 @@
 :set -itest-suite/ -package hspec -package Glob -package doctest -package directory -package case-insensitive
+:load test-suite/TestUtil.hs
 :def dtest  \_ -> return $ ":load test-suite/DocTest.hs\n:reload\n:ctags\n:main"
 :def test   \_ -> return $ ":load test-suite/Spec.hs\n:reload\n:ctags\n:main --color"
 :def retest \_ -> return $ ":load test-suite/Spec.hs\n:reload\n:ctags\n:main --color --rerun"

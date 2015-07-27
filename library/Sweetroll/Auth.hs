@@ -1,78 +1,86 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
+{-# LANGUAGE TypeOperators, TypeFamilies, FlexibleInstances, ScopedTypeVariables #-}
 
 -- | The IndieAuth/rel-me-auth implementation, using JSON Web Tokens.
 module Sweetroll.Auth (
-  checkAuth
-, showAuth
-, makeAccessToken
-, doIndieAuth
+  JWT
+, VerifiedJWT
+, AuthProtected
+, getAuth
+, postLogin
+, signAccessToken
 ) where
 
 import           ClassyPrelude
-import           Data.Time.Clock.POSIX
-import           Data.Stringable
-import           Web.Scotty.Trans hiding (request)
+import           Control.Monad.Except (throwError)
+import           Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
+import           Data.Foldable (asum)
+import qualified Data.Stringable as S
+import qualified Data.List as L
 import           Web.JWT hiding (header)
-import           Network.HTTP.Types.Status
 import           Network.HTTP.Types
-import           Network.HTTP.Client
-import           Sweetroll.Util
+import qualified Network.HTTP.Client as HC
+import qualified Network.Wai as Wai
+import           Servant
+import           Servant.Server.Internal (succeedWith)
 import           Sweetroll.Monads
 import           Sweetroll.Conf
+import           Sweetroll.Util
 
-getAccessToken ∷ SweetrollAction Text
-getAccessToken = do
-  allParams ← params
-  tokenHeader ← header "Authorization" >>= \x → return $ fromMaybe "" $ drop 7 <$> x -- Drop "Bearer "
-  return $ toStrict $ fromMaybe tokenHeader $ findByKey allParams "access_token"
+data AuthProtected
 
-checkAuth ∷ SweetrollAction () → SweetrollAction () → SweetrollAction ()
-checkAuth onFail act = do
-  token ← getAccessToken
-  sKey ← getSec secretKey
-  let verResult = decodeAndVerifySignature (secret sKey) token
-  case verResult of
-    Just _ → act
-    _ → onFail
+instance HasServer rest ⇒ HasServer (AuthProtected :> rest) where
+  type ServerT (AuthProtected :> rest) α = JWT VerifiedJWT → ServerT rest α
 
-showAuth ∷ SweetrollAction ()
-showAuth = do
-  token ← getAccessToken
-  case map claims $ decode token of
-    Just cs →
-      showForm [("me", meVal)]
-          where meVal = case sub cs of
-                          Just me → show me
-                          _ → ""
-    _ → status unauthorized401
+  route Proxy a req respond =
+    case asum [ L.lookup hAuthorization (Wai.requestHeaders req) >>= fromHeader
+              , join $ L.lookup "access_token" $ Wai.queryString req ] of
+      Nothing → respond . succeedWith $ Wai.responseLBS status401 [] "Authorization/access_token not found."
+      Just tok → do
+        sec ← readIORef jwtSecret
+        case decodeAndVerifySignature (secret sec) (S.toText tok) of
+          Nothing → respond . succeedWith $ Wai.responseLBS status401 [] "Invalid auth token."
+          Just decodedToken → route (Proxy ∷ Proxy rest) (a decodedToken) req respond
 
-makeAccessToken ∷ Text → SweetrollAction ()
+fromHeader ∷ ByteString → Maybe ByteString
+fromHeader "" = Nothing
+fromHeader au = return $ drop 7 au -- 7 chars in "Bearer "
+
+getAuth ∷ JWT VerifiedJWT → Sweetroll [(Text, Text)]
+getAuth token = return $ [("me", S.toText meVal)]
+  where meVal = case sub $ claims token of
+                  Just me → show me
+                  _ → ""
+
+signAccessToken ∷ Text → Text → Text → UTCTime → Text
+signAccessToken key domain me now = encodeSigned HS256 (secret $ key) t
+  where t = def { iss = stringOrURI domain
+                , sub = stringOrURI me
+                , iat = intDate $ utcTimeToPOSIXSeconds now }
+
+makeAccessToken ∷ Text → Sweetroll [(Text, Text)]
 makeAccessToken me = do
   conf ← getConf
   secs ← getSecs
   now ← liftIO getCurrentTime
-  let t = def { iss = stringOrURI $ domainName conf
-              , sub = stringOrURI me
-              , iat = intDate $ utcTimeToPOSIXSeconds now }
-      t' = encodeSigned HS256 (secret $ secretKey secs) t
-  showForm [("access_token", t'), ("scope", "post"), ("me", me)]
+  return [ ("access_token", signAccessToken (secretKey secs) (domainName conf) me now)
+         , ("scope", "post"), ("me", me) ]
 
-doIndieAuth ∷ SweetrollAction () → SweetrollAction ()
-doIndieAuth onFail = do
+postLogin ∷ Maybe Text → Maybe Text → Maybe Text → Maybe Text → Maybe Text → Sweetroll [(Text, Text)]
+postLogin me code redirectUri clientId state = do
   conf ← getConf
-  allParams ← params
-  let par x = toStrict <$> findByKey allParams x
-      par' = fromMaybe "" . par
-      valid = makeAccessToken $ par' "me"
+  let valid = makeAccessToken $ fromMaybe "unknown" me
+      opt = fromMaybe ""
   if testMode conf then valid else do
-    let reqBody = writeForm [ ("code",         par' "code")
-                            , ("redirect_uri", par' "redirect_uri")
-                            , ("client_id",    fromMaybe (baseUrl conf) $ par "client_id")
-                            , ("state",        par' "state") ]
-    liftIO $ putStrLn $ toText reqBody
-    indieAuthReq ← liftIO $ parseUrl $ indieAuthCheckEndpoint conf
-    resp ← request (indieAuthReq { method = "POST"
-                                  , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ] -- "indieauth suddenly stopped working" *facepalm*
-                                  , requestBody = RequestBodyBS reqBody }) ∷ SweetrollAction (Response LByteString)
-    if responseStatus resp /= ok200 then onFail
-    else valid
+    let reqBody = writeForm [
+                    ("code",         opt code)
+                  , ("redirect_uri", opt redirectUri)
+                  , ("client_id",    fromMaybe (baseUrl conf) $ clientId)
+                  , (asText "state", opt state) ]
+    -- liftIO $ putStrLn $ toText reqBody
+    indieAuthReq ← liftIO $ HC.parseUrl $ indieAuthCheckEndpoint conf
+    resp ← request (indieAuthReq { HC.method = "POST"
+                                 , HC.requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ] -- "indieauth suddenly stopped working" *facepalm*
+                                 , HC.requestBody = HC.RequestBodyBS reqBody }) ∷ Sweetroll (HC.Response LByteString)
+    if HC.responseStatus resp == ok200 then valid
+    else throwError err401

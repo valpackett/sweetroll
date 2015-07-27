@@ -2,21 +2,30 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
 {-# LANGUAGE PackageImports, ConstraintKinds, FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, UndecidableInstances #-}
+{-# LANGUAGE RankNTypes, TypeOperators, TypeFamilies, DataKinds #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | Monads that power Sweetroll and some common basic functions around them.
 module Sweetroll.Monads (module Sweetroll.Monads) where
 
 import           ClassyPrelude
+import           System.IO.Unsafe
+import           Control.Monad.Base
+import           Control.Monad.Reader
+import           Control.Monad.Except
+import           Control.Monad.Trans.Either
+import           Control.Monad.Trans.Resource
+import           Control.Monad.Trans.Control
 import           Data.Stringable hiding (length)
 import           Data.Aeson.Types
-import           Control.Monad.Reader
-import           Network.Wai (Application)
-import           Network.HTTP.Types
 import qualified Network.HTTP.Client.Conduit as H
 import "crypto-random" Crypto.Random
-import           Web.Scotty.Trans hiding (request)
-import           Sweetroll.Util (writeForm)
+import           Servant
 import           Sweetroll.Conf
+
+-- XXX: Temporary workaround because servant doesn't pass context yet
+jwtSecret ∷ IORef Text
+jwtSecret = unsafePerformIO $ newIORef ""
 
 data SweetrollCtx = SweetrollCtx
   { _ctxConf     ∷ SweetrollConf
@@ -26,21 +35,29 @@ data SweetrollCtx = SweetrollCtx
   , _ctxHttpMgr  ∷ H.Manager
   , _ctxRng      ∷ SystemRNG }
 
-type MonadSweetroll  = MonadReader SweetrollCtx
-type SweetrollBase   = ReaderT SweetrollCtx IO
-type SweetrollAction = ActionT LText SweetrollBase
-type SweetrollApp    = ReaderT SweetrollCtx (ScottyT LText SweetrollBase) ()
+type MonadSweetroll = MonadReader SweetrollCtx
 
-instance (MonadReader r m, ScottyError e) ⇒ MonadReader r (ActionT e m) where
-  ask = lift ask
+newtype Sweetroll α = Sweetroll {
+  runSweetroll ∷ ReaderT SweetrollCtx (ExceptT ServantErr IO) α
+} deriving (Functor, Applicative, Monad, MonadIO, MonadBase IO, MonadThrow, MonadError ServantErr,
+            MonadSweetroll)
 
--- instance (MonadReader r m, ScottyError e) ⇒ MonadReader r (ScottyT e m) where
---   ask = lift ask
+instance MonadBaseControl IO Sweetroll where
+  type StM Sweetroll α = StM (ReaderT SweetrollCtx (ExceptT ServantErr IO)) α
+  liftBaseWith f = Sweetroll $ liftBaseWith $ \r → f $ r . runSweetroll
+  restoreM       = Sweetroll . restoreM
+
+runSweetrollEither ∷ SweetrollCtx → Sweetroll α → EitherT ServantErr IO α
+runSweetrollEither ctx sweet = EitherT $ liftIO $ runExceptT $ runReaderT (runSweetroll sweet) ctx
+
+sweetrollToEither ∷ SweetrollCtx → Sweetroll :~> EitherT ServantErr IO
+sweetrollToEither ctx = Nat $ runSweetrollEither ctx
 
 initCtx ∷ SweetrollConf → SweetrollTemplates → SweetrollSecrets → IO SweetrollCtx
 initCtx conf tpls secs = do
   httpClientMgr ← H.newManager
   sysRandom ← cprgCreate <$> createEntropyPool
+  writeIORef jwtSecret $ secretKey secs
   return SweetrollCtx { _ctxConf     = conf
                       , _ctxTpls     = tpls
                       , _ctxSecs     = secs
@@ -50,14 +67,8 @@ initCtx conf tpls secs = do
                       , _ctxHttpMgr  = httpClientMgr
                       , _ctxRng      = sysRandom }
 
-runSweetrollBase ∷ (MonadSweetroll m, MonadIO m) ⇒ SweetrollBase a → m a
-runSweetrollBase x = ask >>= liftIO . runReaderT x
-
-sweetrollApp ∷ SweetrollConf → SweetrollTemplates → SweetrollSecrets → SweetrollApp → IO Application
-sweetrollApp conf tpls secs app = do
-  ctx ← initCtx conf tpls secs
-  let run x = runReaderT x ctx
-  scottyAppT run $ run app
+getCtx ∷ MonadSweetroll m ⇒ m SweetrollCtx
+getCtx = ask
 
 getConf ∷ MonadSweetroll m ⇒ m SweetrollConf
 getConf = asks _ctxConf
@@ -93,17 +104,17 @@ parseUrlP ∷ (MonadIO m) ⇒ String → String → m H.Request
 parseUrlP postfix url = liftIO . H.parseUrl $ url ++ postfix
 
 -- | Returns an action that writes data as application/x-www-form-urlencoded.
-showForm ∷ (Stringable a) ⇒ [(a, a)] → SweetrollAction ()
-showForm x = do
-  status ok200
-  setHeader "Content-Type" "application/x-www-form-urlencoded; charset=utf-8"
-  raw . toLazyByteString . writeForm $ x
+-- showForm ∷ (Stringable a) ⇒ [(a, a)] → SweetrollAction ()
+-- showForm x = do
+--   status ok200
+--   setHeader "Content-Type" "application/x-www-form-urlencoded; charset=utf-8"
+--   raw . toLazyByteString . writeForm $ x
 
-created ∷ LText → SweetrollAction ()
-created url = status created201 >> setHeader "Location" url
+-- created ∷ LText → SweetrollAction ()
+-- created url = status created201 >> setHeader "Location" url
 
-updated ∷ LText → SweetrollAction ()
-updated url = status ok200 >> setHeader "Location" url
+-- updated ∷ LText → SweetrollAction ()
+-- updated url = status ok200 >> setHeader "Location" url
 
-unauthorized ∷ SweetrollAction ()
-unauthorized = status unauthorized401
+-- unauthorized ∷ SweetrollAction ()
+-- unauthorized = status unauthorized401

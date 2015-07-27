@@ -30,7 +30,7 @@ isWebmentionRel ∷ (EqSequence seq, IsString seq) ⇒ seq → Bool
 isWebmentionRel = isInfixOf "webmention"
 
 -- | Discovers a webmention endpoint for an address.
-discoverWebmentionEndpoint ∷ URI → Response (Source SweetrollBase ByteString) → SweetrollBase (Maybe URI)
+discoverWebmentionEndpoint ∷ URI → Response (Source Sweetroll ByteString) → Sweetroll (Maybe URI)
 discoverWebmentionEndpoint to r = do
   htmlDoc ← responseBody r $$ sinkDoc
   let findInHeader = lookup hLink (responseHeaders r)
@@ -45,17 +45,17 @@ discoverWebmentionEndpoint to r = do
                 , lnk >>= parseRelativeReference >>= return . (`relativeTo` base) ]
 
 -- | Sends one single webmention.
-sendWebmention ∷ String → String → SweetrollBase (String, Bool)
+sendWebmention ∷ String → String → Sweetroll (String, Bool)
 sendWebmention from to = do
-  tReq ← liftIO $ parseUrl to
+  tReq ← parseUrl to
   endp ← withResponse tReq $ discoverWebmentionEndpoint $ getUri tReq
   case endp of
     Just u → do
       eReq ← liftIO $ parseUrl $ uriToString id u ""
-      let reqBody = writeForm [("source", from), ("target", to)]
+      let reqBody = writeForm [(asText "source", from), ("target", to)]
       eResp ← request eReq { method = "POST"
                            , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
-                           , requestBody = RequestBodyBS reqBody } ∷ SweetrollBase (Response String)
+                           , requestBody = RequestBodyBS reqBody } ∷ Sweetroll (Response String)
       putStrLn $ "Webmention status for <" ++ (asText . pack $ to) ++ ">: " ++ (toText . show . statusCode $ responseStatus eResp)
       return (to, responseStatus eResp == ok200 || responseStatus eResp == accepted202)
     _ → do
@@ -64,7 +64,7 @@ sendWebmention from to = do
 
 -- | Send all webmentions required for an entry, including the ones from
 -- metadata (in-reply-to, like-of, repost-of).
-sendWebmentions ∷ Entry → SweetrollBase [(String, Bool)]
+sendWebmentions ∷ Entry → Sweetroll [(String, Bool)]
 sendWebmentions e = mapM (sendWebmention from) links
   where links = S.toList . S.fromList $ contentLinks ++ metaLinks
         metaLinks = map unpack . mapMaybe derefEntry . catMaybes . map headMay $ [entryInReplyTo e, entryLikeOf e, entryRepostOf e]

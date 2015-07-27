@@ -1,15 +1,21 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
 
 -- | The module responsible for rendering pages into actual HTML
 module Sweetroll.Pages (
-  CategoryName
+  HTML
+, CSS
+, CategoryName
 , EntrySlug
 , ViewResult
 , tplContext
 , titleParts
 , entryView
+, renderEntry
 , catView
+, renderCat
 , indexView
+, renderIndex
 , notFoundView
 , renderContent
 , renderRaw
@@ -18,18 +24,44 @@ module Sweetroll.Pages (
 
 import           ClassyPrelude
 import           Text.Pandoc hiding (Template, renderTemplate)
-import qualified Web.Scotty.Trans as SC
 import           Web.Simple.Templates.Language
+import           Network.HTTP.Media.MediaType
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
+import           Data.Aeson (encode)
 import           Data.Aeson.Types
 import qualified Data.Text.Lazy as LT
 import           Data.List (elemIndex)
+import           Data.Stringable
 import           Safe (atMay)
+import           Servant
 import           Sweetroll.Pagination
 import           Sweetroll.Conf
 import           Sweetroll.Util
 import           Sweetroll.Monads
+
+data HTML
+
+instance Accept HTML where
+  contentType _ = "text" // "html" /: ("charset", "utf-8")
+
+instance MimeRender HTML IndieConfig where
+  mimeRender _ ic =
+    "<!DOCTYPE html><meta charset=utf-8><script>(parent!==window)?parent.postMessage(JSON.stringify("
+    ++ encode ic ++ "),'*'):navigator.registerProtocolHandler('web+action',"
+    ++ "location.protocol+'//'+location.hostname+location.pathname+'?handler=%s','Sweetroll')</script>"
+
+instance MimeRender HTML Text where
+  mimeRender _ = toLazyByteString
+
+data CSS
+
+instance Accept CSS where
+  contentType _ = "text" // "css"
+
+instance Stringable α ⇒ MimeRender CSS α where
+  mimeRender _ = toLazyByteString
+
 
 data ViewResult = ViewResult
   { titleParts           ∷ [Text]
@@ -68,6 +100,10 @@ entryView catName otherSlugs (slug, e) =
           -- TODO: repost/like
           ]
 
+renderEntry ∷ CategoryName → [EntrySlug] → (EntrySlug, Entry) → Sweetroll Text
+renderEntry catName otherSlugs entry =
+  render categoryTemplate $ entryView catName otherSlugs entry
+
 catView ∷ SweetrollTemplates → CategoryName → Page (EntrySlug, Entry) → ViewResult
 catView tpls name page =
   ViewResult { titleParts = [pack name]
@@ -92,6 +128,11 @@ catView tpls name page =
         pageLink n = mconcat ["/", name, "?page=", show n]
         pageLink' = pageLink . fromMaybe 0
 
+renderCat ∷ CategoryName → Page (EntrySlug, Entry) → Sweetroll Text
+renderCat name page = do
+  tpls ← getTpls
+  render categoryTemplate $ catView tpls name page
+
 indexView ∷ SweetrollTemplates → [(CategoryName, Page (EntrySlug, Entry))] → ViewResult
 indexView tpls cats =
   ViewResult { titleParts = []
@@ -99,6 +140,11 @@ indexView tpls cats =
   where ctx = object [
             "categories" .= map (tplContext . uncurry (catView tpls)) cats
           ]
+
+renderIndex ∷ [(CategoryName, Page (EntrySlug, Entry))] → Sweetroll Text
+renderIndex cats = do
+  tpls ← getTpls
+  render indexTemplate $ indexView tpls cats
 
 notFoundView ∷ ViewResult
 notFoundView = ViewResult { titleParts = ["404"], tplContext = object [] }
@@ -112,18 +158,18 @@ renderContent writer e = case headMay $ entryContent e of
 renderRaw ∷ Template → [Pair] → Text
 renderRaw t c = renderTemplate t helpers $ object c
 
-render ∷ (SweetrollTemplates → Template) → ViewResult → SweetrollAction ()
-render tplf stuff = do
+render ∷ (SweetrollTemplates → Template) → ViewResult → Sweetroll Text
+render tplf vr = do
   conf ← getConf
   tpls ← getTpls
   hostInfo ← getHostInfo
   let ctx = object $ hostInfo ++ [
-                "content"        .= renderTemplate (tplf tpls) helpers (tplContext stuff)
+                "content"        .= renderTemplate (tplf tpls) helpers (tplContext vr)
               , "author"         .= renderRaw (authorTemplate tpls) hostInfo
               , "website_title"  .= siteName conf
-              , "meta_title"     .= intercalate (titleSeparator conf) (titleParts stuff ++ [siteName conf])
+              , "meta_title"     .= intercalate (titleSeparator conf) (titleParts vr ++ [siteName conf])
               ]
-  SC.html . fromStrict . renderTemplate (layoutTemplate tpls) helpers $ ctx
+  return $ renderTemplate (layoutTemplate tpls) helpers $ ctx
 
 helpers ∷ FunctionMap
 helpers = mapFromList [ ("syndicationName", toFunction syndicationName) ]

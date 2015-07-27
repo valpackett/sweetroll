@@ -15,10 +15,18 @@ import           Data.Stringable
 import           Data.Maybe (fromJust)
 import           Data.Setters
 import           Data.Default
-import           Data.Aeson (Value, object, (.=))
+import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.FileEmbed
 import           Web.Simple.Templates.Language
+
+newtype IndieConfig = MkIndieConfig Value
+
+instance ToJSON IndieConfig where
+  toJSON (MkIndieConfig v) = toJSON v
+
+instance FromJSON IndieConfig where
+  parseJSON v = return $ MkIndieConfig v
 
 data SweetrollTemplates = SweetrollTemplates
   {           layoutTemplate ∷ Template
@@ -45,7 +53,7 @@ data SweetrollConf = SweetrollConf
   ,               httpsWorks ∷ Bool
   ,             itemsPerPage ∷ Int
   ,           titleSeparator ∷ Text
-  ,              indieConfig ∷ Value
+  ,              indieConfig ∷ IndieConfig
   ,   indieAuthRedirEndpoint ∷ String
   ,   indieAuthCheckEndpoint ∷ String -- Separated for debugging
   ,                  pushHub ∷ String
@@ -103,10 +111,11 @@ instance Default SweetrollConf where
       , domainName               = ""
       , itemsPerPage             = 20
       , titleSeparator           = " / "
-      , indieConfig              = object [ "reply"    .= asText "https://quill.p3k.io/new?reply={url}"
-                                          , "bookmark" .= asText "https://quill.p3k.io/bookmark?url={url}"
-                                          , "like"     .= asText "https://quill.p3k.io/favorite?url={url}"
-                                          , "repost"   .= asText "https://quill.p3k.io/repost?url={url}" ]
+      , indieConfig              = MkIndieConfig $ object [
+                                       "reply"    .= asText "https://quill.p3k.io/new?reply={url}"
+                                     , "bookmark" .= asText "https://quill.p3k.io/bookmark?url={url}"
+                                     , "like"     .= asText "https://quill.p3k.io/favorite?url={url}"
+                                     , "repost"   .= asText "https://quill.p3k.io/repost?url={url}" ]
       , indieAuthCheckEndpoint   = "https://indieauth.com/auth"
       , indieAuthRedirEndpoint   = "https://indieauth.com/auth"
       , pushHub                  = "https://pubsubhubbub.superfeedr.com"

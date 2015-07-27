@@ -1,74 +1,74 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts, TypeFamilies, DataKinds #-}
 
 module Sweetroll.Micropub (
-  doMicropub
+  postMicropub
 ) where
 
 import           ClassyPrelude
+import           Control.Monad.Except (throwError)
 import           Control.Concurrent.Lifted (fork, threadDelay)
 import           Data.Default
 import           Data.Microformats2
 import           Data.Microformats2.Aeson()
-import           Data.Stringable (toText)
+import qualified Data.Stringable as S
 import           Text.Pandoc hiding (Link)
 import qualified Text.Pandoc.Error as PE
 import           Network.HTTP.Client
-import           Network.HTTP.Types
-import           Web.Scotty.Trans hiding (request)
+import qualified Network.HTTP.Types as HT
+import           Servant
 import           Gitson
 import           Sweetroll.Conf
+import           Sweetroll.Auth
 import           Sweetroll.Util
 import           Sweetroll.Monads
 import           Sweetroll.Syndication
 import           Sweetroll.Webmention
 
-doMicropub ∷ SweetrollAction ()
-doMicropub = do
-  h ← param "h"
-  allParams ← params
+postMicropub ∷ [(Text, Text)] → JWT VerifiedJWT → Sweetroll (Headers '[Header "Location" Text] [(Text, Text)])
+postMicropub allParams _ = do
   now ← liftIO getCurrentTime
   isTest ← getConfOpt testMode
   base ← getConfOpt baseUrl
   let category = decideCategory allParams
       slug = decideSlug allParams now
       readerF = pandocRead $ decideReader allParams
-      absUrl = fromStrict . mkUrl base $ map pack [category, slug]
-      create x = transaction "./" $ saveNextDocument category slug x
-      update x = transaction "./" $ saveDocumentByName category slug x
-  case asLText h of
-    "entry" → do
-      let entry = makeEntry allParams now absUrl readerF
+      absUrl = mkUrl base $ map pack [category, slug]
+      create x = liftIO $ transaction "./" $ saveNextDocument category slug x
+      update x = liftIO $ transaction "./" $ saveDocumentByName category slug x
+  case lookup "h" allParams of
+    Just "entry" → do
+      let entry = makeEntry allParams now (S.toLazyText absUrl) readerF
           ifSyndicateTo x y = if any (isInfixOf x . snd) $ filter (isInfixOf "syndicate-to" . fst) allParams then y else return Nothing
       create entry
-      created absUrl
       unless isTest $ do
-        void . fork $ do
+        void $ fork $ do
           threadDelay =<< return . (*1000000) =<< getConfOpt pushDelay
           notifyPuSH []
           notifyPuSH [pack category]
-        void . fork $ do
+        void $ fork $ do
           let ps = [ ifSyndicateTo "app.net"     $ postAppDotNet entry
                    , ifSyndicateTo "twitter.com" $ postTwitter entry ]
           synd ← sequence ps
           let entry' = entry { entrySyndication = catMaybes synd }
           update entry'
-          void . runSweetrollBase $ sendWebmentions entry'
-    _ → status badRequest400
+          void $ sendWebmentions entry'
+      return $ addHeader absUrl $ []
+    _ → throwError err400
 
-decideCategory ∷ [Param] → CategoryName
+decideCategory ∷ [(Text, Text)] → CategoryName
 decideCategory pars | hasPar "name"          = "articles"
                     | hasPar "in-reply-to"   = "replies"
                     | hasPar "like-of"       = "likes"
                     | otherwise              = "notes"
-  where hasPar = isJust . findByKey pars
+  where hasPar = isJust . (flip lookup) pars
 
-decideSlug ∷ [Param] → UTCTime → EntrySlug
-decideSlug pars now = unpack . fromMaybe fallback $ findByKey pars "slug"
-  where fallback = slugify . fromMaybe (formatTimeSlug now) $ findFirstKey pars ["name", "summary"]
+decideSlug ∷ [(Text, Text)] → UTCTime → EntrySlug
+decideSlug pars now = unpack . fromMaybe fallback $ lookup "slug" pars
+  where fallback = slugify . fromMaybe (formatTimeSlug now) $ lookupFirst ["name", "summary"] pars
         formatTimeSlug = pack . formatTime defaultTimeLocale "%Y-%m-%d-%H-%M-%S"
 
-decideReader ∷ [Param] → (ReaderOptions → String → Either PE.PandocError Pandoc)
+decideReader ∷ [(Text, Text)] → (ReaderOptions → String → Either PE.PandocError Pandoc)
 decideReader pars | f == "textile"     = readTextile
                   | f == "org"         = readOrg
                   | f == "rst"         = readRST
@@ -76,9 +76,9 @@ decideReader pars | f == "textile"     = readTextile
                   | f == "latex"       = readLaTeX
                   | f == "tex"         = readLaTeX
                   | otherwise          = readMarkdown
-  where f = fromMaybe "" $ findByKey pars "format"
+  where f = fromMaybe "" $ lookup "format" pars
 
-makeEntry ∷ [Param] → UTCTime → LText → (String → Pandoc) → Entry
+makeEntry ∷ [(Text, Text)] → UTCTime → LText → (String → Pandoc) → Entry
 makeEntry pars now absUrl readerF = def
   { entryName         = par "name"
   , entrySummary      = par "summary"
@@ -91,13 +91,14 @@ makeEntry pars now absUrl readerF = def
   , entryInReplyTo    = UrlEntry <$> par "in-reply-to"
   , entryLikeOf       = UrlEntry <$> par "like-of"
   , entryRepostOf     = UrlEntry <$> par "repost-of" }
-  where par = maybeToList . findByKey pars
+  where par = map S.toLazyText . maybeToList . (flip lookup) pars
 
-notifyPuSH ∷ [Text] → SweetrollAction ()
+notifyPuSH ∷ [Text] → Sweetroll ()
 notifyPuSH url = do
   base ← getConfOpt baseUrl
   req ← parseUrlP "" =<< getConfOpt pushHub
   resp ← request $ req { method = "POST"
-                       , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
-                       , requestBody = RequestBodyBS . writeForm $ [("hub.mode", "publish"), ("hub.url", mkUrl base url)]} ∷ SweetrollAction (Response LByteString)
-  putStrLn $ "PubSubHubbub status: " ++ (toText . show . statusCode . responseStatus $ resp)
+                       , requestHeaders = [ (HT.hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
+                       , requestBody = RequestBodyBS . writeForm $ [ (asText "hub.mode", asText "publish"), ("hub.url", mkUrl base url) ]
+                       } ∷ Sweetroll (Response LByteString)
+  putStrLn $ "PubSubHubbub status: " ++ (S.toText . show . HT.statusCode . responseStatus $ resp)

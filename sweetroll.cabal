@@ -26,7 +26,10 @@ library
       , classy-prelude >= 0.10.3
       , mono-traversable >= 0.8.0
       , transformers
+      , transformers-base
       , mtl
+      , monad-control
+      , resourcet
       , lifted-base
       , containers
       , either
@@ -51,13 +54,15 @@ library
       , wai
       , wai-extra
       , wai-middleware-static
-      , scotty
+      , servant
+      , servant-server
       , simple-templates == 0.8.*
       , clay
       , network-uri >= 2.6
       , network >= 2.6
       , conduit
       , http-types
+      , http-media
       , http-client
       , http-client-tls
       , http-conduit
@@ -74,7 +79,7 @@ library
       , file-embed
     default-language: Haskell2010
     exposed-modules:
-        Sweetroll.App
+        Sweetroll.Api
         Sweetroll.Auth
         Sweetroll.Conf
         Sweetroll.Micropub
@@ -144,7 +149,7 @@ test-suite tests
       , data-default
       , hspec == 2.1.*
     default-language: Haskell2010
-    ghc-options: -threaded -Wall -Werror
+    ghc-options: -threaded -Wall
     hs-source-dirs: test-suite
     main-is: Spec.hs
     other-modules:

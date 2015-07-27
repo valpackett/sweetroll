@@ -5,7 +5,7 @@
 module Sweetroll.Syndication (
   postAppDotNet
 , postTwitter
-, showSyndication
+, getSyndication
 ) where
 
 import           ClassyPrelude
@@ -13,7 +13,6 @@ import           Control.Lens ((^?))
 import           Network.HTTP.Client
 import           Network.HTTP.Types
 import           Network.OAuth
-import           Web.Scotty.Trans (params)
 import           Data.Microformats2
 import qualified Data.Stringable as S
 import           Data.Aeson
@@ -65,7 +64,7 @@ postTwitter entry = do
   secs ← getSecs
   let (_, txt) = trimmedText 100 entry -- TODO: Figure out the number based on mentions of urls/domains in the first (140 - 25) characters
       pUrl = orEmpty . entryUrl $ entry
-      reqBody = writeForm [("status", txt ++ " " ++ pUrl)]
+      reqBody = writeForm [(asText "status", txt ++ " " ++ pUrl)]
       req' = req { method = "POST"
                  , queryString = reqBody -- Yes, queryString... WTF http://ox86.tumblr.com/post/36810273719/twitter-api-1-1-responds-with-status-401-code-32
                  , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8")
@@ -89,9 +88,5 @@ tweetUrl root' = do
   tweetUsr ← root ^? key "user" . key "screen_name" . _String
   return $ S.fromText $ mconcat ["https://twitter.com/", tweetUsr, "/status/", tweetId]
 
-showSyndication ∷ SweetrollAction () → SweetrollAction ()
-showSyndication otherAction = do
-  allParams ← params
-  case findByKey allParams "q" of
-    Just "syndicate-to" → showForm $ map (\x → ("syndicate-to[]", asByteString x)) ["app.net", "twitter.com"]
-    _ → otherAction
+getSyndication ∷ Sweetroll [(Text, Text)]
+getSyndication = return $ map (\x → ("syndicate-to[]", x)) ["app.net", "twitter.com"]

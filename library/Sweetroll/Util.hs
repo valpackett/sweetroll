@@ -2,19 +2,20 @@
 {-# LANGUAGE GADTs, FlexibleContexts, QuasiQuotes #-}
 
 -- | Various functions used inside Sweetroll.
-module Sweetroll.Util (module Sweetroll.Util) where
+module Sweetroll.Util where
 
 import           ClassyPrelude hiding (fromString, headMay)
 import           Data.Text.Lazy (replace, strip)
 import           Data.Char (isSpace)
 import           Data.Aeson (decode)
 import           Data.Stringable hiding (length)
+import           Data.Proxy
 import           Data.Microformats2
-import           Network.HTTP.Types (urlEncode)
 import           Text.Regex.PCRE.Heavy
 import qualified Text.Pandoc as P
 import qualified Text.Pandoc.Error as PE
 import           Safe (headMay)
+import           Servant (mimeRender, FormUrlEncoded)
 import           Sweetroll.Conf (pandocReaderOptions)
 
 type CategoryName = String
@@ -31,22 +32,15 @@ parseISOTime ∷ Stringable a ⇒ a → Maybe UTCTime
 parseISOTime x = headMay =<< decodeTime ("[\"" ++ toLazyByteString x ++ "\"]")
   where decodeTime y = decode y ∷ Maybe [UTCTime]
 
--- | Tries to find a key-value pair by key and return the value.
---
--- >>> findByKey [("cpus", 1), ("ram", 1024)] "ram"
--- Just 1024
-findByKey ∷ Eq a ⇒ [(a, b)] → a → Maybe b
-findByKey ps x = snd <$> find ((== x) . fst) ps
-
 -- | Tries to find a key-value pair by key and return the value, trying all given keys.
 --
--- >>> findFirstKey [("cpus", 1), ("ram", 1024)] ["hdd", "ram"]
+-- >>> lookupFirst ["hdd", "ram"] [("cpus", 1), ("ram", 1024)]
 -- Just 1024
-findFirstKey ∷ Eq a ⇒ [(a, b)] → [a] → Maybe b
-findFirstKey ps (x:xs) = case findByKey ps x of
-  Nothing → findFirstKey ps xs
+lookupFirst ∷ Eq a ⇒ [a] → [(a, b)] → Maybe b
+lookupFirst (x:xs) ps = case lookup x ps of
+  Nothing → lookupFirst xs ps
   m → m
-findFirstKey _ [] = Nothing
+lookupFirst [] _ = Nothing
 
 -- | Prepares a text for inclusion in a URL.
 --
@@ -82,9 +76,8 @@ mkUrl ∷ (IsString s, Monoid s) ⇒ s → [s] → s
 mkUrl base parts = intercalate "/" $ base : parts
 
 -- | Encodes key-value data as application/x-www-form-urlencoded.
-writeForm ∷ (Stringable a) ⇒ [(a, a)] → ByteString
-writeForm ps = intercalate "&" $ map (\(k, v) → enc k ++ "=" ++ enc v) ps
-  where enc = urlEncode True . toByteString
+writeForm ∷ (Stringable α, Stringable β, Stringable γ) ⇒ [(α, β)] → γ
+writeForm = fromLazyByteString . mimeRender (Proxy ∷ Proxy FormUrlEncoded) . map (\(k, v) → (toText k, toText v))
 
 derefEntry ∷ EntryReference → Maybe LText
 derefEntry (EntryEntry e) = headMay . entryUrl $ e

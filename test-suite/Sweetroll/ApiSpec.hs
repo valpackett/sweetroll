@@ -95,6 +95,15 @@ spec = around_ inDir $ do
           entryCategory article `shouldBe` ["test", "demo"]
         Nothing → error "article not written"
 
+    it "requires auth" $ do
+      resp ← app >>= post' (defaultRequest { Wai.requestHeaders = [ ("Content-Type", "application/x-www-form-urlencoded") ] })
+                           "/micropub" "h=entry&name=First&slug=first&content=Hello&category=test,demo"
+      simpleStatus resp `shouldBe` unauthorized401
+      resp ← app >>= post' (defaultRequest { Wai.requestHeaders = [ ("Content-Type", "application/x-www-form-urlencoded")
+                                                                  , ("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtZSIsImlzcyI6ImxvY2FsaG9zdCIsImlhdCI6MTQzODAxNjU5N30.KQRooUPpnhlhA0_xRbHF8q4AesUu5x6QNoVUuFavVng") ] })
+                           "/micropub" "h=entry&name=First&slug=first&content=Hello&category=test,demo"
+      simpleStatus resp `shouldBe` unauthorized401
+
 inDir ∷ IO () → IO ()
 inDir x = createRepo dirPath >> insideDirectory dirPath x >> cleanup
   where cleanup = void (try (removeDirectoryRecursive dirPath) ∷ IO (Either IOException ()))

@@ -108,7 +108,7 @@ instance Default SweetrollConf where
   def = SweetrollConf {
         siteName                 = "A new Sweetroll website"
       , httpsWorks               = False
-      , domainName               = ""
+      , domainName               = "localhost"
       , itemsPerPage             = 20
       , titleSeparator           = " / "
       , indieConfig              = MkIndieConfig $ object [

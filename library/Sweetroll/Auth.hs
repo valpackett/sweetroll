@@ -1,5 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE TypeOperators, TypeFamilies, FlexibleInstances, ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators, TypeFamilies, FlexibleInstances #-}
+{-# LANGUAGE ScopedTypeVariables, UndecidableInstances #-}
 
 -- | The IndieAuth/rel-me-auth implementation, using JSON Web Tokens.
 module Sweetroll.Auth (
@@ -41,6 +42,10 @@ instance HasServer rest ⇒ HasServer (AuthProtected :> rest) where
         case decodeAndVerifySignature (secret sec) (S.toText tok) of
           Nothing → respond . succeedWith $ Wai.responseLBS status401 [] "Invalid auth token."
           Just decodedToken → route (Proxy ∷ Proxy rest) (a decodedToken) req respond
+
+instance HasLink sub ⇒ HasLink (AuthProtected :> sub) where
+  type MkLink (AuthProtected :> sub) = MkLink sub
+  toLink _ = toLink (Proxy ∷ Proxy sub)
 
 fromHeader ∷ ByteString → Maybe ByteString
 fromHeader "" = Nothing

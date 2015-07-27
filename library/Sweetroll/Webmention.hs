@@ -36,13 +36,13 @@ discoverWebmentionEndpoint to r = do
   let findInHeader = lookup hLink (responseHeaders r)
                      >>= parseLinkHeader . decodeUtf8
                      >>= find (isWebmentionRel . fromMaybe "" . lookup Rel . linkParams)
-                     >>= return . unpack . href
+                     >>= return . show . href
       findInBody = unpack <$> htmlDoc ^. root . entire ./ attributeSatisfies "rel" isWebmentionRel . attribute "href"
       baseInBody = parseAbsoluteURI =<< unpack <$> htmlDoc ^. root . entire ./ el "base" . attribute "href"
-      lnk = asum [findInHeader, findInBody]
+      result = asum [findInHeader, findInBody]
       base = fromMaybe to baseInBody
-  return $ asum [ lnk >>= parseAbsoluteURI
-                , lnk >>= parseRelativeReference >>= return . (`relativeTo` base) ]
+  return $ asum [ result >>= parseAbsoluteURI
+                , result >>= parseRelativeReference >>= return . (`relativeTo` base) ]
 
 -- | Sends one single webmention.
 sendWebmention ∷ String → String → Sweetroll (String, Bool)

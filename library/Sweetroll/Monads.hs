@@ -5,8 +5,9 @@
 {-# LANGUAGE RankNTypes, TypeOperators, TypeFamilies, DataKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
--- | Monads that power Sweetroll and some common basic functions around them.
-module Sweetroll.Monads (module Sweetroll.Monads) where
+-- | The Sweetroll monad that contains the application context + some
+-- functions that use it, such as HTTP client requests.
+module Sweetroll.Monads where
 
 import           ClassyPrelude
 import           System.IO.Unsafe

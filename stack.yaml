@@ -6,7 +6,7 @@ packages:
       commit: 495afad3f07c9d4a408a11a96c2d5451bf21162f
     extra-dep: true
 extra-deps:
-  - http-link-header-0.1.0
+  - http-link-header-0.2.0
   - microformats2-types-0.4.0
   - lens-datetime-0.2.1
   - setters-0.1

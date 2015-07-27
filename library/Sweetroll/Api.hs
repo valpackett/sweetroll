@@ -10,7 +10,6 @@ import           Control.Monad.Except (throwError)
 import           Data.Maybe (fromJust)
 import           Data.Microformats2
 import           Data.Microformats2.Aeson ()
-import           Data.ByteString.Conversion
 import qualified Data.Stringable as S
 import qualified Network.HTTP.Link as L
 import           Network.URI
@@ -58,7 +57,7 @@ getIndex ∷ Sweetroll (WithLink Text)
 getIndex = do
   ipp ← getConfOpt itemsPerPage
   cats ← listCollections >>= mapM (readCategory ipp (-1))
-  selfLink  ← lnk "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy IndexRoute)
+  selfLink  ← genLink "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy IndexRoute)
   addLinks [selfLink] $ renderIndex $ map (second fromJust) $ filter visibleCat cats
 
 getCat ∷ String → Maybe Int → Sweetroll (WithLink Text)
@@ -69,7 +68,7 @@ getCat catName page = do
   case snd cat of
     Nothing → throwError err404
     Just p → do
-      selfLink ← lnk "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy CatRoute) catName page'
+      selfLink ← genLink "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy CatRoute) catName page'
       addLinks [selfLink] $ renderCat catName p
 
 getEntry ∷ String → String → Sweetroll (WithLink Text)
@@ -79,7 +78,7 @@ getEntry catName slug = do
     Nothing → throwError err404
     Just e  → do -- cacheHTTPDate (maximumMay $ entryUpdated e) $ do
       otherSlugs ← listDocumentKeys catName
-      selfLink ← lnk "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy EntryRoute) catName slug
+      selfLink ← genLink "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy EntryRoute) catName slug
       addLinks [selfLink] $ renderEntry catName (map readSlug $ sort otherSlugs) (slug, e)
 
 sweetrollServerT ∷ ServerT SweetrollAPI Sweetroll
@@ -103,24 +102,20 @@ initSweetrollApp ∷ SweetrollConf → SweetrollTemplates → SweetrollSecrets �
 initSweetrollApp conf tpls secs = initCtx conf tpls secs >>= return . sweetrollApp
 
 
-
-instance ToByteString [L.Link] where
-  builder = builder . L.writeLinkHeader
-
-lnk ∷ MonadSweetroll μ ⇒ Text → URI → μ L.Link
-lnk rel u = do
+genLink ∷ MonadSweetroll μ ⇒ Text → URI → μ L.Link
+genLink rel u = do
   conf ← getConf
   let proto = if httpsWorks conf then "https:" else "http:"
       base = URI proto (Just $ URIAuth "" (S.toString $ domainName conf) "") "" "" ""
-  return $ L.Link (S.toText . show $ u `relativeTo` base) [(L.Rel, rel)]
+  return $ L.Link (u `relativeTo` base) [(L.Rel, rel)]
 
 addLinks ∷ (MonadSweetroll μ, AddHeader "Link" [L.Link] α β) ⇒ [L.Link] → μ α → μ β
 addLinks ls a = do
   conf ← getConf
-  micropub ← lnk "micropub" $ safeLink sweetrollAPI (Proxy ∷ Proxy PostMicropubRoute)
-  tokenEndpoint ← lnk "token_endpoint" $ safeLink sweetrollAPI (Proxy ∷ Proxy LoginRoute')
-  let authorizationEndpoint = L.Link (S.toText $ indieAuthRedirEndpoint conf) [(L.Rel, "authorization_endpoint")]
-      hub = L.Link (S.toText $ pushHub conf) [(L.Rel, "hub")]
+  micropub ← genLink "micropub" $ safeLink sweetrollAPI (Proxy ∷ Proxy PostMicropubRoute)
+  tokenEndpoint ← genLink "token_endpoint" $ safeLink sweetrollAPI (Proxy ∷ Proxy LoginRoute')
+  let authorizationEndpoint = fromJust $ L.lnk (indieAuthRedirEndpoint conf) [(L.Rel, "authorization_endpoint")]
+      hub = fromJust $ L.lnk (pushHub conf) [(L.Rel, "hub")]
   return . addHeader (micropub : tokenEndpoint : authorizationEndpoint : hub : ls) =<< a
 
 

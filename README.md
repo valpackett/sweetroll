@@ -1,4 +1,4 @@
-# sweetroll [![ISC License](https://img.shields.io/badge/license-ISC-red.svg?style=flat)](https://tldrlegal.com/license/-isc-license)
+# sweetroll [![unlicense](https://img.shields.io/badge/un-license-green.svg?style=flat)](http://unlicense.org)
 
 A personal website / [#IndieWeb] engine with curved swords. *Curved! Swords!*
 
@@ -65,5 +65,5 @@ I'm running it on [my website](https://unrelenting.technology).
 
 ## License
 
-Copyright 2014-2015 Greg V <greg@unrelenting.technology>
-Available under the ISC license, see the `COPYING` file
+This is free and unencumbered software released into the public domain.  
+For more information, please refer to the `UNLICENSE` file or [unlicense.org](http://unlicense.org).

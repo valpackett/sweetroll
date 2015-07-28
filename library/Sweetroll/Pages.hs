@@ -102,7 +102,7 @@ entryView catName otherSlugs (slug, e) =
 
 renderEntry ∷ CategoryName → [EntrySlug] → (EntrySlug, Entry) → Sweetroll Text
 renderEntry catName otherSlugs entry =
-  render categoryTemplate $ entryView catName otherSlugs entry
+  render entryTemplate $ entryView catName otherSlugs entry
 
 catView ∷ SweetrollTemplates → CategoryName → Page (EntrySlug, Entry) → ViewResult
 catView tpls name page =

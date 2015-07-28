@@ -34,15 +34,15 @@ type LoginRoute'              = "login" :> Post '[FormUrlEncoded] [(Text, Text)]
 type LoginRoute               = QueryParam "me" Text :> QueryParam "code" Text :> QueryParam "redirect_uri" Text :> QueryParam "client_id" Text :> QueryParam "state" Text :> LoginRoute'
 type IndieConfigRoute         = "indie-config" :> Get '[HTML] IndieConfig
 type DefaultCssRoute          = "default-style.css" :> Get '[CSS] LByteString
-type CatRoute                 = Capture "catName" String :> QueryParam "page" Int :> Get '[HTML] (WithLink Text)
 type EntryRoute               = Capture "catName" String :> Capture "slug" String :> Get '[HTML] (WithLink Text)
+type CatRoute                 = Capture "catName" String :> QueryParam "page" Int :> Get '[HTML] (WithLink Text)
 type IndexRoute               = Get '[HTML] (WithLink Text)
 
 type PostMicropubRoute        = "micropub" :> AuthProtect :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] (Headers '[Header "Location" Text] [(Text, Text)])
 type GetMicropubRoute         = "micropub" :> AuthProtect :> QueryParam "q" Text :> Get '[FormUrlEncoded] [(Text, Text)]
 
 type SweetrollAPI             = LoginRoute :<|> IndieConfigRoute :<|> DefaultCssRoute
-                           :<|> CatRoute :<|> EntryRoute :<|> IndexRoute
+                           :<|> EntryRoute :<|> CatRoute :<|> IndexRoute
                            :<|> PostMicropubRoute :<|> GetMicropubRoute
 
 getMicropub ∷ JWT VerifiedJWT → Maybe Text → Sweetroll [(Text, Text)]
@@ -84,7 +84,7 @@ getEntry catName slug = do
       addLinks [selfLink] $ renderEntry catName (map readSlug $ sort otherSlugs) (slug, e)
 
 sweetrollServerT ∷ SweetrollCtx → ServerT SweetrollAPI Sweetroll
-sweetrollServerT ctx = postLogin :<|> getIndieConfig :<|> getDefaultCss :<|> getCat :<|> getEntry :<|> getIndex
+sweetrollServerT ctx = postLogin :<|> getIndieConfig :<|> getDefaultCss :<|> getEntry :<|> getCat :<|> getIndex
                   :<|> AuthProtected key postMicropub :<|> AuthProtected key getMicropub
     where key = secretKey $ _ctxSecs ctx
 

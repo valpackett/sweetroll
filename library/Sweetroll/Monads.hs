@@ -10,7 +10,6 @@
 module Sweetroll.Monads where
 
 import           ClassyPrelude
-import           System.IO.Unsafe
 import           Control.Monad.Base
 import           Control.Monad.Reader
 import           Control.Monad.Except
@@ -23,12 +22,6 @@ import qualified Network.HTTP.Client.Conduit as H
 import "crypto-random" Crypto.Random
 import           Servant
 import           Sweetroll.Conf
-
--- XXX: Temporary workaround because servant doesn't pass context yet
-jwtSecret ∷ IORef Text
-jwtSecret = unsafePerformIO $ newIORef ""
-{-# NOINLINE jwtSecret #-}
-
 
 data SweetrollCtx = SweetrollCtx
   { _ctxConf     ∷ SweetrollConf
@@ -60,7 +53,6 @@ initCtx ∷ SweetrollConf → SweetrollTemplates → SweetrollSecrets → IO Swe
 initCtx conf tpls secs = do
   httpClientMgr ← H.newManager
   sysRandom ← cprgCreate <$> createEntropyPool
-  writeIORef jwtSecret $ secretKey secs
   return SweetrollCtx { _ctxConf     = conf
                       , _ctxTpls     = tpls
                       , _ctxSecs     = secs

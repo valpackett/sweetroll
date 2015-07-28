@@ -1,15 +1,12 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE TypeOperators, TypeFamilies, FlexibleInstances #-}
+{-# LANGUAGE TypeOperators, TypeFamilies, FlexibleInstances, MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables, UndecidableInstances #-}
 
 -- | The IndieAuth/rel-me-auth implementation, using JSON Web Tokens.
 module Sweetroll.Auth (
   JWT
 , VerifiedJWT
-, AuthProtected
-, getAuth
-, postLogin
-, signAccessToken
+, module Sweetroll.Auth
 ) where
 
 import           ClassyPrelude
@@ -24,27 +21,31 @@ import qualified Network.HTTP.Client as HC
 import qualified Network.Wai as Wai
 import           Servant
 import           Servant.Server.Internal (succeedWith)
+import           Servant.Server.Internal.Enter
 import           Sweetroll.Monads
 import           Sweetroll.Conf
 import           Sweetroll.Util
 
-data AuthProtected
+data AuthProtect
+data AuthProtected α = AuthProtected Text α
 
-instance HasServer rest ⇒ HasServer (AuthProtected :> rest) where
-  type ServerT (AuthProtected :> rest) α = JWT VerifiedJWT → ServerT rest α
+instance Enter α φ β ⇒ Enter (AuthProtected α) φ (AuthProtected β) where
+  enter f (AuthProtected k a) = AuthProtected k $ enter f a
 
-  route Proxy a req respond =
+instance HasServer rest ⇒ HasServer (AuthProtect :> rest) where
+  type ServerT (AuthProtect :> rest) α = AuthProtected (JWT VerifiedJWT → ServerT rest α)
+
+  route Proxy (AuthProtected secKey subserver) req respond =
     case asum [ L.lookup hAuthorization (Wai.requestHeaders req) >>= fromHeader
               , join $ L.lookup "access_token" $ Wai.queryString req ] of
       Nothing → respond . succeedWith $ Wai.responseLBS status401 [] "Authorization/access_token not found."
       Just tok → do
-        sec ← readIORef jwtSecret
-        case decodeAndVerifySignature (secret sec) (S.toText tok) of
+        case decodeAndVerifySignature (secret secKey) (S.toText tok) of
           Nothing → respond . succeedWith $ Wai.responseLBS status401 [] "Invalid auth token."
-          Just decodedToken → route (Proxy ∷ Proxy rest) (a decodedToken) req respond
+          Just decodedToken → route (Proxy ∷ Proxy rest) (subserver decodedToken) req respond
 
-instance HasLink sub ⇒ HasLink (AuthProtected :> sub) where
-  type MkLink (AuthProtected :> sub) = MkLink sub
+instance HasLink sub ⇒ HasLink (AuthProtect :> sub) where
+  type MkLink (AuthProtect :> sub) = MkLink sub
   toLink _ = toLink (Proxy ∷ Proxy sub)
 
 fromHeader ∷ ByteString → Maybe ByteString

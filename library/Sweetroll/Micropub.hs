@@ -25,8 +25,8 @@ import           Sweetroll.Monads
 import           Sweetroll.Syndication
 import           Sweetroll.Webmention
 
-postMicropub ∷ [(Text, Text)] → JWT VerifiedJWT → Sweetroll (Headers '[Header "Location" Text] [(Text, Text)])
-postMicropub allParams _ = do
+postMicropub ∷ JWT VerifiedJWT → [(Text, Text)] → Sweetroll (Headers '[Header "Location" Text] [(Text, Text)])
+postMicropub _ allParams = do
   now ← liftIO getCurrentTime
   isTest ← getConfOpt testMode
   base ← getConfOpt baseUrl

@@ -32,20 +32,22 @@ type WithLink α               = (Headers '[Header "Link" [L.Link]] α)
 
 type LoginRoute'              = "login" :> Post '[FormUrlEncoded] [(Text, Text)]
 type LoginRoute               = QueryParam "me" Text :> QueryParam "code" Text :> QueryParam "redirect_uri" Text :> QueryParam "client_id" Text :> QueryParam "state" Text :> LoginRoute'
-type PostMicropubRoute        = "micropub" :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> AuthProtected :> Post '[FormUrlEncoded] (Headers '[Header "Location" Text] [(Text, Text)])
-type GetMicropubRoute         = "micropub" :> QueryParam "q" Text :> AuthProtected :> Get '[FormUrlEncoded] [(Text, Text)]
 type IndieConfigRoute         = "indie-config" :> Get '[HTML] IndieConfig
 type DefaultCssRoute          = "default-style.css" :> Get '[CSS] LByteString
 type CatRoute                 = Capture "catName" String :> QueryParam "page" Int :> Get '[HTML] (WithLink Text)
 type EntryRoute               = Capture "catName" String :> Capture "slug" String :> Get '[HTML] (WithLink Text)
 type IndexRoute               = Get '[HTML] (WithLink Text)
 
-type SweetrollAPI             = LoginRoute :<|> PostMicropubRoute :<|> GetMicropubRoute :<|> IndieConfigRoute
-                           :<|> DefaultCssRoute :<|> CatRoute :<|> EntryRoute :<|> IndexRoute
+type PostMicropubRoute        = "micropub" :> AuthProtect :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] (Headers '[Header "Location" Text] [(Text, Text)])
+type GetMicropubRoute         = "micropub" :> AuthProtect :> QueryParam "q" Text :> Get '[FormUrlEncoded] [(Text, Text)]
 
-getMicropub ∷ Maybe Text → JWT VerifiedJWT → Sweetroll [(Text, Text)]
-getMicropub (Just "syndicate-to") _ = getSyndication
-getMicropub _ token = getAuth token
+type SweetrollAPI             = LoginRoute :<|> IndieConfigRoute :<|> DefaultCssRoute
+                           :<|> CatRoute :<|> EntryRoute :<|> IndexRoute
+                           :<|> PostMicropubRoute :<|> GetMicropubRoute
+
+getMicropub ∷ JWT VerifiedJWT → Maybe Text → Sweetroll [(Text, Text)]
+getMicropub _ (Just "syndicate-to") = getSyndication
+getMicropub token _ = getAuth token
 
 getIndieConfig ∷ Sweetroll IndieConfig
 getIndieConfig = getConfOpt indieConfig
@@ -81,10 +83,10 @@ getEntry catName slug = do
       selfLink ← genLink "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy EntryRoute) catName slug
       addLinks [selfLink] $ renderEntry catName (map readSlug $ sort otherSlugs) (slug, e)
 
-sweetrollServerT ∷ ServerT SweetrollAPI Sweetroll
-sweetrollServerT =
-       postLogin :<|> postMicropub :<|> getMicropub :<|> getIndieConfig :<|> getDefaultCss
-  :<|> getCat :<|> getEntry :<|> getIndex
+sweetrollServerT ∷ SweetrollCtx → ServerT SweetrollAPI Sweetroll
+sweetrollServerT ctx = postLogin :<|> getIndieConfig :<|> getDefaultCss :<|> getCat :<|> getEntry :<|> getIndex
+                  :<|> AuthProtected key postMicropub :<|> AuthProtected key getMicropub
+    where key = secretKey $ _ctxSecs ctx
 
 sweetrollAPI ∷ Proxy SweetrollAPI
 sweetrollAPI = Proxy
@@ -96,7 +98,7 @@ sweetrollApp ctx = foldr ($) (sweetrollApp' ctx) [
   where sweetrollApp' ∷ SweetrollCtx → Application
         sweetrollApp' = serve sweetrollAPI . sweetrollServer
         sweetrollServer ∷ SweetrollCtx → Server SweetrollAPI
-        sweetrollServer c = enter (sweetrollToEither c) sweetrollServerT
+        sweetrollServer c = enter (sweetrollToEither c) $ sweetrollServerT c
 
 initSweetrollApp ∷ SweetrollConf → SweetrollTemplates → SweetrollSecrets → IO Application
 initSweetrollApp conf tpls secs = initCtx conf tpls secs >>= return . sweetrollApp

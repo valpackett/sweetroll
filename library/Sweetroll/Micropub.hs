@@ -76,7 +76,7 @@ decideReader pars | f == "textile"     = readTextile
                   | f == "latex"       = readLaTeX
                   | f == "tex"         = readLaTeX
                   | otherwise          = readMarkdown
-  where f = fromMaybe "" $ lookup "format" pars
+  where f = orEmptyMaybe $ lookup "format" pars
 
 makeEntry ∷ [(Text, Text)] → UTCTime → LText → (String → Pandoc) → Entry
 makeEntry pars now absUrl readerF = def

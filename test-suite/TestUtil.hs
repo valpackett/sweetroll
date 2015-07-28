@@ -12,6 +12,7 @@ import           Network.Wai.Test
 import           Network.HTTP.Types
 import           Sweetroll.Conf (secretKey)
 import           Sweetroll.Auth (signAccessToken)
+import           Sweetroll.Util (orEmptyMaybe)
 
 contains ∷ EqSequence α ⇒ α → α → Bool
 contains = flip isInfixOf
@@ -40,4 +41,4 @@ postAuthed r u b a = do
   post' r' u b a
 
 header ∷ SResponse → String → String
-header resp x = B8.unpack $ fromMaybe "" $ lookup (CI.mk $ B8.pack x) (simpleHeaders resp)
+header resp x = B8.unpack $ orEmptyMaybe $ lookup (CI.mk $ B8.pack x) (simpleHeaders resp)

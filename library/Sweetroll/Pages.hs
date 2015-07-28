@@ -87,16 +87,16 @@ entryView catName otherSlugs (slug, e) =
           , "category"         .= catName
           , "categoryHref"     .= mconcat ["/", catName]
           , "hasPrev"          .= isJust prev
-          , "prevHref"         .= mconcat ["/", catName, "/", fromMaybe "" prev]
+          , "prevHref"         .= mconcat ["/", catName, "/", orEmptyMaybe prev]
           , "hasNext"          .= isJust next
-          , "nextHref"         .= mconcat ["/", catName, "/", fromMaybe "" next]
+          , "nextHref"         .= mconcat ["/", catName, "/", orEmptyMaybe next]
           , "hasSyndication"   .= (not . null . entrySyndication $ e)
           , "syndication"      .= entrySyndication e
           , "hasTwitterId"     .= isJust twitterId
-          , "twitterId"        .= fromMaybe "" twitterId
+          , "twitterId"        .= orEmptyMaybe twitterId
           , "isReply"          .= (not . null . entryInReplyTo $ e)
-          , "replyForUrl"      .= fromMaybe "" (derefEntry =<< headMay (entryInReplyTo e))
-          , "replyForName"     .= fromMaybe "" (derefEntryName =<< headMay (entryInReplyTo e))
+          , "replyForUrl"      .= orEmptyMaybe (derefEntry =<< headMay (entryInReplyTo e))
+          , "replyForName"     .= orEmptyMaybe (derefEntryName =<< headMay (entryInReplyTo e))
           -- TODO: repost/like
           ]
 

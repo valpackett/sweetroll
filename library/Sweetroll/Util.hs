@@ -91,8 +91,11 @@ derefEntryName (CiteEntry c)  = headMay . citeName $ c
 derefEntryName (TextEntry l)  = Just l
 derefEntryName (UrlEntry l)   = Just l
 
-orEmpty ∷ [LText] → LText
-orEmpty = fromMaybe "" . headMay
+orEmptyMaybe ∷ IsString α ⇒ Maybe α → α
+orEmptyMaybe = fromMaybe ""
+
+orEmpty ∷ IsString α ⇒ [α] → α
+orEmpty = orEmptyMaybe . headMay
 
 pandocRead ∷ (P.ReaderOptions → String → Either PE.PandocError P.Pandoc) → String → P.Pandoc
 pandocRead x = PE.handleError . x pandocReaderOptions

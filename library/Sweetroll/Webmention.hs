@@ -35,7 +35,7 @@ discoverWebmentionEndpoint to r = do
   htmlDoc ← responseBody r $$ sinkDoc
   let findInHeader = lookup hLink (responseHeaders r)
                      >>= parseLinkHeader . decodeUtf8
-                     >>= find (isWebmentionRel . fromMaybe "" . lookup Rel . linkParams)
+                     >>= find (isWebmentionRel . orEmptyMaybe . lookup Rel . linkParams)
                      >>= return . show . href
       findInBody = unpack <$> htmlDoc ^. root . entire ./ attributeSatisfies "rel" isWebmentionRel . attribute "href"
       baseInBody = parseAbsoluteURI =<< unpack <$> htmlDoc ^. root . entire ./ el "base" . attribute "href"

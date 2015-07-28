@@ -76,14 +76,13 @@ postLogin ∷ Maybe Text → Maybe Text → Maybe Text → Maybe Text → Maybe 
 postLogin me code redirectUri clientId state = do
   conf ← getConf
   let valid = makeAccessToken $ fromMaybe "unknown" me
-      opt = fromMaybe ""
   if testMode conf then valid else do
     let reqBody = writeForm [
-                    ("code",         opt code)
-                  , ("redirect_uri", opt redirectUri)
+                    ("code",         orEmptyMaybe code)
+                  , ("redirect_uri", orEmptyMaybe redirectUri)
                   , ("client_id",    fromMaybe (baseUrl conf) clientId)
-                  , (asText "state", opt state) ]
-    -- liftIO $ putStrLn $ toText reqBody
+                  , (asText "state", orEmptyMaybe state) ]
+    -- liftIO $ putStrLn $ toText reqorEmptyy
     indieAuthReq ← liftIO $ HC.parseUrl $ indieAuthCheckEndpoint conf
     resp ← request (indieAuthReq { HC.method = "POST"
                                  , HC.requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ] -- "indieauth suddenly stopped working" *facepalm*

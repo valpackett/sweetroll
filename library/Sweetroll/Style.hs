@@ -205,7 +205,7 @@ sweetrollStyle = do
     ".site-main" ? do
       flexValue 3
       paddingLeft $ em 1
-    ".index-main" ? overflowX auto
+      overflowX auto
     ".index-category" ? do
       flexValue 1
       minWidth $ pct 30

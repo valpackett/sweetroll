@@ -69,23 +69,18 @@ makeAccessToken me = do
   conf ← getConf
   secs ← getSecs
   now ← liftIO getCurrentTime
-  return [ ("access_token", signAccessToken (secretKey secs) (domainName conf) me now)
+  return $ traceShowId [ ("access_token", signAccessToken (secretKey secs) (domainName conf) me now)
          , ("scope", "post"), ("me", me) ]
 
-postLogin ∷ Maybe Text → Maybe Text → Maybe Text → Maybe Text → Maybe Text → Sweetroll [(Text, Text)]
-postLogin me code redirectUri clientId state = do
+postLogin ∷ [(Text, Text)] → Sweetroll [(Text, Text)]
+postLogin params = do
   conf ← getConf
-  let valid = makeAccessToken $ fromMaybe "unknown" me
+  let valid = makeAccessToken $ fromMaybe "unknown" $ lookup "me" params
   if testMode conf then valid else do
-    let reqBody = writeForm [
-                    ("code",         orEmptyMaybe code)
-                  , ("redirect_uri", orEmptyMaybe redirectUri)
-                  , ("client_id",    fromMaybe (baseUrl conf) clientId)
-                  , (asText "state", orEmptyMaybe state) ]
-    -- liftIO $ putStrLn $ toText reqorEmptyy
+    traceShowM params
     indieAuthReq ← liftIO $ HC.parseUrl $ indieAuthCheckEndpoint conf
     resp ← request (indieAuthReq { HC.method = "POST"
                                  , HC.requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ] -- "indieauth suddenly stopped working" *facepalm*
-                                 , HC.requestBody = HC.RequestBodyBS reqBody }) ∷ Sweetroll (HC.Response LByteString)
+                                 , HC.requestBody = HC.RequestBodyBS $ writeForm params }) ∷ Sweetroll (HC.Response LByteString)
     if HC.responseStatus resp == ok200 then valid
     else throwError err401

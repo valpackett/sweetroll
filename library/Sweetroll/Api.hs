@@ -30,8 +30,7 @@ import           Sweetroll.Style
 
 type WithLink α               = (Headers '[Header "Link" [L.Link]] α)
 
-type LoginRoute'              = "login" :> Post '[FormUrlEncoded] [(Text, Text)]
-type LoginRoute               = QueryParam "me" Text :> QueryParam "code" Text :> QueryParam "redirect_uri" Text :> QueryParam "client_id" Text :> QueryParam "state" Text :> LoginRoute'
+type LoginRoute               = "login" :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] [(Text, Text)]
 type IndieConfigRoute         = "indie-config" :> Get '[HTML] IndieConfig
 type DefaultCssRoute          = "default-style.css" :> Get '[CSS] LByteString
 type EntryRoute               = Capture "catName" String :> Capture "slug" String :> Get '[HTML] (WithLink Text)
@@ -115,7 +114,7 @@ addLinks ∷ (MonadSweetroll μ, AddHeader "Link" [L.Link] α β) ⇒ [L.Link] �
 addLinks ls a = do
   conf ← getConf
   micropub ← genLink "micropub" $ safeLink sweetrollAPI (Proxy ∷ Proxy PostMicropubRoute)
-  tokenEndpoint ← genLink "token_endpoint" $ safeLink sweetrollAPI (Proxy ∷ Proxy LoginRoute')
+  tokenEndpoint ← genLink "token_endpoint" $ safeLink sweetrollAPI (Proxy ∷ Proxy LoginRoute)
   let authorizationEndpoint = fromJust $ L.lnk (indieAuthRedirEndpoint conf) [(L.Rel, "authorization_endpoint")]
       hub = fromJust $ L.lnk (pushHub conf) [(L.Rel, "hub")]
   return . addHeader (micropub : tokenEndpoint : authorizationEndpoint : hub : ls) =<< a

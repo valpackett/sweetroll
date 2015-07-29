@@ -1,15 +1,15 @@
-<main class="site-main entry-main$if(isNote)$ note-main$endif$">
-	<article class="entry h-entry$if(isNote)$ note$else$article$endif$-entry">
+<main class="site-main entry-main$if(isUntitled)$ note-main$endif$">
+	<article class="entry h-entry$if(isUntitled)$ note$else$article$endif$-entry">
 		<header class="entry-header">
-			$if(isNote)$$else$
+			$if(isUntitled)$$else$
 			<h1 class="p-name">
 				<a href="$permalink$" class="u-url u-uid" rel="bookmark">$name$</a>
 			</h1>
 			$endif$
 			posted <time class="dt-published" datetime="$publishedAttr$">
-				$if(isNote)$<a href="$permalink$" class="u-url u-uid note-permalink" rel="bookmark">$endif$
+				$if(isUntitled)$<a href="$permalink$" class="u-url u-uid note-permalink" rel="bookmark">$endif$
 				$published$
-				$if(isNote)$</a>$endif$
+				$if(isUntitled)$</a>$endif$
 			</time>
 			$if(isReply)$
 			in reply to <a class="u-in-reply-to" rel="in-reply-to" href="$replyForUrl$">$replyForName$</a>
@@ -23,20 +23,22 @@
 			Liked <a class="u-like-of" rel="like-of" href="$likeOfUrl$">$likeOfName$</a>.
 		</div>
 		$else$
-		<div class="entry-content e-content$if(isNote)$ p-name$endif$">
+		<div class="entry-content e-content$if(isUntitled)$ p-name$endif$">
+			$if(isUntitled)$$else$<fragmention-target exact>$endif$
 			$content$
+			$if(isUntitled)$$else$</fragmention-target>$endif$
 		</div>
 		$endif$
 		<footer class="entry-footer">
 			<div class="entry-actions">
 				<indie-action do="reply" with="$permalink$">
-					$if(hasTwitterId)$<a href="https://twitter.com/intent/tweet?in_reply_to=$twitterId$"><i class="fa fa-l fa-reply"></i>Reply</a>$endif$
+					<a href="$if(hasTwitterId)$https://twitter.com/intent/tweet?in_reply_to=$twitterId$$endif$"><i class="fa fa-l fa-reply"></i>Reply</a>
 				</indie-action>
 				<indie-action do="repost" with="$permalink$">
-					$if(hasTwitterId)$<a href="https://twitter.com/intent/retweet?tweet_id=$twitterId$"><i class="fa fa-l fa-retweet"></i>Retweet</a>$endif$
+					<a href="$if(hasTwitterId)$https://twitter.com/intent/retweet?tweet_id=$twitterId$$endif$"><i class="fa fa-l fa-retweet"></i>Repost</a>
 				</indie-action>
 				<indie-action do="like" with="$permalink$">
-					$if(hasTwitterId)$<a href="https://twitter.com/intent/favorite?tweet_id=$twitterId$"><i class="fa fa-l fa-star"></i>Favorite</a>$endif$
+					<a href="$if(hasTwitterId)$https://twitter.com/intent/favorite?tweet_id=$twitterId$$endif$"><i class="fa fa-l fa-star"></i>Like</a>
 				</indie-action>
 			</div>
 			$if(hasSyndication)$

@@ -1,0 +1,17 @@
+{
+  "name": "sweetroll",
+  "version": "0.0.0",
+  "homepage": "https://github.com/myfreeweb/sweetroll",
+  "authors": [
+    "Greg V <greg@unrelenting.technology>"
+  ],
+  "description": "A personal website / #IndieWeb engine with curved swords. Curved! Swords!",
+  "license": "Unlicense",
+  "private": true,
+  "dependencies": {
+    "fontawesome": "~4.4.0",
+    "webcomponentsjs": "~0.7.7",
+    "indieweb-components": "~0.1.0",
+    "lazyload-image": "~1.0.0"
+  }
+}

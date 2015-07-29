@@ -144,3 +144,6 @@ instance Default SweetrollTemplates where
       , notFoundTemplate         = tpl "404.html" }
       where tpl x = processTpl . snd . fromJust . find ((== x) . fst) $ files
             files = $(embedDir "templates")
+
+bowerComponents ∷ [(FilePath, ByteString)]
+bowerComponents = $(embedDir "bower_components")

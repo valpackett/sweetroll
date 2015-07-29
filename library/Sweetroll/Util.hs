@@ -15,6 +15,9 @@ import           Text.Regex.PCRE.Heavy
 import qualified Text.Pandoc as P
 import qualified Text.Pandoc.Error as PE
 import           Safe (headMay)
+import           Network.Wai (Middleware, responseLBS, pathInfo)
+import           Network.Mime (defaultMimeLookup)
+import           Network.HTTP.Types.Status (ok200)
 import           Servant (mimeRender, FormUrlEncoded)
 import           Sweetroll.Conf (pandocReaderOptions)
 
@@ -99,3 +102,12 @@ orEmpty = orEmptyMaybe . headMay
 
 pandocRead ∷ (P.ReaderOptions → String → Either PE.PandocError P.Pandoc) → String → P.Pandoc
 pandocRead x = PE.handleError . x pandocReaderOptions
+
+serveStaticFromLookup ∷ [(FilePath, ByteString)] → Middleware
+serveStaticFromLookup files app req respond =
+  case lookup path files of
+    Just bs → respond $ responseLBS ok200 [("Content-Type", ctype)] $ toLazyByteString bs
+    Nothing → app req respond
+  where path = toString $ intercalate "/" reqpath
+        ctype = defaultMimeLookup $ fromMaybe "" $ lastMay reqpath
+        reqpath = drop 1 $ pathInfo req

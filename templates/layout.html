@@ -4,10 +4,17 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<title>$meta_title$</title>
-		<link rel="openid.delegate" href="$base_url$" />
-		<link rel="openid.server" href="https://indieauth.com/openid" />
-		<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" />
-		<link rel="stylesheet" href="/default-style.css" />
+		<link rel="openid.delegate" href="$base_url$">
+		<link rel="openid.server" href="https://indieauth.com/openid">
+		<link rel="stylesheet" href="/bower/fontawesome/css/font-awesome.min.css">
+		<link rel="stylesheet" href="/default-style.css">
+		<script>
+			if (!('registerElement' in document && 'import' in document.createElement('link')))
+				document.write('<script src="/bower/webcomponentsjs/webcomponents-lite.min.js"></sc'+'ript>');
+		</script>
+		<link rel="import" href="/bower/lazyload-image/lazyload-image.html">
+		<link rel="import" href="/bower/indieweb-components/indie-action.html">
+		<link rel="import" href="/bower/indieweb-components/fragmention-target.html">
 	</head>
 	<body>
 		<header class="site-header">

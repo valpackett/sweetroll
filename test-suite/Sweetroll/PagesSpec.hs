@@ -19,13 +19,13 @@ import           Web.Simple.Templates.Language
 {-# ANN module ("HLint: ignore Redundant do" :: String) #-}
 
 testEntryTpl ∷ Either String Template
-testEntryTpl = compileTemplate [r|<$if(isNote)$note$else$article$endif$>$if(isNote)$
+testEntryTpl = compileTemplate [r|<$if(isUntitled)$note$else$article$endif$>$if(isUntitled)$
   <p>$content$</p>
 $else$
   <h1><a href="$permalink$">$name$</a></h1>
   $content$
 $endif$  <time datetime="$publishedAttr$">$published$</time>
-</$if(isNote)$note$else$article$endif$>|]
+</$if(isUntitled)$note$else$article$endif$>|]
 
 testCategoryTpl ∷ Either String Template
 testCategoryTpl = compileTemplate [r|<category name="$name$">

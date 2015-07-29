@@ -68,6 +68,7 @@ library
       , http-client-tls
       , http-conduit
       , http-link-header
+      , mime-types
       , html-conduit
       , xml-lens
       , oauthenticated

@@ -114,6 +114,10 @@ sweetrollStyle = do
   a # ".self-link" ? do
     color "#343434"
     textDecoration none
+  "[fragmention]" ? do
+    backgroundColor $ rgba 246 242 195 153
+  "fragmention-exact" ? do
+    backgroundColor "#FFF8A7"
 
   ".site-content" <> ".index-main" ? do
     "display" -: "-webkit-flex"

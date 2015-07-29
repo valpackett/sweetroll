@@ -16,6 +16,7 @@ import           Network.URI
 import           Network.Wai
 import           Network.Wai.Middleware.Autohead
 import           Network.Wai.Middleware.Static
+import           Network.Wai.Middleware.Routed
 import           Servant
 import           Gitson
 import           Gitson.Util (maybeReadIntString)
@@ -27,6 +28,7 @@ import           Sweetroll.Pagination
 import           Sweetroll.Micropub
 import           Sweetroll.Syndication (getSyndication)
 import           Sweetroll.Style
+import           Sweetroll.Util (serveStaticFromLookup)
 
 type WithLink α               = (Headers '[Header "Link" [L.Link]] α)
 
@@ -93,6 +95,7 @@ sweetrollAPI = Proxy
 sweetrollApp ∷ SweetrollCtx → Application
 sweetrollApp ctx = foldr ($) (sweetrollApp' ctx) [
                      staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
+                   , routedMiddleware ((== (Just "bower")) . headMay) $ serveStaticFromLookup bowerComponents
                    , autohead]
   where sweetrollApp' ∷ SweetrollCtx → Application
         sweetrollApp' = serve sweetrollAPI . sweetrollServer

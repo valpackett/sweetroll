@@ -63,7 +63,7 @@ getIndex = do
 
 getCat ∷ String → Maybe Int → Sweetroll (WithLink Text)
 getCat catName page = do
-  let page' = fromMaybe (1) page
+  let page' = fromMaybe (-1) page
   ipp ← getConfOpt itemsPerPage
   cat ← readCategory ipp page' catName
   case snd cat of

@@ -1,9 +1,9 @@
-<main class="site-main entry-main$if(isUntitled)$ note-main$endif$">
-	<article class="entry h-entry$if(isUntitled)$ note$else$article$endif$-entry">
+<main class="site-main entry-main $if(isUntitled)$note$else$article$endif$-main">
+	<article class="entry h-entry $if(isUntitled)$note$else$article$endif$-entry">
 		<header class="entry-header">
 			$if(isUntitled)$$else$
 			<h1 class="p-name">
-				<a href="$permalink$" class="u-url u-uid" rel="bookmark">$name$</a>
+				<a href="$permalink$" class="u-url u-uid" rel="bookmark" tabindex="-1">$name$</a>
 			</h1>
 			$endif$
 			posted <time class="dt-published" datetime="$publishedAttr$">

@@ -29,9 +29,10 @@ sweetrollStyle = do
     "-ms-text-size-adjust" -: "100%"
     "-webkit-text-size-adjust" -: "100%"
     fontFamily ["Helvetica Neue"] [sansSerif]
+    fontSize $ px 16
     "line-height" -: "1.3"
     backgroundColor "#ffffff"
-    color "#343434"
+    color "#3b3b3b"
 
   body ? do
     sym margin nil
@@ -126,61 +127,67 @@ sweetrollStyle = do
     "flex-direction" -: "column"
 
   ".site-content" ? flexValue 1
-  ".site-author" ? orderValue 10
 
   ".site-footer" ? do
     sym2 padding (em 1) nil
     fontSize $ pct 90
     color "#777"
 
-  ".site-header" ? ("padding" -: "2em 0")
+  ".site-header" ? sym2 padding (em 2) nil
 
   pageParts ? do
     width $ pct 96
     "margin" -: "0 auto"
 
+  ".site-main" ? marginBottom (em 2)
+
+  ".index-category" ? marginBottom (em 2)
+
+  ".entry-in-list" <> ".note-entry" ? do
+    boxShadow 0 (px 3) (px 13) $ rgba 0 0 0 64
+    sym borderRadius $ px 3
+
   ".entry-in-list" ? do
     listStyleType none
     display block
-    padding (em 1) 0 (em 0.5) 0
-    borderBottom solid (px 1) transparent
-    borderTop solid (px 1) $ rgb  57 204 204
-    borderTop solid (px 1) $ rgba 57 204 204 134
-    transition "border-color" (sec 0.3) easeInOut (sec 0)
-    hover & borderColor "#2ecc40"
-    firstChild & ("border-top" -: "none")
+    sym padding $ em 0.6
+    sym2 margin (em 1.4) nil
     ".entry-footer" ? do
-      fontSize $ pct 90
       textAlign . alignSide $ sideRight
-    ".entry-footer" <> ".entry-footer a" ? do
-      fontSize $ pct 90
-      color "#aaa"
-  ".entry-in-list" # hover |+ ".entry-in-list" ? borderColor transparent
+    ".entry-footer" <> ".entry-footer a" ? grayedOut
+
+  ".article-in-list" ? do
+    ".p-name" ? fontSize (em 1.35)
+
+  ".note-main" ? do
+    paddingTop $ em 1
+
+  ".entry-header" <> ".entry-header a" ? grayedOut
 
   ".note-entry" ? do
-    border solid (px 1) $ rgb 57 204 204
-    borderColor $ rgba 57 204 204 79
+    paddingTop $ em 0.2
+    paddingBottom $ em 0.2
+    entryParts ? sym margin (em 1)
     ".entry-header" ? do
       fontSize $ pct 90
-      marginBottom $ em 1
-    ".entry-header" <> ".entry-header a" ? color "#aaa"
     ".entry-content" ? fontSize (pct 110)
     ".entry-footer" ? do
       borderTop solid (px 1) $ rgb 57 204 204
       borderColor $ rgba 57 204 204 82
 
+  ".article-entry" ? do
+    ".entry-header a" ? color "#222"
+    entryParts ? sym2 margin (em 1) nil
+
   ".entry-footer" ? do
+    paddingTop $ em 0.5
     color "#999"
-    fontSize $ pct 95
-    "line-height" -: "1.7"
+    "line-height" -: "1.8"
+    "a" ? marginLeft (em 0.8)
+    "indie-action" # firstChild ** a ? marginLeft nil
 
   ".entry-main" ? do
-    ".entry-header" <> ".entry-content" <> ".entry-footer" ? do
-      sym margin $ px 16
-      sym margin $ rem 1
-    ".entry-footer" ? do
-      "a" ? marginLeft (em 0.5)
-      ".entry-actions" ** "indie-action" # firstChild ** a ? marginLeft nil
+    ".entry-header" ? marginTop (em 0)
 
   ".entry-footer" ** h2 ? do
     fontSize $ pct 100
@@ -192,46 +199,79 @@ sweetrollStyle = do
     listStyleType none
     "line-height" -: "1.7"
 
+  "#author-link" ? do
+    display block
+    fontSize $ rem 2
+    marginTop $ rem 1
+    textDecoration none
+    "span" ? color transparent
+    focus & "span" ? color inherit
+
   query M.screen [M.minWidth $ em 32] $ do
     html ? ("line-height" -: "1.4")
     pageParts ? width (pct 75)
     ".entry-in-list" ** ".entry-footer" ? paddingRight (em 1)
 
+  query M.screen [M.maxWidth $ em 60] $ do
+    ".note-in-list" ** ".note-permalink" ? do
+      marginTop $ em 0.75
+      display block
+
   query M.screen [M.minWidth $ em 56] $ do
+    -- based on https://github.com/seaneking/postcss-responsive-type
+    html ? ("font-size" -: "calc(12px + 9 * ((100vw - 600px) / 1024))")
     pageParts ? width (pct 90)
-    body ? fontSize (pct 105)
+    "#author-link" ? do
+      fontSize $ rem 1
+      marginTop $ rem 0
+      marginBottom $ rem (-1)
+      transition "opacity" (sec 0.3) easeInOut (sec 0)
+      opacity 0
+      focus & opacity 1
     ".site-content" <> ".index-main" ? do
       "-webkit-flex-direction" -: "row"
       "flex-direction" -: "row"
+    ".site-content" ? do
+      "-webkit-justify-content" -: "center"
+      "justify-content" -: "center"
     ".site-author" ? do
       flexValue 1
-      orderValue 0
+      orderValue 1
+      marginRight $ em 2
     ".site-main" ? do
       flexValue 3
-      paddingLeft $ em 1
+      orderValue 10
+    ".index-main" ? do
       overflowX auto
+      -- http://lea.verou.me/2012/04/background-attachment-local/
+      "background" -: "/* Shadow covers */ linear-gradient(270deg, white 30%, rgba(255,255,255,0)) 100% 0, linear-gradient(-90deg, rgba(255,255,255,0), white 70%), /* Shadows */ radial-gradient(farthest-side at left, rgba(0,0,0,.2), rgba(0,0,0,0)), radial-gradient(farthest-side at right, rgba(0,0,0,.2), rgba(0,0,0,0)) 100% 0"
+      "background-size" -: "2em 100%, 2em 100%, 1em 100%, 1em 100%"
+      "background-attachment" -: "local, local, scroll, scroll"
+      backgroundRepeat noRepeat
     ".index-category" ? do
       flexValue 1
-      minWidth $ pct 30
-      maxWidth $ pct 100
-      padding nil (em 1) nil nil
-      lastChild & ("padding" -: "0")
-    "#author-link" ? display none
+      minWidth $ em 30
+      maxWidth $ em 40
+      sym2 padding nil $ em 1
+    ".entry-footer" ? do
+      fontSize $ pct 95
+
 
   query M.screen [M.minWidth $ em 80] $ do
-    pageParts ? width (pct 90)
+    html ? ("font-size" -: "calc(12px + 9 * ((60em + 25vw - 600px) / 1024))")
+    pageParts ? width (pct 85)
     ".site-header" ? sym2 padding (em 3) nil
-    ".site-main" ? paddingLeft (em 3.4)
-    ".note-entry" ? maxWidth (em 60)
-    ".entry-in-list" ? do
-      padding (em 2) nil (em 1) nil
-      ".entry-footer" ? marginTop (em 1)
+    ".entry-main" <> ".category-main" ? maxWidth (em 50)
+    ".site-author" ? do
+      maxWidth $ em 18
+      marginRight $ em 2
 
-  query M.screen [M.minWidth $ em 80] $ do
-    pageParts ? width (pct 65)
-
-pageParts ∷ Selector
+pageParts, entryParts ∷ Selector
 pageParts = ".site-header" <> ".site-content" <> ".site-footer"
+entryParts = ".entry-header" <> ".entry-content" <> ".entry-footer"
+
+grayedOut ∷ Css
+grayedOut = color "#aaa"
 
 fSize, flexValue, orderValue ∷ Integer → Css
 fSize x = do

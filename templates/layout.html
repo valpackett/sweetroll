@@ -19,13 +19,15 @@
 	<body>
 		<header class="site-header">
 			<h1><a href="/">$website_title$</a></h1>
-			<a href="#author" id="author-link"><i class="fa fa-l fa-info-circle"></i></a>
+			<a href="#author" id="author-link">
+				<i class="fa fa-l fa-info-circle"></i><span>Skip to author info</span>
+			</a>
 		</header>
 		<div class="site-content">
-			<aside class="site-author h-card" id="author">
+			$content$
+			<aside class="site-author h-card" id="author" tabindex="-1">
 				$author$
 			</aside>
-			$content$
 		</div>
 		<footer class="site-footer">
 			Powered by <a href="https://github.com/myfreeweb/sweetroll">Sweetroll</a>, an <a href="http://indiewebcamp.com">#IndieWeb</a> engine.

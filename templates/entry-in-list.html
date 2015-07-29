@@ -1,7 +1,18 @@
 <li class="h-entry entry-in-list $if(isUntitled)$note$else$article$endif$-in-list">
 $if(isUntitled)$
 	<div class="e-content p-name">$content$</div>
+
 	<footer class="entry-footer">
+		<indie-action do="reply" with="$permalink$">
+			<a href="$if(hasTwitterId)$https://twitter.com/intent/tweet?in_reply_to=$twitterId$$endif$"><i class="fa fa-l fa-reply"></i>Reply</a>
+		</indie-action>
+		<indie-action do="repost" with="$permalink$">
+			<a href="$if(hasTwitterId)$https://twitter.com/intent/retweet?tweet_id=$twitterId$$endif$"><i class="fa fa-l fa-retweet"></i>Repost</a>
+		</indie-action>
+		<indie-action do="like" with="$permalink$">
+			<a href="$if(hasTwitterId)$https://twitter.com/intent/favorite?tweet_id=$twitterId$$endif$"><i class="fa fa-l fa-star"></i>Like</a>
+		</indie-action>
+
 		<a class="u-url note-permalink" href="$permalink$">
 			<i class="fa fa-l fa-clock-o"></i><time class="dt-published" datetime="$publishedAttr$">$published$</time>
 		</a>
@@ -11,10 +22,13 @@ $if(isUntitled)$
 	</footer>
 $else$
 	<a class="u-url p-name" href="$permalink$">$name$</a>
-	$if(isReply)$
 	<footer class="entry-footer">
+		<a class="article-permalink" href="$permalink$">
+			<i class="fa fa-l fa-clock-o"></i><time class="dt-published" datetime="$publishedAttr$">$published$</time>
+		</a>
+		$if(isReply)$
 		in reply to <a class="u-in-reply-to" href="$replyForUrl$">$replyForName$</a>
+		$endif$
 	</footer>
-	$endif$
 $endif$
 </li>

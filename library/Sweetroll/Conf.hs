@@ -147,4 +147,3 @@ instance Default SweetrollTemplates where
 
 bowerComponents ∷ [(FilePath, ByteString)]
 bowerComponents = $(embedDir "bower_components")
-

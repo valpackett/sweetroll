@@ -1,26 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, TypeFamilies #-}
 
 -- | The module responsible for rendering pages into actual HTML
-module Sweetroll.Pages (
-  HTML
-, CSS
-, CategoryName
-, EntrySlug
-, ViewResult
-, tplContext
-, titleParts
-, entryView
-, renderEntry
-, catView
-, renderCat
-, indexView
-, renderIndex
-, notFoundView
-, renderContent
-, renderRaw
-, render
-) where
+module Sweetroll.Pages where
 
 import           ClassyPrelude
 import           Text.Pandoc hiding (Template, renderTemplate)
@@ -54,6 +36,9 @@ instance MimeRender HTML IndieConfig where
 instance MimeRender HTML Text where
   mimeRender _ = toLazyByteString
 
+instance Templatable α ⇒ MimeRender HTML (View α) where
+  mimeRender x = mimeRender x . renderInLayout
+
 data CSS
 
 instance Accept CSS where
@@ -63,91 +48,112 @@ instance Stringable α ⇒ MimeRender CSS α where
   mimeRender _ = toLazyByteString
 
 
+data View α = View
+  { viewConf     ∷ SweetrollConf
+  , viewTpls     ∷ SweetrollTemplates
+  , viewHostInfo ∷ [Pair]
+  , viewContent  ∷ α }
+
+view ∷ α → Sweetroll (View α)
+view content = do
+  conf ← getConf
+  tpls ← getTpls
+  hostInfo ← getHostInfo
+  return $ View conf tpls hostInfo content
+
 data ViewResult = ViewResult
-  { titleParts           ∷ [Text]
-  , tplContext           ∷ Value }
+  { resultHtml    ∷ Text
+  , resultTitle   ∷ [Text]
+  , resultContext ∷ Value }
 
-entryView ∷ CategoryName → [EntrySlug] → (EntrySlug, Entry) → ViewResult
-entryView catName otherSlugs (slug, e) =
-  ViewResult { titleParts = [toStrict (fromMaybe ("Note @ " ++ published) . headMay $ entryName e), pack catName]
-             , tplContext = ctx }
-  where content = renderContent writeHtmlString e
-        published = orEmpty $ formatTimeText <$> entryPublished e
-        slugIdx = fromMaybe (negate 1) $ elemIndex slug otherSlugs
-        prev = atMay otherSlugs $ slugIdx - 1
-        next = atMay otherSlugs $ slugIdx + 1
-        twitterId = lastMay =<< LT.splitOn "/" <$> find (isInfixOf "twitter.com") (entrySyndication e)
-        ctx = object [
-            "name"             .= orEmpty (entryName e)
-          , "content"          .= content
-          , "published"        .= published
-          , "publishedAttr"    .= orEmpty (formatTimeAttr <$> entryPublished e)
-          , "permalink"        .= mconcat ["/", catName, "/", pack slug]
-          , "isUntitled"       .= (null . entryName $ e)
-          , "category"         .= catName
-          , "categoryHref"     .= mconcat ["/", catName]
-          , "hasPrev"          .= isJust prev
-          , "prevHref"         .= mconcat ["/", catName, "/", orEmptyMaybe prev]
-          , "hasNext"          .= isJust next
-          , "nextHref"         .= mconcat ["/", catName, "/", orEmptyMaybe next]
-          , "hasSyndication"   .= (not . null . entrySyndication $ e)
-          , "syndication"      .= entrySyndication e
-          , "hasTwitterId"     .= isJust twitterId
-          , "twitterId"        .= orEmptyMaybe twitterId
-          , "isReply"          .= (not . null . entryInReplyTo $ e)
-          , "replyForUrl"      .= orEmptyMaybe (derefEntry =<< headMay (entryInReplyTo e))
-          , "replyForName"     .= orEmptyMaybe (derefEntryName =<< headMay (entryInReplyTo e))
-          -- TODO: repost/like
-          ]
+class Templatable α where
+  renderBare ∷ (SweetrollTemplates → Template) → View α → ViewResult
+  templateInLayout ∷ View α → (SweetrollTemplates → Template)
+  renderInLayout ∷ View α → Text
+  renderInLayout v@(View conf tpls hostInfo _) = renderTemplate (layoutTemplate tpls) helpers ctx
+      where ctx = object $ hostInfo ++ [
+                      "content"        .= innerHtml -- renderTemplate (tplf tpls) helpers (tplContext vr)
+                    , "author"         .= renderRaw (authorTemplate tpls) hostInfo
+                    , "website_title"  .= siteName conf
+                    , "meta_title"     .= intercalate (titleSeparator conf) (titleParts ++ [siteName conf])
+                    ]
+            (ViewResult innerHtml titleParts _) = renderBare (templateInLayout v) v
 
-renderEntry ∷ CategoryName → [EntrySlug] → (EntrySlug, Entry) → Sweetroll Text
-renderEntry catName otherSlugs entry =
-  render entryTemplate $ entryView catName otherSlugs entry
 
-catView ∷ SweetrollTemplates → CategoryName → Page (EntrySlug, Entry) → ViewResult
-catView tpls name page =
-  ViewResult { titleParts = [pack name]
-             , tplContext = ctx }
-  where entries = items page
-        slugs = map fst entries
-        ctx = object [
-            "name"            .= name
-          , "permalink"       .= mconcat ["/", name]
-          , "entries"         .= map (tplContext . entryView name slugs) entries
-          , "renderedEntries" .= map (renderTemplate (entryInListTemplate tpls) helpers . tplContext . entryView name slugs) entries
-          , "firstHref"       .= (pageLink  $ firstPage page)
-          , "shouldFirst"     .= (thisPage page > firstPage page)
-          , "hasPrev"         .= (isJust    $ prevPage page)
-          , "prevHref"        .= (pageLink' $ prevPage page)
-          , "allPages"        .= map pageLink [firstPage page .. lastPage page]
-          , "hasNext"         .= (isJust    $ nextPage page)
-          , "nextHref"        .= (pageLink' $ nextPage page)
-          , "lastHref"        .= (pageLink  $ lastPage page)
-          , "shouldLast"      .= (thisPage page < lastPage page)
-          ]
-        pageLink n = mconcat ["/", name, "?page=", show n]
-        pageLink' = pageLink . fromMaybe 0
+data EntryPage = EntryPage CategoryName [EntrySlug] (EntrySlug, Entry)
 
-renderCat ∷ CategoryName → Page (EntrySlug, Entry) → Sweetroll Text
-renderCat name page = do
-  tpls ← getTpls
-  render categoryTemplate $ catView tpls name page
+instance Templatable EntryPage where
+  templateInLayout _ = entryTemplate
+  renderBare tplf (View _ tpls _ (EntryPage catName otherSlugs (slug, e))) = ViewResult html titleParts ctx
+    where html = renderTemplate (tplf tpls) helpers ctx
+          titleParts = [toStrict (fromMaybe ("Note @ " ++ published) . headMay $ entryName e), pack catName]
+          ctx = object [
+              "name"             .= orEmpty (entryName e)
+            , "content"          .= content
+            , "published"        .= published
+            , "publishedAttr"    .= orEmpty (formatTimeAttr <$> entryPublished e)
+            , "permalink"        .= mconcat ["/", catName, "/", pack slug]
+            , "isUntitled"       .= (null . entryName $ e)
+            , "category"         .= catName
+            , "categoryHref"     .= mconcat ["/", catName]
+            , "hasPrev"          .= isJust prev
+            , "prevHref"         .= mconcat ["/", catName, "/", orEmptyMaybe prev]
+            , "hasNext"          .= isJust next
+            , "nextHref"         .= mconcat ["/", catName, "/", orEmptyMaybe next]
+            , "hasSyndication"   .= (not . null . entrySyndication $ e)
+            , "syndication"      .= entrySyndication e
+            , "hasTwitterId"     .= isJust twitterId
+            , "twitterId"        .= orEmptyMaybe twitterId
+            , "isReply"          .= (not . null . entryInReplyTo $ e)
+            , "replyForUrl"      .= orEmptyMaybe (derefEntry =<< headMay (entryInReplyTo e))
+            , "replyForName"     .= orEmptyMaybe (derefEntryName =<< headMay (entryInReplyTo e))
+            -- TODO: repost/like
+            ]
+          content = renderContent writeHtmlString e
+          published = orEmpty $ formatTimeText <$> entryPublished e
+          slugIdx = fromMaybe (negate 1) $ elemIndex slug otherSlugs
+          prev = atMay otherSlugs $ slugIdx - 1
+          next = atMay otherSlugs $ slugIdx + 1
+          twitterId = lastMay =<< LT.splitOn "/" <$> find (isInfixOf "twitter.com") (entrySyndication e)
 
-indexView ∷ SweetrollTemplates → [(CategoryName, Page (EntrySlug, Entry))] → ViewResult
-indexView tpls cats =
-  ViewResult { titleParts = []
-             , tplContext = ctx }
-  where ctx = object [
-            "categories" .= map (tplContext . uncurry (catView tpls)) cats
-          ]
+data CatPage = CatPage CategoryName (Page (EntrySlug, Entry))
 
-renderIndex ∷ [(CategoryName, Page (EntrySlug, Entry))] → Sweetroll Text
-renderIndex cats = do
-  tpls ← getTpls
-  render indexTemplate $ indexView tpls cats
+instance Templatable CatPage where
+  templateInLayout _ = categoryTemplate
+  renderBare tplf (View conf tpls hostInfo (CatPage name page)) = ViewResult html titleParts ctx
+    where html = renderTemplate (tplf tpls) helpers ctx
+          titleParts = [pack name]
+          ctx = object [
+              "name"            .= name
+            , "permalink"       .= mconcat ["/", name]
+            , "entries"         .= map resultContext entryResults
+            , "renderedEntries" .= map resultHtml entryResults
+            , "firstHref"       .= (pageLink  $ firstPage page)
+            , "shouldFirst"     .= (thisPage page > firstPage page)
+            , "hasPrev"         .= (isJust    $ prevPage page)
+            , "prevHref"        .= (pageLink' $ prevPage page)
+            , "allPages"        .= map pageLink [firstPage page .. lastPage page]
+            , "hasNext"         .= (isJust    $ nextPage page)
+            , "nextHref"        .= (pageLink' $ nextPage page)
+            , "lastHref"        .= (pageLink  $ lastPage page)
+            , "shouldLast"      .= (thisPage page < lastPage page)
+            ]
+          entryResults = map (renderBare entryInListTemplate . View conf tpls hostInfo . EntryPage name slugs) entries
+          slugs = map fst entries
+          entries = items page
+          pageLink n = mconcat ["/", name, "?page=", show n]
+          pageLink' = pageLink . fromMaybe 0
 
-notFoundView ∷ ViewResult
-notFoundView = ViewResult { titleParts = ["404"], tplContext = object [] }
+data IndexPage = IndexPage [(CategoryName, Page (EntrySlug, Entry))]
+
+instance Templatable IndexPage where
+  templateInLayout _ = indexTemplate
+  renderBare tplf (View conf tpls hostInfo (IndexPage cats)) = ViewResult html titleParts ctx
+    where html = renderTemplate (tplf tpls) helpers ctx
+          titleParts = []
+          ctx = object [
+              "categories" .= map (\(name, page) → resultContext $ renderBare categoryTemplate $ View conf tpls hostInfo $ CatPage name page) cats
+            ]
 
 renderContent ∷ (WriterOptions → Pandoc → String) → Entry → LText
 renderContent writer e = case headMay $ entryContent e of
@@ -157,19 +163,6 @@ renderContent writer e = case headMay $ entryContent e of
 
 renderRaw ∷ Template → [Pair] → Text
 renderRaw t c = renderTemplate t helpers $ object c
-
-render ∷ (SweetrollTemplates → Template) → ViewResult → Sweetroll Text
-render tplf vr = do
-  conf ← getConf
-  tpls ← getTpls
-  hostInfo ← getHostInfo
-  let ctx = object $ hostInfo ++ [
-                "content"        .= renderTemplate (tplf tpls) helpers (tplContext vr)
-              , "author"         .= renderRaw (authorTemplate tpls) hostInfo
-              , "website_title"  .= siteName conf
-              , "meta_title"     .= intercalate (titleSeparator conf) (titleParts vr ++ [siteName conf])
-              ]
-  return $ renderTemplate (layoutTemplate tpls) helpers ctx
 
 helpers ∷ FunctionMap
 helpers = mapFromList [ ("syndicationName", toFunction syndicationName) ]

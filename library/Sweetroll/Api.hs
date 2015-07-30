@@ -28,16 +28,16 @@ import           Sweetroll.Pagination
 import           Sweetroll.Micropub
 import           Sweetroll.Syndication (getSyndication)
 import           Sweetroll.Style
-import           Sweetroll.Util (serveStaticFromLookup)
+import           Sweetroll.Util
 
 type WithLink α               = (Headers '[Header "Link" [L.Link]] α)
 
 type LoginRoute               = "login" :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] [(Text, Text)]
 type IndieConfigRoute         = "indie-config" :> Get '[HTML] IndieConfig
 type DefaultCssRoute          = "default-style.css" :> Get '[CSS] LByteString
-type EntryRoute               = Capture "catName" String :> Capture "slug" String :> Get '[HTML] (WithLink Text)
-type CatRoute                 = Capture "catName" String :> QueryParam "page" Int :> Get '[HTML] (WithLink Text)
-type IndexRoute               = Get '[HTML] (WithLink Text)
+type EntryRoute               = Capture "catName" String :> Capture "slug" String :> Get '[HTML] (WithLink (View EntryPage))
+type CatRoute                 = Capture "catName" String :> QueryParam "page" Int :> Get '[HTML] (WithLink (View CatPage))
+type IndexRoute               = Get '[HTML] (WithLink (View IndexPage))
 
 type PostMicropubRoute        = "micropub" :> AuthProtect :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] (Headers '[Header "Location" Text] [(Text, Text)])
 type GetMicropubRoute         = "micropub" :> AuthProtect :> QueryParam "q" Text :> Get '[FormUrlEncoded] [(Text, Text)]
@@ -56,14 +56,14 @@ getIndieConfig = getConfOpt indieConfig
 getDefaultCss ∷ Sweetroll LByteString
 getDefaultCss = return allCss
 
-getIndex ∷ Sweetroll (WithLink Text)
+getIndex ∷ Sweetroll (WithLink (View IndexPage))
 getIndex = do
   ipp ← getConfOpt itemsPerPage
   cats ← listCollections >>= mapM (readCategory ipp (-1))
   selfLink  ← genLink "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy IndexRoute)
-  addLinks [selfLink] $ renderIndex $ map (second fromJust) $ filter visibleCat cats
+  addLinks [selfLink] $ view $ IndexPage $ map (second fromJust) $ filter visibleCat cats
 
-getCat ∷ String → Maybe Int → Sweetroll (WithLink Text)
+getCat ∷ String → Maybe Int → Sweetroll (WithLink (View CatPage))
 getCat catName page = do
   let page' = fromMaybe (-1) page
   ipp ← getConfOpt itemsPerPage
@@ -72,9 +72,9 @@ getCat catName page = do
     Nothing → throwError err404
     Just p → do
       selfLink ← genLink "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy CatRoute) catName page'
-      addLinks [selfLink] $ renderCat catName p
+      addLinks [selfLink] $ view $ CatPage catName p
 
-getEntry ∷ String → String → Sweetroll (WithLink Text)
+getEntry ∷ String → String → Sweetroll (WithLink (View EntryPage))
 getEntry catName slug = do
   entry ← readDocumentByName catName slug ∷ Sweetroll (Maybe Entry)
   case entry of
@@ -82,7 +82,7 @@ getEntry catName slug = do
     Just e  → do -- cacheHTTPDate (maximumMay $ entryUpdated e) $ do
       otherSlugs ← listDocumentKeys catName
       selfLink ← genLink "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy EntryRoute) catName slug
-      addLinks [selfLink] $ renderEntry catName (map readSlug $ sort otherSlugs) (slug, e)
+      addLinks [selfLink] $ view $ EntryPage catName (map readSlug $ sort otherSlugs) (slug, e)
 
 sweetrollServerT ∷ SweetrollCtx → ServerT SweetrollAPI Sweetroll
 sweetrollServerT ctx = postLogin :<|> getIndieConfig :<|> getDefaultCss :<|> getEntry :<|> getCat :<|> getIndex

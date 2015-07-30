@@ -36,6 +36,7 @@ library
       , lens
       , setters
       , safe
+      , errors
       , data-default
       , stringable
       , bytestring-conversion

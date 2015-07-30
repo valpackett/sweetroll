@@ -89,6 +89,8 @@ library
         Sweetroll.Monads
         Sweetroll.Pages
         Sweetroll.Pagination
+        Sweetroll.Rendering
+        Sweetroll.Routes
         Sweetroll.Style
         Sweetroll.Syndication
         Sweetroll.Util
@@ -158,5 +160,5 @@ test-suite tests
     main-is: Spec.hs
     other-modules:
         Sweetroll.ApiSpec
-        Sweetroll.PagesSpec
+        Sweetroll.RenderingSpec
     type: exitcode-stdio-1.0

@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
 {-# LANGUAGE TypeOperators, TypeFamilies, DataKinds #-}
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, MultiParamTypeClasses #-}
@@ -22,29 +21,15 @@ import           Gitson
 import           Gitson.Util (maybeReadIntString)
 import           Sweetroll.Conf
 import           Sweetroll.Monads
-import           Sweetroll.Auth
+import           Sweetroll.Routes
 import           Sweetroll.Pages
-import           Sweetroll.Pagination
+import           Sweetroll.Rendering
+import           Sweetroll.Auth
 import           Sweetroll.Micropub
 import           Sweetroll.Syndication (getSyndication)
+import           Sweetroll.Pagination
 import           Sweetroll.Style
 import           Sweetroll.Util
-
-type WithLink α               = (Headers '[Header "Link" [L.Link]] α)
-
-type LoginRoute               = "login" :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] [(Text, Text)]
-type IndieConfigRoute         = "indie-config" :> Get '[HTML] IndieConfig
-type DefaultCssRoute          = "default-style.css" :> Get '[CSS] LByteString
-type EntryRoute               = Capture "catName" String :> Capture "slug" String :> Get '[HTML] (WithLink (View EntryPage))
-type CatRoute                 = Capture "catName" String :> QueryParam "page" Int :> Get '[HTML] (WithLink (View CatPage))
-type IndexRoute               = Get '[HTML] (WithLink (View IndexPage))
-
-type PostMicropubRoute        = "micropub" :> AuthProtect :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] (Headers '[Header "Location" Text] [(Text, Text)])
-type GetMicropubRoute         = "micropub" :> AuthProtect :> QueryParam "q" Text :> Get '[FormUrlEncoded] [(Text, Text)]
-
-type SweetrollAPI             = LoginRoute :<|> IndieConfigRoute :<|> DefaultCssRoute
-                           :<|> EntryRoute :<|> CatRoute :<|> IndexRoute
-                           :<|> PostMicropubRoute :<|> GetMicropubRoute
 
 getMicropub ∷ JWT VerifiedJWT → Maybe Text → Sweetroll [(Text, Text)]
 getMicropub _ (Just "syndicate-to") = getSyndication
@@ -60,7 +45,7 @@ getIndex ∷ Sweetroll (WithLink (View IndexPage))
 getIndex = do
   ipp ← getConfOpt itemsPerPage
   cats ← listCollections >>= mapM (readCategory ipp (-1))
-  selfLink  ← genLink "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy IndexRoute)
+  selfLink ← genLink "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy IndexRoute)
   addLinks [selfLink] $ view $ IndexPage $ map (second fromJust) $ filter visibleCat cats
 
 getCat ∷ String → Maybe Int → Sweetroll (WithLink (View CatPage))
@@ -88,9 +73,6 @@ sweetrollServerT ∷ SweetrollCtx → ServerT SweetrollAPI Sweetroll
 sweetrollServerT ctx = postLogin :<|> getIndieConfig :<|> getDefaultCss :<|> getEntry :<|> getCat :<|> getIndex
                   :<|> AuthProtected key postMicropub :<|> AuthProtected key getMicropub
     where key = secretKey $ _ctxSecs ctx
-
-sweetrollAPI ∷ Proxy SweetrollAPI
-sweetrollAPI = Proxy
 
 sweetrollApp ∷ SweetrollCtx → Application
 sweetrollApp ctx = foldr ($) (sweetrollApp' ctx) [

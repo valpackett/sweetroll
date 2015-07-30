@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude, NoMonomorphismRestriction #-}
 {-# LANGUAGE OverloadedStrings, QuasiQuotes, UnicodeSyntax #-}
 
-module Sweetroll.PagesSpec (spec) where
+module Sweetroll.RenderingSpec (spec) where
 
 import           ClassyPrelude
 import           Control.Error.Util (hush)
@@ -14,6 +14,7 @@ import           Web.Simple.Templates.Language
 import           Sweetroll.Util (parseISOTime)
 import           Sweetroll.Pagination (paginate)
 import           Sweetroll.Pages
+import           Sweetroll.Rendering
 import           Sweetroll.Conf
 import           Test.Hspec
 

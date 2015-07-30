@@ -20,7 +20,7 @@ import           Data.Aeson.Lens
 import           Text.Pandoc
 import           Sweetroll.Util
 import           Sweetroll.Monads
-import           Sweetroll.Pages (renderContent)
+import           Sweetroll.Rendering (renderContent)
 import           Sweetroll.Conf
 
 trimmedText ∷ Index LText → Entry → (Bool, LText)

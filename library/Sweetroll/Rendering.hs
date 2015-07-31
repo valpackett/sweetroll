@@ -95,16 +95,36 @@ instance Templatable EntryPage where
             , "hasTwitterId"     .= isJust twitterId
             , "twitterId"        .= orEmptyMaybe twitterId
             , "isReply"          .= (not . null . entryInReplyTo $ e)
-            , "replyForUrl"      .= orEmptyMaybe (derefEntry =<< headMay (entryInReplyTo e))
-            , "replyForName"     .= orEmptyMaybe (derefEntryName =<< headMay (entryInReplyTo e))
-            -- TODO: repost/like
+            , "replyContexts"    .= referenceContexts (entryInReplyTo e)
+            , "isLike"           .= (not . null . entryLikeOf $ e)
+            , "likeContexts"     .= referenceContexts (entryLikeOf e)
+            , "isRepost"         .= (not . null . entryRepostOf $ e)
+            , "repostContexts"   .= referenceContexts (entryRepostOf e)
             ]
-          content = renderContent writeHtmlString e
+          content = renderContent writeHtmlString $ EntryEntry e
           published = orEmpty $ formatTimeText <$> entryPublished e
           slugIdx = fromMaybe (-1) $ elemIndex slug otherSlugs
           prev = atMay otherSlugs $ slugIdx - 1
           next = atMay otherSlugs $ slugIdx + 1
           twitterId = lastMay =<< LT.splitOn "/" <$> find (isInfixOf "twitter.com") (entrySyndication e)
+
+referenceContexts ∷ [EntryReference] → [Value]
+referenceContexts = mapMaybe o
+  where o e = case derefEntryUrl e of
+                Just url → Just $ object [ "url"        .= url
+                                         , "name"       .= fromMaybe url (derefEntryName e)
+                                         , "hasName"    .= isJust (derefEntryName e)
+                                         , "content"    .= snd (trimmedText 256 e)
+                                         , "hasAuthors" .= not (null $ authorContexts $ derefEntryAuthor e)
+                                         , "authors"    .= authorContexts (derefEntryAuthor e) ]
+                Nothing → Nothing
+
+authorContexts ∷ [CardReference] → [Value]
+authorContexts = mapMaybe o
+  where o e = case derefAuthorUrl e of
+                Just url → Just $ object [ "url"        .= url
+                                         , "name"       .= fromMaybe url (derefAuthorName e) ]
+                Nothing → Nothing
 
 instance Templatable CatPage where
   templateInLayout _ = categoryTemplate
@@ -146,12 +166,6 @@ permalink = safeLink sweetrollAPI
 
 showLink ∷ Show α ⇒ α → Text
 showLink = ("/" ++) . Data.Stringable.toText . show
-
-renderContent ∷ (WriterOptions → Pandoc → String) → Entry → LText
-renderContent writer e = case headMay $ entryContent e of
-  Just (PandocContent p) → pack $ writer pandocWriterOptions p
-  Just (TextContent t) → t
-  _ -> ""
 
 renderRaw ∷ Template → [Pair] → Text
 renderRaw t = renderTemplate t helpers . object

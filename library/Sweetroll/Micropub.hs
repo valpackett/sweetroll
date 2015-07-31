@@ -10,7 +10,8 @@ import           Control.Monad.Except (throwError)
 import           Control.Concurrent.Lifted (fork, threadDelay)
 import           Data.Default
 import           Data.Microformats2
-import           Data.Microformats2.Aeson()
+import           Data.Microformats2.Parser
+import           Data.Microformats2.Aeson ()
 import qualified Data.Stringable as S
 import           Text.Pandoc hiding (Link)
 import qualified Text.Pandoc.Error as PE
@@ -38,21 +39,20 @@ postMicropub _ allParams = do
       update x = liftIO $ transaction "./" $ saveDocumentByName category slug x
   case lookup "h" allParams of
     Just "entry" → do
-      let entry = makeEntry allParams now (S.toLazyText absUrl) readerF
-          ifSyndicateTo x y = if any (isInfixOf x . snd) $ filter (isInfixOf "syndicate-to" . fst) allParams then y else return Nothing
-      create entry
+      let entry' = makeEntry allParams now (S.toLazyText absUrl) readerF
+      entry ← fetchCiteContexts entry'
+      create $ entry { entryContent = entryContent entry ++ (join $ map derefEntryContent $ entryRepostOf entry) }
+      let ifSyndicateTo x y = if any (isInfixOf x . snd) $ filter (isInfixOf "syndicate-to" . fst) allParams then y else return Nothing
       unless isTest $ do
         void $ fork $ do
           threadDelay =<< return . (*1000000) =<< getConfOpt pushDelay
           notifyPuSH []
           notifyPuSH [pack category]
         void $ fork $ do
-          let ps = [ ifSyndicateTo "app.net"     $ postAppDotNet entry
-                   , ifSyndicateTo "twitter.com" $ postTwitter entry ]
-          synd ← sequence ps
-          let entry' = entry { entrySyndication = catMaybes synd }
-          update entry'
-          void $ sendWebmentions entry'
+          synd ← sequence [ ifSyndicateTo "app.net"     $ postAppDotNet entry
+                          , ifSyndicateTo "twitter.com" $ postTwitter entry ]
+          update $ entry { entrySyndication = catMaybes synd }
+        void $ fork $ void $ sendWebmentions entry
       return $ addHeader absUrl $ []
     _ → throwError err400
 
@@ -92,6 +92,21 @@ makeEntry pars now absUrl readerF = def
   , entryLikeOf       = UrlEntry <$> par "like-of"
   , entryRepostOf     = UrlEntry <$> par "repost-of" }
   where par = map S.toLazyText . maybeToList . (flip lookup) pars
+
+fetchCiteContexts ∷ Entry → Sweetroll Entry
+fetchCiteContexts e = do
+  let fetchCite (UrlEntry href) = do
+        resp ← parseReprEntryWithAuthor (requestGetHtml . show) Sanitize href
+        return $ Just $ case resp of
+          Just entry → CiteEntry $ removeSameName $ citeOfEntry entry { entryUrl = [href] }
+          _ → UrlEntry href
+      fetchCite x = return $ Just x
+  inReplyTo ← sequence $ fetchCite <$> entryInReplyTo e
+  likeOf ← sequence $ fetchCite <$> entryLikeOf e
+  repostOf ← sequence $ fetchCite <$> entryRepostOf e
+  return $ e { entryInReplyTo = catMaybes inReplyTo
+             , entryLikeOf    = catMaybes likeOf
+             , entryRepostOf  = catMaybes repostOf }
 
 notifyPuSH ∷ [Text] → Sweetroll ()
 notifyPuSH url = do

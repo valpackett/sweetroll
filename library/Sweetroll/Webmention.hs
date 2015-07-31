@@ -67,7 +67,7 @@ sendWebmention from to = do
 sendWebmentions ∷ Entry → Sweetroll [(String, Bool)]
 sendWebmentions e = mapM (sendWebmention from) links
   where links = S.toList . S.fromList $ contentLinks ++ metaLinks
-        metaLinks = map unpack . mapMaybe derefEntry . mapMaybe headMay $ [entryInReplyTo e, entryLikeOf e, entryRepostOf e]
+        metaLinks = map unpack . mapMaybe derefEntryUrl . mapMaybe headMay $ [entryInReplyTo e, entryLikeOf e, entryRepostOf e]
         contentLinks = PW.query extractLink . pandocContent $ entryContent e
         from = unpack . orEmpty . entryUrl $ e
         pandocContent (PandocContent p : _) = p

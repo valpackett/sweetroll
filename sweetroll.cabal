@@ -52,7 +52,8 @@ library
       , lens-aeson
       , jwt
       , gitson == 0.5.*
-      , microformats2-types == 0.4.*
+      , microformats2-types
+      , microformats2-parser
       , wai
       , wai-extra
       , wai-middleware-static
@@ -140,6 +141,7 @@ test-suite tests
       , classy-prelude
       , sweetroll
       , stringable
+      , errors
       , http-types
       , microformats2-types
       , case-insensitive

@@ -50,7 +50,7 @@ I'm running it on [my website](https://unrelenting.technology).
 - [ ] storing and sending [vouch](http://indiewebcamp.com/vouch) with webmention
 - [x] microformats2 parser
 - [ ] microformats2 based [comments-presentation](http://indiewebcamp.com/comments-presentation)
-- [ ] microformats2 parse reply target, store as cite instead of just a link
+- [x] microformats2 parse reply target, store as cite instead of just a link
 - [ ] special POSSE for likes and reposts to App.net/Twitter
 - [ ] Atom feed
 - [x] PubSubHubbub (w/ configurable delay because privacy and general {notice typo - delete - post again} things)

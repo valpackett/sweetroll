@@ -19,7 +19,7 @@ import           Network.Wai (Middleware, responseLBS, pathInfo)
 import           Network.Mime (defaultMimeLookup)
 import           Network.HTTP.Types.Status (ok200)
 import           Servant (mimeRender, FormUrlEncoded)
-import           Sweetroll.Conf (pandocReaderOptions)
+import           Sweetroll.Conf (pandocReaderOptions, pandocWriterOptions)
 
 type CategoryName = String
 type EntrySlug = String
@@ -82,17 +82,51 @@ mkUrl base parts = intercalate "/" $ base : parts
 writeForm ∷ (Stringable α, Stringable β, Stringable γ) ⇒ [(α, β)] → γ
 writeForm = fromLazyByteString . mimeRender (Proxy ∷ Proxy FormUrlEncoded) . map (toText *** toText)
 
-derefEntry ∷ EntryReference → Maybe LText
-derefEntry (EntryEntry e) = headMay . entryUrl $ e
-derefEntry (CiteEntry c)  = headMay . citeUrl $ c
-derefEntry (TextEntry l)  = Just l
-derefEntry (UrlEntry l)   = Just l
+trimmedText ∷ Index LText → EntryReference → (Bool, LText)
+trimmedText l e = (isArticle, if isTrimmed then take (l - 1) t ++ "…" else t)
+  where isTrimmed = length t > fromIntegral l
+        (isArticle, t) = case derefEntryName e of
+                           Just n → (True, n)
+                           _ → (False, renderContent P.writePlain e)
+
+derefEntryUrl ∷ EntryReference → Maybe LText
+derefEntryUrl (EntryEntry e) = headMay . reverse . sortOn length . entryUrl $ e
+derefEntryUrl (CiteEntry c)  = headMay . reverse . sortOn length . citeUrl $ c
+derefEntryUrl (TextEntry l)  = Just l
+derefEntryUrl (UrlEntry l)   = Just l
 
 derefEntryName ∷ EntryReference → Maybe LText
-derefEntryName (EntryEntry e) = headMay . entryName $ e
-derefEntryName (CiteEntry c)  = headMay . citeName $ c
+derefEntryName (EntryEntry e) = headMay . reverse . sortOn length . entryName $ e
+derefEntryName (CiteEntry c)  = headMay . reverse . sortOn length . citeName $ c
 derefEntryName (TextEntry l)  = Just l
 derefEntryName (UrlEntry l)   = Just l
+
+derefEntryContent ∷ EntryReference → [ContentReference]
+derefEntryContent (EntryEntry e) = entryContent $ e
+derefEntryContent (CiteEntry e)  = citeContent  $ e
+derefEntryContent _              = mzero
+
+renderContent ∷ (P.WriterOptions → P.Pandoc → String) → EntryReference → LText
+renderContent writer e = case headMay $ derefEntryContent e of
+  Just (PandocContent p) → pack $ writer pandocWriterOptions p
+  Just (TextContent t) → t
+  _ -> ""
+
+derefEntryAuthor ∷ EntryReference → [CardReference]
+derefEntryAuthor (EntryEntry e) = entryAuthor $ e
+derefEntryAuthor (CiteEntry c)  = citeAuthor $ c
+derefEntryAuthor _              = mzero
+
+derefAuthorName ∷ CardReference → Maybe LText
+derefAuthorName (CardCard c) = headMay . cardName $ c
+derefAuthorName (TextCard t) = Just t
+
+derefAuthorUrl ∷ CardReference → Maybe LText
+derefAuthorUrl (CardCard c) = headMay . cardUrl $ c
+derefAuthorUrl _            = mzero
+
+removeSameName ∷ Cite → Cite
+removeSameName c = c { citeName = filter (\x → TextContent x `onotElem` citeContent c) $ citeName c }
 
 orEmptyMaybe ∷ IsString α ⇒ Maybe α → α
 orEmptyMaybe = fromMaybe ""

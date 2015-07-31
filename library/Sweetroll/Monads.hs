@@ -16,11 +16,14 @@ import           Control.Monad.Except
 import           Control.Monad.Trans.Either
 import           Control.Monad.Trans.Resource
 import           Control.Monad.Trans.Control
+import qualified Control.Exception.Lifted as E
 import           Data.Stringable hiding (length)
 import           Data.Aeson.Types
+import           Network.HTTP.Client
 import qualified Network.HTTP.Client.Conduit as H
+import qualified Network.HTTP.Types as HT
 import "crypto-random" Crypto.Random
-import           Servant
+import           Servant hiding (toText)
 import           Sweetroll.Conf
 
 data SweetrollCtx = SweetrollCtx
@@ -89,7 +92,18 @@ getRng = asks _ctxRng
 instance H.HasHttpManager SweetrollCtx where
   getHttpManager = _ctxHttpMgr
 
--- | Convenient wrapper around Network.HTTP requests.
+requestGetHtml ∷ (Stringable α, Stringable β) ⇒ β → Sweetroll (Maybe α)
+requestGetHtml url = do
+  req ← parseUrlP "" $ toString url
+  resp' ← E.try $ request $ req { requestHeaders = [ (HT.hAccept, "text/html; charset=utf-8") ] } ∷ Sweetroll (Either SomeException (Response LByteString))
+  case resp' of
+    Left _ → return Nothing
+    Right resp → do
+      putStrLn $ "HTML fetching status for " ++ toText url ++  ": " ++ (toText . show . HT.statusCode . responseStatus $ resp)
+      return $ case HT.statusCode $ responseStatus $ resp of
+        200 → Just $ fromLazyByteString $ responseBody resp
+        _ → Nothing
+
 request ∷ (MonadSweetroll μ, MonadIO μ, Stringable α) ⇒ H.Request → μ (H.Response α)
 request req = do
   resp ← H.httpLbs req

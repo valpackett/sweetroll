@@ -17,18 +17,9 @@ import           Data.Microformats2
 import qualified Data.Stringable as S
 import           Data.Aeson
 import           Data.Aeson.Lens
-import           Text.Pandoc
 import           Sweetroll.Util
 import           Sweetroll.Monads
-import           Sweetroll.Rendering (renderContent)
 import           Sweetroll.Conf
-
-trimmedText ∷ Index LText → Entry → (Bool, LText)
-trimmedText l entry = (isArticle, if isTrimmed then take (l - 1) t ++ "…" else t)
-  where isTrimmed = length t > fromIntegral l
-        (isArticle, t) = case entryName entry of
-                           n : _ → (True, n)
-                           _ → (False, renderContent writePlain entry)
 
 ifSuccess ∷ ∀ (μ ∷ * → *) body α. Monad μ ⇒ Response body → Maybe α → μ (Maybe α)
 ifSuccess resp what = return $ if not $ statusIsSuccessful $ responseStatus resp then Nothing else what
@@ -37,7 +28,7 @@ postAppDotNet ∷ (MonadSweetroll μ, MonadIO μ) ⇒ Entry → μ (Maybe LText)
 postAppDotNet entry = do
   req ← parseUrlP "/posts" =<< getConfOpt adnApiHost
   bearer ← getSec adnApiToken
-  let (isArticle, txt) = trimmedText 250 entry
+  let (isArticle, txt) = trimmedText 250 $ EntryEntry entry
       pUrl = orEmpty . entryUrl $ entry
       o = object
       reqData = o [ "text" .= if isArticle then txt else "[x] " ++ txt
@@ -62,7 +53,7 @@ postTwitter ∷ (MonadSweetroll μ, MonadIO μ) ⇒ Entry → μ (Maybe LText)
 postTwitter entry = do
   req ← parseUrlP "/statuses/update.json" =<< getConfOpt twitterApiHost
   secs ← getSecs
-  let (_, txt) = trimmedText 100 entry -- TODO: Figure out the number based on mentions of urls/domains in the first (140 - 25) characters
+  let (_, txt) = trimmedText 100 $ EntryEntry entry -- TODO: Figure out the number based on mentions of urls/domains in the first (140 - 25) characters
       pUrl = orEmpty . entryUrl $ entry
       reqBody = writeForm [(asText "status", txt ++ " " ++ pUrl)]
       req' = req { method = "POST"

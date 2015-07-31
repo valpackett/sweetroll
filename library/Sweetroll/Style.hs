@@ -170,6 +170,7 @@ sweetrollStyle = do
     entryParts ? sym margin (em 1)
     ".entry-header" ? do
       fontSize $ pct 90
+      paddingTop $ em 0.4
     ".entry-content" ? fontSize (pct 110)
     ".entry-footer" ? do
       borderTop solid (px 1) $ rgb 57 204 204
@@ -194,6 +195,17 @@ sweetrollStyle = do
     display inline
 
   ".entry-syndication" ** (ul <> li) ? display inline
+
+  ".reference-context" ? do
+    sym padding $ em 0.4
+    sym margin $ em 0.4
+    backgroundColor "#efefef"
+    color "#606060"
+    "a" ? color "#0064cf"
+    "blockquote" ? do
+      marginTop $ em 0.4
+      paddingLeft $ em 0.4
+      borderLeft solid (em 0.2) $ rgb 57 204 204
 
   ".social-profiles" ? do
     listStyleType none

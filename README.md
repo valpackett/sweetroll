@@ -58,7 +58,6 @@ I'm running it on [my website](https://unrelenting.technology).
 - [x] posting in other formats supported by pandoc
 - [ ] displaying in other formats supported by pandoc
 - [ ] custom non-entry html pages
-- [x] caching headers
 - [ ] automatic git push when posting (in gitson)
 - [ ] support for running on PaaS (automatic git pull when starting), [Heroku Button](https://blog.heroku.com/archives/2014/8/7/heroku-button) + GitHub user friendly setup process
 - [ ] built-in TLS server, since we depend on `tls` already because of the client

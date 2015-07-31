@@ -158,7 +158,7 @@ instance Templatable IndexPage where
   renderBare tplf (View conf tpls hostInfo (IndexPage cats)) = ViewResult html titleParts ctx
     where html = renderTemplate (tplf tpls) helpers ctx
           titleParts = []
-          ctx = object [ "categories" .= map catContext cats ]
+          ctx = object [ "categories" .= map catContext (sortOn (fromMaybe 999 . flip elemIndex (categoryOrder conf) . fst) cats) ]
           catContext (n, p) = resultContext . renderBare categoryTemplate . View conf tpls hostInfo $ CatPage n p
 
 permalink ∷ (IsElem endpoint SweetrollAPI, HasLink endpoint) ⇒ Proxy endpoint → MkLink endpoint

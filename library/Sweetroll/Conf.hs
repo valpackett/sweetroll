@@ -53,6 +53,7 @@ data SweetrollConf = SweetrollConf
   ,               httpsWorks ∷ Bool
   ,             itemsPerPage ∷ Int
   ,           titleSeparator ∷ Text
+  ,            categoryOrder ∷ [String]
   ,              indieConfig ∷ IndieConfig
   ,   indieAuthRedirEndpoint ∷ String
   ,   indieAuthCheckEndpoint ∷ String -- Separated for debugging
@@ -111,6 +112,7 @@ instance Default SweetrollConf where
       , domainName               = "localhost"
       , itemsPerPage             = 20
       , titleSeparator           = " / "
+      , categoryOrder            = ["articles", "notes", "likes", "replies"]
       , indieConfig              = MkIndieConfig $ object [
                                        "reply"    .= asText "https://quill.p3k.io/new?reply={url}"
                                      , "bookmark" .= asText "https://quill.p3k.io/bookmark?url={url}"

@@ -2,7 +2,7 @@
 	$for(reply in replyContexts)$
 	<div class="reference-context reply-context u-in-reply-to h-cite">
 		in reply to
-		<a class="p-name u-url" rel="in-reply-to" href="$reply.url$">$reply.name$</a>
+		<a class="p-name u-url" href="$reply.url$">$reply.name$</a>
 		$if(reply.hasAuthors)$
 		($for(author in reply.authors)$<a class="p-author h-card" href="$author.url$">$author.name$</a>$sep$, $endfor$)
 		$endif$
@@ -12,16 +12,20 @@
 	$for(repost in repostContexts)$
 	<div class="reference-context repost-context u-repost-of h-cite">
 		$if(repost.hasAuthors)$
-		<a class="u-url" rel="repost-of" href="$repost.url$">repost</a> from
+		<a class="u-url" href="$repost.url$">repost</a> from
 		$for(author in repost.authors)$<a class="p-author h-card" href="$author.url$">$author.name$</a>$sep$, $endfor$
 		$endif$
 	</div>
 	$endfor$
 
+	$if(isLike)$
+	<div class="u-like-of h-cite">
 	$for(like in likeContexts)$
-	Liked <a class="u-like-of h-cite" rel="like-of" href="$like.url$">$like.name$</a>$if(like.hasAuthors)$
+	Liked <a class="u-url" href="$like.url$">$like.name$</a>$if(like.hasAuthors)$
 	($for(author in like.authors)$<a class="p-author h-card" href="$author.url$">$author.name$</a>$sep$, $endfor$)$endif$.
 	$endfor$
+	</div>
+	$endif$
 
 	$if(isUntitled)$
 	<div class="e-content p-name">$content$</div>

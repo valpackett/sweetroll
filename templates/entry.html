@@ -37,12 +37,16 @@
 
 		</header>
 
+		$if(isLike)$
+		<div class="entry-content u-like-of h-cite">
+		$for(like in likeContexts)$
+		Liked <a class="u-url" rel="like-of" href="$like.url$">$like.name$</a>$if(like.hasAuthors)$
+		($for(author in like.authors)$<a class="p-author h-card" href="$author.url$">$author.name$</a>$sep$, $endfor$)$endif$.
+		$endfor$
+		</div>
+		$endif$
+		$if(isUntitled)$$else$<fragmention-target exact>$endif$
 		<div class="entry-content e-content$if(isUntitled)$ p-name$endif$">
-			$for(like in likeContexts)$
-			Liked <a class="u-like-of h-cite" rel="like-of" href="$like.url$">$like.name$</a>$if(like.hasAuthors)$
-			($for(author in like.authors)$<a class="p-author h-card" href="$author.url$">$author.name$</a>$sep$, $endfor$)$endif$.
-			$endfor$
-			$if(isUntitled)$$else$<fragmention-target exact>$endif$
 			$content$
 			$if(isUntitled)$$else$</fragmention-target>$endif$
 		</div>

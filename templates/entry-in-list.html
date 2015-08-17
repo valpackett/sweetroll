@@ -19,7 +19,7 @@
 	$endfor$
 
 	$if(isLike)$
-	<div class="u-like-of h-cite">
+	<div class="p-name u-like-of h-cite">
 	$for(like in likeContexts)$
 	Liked <a class="u-url" href="$like.url$">$like.name$</a>$if(like.hasAuthors)$
 	($for(author in like.authors)$<a class="p-author h-card" href="$author.url$">$author.name$</a>$sep$, $endfor$)$endif$.
@@ -28,7 +28,7 @@
 	$endif$
 
 	$if(isUntitled)$
-	<div class="e-content p-name">$content$</div>
+	$if(hasContent)$<div class="e-content p-name">$content$</div>$endif$
 
 	<footer class="entry-footer">
 		<indie-action do="reply" with="$permalink$">

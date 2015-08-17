@@ -80,6 +80,7 @@ instance Templatable EntryPage where
           ctx = object [
               "name"             .= orEmpty (entryName e)
             , "content"          .= content
+            , "hasContent"       .= (not . null . entryContent $ e)
             , "published"        .= published
             , "publishedAttr"    .= orEmpty (formatTimeAttr <$> entryPublished e)
             , "permalink"        .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack slug)
@@ -182,4 +183,4 @@ formatTimeText ∷ UTCTime → LText
 formatTimeText = asLText . pack . formatTime defaultTimeLocale "%d.%m.%Y %I:%M %p"
 
 formatTimeAttr ∷ UTCTime → LText
-formatTimeAttr = asLText . pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M"
+formatTimeAttr = asLText . pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%MZ"

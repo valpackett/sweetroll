@@ -260,6 +260,7 @@ sweetrollStyle = do
       "background-size" -: "2em 100%, 2em 100%, 1em 100%, 1em 100%"
       "background-attachment" -: "local, local, scroll, scroll"
       backgroundRepeat noRepeat
+    ".entry-main" <> ".category-main" ? maxWidth (em 45)
     ".index-category" ? do
       flexValue 1
       minWidth $ em 30
@@ -267,7 +268,6 @@ sweetrollStyle = do
       sym2 padding nil $ em 1
     ".entry-footer" ? do
       fontSize $ pct 95
-
 
   query M.screen [M.minWidth $ em 80] $ do
     html ? ("font-size" -: "calc(12px + 9 * ((60em + 25vw - 600px) / 1024))")

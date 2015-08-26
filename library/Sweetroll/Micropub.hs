@@ -32,16 +32,16 @@ import           Sweetroll.Auth
 import           Sweetroll.Util
 import           Sweetroll.Monads
 import           Sweetroll.Routes
--- import           Sweetroll.Syndication
 import           Sweetroll.Webmention
 
 postMicropub ∷ JWT VerifiedJWT → [(Text, Text)] → Sweetroll (Headers '[Header "Location" Text] [(Text, Text)])
 postMicropub _ allParams = do
   now ← liftIO getCurrentTime
+  base ← getConfOpt baseURI
   let category = decideCategory allParams
       slug = decideSlug allParams now
       content = pandocRead (decideReader allParams) <$> S.toString <$> lookup "content" allParams
-      absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug
+      absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base
       create x = liftIO $ transaction "./" $ saveNextDocument category slug x
       -- update x = liftIO $ transaction "./" $ saveDocumentByName category slug x
   case lookup "h" allParams of
@@ -56,21 +56,16 @@ postMicropub _ allParams = do
           entry = makeEntry allParams now absUrl content entryProps
       -- TODO: copy content for reposts
       create entry
-      -- let ifSyndicateTo x y = if any (isInfixOf x . snd) $ filter (isInfixOf "syndicate-to" . fst) allParams then y else return Nothing
       isTest ← getConfOpt testMode
       unless isTest $ do
         void $ fork $ do
           threadDelay =<< return . (*1000000) =<< getConfOpt pushDelay
-          reread ← readDocumentByName category slug ∷ Sweetroll (Maybe Value) 
+          reread ← readDocumentByName category slug ∷ Sweetroll (Maybe Value)
           if isJust reread -- not deleted after the delay
              then do
                notifyPuSH $ permalink (Proxy ∷ Proxy IndexRoute)
                notifyPuSH $ dropQueryFragment $ permalink (Proxy ∷ Proxy CatRoute) category (-1)
              else return ()
-        -- void $ fork $ do
-          -- synd ← sequence [ ifSyndicateTo "app.net"     $ postAppDotNet entry
-          --                 , ifSyndicateTo "twitter.com" $ postTwitter entry ]
-          -- update $ entry -- TODO { entrySyndication = catMaybes synd }
         void $ fork $ do
           contMs ← contentWebmentions content
           let metaMs = catMaybes $ map snd $ concat $ map catMaybes [ inReplyTo, likeOf, repostOf ]

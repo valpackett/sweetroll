@@ -37,7 +37,7 @@ I'm running it on [my website](https://unrelenting.technology).
 
 ## TODO
 
-- [ ] remove syndication from here, use configurable webmention-to-syndication (brid.gy publish) instead
+- [ ] add configurable webmention-to-syndication (brid.gy publish)
 - [ ] archive pages, ie. unpaginated pages
 - [ ] tags (add CSV support to gitson for storing stuff like this)
 - [ ] micropub updating and deleting

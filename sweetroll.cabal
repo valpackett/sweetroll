@@ -76,7 +76,6 @@ library
       , mime-types
       , html-conduit
       , xml-lens
-      , oauthenticated
       , crypto-random
       , async
       , highlighting-kate
@@ -96,7 +95,6 @@ library
         Sweetroll.Rendering
         Sweetroll.Routes
         Sweetroll.Style
-        Sweetroll.Syndication
         Sweetroll.Util
         Sweetroll.Webmention
     ghc-prof-options: -auto-all -prof

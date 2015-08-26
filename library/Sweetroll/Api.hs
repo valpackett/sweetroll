@@ -25,13 +25,12 @@ import           Sweetroll.Pages
 import           Sweetroll.Rendering
 import           Sweetroll.Auth
 import           Sweetroll.Micropub
-import           Sweetroll.Syndication (getSyndication)
 import           Sweetroll.Pagination
 import           Sweetroll.Style
 import           Sweetroll.Util
 
 getMicropub ∷ JWT VerifiedJWT → Maybe Text → Sweetroll [(Text, Text)]
-getMicropub _ (Just "syndicate-to") = getSyndication
+-- getMicropub _ (Just "syndicate-to") = getSyndication
 getMicropub token _ = getAuth token
 
 getIndieConfig ∷ Sweetroll IndieConfig

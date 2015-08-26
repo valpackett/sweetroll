@@ -2,10 +2,6 @@ flags: {}
 packages:
   - '.'
   - '../indieweb-algorithms'
-  - location:
-      git: https://github.com/tel/oauthenticated
-      commit: 495afad3f07c9d4a408a11a96c2d5451bf21162f
-    extra-dep: true
 extra-deps:
   - microformats2-parser-1.0.1.1
   - http-link-header-1.0.1

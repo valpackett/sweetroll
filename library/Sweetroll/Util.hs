@@ -100,9 +100,9 @@ pandocRead x = PE.handleError . x pandocReaderOptions
 
 serveStaticFromLookup ∷ [(FilePath, ByteString)] → Middleware
 serveStaticFromLookup files app req respond =
-  case lookup path files of
+  case lookup pth files of
     Just bs → respond $ responseLBS ok200 [("Content-Type", ctype)] $ toLazyByteString bs
     Nothing → app req respond
-  where path = toString $ intercalate "/" reqpath
+  where pth = toString $ intercalate "/" reqpath
         ctype = defaultMimeLookup $ fromMaybe "" $ lastMay reqpath
         reqpath = drop 1 $ pathInfo req

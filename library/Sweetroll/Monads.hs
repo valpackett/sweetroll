@@ -16,13 +16,12 @@ import           Control.Monad.Except
 import           Control.Monad.Trans.Either
 import           Control.Monad.Trans.Resource
 import           Control.Monad.Trans.Control
-import qualified Control.Exception.Lifted as E
+import           Data.Conduit
 import           Data.Stringable hiding (length)
 import           Data.Aeson.Types
-import           Network.HTTP.Client
 import           Network.HTTP.Client.Internal (setUri) -- The fuck?
-import qualified Network.HTTP.Client.Conduit as H
-import qualified Network.HTTP.Types as HT
+import           Network.HTTP.Client.Conduit
+import           Network.HTTP.Types
 import "crypto-random" Crypto.Random
 import           Servant hiding (toText)
 import           Sweetroll.Conf
@@ -32,7 +31,7 @@ data SweetrollCtx = SweetrollCtx
   , _ctxTpls     ∷ SweetrollTemplates
   , _ctxSecs     ∷ SweetrollSecrets
   , _ctxHostInfo ∷ [Pair]
-  , _ctxHttpMgr  ∷ H.Manager
+  , _ctxHttpMgr  ∷ Manager
   , _ctxRng      ∷ SystemRNG }
 
 type MonadSweetroll = MonadReader SweetrollCtx
@@ -55,7 +54,7 @@ sweetrollToEither ctx = Nat $ runSweetrollEither ctx
 
 initCtx ∷ SweetrollConf → SweetrollTemplates → SweetrollSecrets → IO SweetrollCtx
 initCtx conf tpls secs = do
-  httpClientMgr ← H.newManager
+  httpClientMgr ← newManager
   sysRandom ← cprgCreate <$> createEntropyPool
   return SweetrollCtx { _ctxConf     = conf
                       , _ctxTpls     = tpls
@@ -90,32 +89,25 @@ getHostInfo = asks _ctxHostInfo
 getRng ∷ MonadSweetroll μ ⇒ μ SystemRNG
 getRng = asks _ctxRng
 
-instance H.HasHttpManager SweetrollCtx where
+instance HasHttpManager SweetrollCtx where
   getHttpManager = _ctxHttpMgr
 
-parseUrlP ∷ (MonadIO μ) ⇒ String → String → μ H.Request
-parseUrlP postfix url = liftIO . H.parseUrl $ url ++ postfix
+parseUrlP ∷ (MonadIO μ) ⇒ String → String → μ Request
+parseUrlP postfix url = liftIO . parseUrl $ url ++ postfix
 
-request ∷ Stringable α ⇒ H.Request → Sweetroll (H.Response α)
+request ∷ Stringable α ⇒ Request → Sweetroll (Response α)
 request req = do
-  resp ← H.httpLbs req
-  return $ resp { H.responseBody = fromLazyByteString $ H.responseBody resp }
+  resp ← httpLbs req
+  return $ resp { responseBody = fromLazyByteString $ responseBody resp }
 
-requestMay ∷ Stringable α ⇒ H.Request → Sweetroll (Maybe (Int, HT.ResponseHeaders, α))
-requestMay req = do
-  resp' ← E.try $ request $ req ∷ Sweetroll (Either SomeException (Response LByteString))
-  case resp' of
-    Left _ → return Nothing
-    Right resp → do
-      putStrLn $ toText $ "Request status for " ++ show (getUri req) ++ ": " ++ (show . HT.statusCode . responseStatus $ resp)
-      return $ case HT.statusCode $ responseStatus resp of
-        200 → Just $ (HT.statusCode $ responseStatus resp, responseHeaders resp, fromLazyByteString $ responseBody resp)
-        _ → Nothing
+withSuccessfulRequest ∷ Request → (Response (Source Sweetroll ByteString) → Sweetroll (Maybe α)) → Sweetroll (Maybe α)
+withSuccessfulRequest req a =
+  withResponse req $ \resp → do
+    putStrLn $ toText $ "Request status for <" ++ show (getUri req) ++ ">: " ++ (show . statusCode . responseStatus $ resp)
+    if responseStatus resp `elem` [ok200, created201, accepted202, noContent204] then a resp else return Nothing
 
-requestMayHtml ∷ Stringable α ⇒ URI → Sweetroll (Maybe α)
-requestMayHtml uri = do
+withSuccessfulRequestHtml ∷ URI → (Response (Source Sweetroll ByteString) → Sweetroll (Maybe α)) → Sweetroll (Maybe α)
+withSuccessfulRequestHtml uri a = do
   req ← setUri def uri
-  resp ← requestMay $ req { requestHeaders = [ (HT.hAccept, "text/html; charset=utf-8") ] }
-  return $ case resp of
-    Just (_, _, x) → Just x
-    _ → Nothing
+  let req' = req { requestHeaders = [ (hAccept, "text/html; charset=utf-8") ] }
+  withSuccessfulRequest req' a

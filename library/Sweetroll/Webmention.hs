@@ -1,76 +1,61 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, RankNTypes, TupleSections #-}
 
-module Sweetroll.Webmention (
-  discoverWebmentionEndpoint
-, sendWebmention
-, sendWebmentions
-) where
+module Sweetroll.Webmention where
 
 import           ClassyPrelude
-import           Control.Lens hiding (Index, re, parts, (.=), to, from)
-import           Text.HTML.DOM
-import           Text.XML.Lens hiding (to, from)
+import qualified Text.Pandoc as P
+import qualified Text.Pandoc.Walk as PW
 import           Data.Conduit
 import           Data.Aeson
-import           Data.Aeson.Lens
-import           Data.Foldable (asum)
-import           Data.Stringable (toText)
-import qualified Data.Set as S
+import           Data.List (nub)
+import           Data.Stringable
+import           Data.Microformats2.Parser
+import           Data.IndieWeb.Endpoints
 import           Network.HTTP.Link
 import           Network.HTTP.Types
+import           Network.HTTP.Client.Internal (setUri) -- The fuck?
 import           Network.HTTP.Client.Conduit
 import           Network.URI
 import           Sweetroll.Util
+import           Sweetroll.Conf
 import           Sweetroll.Monads
 
-hLink ∷ HeaderName
-hLink = "Link"
+linksFromHeader ∷ ∀ body. Response body → [Link]
+linksFromHeader r = fromMaybe [] (lookup "Link" (responseHeaders r) >>= parseLinkHeader . decodeUtf8)
 
-isWebmentionRel ∷ (EqSequence α, IsString α) ⇒ α → Bool
-isWebmentionRel = isInfixOf "webmention"
+discoverWebmentionEndpoints ∷ Value → [Link] → [URI]
+discoverWebmentionEndpoints = discoverEndpoints [ "webmention", "http://webmention.org/" ]
 
--- | Discovers a webmention endpoint for an address.
-discoverWebmentionEndpoint ∷ URI → Response (Source Sweetroll ByteString) → Sweetroll (Maybe URI)
-discoverWebmentionEndpoint to r = do
+getWebmentionEndpoint ∷ Response (Source Sweetroll ByteString) → Sweetroll (Maybe URI)
+getWebmentionEndpoint r = do
   htmlDoc ← responseBody r $$ sinkDoc
-  let findInHeader = lookup hLink (responseHeaders r)
-                     >>= parseLinkHeader . decodeUtf8
-                     >>= find (isWebmentionRel . orEmptyMaybe . lookup Rel . linkParams)
-                     >>= return . show . href
-      findInBody = unpack <$> htmlDoc ^. root . entire ./ attributeSatisfies "rel" isWebmentionRel . attribute "href"
-      baseInBody = parseAbsoluteURI =<< unpack <$> htmlDoc ^. root . entire ./ el "base" . attribute "href"
-      result = asum [findInHeader, findInBody]
-      base = fromMaybe to baseInBody
-  return $ asum [ result >>= parseAbsoluteURI
-                , result >>= parseRelativeReference >>= return . (`relativeTo` base) ]
+  let mf2Root = parseMf2 mf2Options $ documentRoot htmlDoc
+  return $ listToMaybe $ discoverWebmentionEndpoints mf2Root (linksFromHeader r)
 
--- | Sends one single webmention.
-sendWebmention ∷ String → String → Sweetroll (String, Bool)
-sendWebmention from to = do
-  tReq ← parseUrl to
-  endp ← withResponse tReq $ discoverWebmentionEndpoint $ getUri tReq
-  case endp of
-    Just u → do
-      eReq ← liftIO $ parseUrl $ uriToString id u ""
-      let reqBody = writeForm [(asText "source", from), ("target", to)]
-      eResp ← request eReq { method = "POST"
-                           , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
-                           , requestBody = RequestBodyBS reqBody } ∷ Sweetroll (Response String)
-      putStrLn $ "Webmention status for <" ++ (asText . pack $ to) ++ ">: " ++ (toText . show . statusCode $ responseStatus eResp)
-      return (to, responseStatus eResp == ok200 || responseStatus eResp == accepted202)
-    _ → do
-      putStrLn $ "No webmention endpoint found for <" ++ (asText . pack $ to) ++ ">"
-      return (to, False)
+sendWebmention ∷ String → URI → URI → Sweetroll ()
+sendWebmention from to endpoint = do
+  req ← setUri def endpoint
+  let reqBody = writeForm [(asText "source", from), ("target", show to)]
+      req' = req { method = "POST"
+                 , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
+                 , requestBody = RequestBodyBS reqBody }
+  void $ withSuccessfulRequest req' $ \_ → do
+    putStrLn $ toText $ "Webmention posted for <" ++ show to ++ ">!"
+    return $ Just ()
 
--- | Send all webmentions required for an entry, including the ones from
--- metadata (in-reply-to, like-of, repost-of).
-sendWebmentions ∷ Value → Sweetroll [(String, Bool)]
-sendWebmentions e = mapM (sendWebmention from) links
-  where links = S.toList . S.fromList $ contentLinks ++ metaLinks
-        -- XXX: NOT headMay! Take them all
-        -- metaLinks = map unpack . mapMaybe headMay $ [ e ^? key "properties" . key "in-reply-to"
-        --                                             , e ^? key "properties" . key "like-of"
-        --                                             , e ^? key "properties" . key "repost-of" ]
-        metaLinks = [] -- TODO
-        contentLinks = [] -- TODO
-        from = unpack . orEmptyMaybe $ e ^? key "properties" . key "url" . nth 0 . _String -- XXX: take as arg instead! build dynamically
+contentWebmentions ∷ Maybe P.Pandoc → Sweetroll [(URI, URI)]
+contentWebmentions content =
+  case content of
+    Nothing → return []
+    Just p → do
+      let extractLink (P.Link _ (u, _)) = catMaybes [ parseURI u ]
+          extractLink _ = []
+          links = PW.query extractLink p
+          getWebmentionEndpoint' uri = do
+            endp ← withSuccessfulRequestHtml uri getWebmentionEndpoint
+            return $ (uri, ) <$> endp
+      rs ← mapM getWebmentionEndpoint' links
+      return $ catMaybes rs
+
+sendWebmentions ∷ String → [(URI, URI)] → Sweetroll ()
+sendWebmentions from ms = mapM_ (uncurry $ sendWebmention from) $ nub ms

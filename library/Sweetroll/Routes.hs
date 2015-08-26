@@ -7,7 +7,8 @@ module Sweetroll.Routes where
 
 import           ClassyPrelude
 import qualified Network.HTTP.Link as L
-import           Servant
+import           Servant hiding (toText)
+import           Data.Stringable
 import           Sweetroll.Auth (AuthProtect)
 import           Sweetroll.Conf
 import           Sweetroll.Pages
@@ -33,3 +34,9 @@ type SweetrollAPI             = LoginRoute :<|> IndieConfigRoute :<|> DefaultCss
 
 sweetrollAPI ∷ Proxy SweetrollAPI
 sweetrollAPI = Proxy
+
+permalink ∷ (IsElem α SweetrollAPI, HasLink α) ⇒ Proxy α → MkLink α -- MkLink is URI
+permalink = safeLink sweetrollAPI
+
+showLink ∷ URI → Text
+showLink = ("/" ++) . toText . show

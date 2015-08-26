@@ -19,6 +19,7 @@ import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.Microformats2.Parser
 import           Data.FileEmbed
+import           Network.URI
 import           Web.Simple.Templates.Language
 
 newtype IndieConfig = MkIndieConfig Value
@@ -67,11 +68,14 @@ data SweetrollConf = SweetrollConf
 $(declareSetters ''SweetrollConf)
 $(deriveJSON defaultOptions ''SweetrollConf)
 
-s ∷ SweetrollConf → Text
+s ∷ SweetrollConf → String
 s conf = if httpsWorks conf then "s" else ""
 
 baseUrl ∷ SweetrollConf → Text
-baseUrl conf = mconcat ["http", s conf, "://", domainName conf]
+baseUrl conf = mconcat ["http", toText $ s conf, "://", domainName conf]
+
+baseURI ∷ SweetrollConf → URI
+baseURI conf = URI ("http" ++ s conf ++ ":") (Just $ URIAuth "" (toString $ domainName conf) "") "" "" ""
 
 processTpl ∷ Stringable α ⇒ α → Template
 processTpl x = case compileTemplate . toText $ x of

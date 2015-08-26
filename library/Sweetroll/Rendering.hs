@@ -86,7 +86,7 @@ instance Templatable EntryPage where
             , "permalink"        .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack slug)
             , "isUntitled"       .= null entryName
             , "category"         .= catName
-            , "categoryHref"     .= showLink (permalink (Proxy ∷ Proxy CatRoute) catName (-1))
+            , "categoryHref"     .= showLink (dropQueryFragment $ permalink (Proxy ∷ Proxy CatRoute) catName (-1))
             , "hasPrev"          .= isJust prev
             , "prevHref"         .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack $ orEmptyMaybe prev)
             , "hasNext"          .= isJust next
@@ -153,12 +153,6 @@ instance Templatable IndexPage where
           titleParts = []
           ctx = object [ "categories" .= map catContext (sortOn (fromMaybe 999 . flip elemIndex (categoryOrder conf) . fst) cats) ]
           catContext (n, p) = resultContext . renderBare categoryTemplate . View conf tpls hostInfo $ CatPage n p
-
-permalink ∷ (IsElem endpoint SweetrollAPI, HasLink endpoint) ⇒ Proxy endpoint → MkLink endpoint
-permalink = safeLink sweetrollAPI
-
-showLink ∷ Show α ⇒ α → Text
-showLink = ("/" ++) . Data.Stringable.toText . show
 
 renderRaw ∷ Template → [Pair] → Text
 renderRaw t = renderTemplate t helpers . object

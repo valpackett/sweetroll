@@ -92,6 +92,7 @@ getRng = asks _ctxRng
 instance HasHttpManager SweetrollCtx where
   getHttpManager = _ctxHttpMgr
 
+-- TODO: delete
 parseUrlP ∷ (MonadIO μ) ⇒ String → String → μ Request
 parseUrlP postfix url = liftIO . parseUrl $ url ++ postfix
 

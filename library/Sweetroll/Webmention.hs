@@ -32,10 +32,10 @@ getWebmentionEndpoint r = do
   let mf2Root = parseMf2 mf2Options $ documentRoot htmlDoc
   return $ listToMaybe $ discoverWebmentionEndpoints mf2Root (linksFromHeader r)
 
-sendWebmention ∷ String → URI → URI → Sweetroll ()
+sendWebmention ∷ URI → URI → URI → Sweetroll ()
 sendWebmention from to endpoint = do
   req ← setUri def endpoint
-  let reqBody = writeForm [(asText "source", from), ("target", show to)]
+  let reqBody = writeForm [(asText "source", show from), ("target", show to)]
       req' = req { method = "POST"
                  , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
                  , requestBody = RequestBodyBS reqBody }
@@ -57,5 +57,5 @@ contentWebmentions content =
       rs ← mapM getWebmentionEndpoint' links
       return $ catMaybes rs
 
-sendWebmentions ∷ String → [(URI, URI)] → Sweetroll ()
+sendWebmentions ∷ URI → [(URI, URI)] → Sweetroll ()
 sendWebmentions from ms = mapM_ (uncurry $ sendWebmention from) $ nub ms

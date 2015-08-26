@@ -21,8 +21,9 @@ import qualified Data.HashMap.Strict as HMS
 import           Text.Pandoc hiding (Link, Null)
 import qualified Text.Pandoc.Error as PE
 import           Text.Blaze.Html.Renderer.Text (renderHtml)
-import           Network.URI (parseURI)
-import           Network.HTTP.Client
+import           Network.URI
+import           Network.HTTP.Client hiding (Proxy)
+import           Network.HTTP.Client.Internal (setUri)
 import qualified Network.HTTP.Types as HT
 import           Servant
 import           Gitson
@@ -30,18 +31,17 @@ import           Sweetroll.Conf
 import           Sweetroll.Auth
 import           Sweetroll.Util
 import           Sweetroll.Monads
+import           Sweetroll.Routes
 -- import           Sweetroll.Syndication
 import           Sweetroll.Webmention
 
 postMicropub ∷ JWT VerifiedJWT → [(Text, Text)] → Sweetroll (Headers '[Header "Location" Text] [(Text, Text)])
 postMicropub _ allParams = do
   now ← liftIO getCurrentTime
-  isTest ← getConfOpt testMode
-  base ← getConfOpt baseUrl
   let category = decideCategory allParams
       slug = decideSlug allParams now
       content = pandocRead (decideReader allParams) <$> S.toString <$> lookup "content" allParams
-      absUrl = mkUrl base $ map pack [category, slug]
+      absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug
       create x = liftIO $ transaction "./" $ saveNextDocument category slug x
       -- update x = liftIO $ transaction "./" $ saveDocumentByName category slug x
   case lookup "h" allParams of
@@ -53,18 +53,19 @@ postMicropub _ allParams = do
       let entryProps = [ "in-reply-to" .= map fst (catMaybes inReplyTo)
                        , "like-of"     .= map fst (catMaybes likeOf)
                        , "repost-of"   .= map fst (catMaybes repostOf) ]
-          entry = makeEntry allParams now (S.toLazyText absUrl) content entryProps
+          entry = makeEntry allParams now absUrl content entryProps
       -- TODO: copy content for reposts
       create entry
       -- let ifSyndicateTo x y = if any (isInfixOf x . snd) $ filter (isInfixOf "syndicate-to" . fst) allParams then y else return Nothing
+      isTest ← getConfOpt testMode
       unless isTest $ do
         void $ fork $ do
           threadDelay =<< return . (*1000000) =<< getConfOpt pushDelay
           reread ← readDocumentByName category slug ∷ Sweetroll (Maybe Value) 
           if isJust reread -- not deleted after the delay
              then do
-               notifyPuSH []
-               notifyPuSH [pack category]
+               notifyPuSH $ permalink (Proxy ∷ Proxy IndexRoute)
+               notifyPuSH $ dropQueryFragment $ permalink (Proxy ∷ Proxy CatRoute) category (-1)
              else return ()
         -- void $ fork $ do
           -- synd ← sequence [ ifSyndicateTo "app.net"     $ postAppDotNet entry
@@ -73,8 +74,8 @@ postMicropub _ allParams = do
         void $ fork $ do
           contMs ← contentWebmentions content
           let metaMs = catMaybes $ map snd $ concat $ map catMaybes [ inReplyTo, likeOf, repostOf ]
-          sendWebmentions (S.toString absUrl) (metaMs ++ contMs)
-      return $ addHeader absUrl []
+          sendWebmentions absUrl (metaMs ++ contMs)
+      return $ addHeader (toText $ show absUrl) []
     _ → throwError err400
 
 decideCategory ∷ [(Text, Text)] → CategoryName
@@ -100,7 +101,7 @@ decideReader pars | f == "textile"     = readTextile
                   | otherwise          = readCommonMark
   where f = orEmptyMaybe $ lookup "format" pars
 
-makeEntry ∷ [(Text, Text)] → UTCTime → LText → Maybe Pandoc → [Pair] → Value
+makeEntry ∷ [(Text, Text)] → UTCTime → URI → Maybe Pandoc → [Pair] → Value
 makeEntry pars now absUrl content entryProps = object [ "type"       .= [ asText "h-entry" ]
                                                       , "properties" .= object (filter (not . emptyVal . snd) props) ]
   where par = map S.toLazyText . maybeToList . (flip lookup) pars
@@ -113,7 +114,7 @@ makeEntry pars now absUrl content entryProps = object [ "type"       .= [ asText
                 , "updated"     .= [ now ]
                 , "author"      .= par "author"
                 , "category"    .= filter (not . null) (join $ parseTags <$> par "category")
-                , "url"         .= [ absUrl ] ] ++ entryProps
+                , "url"         .= [ show absUrl ] ] ++ entryProps
 
 fetchEntry ∷ URI → Sweetroll (Maybe (Value, Maybe (URI, URI)))
 fetchEntry uri = withSuccessfulRequestHtml uri $ \resp → do
@@ -129,14 +130,18 @@ fetchEntry uri = withSuccessfulRequestHtml uri $ \resp → do
       return $ Just (addAuthors $ fst mfEntry, fmap (uri, ) $ listToMaybe $ discoverWebmentionEndpoints mfRoot (linksFromHeader resp))
     _ → return Nothing
 
-notifyPuSH ∷ [Text] → Sweetroll ()
-notifyPuSH url = do
-  base ← getConfOpt baseUrl
-  req ← parseUrlP "" =<< getConfOpt pushHub
-  let url' = mkUrl base url
-  let req' = req { method = "POST"
-                 , requestHeaders = [ (HT.hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
-                 , requestBody = RequestBodyBS . writeForm $ [ (asText "hub.mode", asText "publish"), ("hub.url", url') ] }
-  void $ withSuccessfulRequest req' $ \_ → do
-    putStrLn $ "PubSubHubbub notified for <" ++ url' ++ ">"
-    return $ Just ()
+notifyPuSH ∷ URI → Sweetroll ()
+notifyPuSH l = do
+  hub ← getConfOpt pushHub
+  case parseURI hub of
+    Nothing → return ()
+    Just hubURI → do
+      base ← getConfOpt baseURI
+      let pingURI = l `relativeTo` base
+      let req = def { method = "POST"
+                    , requestHeaders = [ (HT.hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
+                    , requestBody = RequestBodyBS . writeForm $ [ (asText "hub.mode", asText "publish"), ("hub.url", toText $ show pingURI) ] }
+      req' ← setUri req hubURI
+      void $ withSuccessfulRequest req' $ \_ → do
+        putStrLn $ "PubSubHubbub notified for <" ++ toText (show pingURI) ++ ">"
+        return $ Just ()

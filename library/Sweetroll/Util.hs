@@ -20,6 +20,7 @@ import           Safe (headMay)
 import           Network.Wai (Middleware, responseLBS, pathInfo)
 import           Network.Mime (defaultMimeLookup)
 import           Network.HTTP.Types.Status (ok200)
+import           Network.URI
 import           Servant (mimeRender, FormUrlEncoded)
 import           Sweetroll.Conf (pandocReaderOptions)
 
@@ -73,12 +74,8 @@ parseTags ∷ Stringable α ⇒ α → [α]
 parseTags ts = mapMaybe (headMay . snd) $ scan r ts
   where r = [re|([^,]+),?\s?|]
 
--- | Makes a URL from a hostname and parts
---
--- >>> mkUrl "http://localhost:4200" ["yolo", "lol"]
--- "http://localhost:4200/yolo/lol"
-mkUrl ∷ (IsString α, Monoid α) ⇒ α → [α] → α
-mkUrl base parts = intercalate "/" $ base : parts
+dropQueryFragment ∷ URI → URI
+dropQueryFragment (URI s a p _ _) = URI s a p "" ""
 
 -- | Encodes key-value data as application/x-www-form-urlencoded.
 writeForm ∷ (Stringable α, Stringable β, Stringable γ) ⇒ [(α, β)] → γ

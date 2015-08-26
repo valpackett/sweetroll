@@ -17,6 +17,7 @@ import           Data.Setters
 import           Data.Default
 import           Data.Aeson
 import           Data.Aeson.TH
+import           Data.Microformats2.Parser
 import           Data.FileEmbed
 import           Web.Simple.Templates.Language
 
@@ -104,6 +105,9 @@ pandocWriterOptions = def { writerHtml5 = True
                           , writerHighlight = True
                           , writerHighlightStyle = tango
                           , writerIdentifierPrefix = "sr-" }
+
+mf2Options ∷ Mf2ParserSettings
+mf2Options = def
 
 instance Default SweetrollConf where
   def = SweetrollConf {

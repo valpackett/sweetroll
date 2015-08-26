@@ -20,6 +20,7 @@ import qualified Control.Exception.Lifted as E
 import           Data.Stringable hiding (length)
 import           Data.Aeson.Types
 import           Network.HTTP.Client
+import           Network.HTTP.Client.Internal (setUri) -- The fuck?
 import qualified Network.HTTP.Client.Conduit as H
 import qualified Network.HTTP.Types as HT
 import "crypto-random" Crypto.Random
@@ -92,22 +93,29 @@ getRng = asks _ctxRng
 instance H.HasHttpManager SweetrollCtx where
   getHttpManager = _ctxHttpMgr
 
-requestGetHtml ∷ (Stringable α, Stringable β) ⇒ β → Sweetroll (Maybe α)
-requestGetHtml url = do
-  req ← parseUrlP "" $ toString url
-  resp' ← E.try $ request $ req { requestHeaders = [ (HT.hAccept, "text/html; charset=utf-8") ] } ∷ Sweetroll (Either SomeException (Response LByteString))
-  case resp' of
-    Left _ → return Nothing
-    Right resp → do
-      putStrLn $ "HTML fetching status for " ++ toText url ++  ": " ++ (toText . show . HT.statusCode . responseStatus $ resp)
-      return $ case HT.statusCode $ responseStatus $ resp of
-        200 → Just $ fromLazyByteString $ responseBody resp
-        _ → Nothing
+parseUrlP ∷ (MonadIO μ) ⇒ String → String → μ H.Request
+parseUrlP postfix url = liftIO . H.parseUrl $ url ++ postfix
 
-request ∷ (MonadSweetroll μ, MonadIO μ, Stringable α) ⇒ H.Request → μ (H.Response α)
+request ∷ Stringable α ⇒ H.Request → Sweetroll (H.Response α)
 request req = do
   resp ← H.httpLbs req
   return $ resp { H.responseBody = fromLazyByteString $ H.responseBody resp }
 
-parseUrlP ∷ (MonadIO μ) ⇒ String → String → μ H.Request
-parseUrlP postfix url = liftIO . H.parseUrl $ url ++ postfix
+requestMay ∷ Stringable α ⇒ H.Request → Sweetroll (Maybe (Int, HT.ResponseHeaders, α))
+requestMay req = do
+  resp' ← E.try $ request $ req ∷ Sweetroll (Either SomeException (Response LByteString))
+  case resp' of
+    Left _ → return Nothing
+    Right resp → do
+      putStrLn $ toText $ "Request status for " ++ show (getUri req) ++ ": " ++ (show . HT.statusCode . responseStatus $ resp)
+      return $ case HT.statusCode $ responseStatus resp of
+        200 → Just $ (HT.statusCode $ responseStatus resp, responseHeaders resp, fromLazyByteString $ responseBody resp)
+        _ → Nothing
+
+requestMayHtml ∷ Stringable α ⇒ URI → Sweetroll (Maybe α)
+requestMayHtml uri = do
+  req ← setUri def uri
+  resp ← requestMay $ req { requestHeaders = [ (HT.hAccept, "text/html; charset=utf-8") ] }
+  return $ case resp of
+    Just (_, _, x) → Just x
+    _ → Nothing

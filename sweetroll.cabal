@@ -23,8 +23,8 @@ source-repository head
 library
     build-depends:
         base >= 4.0.0.0 && < 5
-      , classy-prelude >= 0.10.3
-      , mono-traversable >= 0.8.0
+      , classy-prelude
+      , mono-traversable
       , transformers
       , transformers-base
       , mtl
@@ -32,6 +32,8 @@ library
       , resourcet
       , lifted-base
       , containers
+      , unordered-containers
+      , vector
       , either
       , lens
       , setters
@@ -44,25 +46,26 @@ library
       , bytestring
       , blaze-markup
       , blaze-builder
+      , blaze-html
       , time
       , lens-datetime
-      , http-date >= 0.0.5
-      , pcre-heavy >= 0.2.2
+      , http-date
+      , pcre-heavy
       , aeson
       , lens-aeson
       , jwt
-      , gitson == 0.5.*
-      , microformats2-types
+      , gitson
       , microformats2-parser
+      , indieweb-algorithms
       , wai
       , wai-extra
       , wai-middleware-static
       , servant
       , servant-server
-      , simple-templates == 0.8.*
+      , simple-templates
       , clay
-      , network-uri >= 2.6
-      , network >= 2.6
+      , network-uri
+      , network
       , conduit
       , http-types
       , http-media
@@ -79,7 +82,7 @@ library
       , highlighting-kate
       , pandoc
       , pandoc-types
-      , raw-strings-qq == 1.*
+      , raw-strings-qq
       , file-embed
     default-language: Haskell2010
     exposed-modules:
@@ -106,9 +109,9 @@ executable sweetroll
       , classy-prelude
       , git-embed
       , cabal-file-th
-      , options == 1.*
-      , warp == 3.0.*
-      , network == 2.6.*
+      , options
+      , warp
+      , network
       , streaming-commons
       , wai-extra
       , ansi-terminal
@@ -128,8 +131,8 @@ executable sweetroll
 test-suite examples
     build-depends:
         base >= 4.0.0.0 && < 5
-      , Glob == 0.*
-      , doctest == 0.*
+      , Glob
+      , doctest
     default-language: Haskell2010
     hs-source-dirs: test-suite
     main-is: DocTest.hs
@@ -143,17 +146,18 @@ test-suite tests
       , stringable
       , errors
       , http-types
-      , microformats2-types
       , case-insensitive
       , wai
       , directory
-      , gitson >= 0.4.1
+      , gitson
       , wai-extra
       , bytestring
       , raw-strings-qq
       , pandoc
-      , simple-templates == 0.8.*
+      , simple-templates
+      , lens
       , aeson
+      , lens-aeson
       , data-default
       , hspec
     default-language: Haskell2010

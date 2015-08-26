@@ -7,6 +7,8 @@ import qualified Data.ByteString.Char8 as B8
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Stringable as S
 import           Data.Default (def)
+import           Data.Aeson
+import           Data.Aeson.Types (Pair)
 import           Network.Wai
 import           Network.Wai.Test
 import           Network.HTTP.Types
@@ -42,3 +44,6 @@ postAuthed r u b a = do
 
 header ∷ SResponse → String → String
 header resp x = B8.unpack $ orEmptyMaybe $ lookup (CI.mk $ B8.pack x) (simpleHeaders resp)
+
+mf2o ∷ [Pair] → Value
+mf2o ps = object [ "type" .= [ asText "h-entry" ], "properties" .= object ps ]

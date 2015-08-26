@@ -37,12 +37,14 @@
 
 		</header>
 
-		$if(isLike)$
-		<div class="entry-content p-name u-like-of h-cite">
-		$for(like in likeContexts)$
-		Liked <a class="u-url" rel="like-of" href="$like.url$">$like.name$</a>$if(like.hasAuthors)$
-		($for(author in like.authors)$<a class="p-author h-card" href="$author.url$">$author.name$</a>$sep$, $endfor$)$endif$.
-		$endfor$
+		$if(likeContexts)$
+		<div class="entry-content p-name">
+			<div class="u-like-of h-cite">
+			$for(like in likeContexts)$
+			Liked <a class="u-url" rel="like-of" href="$like.url$">$like.name$</a>$if(like.hasAuthors)$
+			($for(author in like.authors)$<a class="p-author h-card" href="$author.url$">$author.name$</a>$sep$, $endfor$)$endif$.
+			$endfor$
+			</div>
 		</div>
 		$endif$
 

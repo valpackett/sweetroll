@@ -7,8 +7,7 @@ module Sweetroll.Api where
 import           ClassyPrelude
 import           Control.Monad.Except (throwError)
 import           Data.Maybe (fromJust)
-import           Data.Microformats2
-import           Data.Microformats2.Aeson ()
+import           Data.Aeson
 import qualified Data.Stringable as S
 import qualified Network.HTTP.Link as L
 import           Network.URI
@@ -61,7 +60,7 @@ getCat catName page = do
 
 getEntry ∷ String → String → Sweetroll (WithLink (View EntryPage))
 getEntry catName slug = do
-  entry ← readDocumentByName catName slug ∷ Sweetroll (Maybe Entry)
+  entry ← readDocumentByName catName slug ∷ Sweetroll (Maybe Value)
   case entry of
     Nothing → throwError err404
     Just e  → do -- cacheHTTPDate (maximumMay $ entryUpdated e) $ do
@@ -109,12 +108,12 @@ addLinks ls a = do
 readSlug ∷ String → EntrySlug
 readSlug x = drop 1 $ fromMaybe "-404" $ snd <$> maybeReadIntString x -- errors should never happen
 
-readEntry ∷ MonadIO μ ⇒ CategoryName → String → μ (Maybe (EntrySlug, Entry))
+readEntry ∷ MonadIO μ ⇒ CategoryName → String → μ (Maybe (EntrySlug, Value))
 readEntry category fname = liftIO $ do
-  doc ← readDocument category fname ∷ IO (Maybe Entry)
+  doc ← readDocument category fname ∷ IO (Maybe Value)
   return $ (\x → (readSlug fname, x)) <$> doc
 
-readCategory ∷ MonadIO μ ⇒ Int → Int → CategoryName → μ (CategoryName, Maybe (Page (EntrySlug, Entry)))
+readCategory ∷ MonadIO μ ⇒ Int → Int → CategoryName → μ (CategoryName, Maybe (Page (EntrySlug, Value)))
 readCategory perPage pageNumber c = liftIO $ do
   slugs ← listDocumentKeys c
   case paginate True perPage pageNumber $ sort slugs of
@@ -123,7 +122,7 @@ readCategory perPage pageNumber c = liftIO $ do
       maybes ← mapM (readEntry c) $ items page
       return (c, Just . changeItems page . fromMaybe [] . sequence $ maybes)
 
-visibleCat ∷ (CategoryName, Maybe (Page (EntrySlug, Entry))) → Bool
+visibleCat ∷ (CategoryName, Maybe (Page (EntrySlug, Value))) → Bool
 visibleCat (slug, Just cat) = (not . null $ items cat)
                               && slug /= "templates"
                               && slug /= "static"

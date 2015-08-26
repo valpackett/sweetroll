@@ -7,12 +7,12 @@ module Sweetroll.Webmention (
 ) where
 
 import           ClassyPrelude
+import           Control.Lens hiding (Index, re, parts, (.=), to, from)
 import           Text.HTML.DOM
 import           Text.XML.Lens hiding (to, from)
-import qualified Text.Pandoc as P
-import qualified Text.Pandoc.Walk as PW
 import           Data.Conduit
-import           Data.Microformats2
+import           Data.Aeson
+import           Data.Aeson.Lens
 import           Data.Foldable (asum)
 import           Data.Stringable (toText)
 import qualified Data.Set as S
@@ -64,14 +64,13 @@ sendWebmention from to = do
 
 -- | Send all webmentions required for an entry, including the ones from
 -- metadata (in-reply-to, like-of, repost-of).
-sendWebmentions ∷ Entry → Sweetroll [(String, Bool)]
+sendWebmentions ∷ Value → Sweetroll [(String, Bool)]
 sendWebmentions e = mapM (sendWebmention from) links
   where links = S.toList . S.fromList $ contentLinks ++ metaLinks
-        metaLinks = map unpack . mapMaybe derefEntryUrl . mapMaybe headMay $ [entryInReplyTo e, entryLikeOf e, entryRepostOf e]
-        contentLinks = PW.query extractLink . pandocContent $ entryContent e
-        from = unpack . orEmpty . entryUrl $ e
-        pandocContent (PandocContent p : _) = p
-        pandocContent (TextContent t   : _) = pandocRead P.readMarkdown $ unpack t
-        pandocContent _ = pandocRead P.readMarkdown ""
-        extractLink (P.Link _ (u, _)) = [u]
-        extractLink _ = []
+        -- XXX: NOT headMay! Take them all
+        -- metaLinks = map unpack . mapMaybe headMay $ [ e ^? key "properties" . key "in-reply-to"
+        --                                             , e ^? key "properties" . key "like-of"
+        --                                             , e ^? key "properties" . key "repost-of" ]
+        metaLinks = [] -- TODO
+        contentLinks = [] -- TODO
+        from = unpack . orEmptyMaybe $ e ^? key "properties" . key "url" . nth 0 . _String -- XXX: take as arg instead! build dynamically

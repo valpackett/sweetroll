@@ -1,19 +1,18 @@
 flags: {}
 packages:
   - '.'
+  - '../indieweb-algorithms'
   - location:
       git: https://github.com/tel/oauthenticated
       commit: 495afad3f07c9d4a408a11a96c2d5451bf21162f
     extra-dep: true
-  - location:
-      git: https://github.com/myfreeweb/microformats2-parser
-      commit: b07fe40
-    extra-dep: true
 extra-deps:
-  - http-link-header-0.2.0
-  - microformats2-types-0.4.1
+  - microformats2-parser-1.0.1.1
+  - http-link-header-1.0.1
   - xml-lens-0.1.6.3
   - lens-datetime-0.2.1
   - setters-0.1
   - simple-templates-0.8.0.0
-resolver: nightly-2015-07-26
+  - git-embed-0.1.0
+  - hspec-expectations-pretty-diff-0.7.2.2
+resolver: lts-3.2

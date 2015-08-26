@@ -5,16 +5,16 @@
 -- | The module responsible for rendering pages into actual HTML
 module Sweetroll.Rendering where
 
-import           ClassyPrelude
-import           Text.Pandoc hiding (Template, renderTemplate)
+import           ClassyPrelude hiding (fromString)
+import           Control.Lens hiding (Index, re, parts, (.=))
 import           Web.Simple.Templates.Language
 import           Network.HTTP.Media.MediaType
-import           Data.Microformats2
-import           Data.Microformats2.Aeson()
 import           Data.Aeson (encode)
 import           Data.Aeson.Types
-import qualified Data.Text.Lazy as LT
+import           Data.Aeson.Lens
 import           Data.List (elemIndex)
+import qualified Data.Vector as V
+import qualified Data.Text as T
 import           Data.Stringable
 import           Safe (atMay)
 import           Servant
@@ -76,56 +76,48 @@ instance Templatable EntryPage where
   templateInLayout _ = entryTemplate
   renderBare tplf (View _ tpls _ (EntryPage catName otherSlugs (slug, e))) = ViewResult html titleParts ctx
     where html = renderTemplate (tplf tpls) helpers ctx
-          titleParts = [toStrict (fromMaybe ("Note @ " ++ published) . headMay $ entryName e), pack catName]
+          titleParts = [ fromMaybe ("Note @ " ++ fromMaybe "" (formatTimeText <$> published)) entryName, pack catName ]
           ctx = object [
-              "name"             .= orEmpty (entryName e)
+              "name"             .= orEmptyMaybe entryName
             , "content"          .= content
-            , "hasContent"       .= (not . null . entryContent $ e)
-            , "published"        .= published
-            , "publishedAttr"    .= orEmpty (formatTimeAttr <$> entryPublished e)
+            , "hasContent"       .= not (null content)
+            , "published"        .= asLText (fromMaybe "" (formatTimeText <$> published))
+            , "publishedAttr"    .= asLText (fromMaybe "" (formatTimeAttr <$> published))
             , "permalink"        .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack slug)
-            , "isUntitled"       .= (null . entryName $ e)
+            , "isUntitled"       .= null entryName
             , "category"         .= catName
             , "categoryHref"     .= showLink (permalink (Proxy ∷ Proxy CatRoute) catName (-1))
             , "hasPrev"          .= isJust prev
             , "prevHref"         .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack $ orEmptyMaybe prev)
             , "hasNext"          .= isJust next
             , "nextHref"         .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack $ orEmptyMaybe next)
-            , "hasSyndication"   .= (not . null . entrySyndication $ e)
-            , "syndication"      .= entrySyndication e
+            , "syndication"      .= entrySyndication
             , "hasTwitterId"     .= isJust twitterId
             , "twitterId"        .= orEmptyMaybe twitterId
-            , "isReply"          .= (not . null . entryInReplyTo $ e)
-            , "replyContexts"    .= referenceContexts (entryInReplyTo e)
-            , "isLike"           .= (not . null . entryLikeOf $ e)
-            , "likeContexts"     .= referenceContexts (entryLikeOf e)
-            , "isRepost"         .= (not . null . entryRepostOf $ e)
-            , "repostContexts"   .= referenceContexts (entryRepostOf e)
+            , "replyContexts"    .= map referenceContext entryInReplyTo
+            , "likeContexts"     .= map referenceContext entryLikeOf
+            , "isLike"           .= not (null entryLikeOf)
+            , "repostContexts"   .= map referenceContext entryRepostOf
             ]
-          content = renderContent writeHtmlString $ EntryEntry e
-          published = orEmpty $ formatTimeText <$> entryPublished e
+          entryName = e ^? key "properties" . key "name" . nth 0 . _String
+          content = orEmptyMaybe $ e ^? key "properties" . key "content" . nth 0 . key "html" . _String
+          published = parseISOTime =<< e ^? key "properties" . key "published" . nth 0 . _String
           slugIdx = fromMaybe (-1) $ elemIndex slug otherSlugs
           prev = atMay otherSlugs $ slugIdx - 1
           next = atMay otherSlugs $ slugIdx + 1
-          twitterId = lastMay =<< LT.splitOn "/" <$> find (isInfixOf "twitter.com") (entrySyndication e)
+          twitterId = lastMay =<< T.splitOn "/" <$> find ("twitter.com" `isInfixOf`) entrySyndication
+          entrySyndication = mapMaybe (^? _String) $ V.toList $ fromMaybe V.empty $ e ^? key "properties" . key "syndication" . _Array
+          entryInReplyTo   = V.toList $ fromMaybe V.empty $ e ^? key "properties" . key "in-reply-to" . _Array
+          entryLikeOf      = V.toList $ fromMaybe V.empty $ e ^? key "properties" . key "like-of" . _Array
+          entryRepostOf    = V.toList $ fromMaybe V.empty $ e ^? key "properties" . key "repost-of" . _Array
 
-referenceContexts ∷ [EntryReference] → [Value]
-referenceContexts = mapMaybe o
-  where o e = case derefEntryUrl e of
-                Just url → Just $ object [ "url"        .= url
-                                         , "name"       .= fromMaybe url (derefEntryName e)
-                                         , "hasName"    .= isJust (derefEntryName e)
-                                         , "content"    .= snd (trimmedText 256 e)
-                                         , "hasAuthors" .= not (null $ authorContexts $ derefEntryAuthor e)
-                                         , "authors"    .= authorContexts (derefEntryAuthor e) ]
-                Nothing → Nothing
-
-authorContexts ∷ [CardReference] → [Value]
-authorContexts = mapMaybe o
-  where o e = case derefAuthorUrl e of
-                Just url → Just $ object [ "url"        .= url
-                                         , "name"       .= fromMaybe url (derefAuthorName e) ]
-                Nothing → Nothing
+-- XXX: authors aren't displayed; also this is ridiculous
+referenceContext ∷ Value → Value
+referenceContext v@(Object _) = object [ "url" .= fromMaybe "" (v ^? key "properties" . key "url" . nth 0 . _String)
+                                       , "name" .= fromMaybe "" (v ^? key "properties" . key "name" . nth 0 . _String)
+                                       , "content" .= fromMaybe "" (v ^? key "properties" . key "content" . nth 0 . key "html" . _String)]
+referenceContext (String x) = object [ "url" .= x, "name" .= x ]
+referenceContext _ = object [ ]
 
 instance Templatable CatPage where
   templateInLayout _ = categoryTemplate
@@ -175,12 +167,12 @@ helpers ∷ FunctionMap
 helpers = mapFromList [ ("syndicationName", toFunction syndicationName) ]
 
 syndicationName ∷ Text → Value
-syndicationName u | "app.net"     `isInfixOf` u = toJSON $ asText "App.net"
-                  | "twitter.com" `isInfixOf` u = toJSON $ asText "Twitter"
-                  | otherwise                   = toJSON u
+syndicationName u | "app.net"     `isInfixOf` u = String "App.net"
+                  | "twitter.com" `isInfixOf` u = String "Twitter"
+                  | otherwise                   = String u
 
-formatTimeText ∷ UTCTime → LText
-formatTimeText = asLText . pack . formatTime defaultTimeLocale "%d.%m.%Y %I:%M %p"
+formatTimeText ∷ Stringable α ⇒ UTCTime → α
+formatTimeText = fromString . formatTime defaultTimeLocale "%d.%m.%Y %I:%M %p"
 
-formatTimeAttr ∷ UTCTime → LText
-formatTimeAttr = asLText . pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%MZ"
+formatTimeAttr ∷ Stringable α ⇒ UTCTime → α
+formatTimeAttr = fromString . formatTime defaultTimeLocale "%Y-%m-%dT%H:%MZ"

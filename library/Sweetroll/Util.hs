@@ -5,12 +5,14 @@
 module Sweetroll.Util where
 
 import           ClassyPrelude hiding (fromString, headMay)
+import           Control.Lens hiding (Index, re, parts)
 import           Data.Text.Lazy (replace, strip)
 import           Data.Char (isSpace)
-import           Data.Aeson (decode)
+import           Data.Aeson (decode, Value)
+import           Data.Aeson.Lens
 import           Data.Stringable hiding (length)
+import           Data.Foldable (asum)
 import           Data.Proxy
-import           Data.Microformats2
 import           Text.Regex.PCRE.Heavy
 import qualified Text.Pandoc as P
 import qualified Text.Pandoc.Error as PE
@@ -19,7 +21,7 @@ import           Network.Wai (Middleware, responseLBS, pathInfo)
 import           Network.Mime (defaultMimeLookup)
 import           Network.HTTP.Types.Status (ok200)
 import           Servant (mimeRender, FormUrlEncoded)
-import           Sweetroll.Conf (pandocReaderOptions, pandocWriterOptions)
+import           Sweetroll.Conf (pandocReaderOptions)
 
 type CategoryName = String
 type EntrySlug = String
@@ -82,51 +84,13 @@ mkUrl base parts = intercalate "/" $ base : parts
 writeForm ∷ (Stringable α, Stringable β, Stringable γ) ⇒ [(α, β)] → γ
 writeForm = fromLazyByteString . mimeRender (Proxy ∷ Proxy FormUrlEncoded) . map (toText *** toText)
 
-trimmedText ∷ Index LText → EntryReference → (Bool, LText)
+trimmedText ∷ Index LText → Value → (Bool, LText)
 trimmedText l e = (isArticle, if isTrimmed then take (l - 1) t ++ "…" else t)
   where isTrimmed = length t > fromIntegral l
-        (isArticle, t) = case derefEntryName e of
-                           Just n → (True, n)
-                           _ → (False, renderContent P.writePlain e)
-
-derefEntryUrl ∷ EntryReference → Maybe LText
-derefEntryUrl (EntryEntry e) = headMay . reverse . sortOn length . entryUrl $ e
-derefEntryUrl (CiteEntry c)  = headMay . reverse . sortOn length . citeUrl $ c
-derefEntryUrl (TextEntry l)  = Just l
-derefEntryUrl (UrlEntry l)   = Just l
-
-derefEntryName ∷ EntryReference → Maybe LText
-derefEntryName (EntryEntry e) = headMay . reverse . sortOn length . entryName $ e
-derefEntryName (CiteEntry c)  = headMay . reverse . sortOn length . citeName $ c
-derefEntryName (TextEntry l)  = Just l
-derefEntryName (UrlEntry l)   = Just l
-
-derefEntryContent ∷ EntryReference → [ContentReference]
-derefEntryContent (EntryEntry e) = entryContent $ e
-derefEntryContent (CiteEntry e)  = citeContent  $ e
-derefEntryContent _              = mzero
-
-renderContent ∷ (P.WriterOptions → P.Pandoc → String) → EntryReference → LText
-renderContent writer e = case headMay $ derefEntryContent e of
-  Just (PandocContent p) → pack $ writer pandocWriterOptions p
-  Just (TextContent t) → t
-  _ -> ""
-
-derefEntryAuthor ∷ EntryReference → [CardReference]
-derefEntryAuthor (EntryEntry e) = entryAuthor $ e
-derefEntryAuthor (CiteEntry c)  = citeAuthor $ c
-derefEntryAuthor _              = mzero
-
-derefAuthorName ∷ CardReference → Maybe LText
-derefAuthorName (CardCard c) = headMay . cardName $ c
-derefAuthorName (TextCard t) = Just t
-
-derefAuthorUrl ∷ CardReference → Maybe LText
-derefAuthorUrl (CardCard c) = headMay . cardUrl $ c
-derefAuthorUrl _            = mzero
-
-removeSameName ∷ Cite → Cite
-removeSameName c = c { citeName = filter (\x → TextContent x `onotElem` citeContent c) $ citeName c }
+        t = toLazyText $ fromMaybe "" $ asum [ e ^? key "properties" . key "summary" . nth 0 . _String
+                                             , e ^? key "properties" . key "content" . nth 0 . key "value" . _String
+                                             , e ^? key "properties" . key "name" . nth 0 . _String ]
+        isArticle = not $ null $ e ^? key "properties" . key "content"
 
 orEmptyMaybe ∷ IsString α ⇒ Maybe α → α
 orEmptyMaybe = fromMaybe ""

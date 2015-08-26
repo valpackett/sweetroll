@@ -4,15 +4,15 @@
 module Sweetroll.ApiSpec (spec) where
 
 import           ClassyPrelude
+import           Control.Lens hiding (Index, re, parts, (.=), contains)
 import           Test.Hspec
 import           System.Directory
-import           Data.Microformats2
+import           Data.Aeson.Lens
 import           Data.Default
-import           Text.Pandoc
+import           Data.Aeson
 import qualified Network.Wai as Wai
 import           Network.Wai.Test
 import           Network.HTTP.Types
-import           Sweetroll.Util (pandocRead)
 import           Sweetroll.Conf
 import           Sweetroll.Api (initSweetrollApp)
 import           Gitson
@@ -33,24 +33,19 @@ spec = around_ inDir $ do
   describe "GET /" $ do
     it "renders the index" $ do
       transaction' $ do
-        saveNextDocument "posts" "first" $ def {
-          entryName      = pure "Post 1" }
-        saveNextDocument "thingies" "tweeeet" $ def {
-          entryContent   = pure . PandocContent . (pandocRead readMarkdown) $ "Something 1" }
+        saveNextDocument "posts" "first" $ mf2o [ "name" .= [ asText "Post 1" ] ]
+        saveNextDocument "thingies" "tweeeet" $ mf2o [ "content" .= object [ "html" .= asText "Something 1" ] ]
       resp ← app >>= get "/"
       simpleBody resp `shouldSatisfy` (`contains` "posts")
       simpleBody resp `shouldSatisfy` (`contains` "thingies")
       simpleBody resp `shouldSatisfy` (`contains` "Post 1")
-      simpleBody resp `shouldSatisfy` (`contains` "Something 1")
       simpleStatus resp `shouldBe` ok200
 
   describe "GET /:category" $ do
     it "renders categories" $ do
       transaction' $ do
-        saveNextDocument "articles" "first" $ def {
-          entryName      = pure "First" }
-        saveNextDocument "articles" "second" $ def {
-          entryName      = pure "Second" }
+        saveNextDocument "articles" "first"  $ mf2o [ "name" .= [ asText "First"  ] ]
+        saveNextDocument "articles" "second" $ mf2o [ "name" .= [ asText "Second" ] ]
       resp ← app >>= get "/articles"
       simpleBody resp `shouldSatisfy` (`contains` "articles")
       simpleBody resp `shouldSatisfy` (`contains` "First")
@@ -63,9 +58,7 @@ spec = around_ inDir $ do
       simpleStatus resp `shouldBe` notFound404
 
     it "renders entries" $ do
-      transaction' $ saveNextDocument "articles" "hello-world" $ def {
-              entryName      = pure "Hello, World!"
-            , entryAuthor    = pure . TextCard $ "/" }
+      transaction' $ saveNextDocument "articles" "hello-world" $ mf2o [ "name" .= [ asText "Hello, World!" ] ]
       resp ← app >>= get "/articles/hello-world"
       simpleBody resp `shouldSatisfy` (`contains` "Hello, World!")
       simpleStatus resp `shouldBe` ok200
@@ -88,11 +81,12 @@ spec = around_ inDir $ do
                                 "/micropub" "h=entry&name=First&slug=first&content=Hello&category=test,demo"
       simpleStatus resp `shouldBe` created201
       header resp "Location" `shouldBe` "http://localhost/articles/first"
-      written ← readDocumentById "articles" 1 ∷ IO (Maybe Entry)
+      written ← readDocumentById "articles" 1 ∷ IO (Maybe Value)
       case written of
         Just article → do
-          entryContent article `shouldBe` (pure . PandocContent . (pandocRead readMarkdown) $ "Hello")
-          entryCategory article `shouldBe` ["test", "demo"]
+          article ^. key "properties" . key "content" . nth 0 . key "html" . _String  `shouldBe` "<p>Hello</p>"
+          article ^. key "properties" . key "category" . nth 0 . _String  `shouldBe` "test"
+          article ^. key "properties" . key "category" . nth 1 . _String  `shouldBe` "demo"
         Nothing → error "article not written"
 
     it "requires auth" $ do

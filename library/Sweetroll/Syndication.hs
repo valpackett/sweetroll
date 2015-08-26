@@ -9,11 +9,10 @@ module Sweetroll.Syndication (
 ) where
 
 import           ClassyPrelude
-import           Control.Lens ((^?))
+import           Control.Lens hiding (Index, re, parts, (.=))
 import           Network.HTTP.Client
 import           Network.HTTP.Types
 import           Network.OAuth
-import           Data.Microformats2
 import qualified Data.Stringable as S
 import           Data.Aeson
 import           Data.Aeson.Lens
@@ -24,12 +23,12 @@ import           Sweetroll.Conf
 ifSuccess ∷ ∀ (μ ∷ * → *) body α. Monad μ ⇒ Response body → Maybe α → μ (Maybe α)
 ifSuccess resp what = return $ if not $ statusIsSuccessful $ responseStatus resp then Nothing else what
 
-postAppDotNet ∷ (MonadSweetroll μ, MonadIO μ) ⇒ Entry → μ (Maybe LText)
+postAppDotNet ∷ Value → Sweetroll (Maybe LText)
 postAppDotNet entry = do
   req ← parseUrlP "/posts" =<< getConfOpt adnApiHost
   bearer ← getSec adnApiToken
-  let (isArticle, txt) = trimmedText 250 $ EntryEntry entry
-      pUrl = orEmpty . entryUrl $ entry
+  let (isArticle, txt) = trimmedText 250 entry
+      pUrl = orEmptyMaybe $ entry ^? key "properties" . key "url" . nth 0 . _String
       o = object
       reqData = o [ "text" .= if isArticle then txt else "[x] " ++ txt
                   , "annotations" .= [ o [ "type" .= asLText "net.app.core.crosspost"
@@ -49,13 +48,13 @@ postAppDotNet entry = do
 appDotNetUrl ∷ (S.Stringable α) ⇒ Maybe Value → Maybe α
 appDotNetUrl x = (return . S.fromText) =<< (^? key "data" . key "canonical_url" . _String) =<< x
 
-postTwitter ∷ (MonadSweetroll μ, MonadIO μ) ⇒ Entry → μ (Maybe LText)
+postTwitter ∷ Value → Sweetroll (Maybe LText)
 postTwitter entry = do
   req ← parseUrlP "/statuses/update.json" =<< getConfOpt twitterApiHost
   secs ← getSecs
-  let (_, txt) = trimmedText 100 $ EntryEntry entry -- TODO: Figure out the number based on mentions of urls/domains in the first (140 - 25) characters
-      pUrl = orEmpty . entryUrl $ entry
-      reqBody = writeForm [(asText "status", txt ++ " " ++ pUrl)]
+  let (_, txt) = trimmedText 100 entry -- TODO: Figure out the number based on mentions of urls/domains in the first (140 - 25) characters
+      pUrl = orEmptyMaybe $ entry ^? key "properties" . key "url" . nth 0 . _String
+      reqBody = writeForm [(asText "status", txt ++ " " ++ S.toLazyText pUrl)]
       req' = req { method = "POST"
                  , queryString = reqBody -- Yes, queryString... WTF http://ox86.tumblr.com/post/36810273719/twitter-api-1-1-responds-with-status-401-code-32
                  , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8")

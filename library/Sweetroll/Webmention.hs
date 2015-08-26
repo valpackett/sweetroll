@@ -20,19 +20,22 @@ import           Sweetroll.Util
 import           Sweetroll.Conf
 import           Sweetroll.Monads
 
+type TargetURI = URI
+type EndpointURI = URI
+
 linksFromHeader ∷ ∀ body. Response body → [Link]
 linksFromHeader r = fromMaybe [] (lookup "Link" (responseHeaders r) >>= parseLinkHeader . decodeUtf8)
 
 discoverWebmentionEndpoints ∷ Value → [Link] → [URI]
 discoverWebmentionEndpoints = discoverEndpoints [ "webmention", "http://webmention.org/" ]
 
-getWebmentionEndpoint ∷ Response (Source Sweetroll ByteString) → Sweetroll (Maybe URI)
+getWebmentionEndpoint ∷ Response (Source Sweetroll ByteString) → Sweetroll (Maybe EndpointURI)
 getWebmentionEndpoint r = do
   htmlDoc ← responseBody r $$ sinkDoc
   let mf2Root = parseMf2 mf2Options $ documentRoot htmlDoc
   return $ listToMaybe $ discoverWebmentionEndpoints mf2Root (linksFromHeader r)
 
-sendWebmention ∷ URI → URI → URI → Sweetroll ()
+sendWebmention ∷ URI → TargetURI → EndpointURI → Sweetroll ()
 sendWebmention from to endpoint = do
   req ← setUri def endpoint
   let reqBody = writeForm [(asText "source", show from), ("target", show to)]
@@ -43,7 +46,7 @@ sendWebmention from to endpoint = do
     putStrLn $ toText $ "Webmention posted for <" ++ show to ++ ">!"
     return $ Just ()
 
-contentWebmentions ∷ Maybe P.Pandoc → Sweetroll [(URI, URI)]
+contentWebmentions ∷ Maybe P.Pandoc → Sweetroll [(TargetURI, EndpointURI)]
 contentWebmentions content =
   case content of
     Nothing → return []
@@ -57,5 +60,5 @@ contentWebmentions content =
       rs ← mapM getWebmentionEndpoint' links
       return $ catMaybes rs
 
-sendWebmentions ∷ URI → [(URI, URI)] → Sweetroll ()
+sendWebmentions ∷ URI → [(TargetURI, EndpointURI)] → Sweetroll ()
 sendWebmentions from ms = mapM_ (uncurry $ sendWebmention from) $ nub ms

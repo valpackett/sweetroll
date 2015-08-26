@@ -35,13 +35,6 @@ data AppOptions = AppOptions
   , indieauthc               ∷ Maybe String
   , indieauthr               ∷ Maybe String
   , pushhub                  ∷ Maybe String
-  , adnhost                  ∷ Maybe String
-  , adntoken                 ∷ String
-  , twihost                  ∷ Maybe String
-  , twiappkey                ∷ String
-  , twiappsecret             ∷ String
-  , twiacctoken              ∷ String
-  , twiaccsecret             ∷ String
   , secret                   ∷ String
   , https                    ∷ Maybe Bool
   , repo                     ∷ FilePath }
@@ -56,13 +49,6 @@ instance Options AppOptions where
     <*> simpleOption "indieauthc"        Nothing                               "The IndieAuth check endpoint to use"
     <*> simpleOption "indieauthr"        Nothing                               "The IndieAuth redirect endpoint to use"
     <*> simpleOption "pushhub"           Nothing                               "The PubSubHubbub hub to use"
-    <*> simpleOption "adnhost"           Nothing                               "The App.net API host to use"
-    <*> simpleOption "adntoken"          ""                                    "The App.net API access token to use"
-    <*> simpleOption "twihost"           Nothing                               "The Twitter API 1.1 host to use"
-    <*> simpleOption "twiappkey"         ""                                    "The Twitter API application key to use"
-    <*> simpleOption "twiappsecret"      ""                                    "The Twitter API application token secret to use"
-    <*> simpleOption "twiacctoken"       ""                                    "The Twitter API access token to use"
-    <*> simpleOption "twiaccsecret"      ""                                    "The Twitter API access token secret to use"
     <*> simpleOption "secret"            "RANDOM"                              "The JWT secret key for IndieAuth"
     <*> simpleOption "https"             Nothing                               "Whether HTTPS works on the domain"
     <*> simpleOption "repo"              "./"                                  "The git repository directory of the website"
@@ -99,9 +85,7 @@ main = runCommand $ \opts args → do
                      , o setHttpsWorks                  https
                      , o setIndieAuthCheckEndpoint      indieauthc
                      , o setIndieAuthRedirEndpoint      indieauthr
-                     , o setPushHub                     pushhub
-                     , o setAdnApiHost                  adnhost
-                     , o setTwitterApiHost              twihost ]
+                     , o setPushHub                     pushhub ]
       conf = foldr ($) (fromMaybe def origConf) fieldMapping
   when (isNothing origConf) . transaction "." . saveDocument "conf" "sweetroll" $ conf
 
@@ -110,12 +94,7 @@ main = runCommand $ \opts args → do
                   "RANDOM" → decodeUtf8 $ B64.encode $ H.hash randBytes
                   k → T.pack k
   let secs = def {
-    secretKey                      = secret'
-  , adnApiToken                    = adntoken opts
-  , twitterAppKey                  = encodeUtf8 . T.pack . twiappkey    $ opts
-  , twitterAppSecret               = encodeUtf8 . T.pack . twiappsecret $ opts
-  , twitterAccessToken             = encodeUtf8 . T.pack . twiacctoken  $ opts
-  , twitterAccessSecret            = encodeUtf8 . T.pack . twiaccsecret $ opts }
+    secretKey                      = secret' }
 
   tpls ← loadTemplates
   let app' = initSweetrollApp conf tpls secs

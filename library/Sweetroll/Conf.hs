@@ -42,12 +42,7 @@ data SweetrollTemplates = SweetrollTemplates
 $(declareSetters ''SweetrollTemplates)
 
 data SweetrollSecrets = SweetrollSecrets
-  {                secretKey ∷ Text
-  ,              adnApiToken ∷ String
-  ,            twitterAppKey ∷ ByteString
-  ,         twitterAppSecret ∷ ByteString
-  ,       twitterAccessToken ∷ ByteString
-  ,      twitterAccessSecret ∷ ByteString }
+  {                secretKey ∷ Text }
 
 data SweetrollConf = SweetrollConf
   {                 siteName ∷ Text
@@ -61,8 +56,6 @@ data SweetrollConf = SweetrollConf
   ,   indieAuthCheckEndpoint ∷ String -- Separated for debugging
   ,                  pushHub ∷ String
   ,                pushDelay ∷ Int
-  ,               adnApiHost ∷ String
-  ,           twitterApiHost ∷ String
   ,                 testMode ∷ Bool }
 
 $(declareSetters ''SweetrollConf)
@@ -129,19 +122,12 @@ instance Default SweetrollConf where
       , indieAuthCheckEndpoint   = "https://indieauth.com/auth"
       , indieAuthRedirEndpoint   = "https://indieauth.com/auth"
       , pushHub                  = "https://pubsubhubbub.superfeedr.com"
-      , pushDelay                = 1
-      , adnApiHost               = "https://api.app.net"
-      , twitterApiHost           = "https://api.twitter.com/1.1"
+      , pushDelay                = 3
       , testMode                 = False }
 
 instance Default SweetrollSecrets where
   def = SweetrollSecrets {
-        secretKey                = "SECRET" -- the executable sets to a secure random value by default
-      , adnApiToken              = ""
-      , twitterAppKey            = ""
-      , twitterAppSecret         = ""
-      , twitterAccessToken       = ""
-      , twitterAccessSecret      = "" }
+        secretKey                = "SECRET" } -- the executable sets to a secure random value by default
 
 instance Default SweetrollTemplates where
   def = SweetrollTemplates {

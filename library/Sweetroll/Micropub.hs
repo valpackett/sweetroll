@@ -111,7 +111,7 @@ makeEntry pars now absUrl content entryProps = object [ "type"       .= [ asText
                 , "category"    .= filter (not . null) (join $ parseTags <$> par "category")
                 , "url"         .= [ show absUrl ] ] ++ entryProps
 
-fetchEntry ∷ URI → Sweetroll (Maybe (Value, Maybe (URI, URI)))
+fetchEntry ∷ URI → Sweetroll (Maybe (Value, Maybe (TargetURI, EndpointURI)))
 fetchEntry uri = withSuccessfulRequestHtml uri $ \resp → do
   htmlDoc ← responseBody resp $$ sinkDoc
   let mfRoot = parseMf2 mf2Options $ documentRoot htmlDoc

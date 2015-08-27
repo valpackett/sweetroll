@@ -86,9 +86,9 @@ postMicropub _ allParams = do
           syndMs ← contentWebmentions $ Just $ pandocRead readHtml $ S.toString syndicationLinks
           syndResults ← liftM catMaybes $ sendWebmentions absUrl syndMs
           let processSynd resp = do
-              guard $ responseStatus resp == HT.ok200
-              v ← decode (responseBody resp) ∷ Maybe Value
-              v ^? key "url" . _String
+                guard $ responseStatus resp == HT.ok200
+                v ← decode (responseBody resp) ∷ Maybe Value
+                v ^? key "url" . _String
           update $ set (key "properties" . key "syndication") (Array $ V.fromList $ map String $ mapMaybe processSynd syndResults) entry
           contMs ← contentWebmentions content
           let metaMs = catMaybes $ map snd $ concat $ map catMaybes [ inReplyTo, likeOf, repostOf ]

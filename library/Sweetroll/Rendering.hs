@@ -92,6 +92,7 @@ instance Templatable EntryPage where
             , "hasNext"          .= isJust next
             , "nextHref"         .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack $ orEmptyMaybe next)
             , "syndication"      .= entrySyndication
+            , "hasSyndication"   .= not (null entrySyndication)
             , "hasTwitterId"     .= isJust twitterId
             , "twitterId"        .= orEmptyMaybe twitterId
             , "replyContexts"    .= map referenceContext entryInReplyTo
@@ -161,9 +162,11 @@ helpers ∷ FunctionMap
 helpers = mapFromList [ ("syndicationName", toFunction syndicationName) ]
 
 syndicationName ∷ Text → Value
-syndicationName u | "app.net"     `isInfixOf` u = String "App.net"
-                  | "twitter.com" `isInfixOf` u = String "Twitter"
-                  | otherwise                   = String u
+syndicationName u | "app.net"       `isInfixOf` u = String "App.net"
+                  | "twitter.com"   `isInfixOf` u = String "Twitter"
+                  | "facebook.com"  `isInfixOf` u = String "Facebook"
+                  | "instagram.com" `isInfixOf` u = String "Instagram"
+                  | otherwise                     = String u
 
 formatTimeText ∷ Stringable α ⇒ UTCTime → α
 formatTimeText = fromString . formatTime defaultTimeLocale "%d.%m.%Y %I:%M %p"

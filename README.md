@@ -38,7 +38,7 @@ I'm running it on [my website](https://unrelenting.technology).
 
 ## TODO
 
-- [ ] add configurable webmention-to-syndication (brid.gy publish)
+- [x] add configurable webmention-to-syndication (brid.gy publish)
 - [ ] archive pages, ie. unpaginated pages
 - [ ] tags (add CSV support to gitson for storing stuff like this)
 - [ ] micropub updating and deleting

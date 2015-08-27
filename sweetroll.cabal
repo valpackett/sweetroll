@@ -67,6 +67,7 @@ library
       , network-uri
       , network
       , conduit
+      , conduit-combinators
       , http-types
       , http-media
       , http-client

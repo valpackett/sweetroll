@@ -1,5 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE TypeOperators, TypeFamilies, DataKinds #-}
+{-# LANGUAGE TypeOperators, TypeFamilies, DataKinds, TupleSections #-}
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, MultiParamTypeClasses #-}
 
 module Sweetroll.Api where
@@ -30,7 +30,11 @@ import           Sweetroll.Style
 import           Sweetroll.Util
 
 getMicropub ∷ JWT VerifiedJWT → Maybe Text → Sweetroll [(Text, Text)]
--- getMicropub _ (Just "syndicate-to") = getSyndication
+getMicropub _ (Just "syndicate-to") = do
+  (MkSyndicationConfig syndConf) ← getConfOpt syndicationConfig
+  return $ case syndConf of
+             Object o → map ("syndicate-to[]", ) $ keys o
+             _ → []
 getMicropub token _ = getAuth token
 
 getIndieConfig ∷ Sweetroll IndieConfig

@@ -8,8 +8,10 @@ module Sweetroll.Micropub (
 import           ClassyPrelude
 import           Control.Monad.Except (throwError)
 import           Control.Concurrent.Lifted (fork, threadDelay)
+import           Control.Lens hiding ((.=))
 import           Data.Aeson
 import           Data.Aeson.Types
+import           Data.Aeson.Lens
 import           Data.Conduit
 import           Data.Microformats2.Parser
 import           Data.Microformats2.Parser.Util (emptyVal)
@@ -36,16 +38,10 @@ import           Sweetroll.Webmention
 
 postMicropub ∷ JWT VerifiedJWT → [(Text, Text)] → Sweetroll (Headers '[Header "Location" Text] [(Text, Text)])
 postMicropub _ allParams = do
-  now ← liftIO getCurrentTime
-  base ← getConfOpt baseURI
-  let category = decideCategory allParams
-      slug = decideSlug allParams now
-      content = pandocRead (decideReader allParams) <$> S.toString <$> lookup "content" allParams
-      absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base
-      create x = liftIO $ transaction "./" $ saveNextDocument category slug x
-      -- update x = liftIO $ transaction "./" $ saveDocumentByName category slug x
   case lookup "h" allParams of
     Just "entry" → do
+
+      -- ## Reply contexts
       let paramToEntries x = mapM fetchEntry $ mapMaybe parseURI $ map S.toString $ maybeToList $ lookup x allParams
       inReplyTo ← paramToEntries "in-reply-to"
       likeOf ←    paramToEntries "like-of"
@@ -53,9 +49,29 @@ postMicropub _ allParams = do
       let entryProps = [ "in-reply-to" .= map fst (catMaybes inReplyTo)
                        , "like-of"     .= map fst (catMaybes likeOf)
                        , "repost-of"   .= map fst (catMaybes repostOf) ]
-          entry = makeEntry allParams now absUrl content entryProps
-      -- TODO: copy content for reposts
-      create entry
+
+      -- ## Webmention-to-Syndication
+      (MkSyndicationConfig syndConf) ← getConfOpt syndicationConfig
+      let inSyndicateTo x = any (isInfixOf x . snd) $ filter (isInfixOf "syndicate-to" . fst) allParams
+          syndicationLinks = case syndConf of
+                               Object o → concat $ mapMaybe (^? _String) $ mapMaybe ((flip lookup) o) $ filter inSyndicateTo $ keys o
+                               _ → ""
+
+      -- ## Basic data for the entry
+      now ← liftIO getCurrentTime
+      base ← getConfOpt baseURI
+      let category = decideCategory allParams
+          slug = decideSlug allParams now
+          content = pandocRead (decideReader allParams) <$> S.toString <$> lookup "content" allParams
+          absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base
+
+      -- ## Creating the entry
+      let entry = makeEntry allParams now absUrl content entryProps syndicationLinks
+          create x = liftIO $ transaction "./" $ saveNextDocument category slug x
+          update x = liftIO $ transaction "./" $ saveDocumentByName category slug x
+      create entry -- TODO: copy content for reposts
+
+      -- ## Async notification jobs
       isTest ← getConfOpt testMode
       unless isTest $ do
         void $ fork $ do
@@ -67,9 +83,16 @@ postMicropub _ allParams = do
                notifyPuSH $ dropQueryFragment $ permalink (Proxy ∷ Proxy CatRoute) category (-1)
              else return ()
         void $ fork $ do
+          syndMs ← contentWebmentions $ Just $ pandocRead readHtml $ S.toString syndicationLinks
+          syndResults ← liftM catMaybes $ sendWebmentions absUrl syndMs
+          let processSynd resp = do
+              guard $ responseStatus resp == HT.ok200
+              v ← decode (responseBody resp) ∷ Maybe Value
+              v ^? key "url" . _String
+          update $ set (key "properties" . key "syndication") (Array $ V.fromList $ map String $ mapMaybe processSynd syndResults) entry
           contMs ← contentWebmentions content
           let metaMs = catMaybes $ map snd $ concat $ map catMaybes [ inReplyTo, likeOf, repostOf ]
-          sendWebmentions absUrl (metaMs ++ contMs)
+          void $ sendWebmentions absUrl (metaMs ++ contMs)
       return $ addHeader (toText $ show absUrl) []
     _ → throwError err400
 
@@ -96,14 +119,15 @@ decideReader pars | f == "textile"     = readTextile
                   | otherwise          = readCommonMark
   where f = orEmptyMaybe $ lookup "format" pars
 
-makeEntry ∷ [(Text, Text)] → UTCTime → URI → Maybe Pandoc → [Pair] → Value
-makeEntry pars now absUrl content entryProps = object [ "type"       .= [ asText "h-entry" ]
-                                                      , "properties" .= object (filter (not . emptyVal . snd) props) ]
+makeEntry ∷ [(Text, Text)] → UTCTime → URI → Maybe Pandoc → [Pair] → Text → Value
+makeEntry pars now absUrl content entryProps syndicationLinks =
+  object [ "type"       .= [ asText "h-entry" ]
+         , "properties" .= object (("syndication" .= ([ ] ∷ [Value])) : filter (not . emptyVal . snd) props) ]
   where par = map S.toLazyText . maybeToList . (flip lookup) pars
         props = [ "name"        .= par "name"
                 , "summary"     .= par "summary"
                 , "content"     .= case content of
-                                     Just c → Array $ V.fromList [ object [ "html" .= renderHtml (writeHtml pandocWriterOptions c) ] ]
+                                     Just c → Array $ V.fromList [ object [ "html" .= (renderHtml (writeHtml pandocWriterOptions c) ++ S.toLazyText syndicationLinks) ] ]
                                      Nothing → Array V.empty
                 , "published"   .= [ fromMaybe now . headMay . catMaybes $ parseISOTime <$> par "published" ]
                 , "updated"     .= [ now ]

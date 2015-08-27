@@ -6,6 +6,7 @@ import           ClassyPrelude
 import qualified Text.Pandoc as P
 import qualified Text.Pandoc.Walk as PW
 import           Data.Conduit
+import qualified Data.Conduit.Combinators as C
 import           Data.Aeson
 import           Data.List (nub)
 import           Data.Stringable
@@ -23,6 +24,22 @@ import           Sweetroll.Monads
 type TargetURI = URI
 type EndpointURI = URI
 
+sendWebmention ∷ URI → TargetURI → EndpointURI → Sweetroll (Maybe (Response LByteString))
+sendWebmention from to endpoint = do
+  req ← setUri def endpoint
+  let reqBody = writeForm [(asText "source", show from), ("target", show to)]
+      req' = req { method = "POST"
+                 , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
+                 , requestBody = RequestBodyBS reqBody }
+  withSuccessfulRequest req' $ \resp → do
+    putStrLn $ toText $ "Webmention posted for <" ++ show to ++ ">!"
+    body ← responseBody resp $$ C.sinkLazy
+    return $ Just $ resp { responseBody = body }
+
+sendWebmentions ∷ URI → [(TargetURI, EndpointURI)] → Sweetroll [Maybe (Response LByteString)]
+sendWebmentions from ms = mapM (uncurry $ sendWebmention from) $ nub ms
+
+
 linksFromHeader ∷ ∀ body. Response body → [Link]
 linksFromHeader r = fromMaybe [] (lookup "Link" (responseHeaders r) >>= parseLinkHeader . decodeUtf8)
 
@@ -35,16 +52,13 @@ getWebmentionEndpoint r = do
   let mf2Root = parseMf2 mf2Options $ documentRoot htmlDoc
   return $ listToMaybe $ discoverWebmentionEndpoints mf2Root (linksFromHeader r)
 
-sendWebmention ∷ URI → TargetURI → EndpointURI → Sweetroll ()
-sendWebmention from to endpoint = do
-  req ← setUri def endpoint
-  let reqBody = writeForm [(asText "source", show from), ("target", show to)]
-      req' = req { method = "POST"
-                 , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
-                 , requestBody = RequestBodyBS reqBody }
-  void $ withSuccessfulRequest req' $ \_ → do
-    putStrLn $ toText $ "Webmention posted for <" ++ show to ++ ">!"
-    return $ Just ()
+findWebmentionEndpoints ∷ [TargetURI] → Sweetroll [(TargetURI, EndpointURI)]
+findWebmentionEndpoints targets = do
+  let getWebmentionEndpoint' uri = do
+        endp ← withSuccessfulRequestHtml uri getWebmentionEndpoint
+        return $ (uri, ) <$> endp
+  rs ← mapM getWebmentionEndpoint' targets
+  return $ catMaybes rs
 
 contentWebmentions ∷ Maybe P.Pandoc → Sweetroll [(TargetURI, EndpointURI)]
 contentWebmentions content =
@@ -54,11 +68,4 @@ contentWebmentions content =
       let extractLink (P.Link _ (u, _)) = catMaybes [ parseURI u ]
           extractLink _ = []
           links = PW.query extractLink p
-          getWebmentionEndpoint' uri = do
-            endp ← withSuccessfulRequestHtml uri getWebmentionEndpoint
-            return $ (uri, ) <$> endp
-      rs ← mapM getWebmentionEndpoint' links
-      return $ catMaybes rs
-
-sendWebmentions ∷ URI → [(TargetURI, EndpointURI)] → Sweetroll ()
-sendWebmentions from ms = mapM_ (uncurry $ sendWebmention from) $ nub ms
+      findWebmentionEndpoints links

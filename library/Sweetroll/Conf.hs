@@ -30,6 +30,15 @@ instance ToJSON IndieConfig where
 instance FromJSON IndieConfig where
   parseJSON v = return $ MkIndieConfig v
 
+newtype SyndicationConfig = MkSyndicationConfig Value
+
+instance ToJSON SyndicationConfig where
+  toJSON (MkSyndicationConfig v) = toJSON v
+
+instance FromJSON SyndicationConfig where
+  parseJSON v = return $ MkSyndicationConfig v
+
+
 data SweetrollTemplates = SweetrollTemplates
   {           layoutTemplate ∷ Template
   ,            entryTemplate ∷ Template
@@ -52,6 +61,7 @@ data SweetrollConf = SweetrollConf
   ,           titleSeparator ∷ Text
   ,            categoryOrder ∷ [String]
   ,              indieConfig ∷ IndieConfig
+  ,        syndicationConfig ∷ SyndicationConfig
   ,   indieAuthRedirEndpoint ∷ String
   ,   indieAuthCheckEndpoint ∷ String -- Separated for debugging
   ,                  pushHub ∷ String
@@ -119,6 +129,11 @@ instance Default SweetrollConf where
                                      , "bookmark" .= asText "https://quill.p3k.io/bookmark?url={url}"
                                      , "like"     .= asText "https://quill.p3k.io/favorite?url={url}"
                                      , "repost"   .= asText "https://quill.p3k.io/repost?url={url}" ]
+      , syndicationConfig        = MkSyndicationConfig $ object [
+                                       "twitter"   .= asText "<a href=\"https://www.brid.gy/publish/twitter\"></a>"
+                                     , "facebook"  .= asText "<a href=\"https://www.brid.gy/publish/facebook\"></a>"
+                                     -- , "test"      .= asText "<a href=\"http://localhost:9247/post?type=link&amp;syndication=yep\"></a>"
+                                     , "instagram" .= asText "<a href=\"https://www.brid.gy/publish/instagram\"></a>" ]
       , indieAuthCheckEndpoint   = "https://indieauth.com/auth"
       , indieAuthRedirEndpoint   = "https://indieauth.com/auth"
       , pushHub                  = "https://pubsubhubbub.superfeedr.com"

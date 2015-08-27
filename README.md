@@ -5,6 +5,7 @@ A website engine for [the indie web] with curved swords. *Curved! Swords!*
 - uses [Git]+[JSON] for storage
 - supports [Micropub] for posting
 - sends [Webmentions]
+- supports the webmention-to-[syndication] process ([Bridgy Publish])
 - supports [indie-config]
 - has a [JSON Web Tokens]-based [token-endpoint]
 - allows posting in [CommonMark Markdown] and other markup languages (powered by [Pandoc])
@@ -24,9 +25,59 @@ I'm running it on [my website](https://unrelenting.technology).
 
 [Micropub]: https://indiewebcamp.com/micropub
 [Webmentions]: https://indiewebcamp.com/webmention
+[syndication]: https://indiewebcamp.com/POSSE
+[Bridgy Publish]: https://www.brid.gy/about#publishing
 [indie-config]: https://indiewebcamp.com/indie-config
 [token-endpoint]: https://indiewebcamp.com/token-endpoint
 
+## Usage
+
+*Installing Sweetroll on a server requires basic UNIX sysadmin skills. If you can't do it, ask your friends for help or check out [other IndieWeb projects](https://indiewebcamp.com/projects): some of them have hosted versions, some run on shared PHP hosting.*
+
+First, you need to get a binary of Sweetroll.
+I haven't uploaded any yet, so you have to build from source.
+
+Get [stack](https://github.com/commercialhaskell/stack), `git clone` the repo, `cd` into it and do a `stack build`.
+When it's done, it says where it put the binary (something like `.stack-work/install/your-platform/some/versions/.../bin`).
+
+*Note: running the binary might require `libgmp`.*
+
+Then you need to pick a directory where your website's content files will be, and run `git init` there.
+
+Write a script called something like `run-sweetroll`, don't forget to replace everything with your values:
+
+```bash
+#!/bin/sh
+
+umask g+w
+exec /home/greg/Stuff/bin/freebsd-amd64/sweetroll
+        --https \ # this means HTTPS is *working*! i.e. you have it set up on your reverse proxy!
+        --protocol=unix \ # will run on /var/run/sweetroll/sweetroll.sock by default; you can override with --socket
+  # or: --protocol=http --port=3030 \
+        --domain=unrelenting.technology \ # your actual domain!
+        --repo="/home/greg/Stuff/website" \ # the site directory! don't forget to run `git init` inside of it first
+        --secret="GENERATE YOUR LONG PSEUDORANDOM VALUE!...2MGy9ZkKgzexRpd7vl8"
+```
+
+(Use something like `head -c 1024 < /dev/random | openssl dgst -sha256` to get the random value for the `secret`. No, not dynamically in the script. Copy and paste the value into the script. Otherwise you'll be logged out on every restart.)
+
+Run that script with [supervisord](http://supervisord.org) or whatever you prefer.
+Don't run as root, run as a separate user that has read-write access to the site directory.
+
+Putting a reverse proxy in front of Sweetroll is not *required*, but you might want to run other software at different URLs, etc.
+I wrote [443d](https://github.com/myfreeweb/443d) as a lightweight alternative to nginx.
+
+After you start Sweetroll, open your new website.
+It should write the default configuration to `conf/sweetroll.json` in your site directory.
+Edit that file, you probably want to change some options.
+
+Create a `templates` directory in your site directory.
+You can put HTML files there that will override the HTML files you see in this repo's `templates` directory.
+You need to put your h-card and rel-me markup into `templates/author.html`.
+
+Restart Sweetroll after any changes to the config file or the templates.
+
+Use Micropub clients like [Quill](https://quill.p3k.io) to post.
 
 ## Libraries I made for this project
 
@@ -38,19 +89,18 @@ I'm running it on [my website](https://unrelenting.technology).
 
 ## TODO
 
-- [x] add configurable webmention-to-syndication (brid.gy publish)
-- [ ] archive pages, ie. unpaginated pages
-- [ ] tags (add CSV support to gitson for storing stuff like this)
 - [ ] micropub updating and deleting
 - [ ] receiving webmention
 - [ ] microformats2 based [comments-presentation](http://indiewebcamp.com/comments-presentation)
 - [ ] hashcash in webmentions
-- [ ] Atom feed
 - [ ] posting [photos](http://indiewebcamp.com/photos) (note: we already depend on `JuicyPixels` somehow)
 - [ ] custom non-entry html pages
 - [ ] [JS](https://github.com/myfreeweb/hs-duktape) hooks for events like posting and webmentions (API: a Sweetroll object which is an EventEmitter and also has config/secrets getters; should be possible to make HTTP requests to e.g. send webmention notifications)
+- [ ] templates that better support mf2 JSON -- [ede](https://github.com/brendanhay/ede)? Jade/ect/something else JS-based? 
+- [ ] archive pages, ie. unpaginated pages
+- [ ] tags (add CSV support to gitson for storing stuff like this)
 - [ ] built-in TLS server, since we depend on `tls` already because of the client
-- [ ] [ede](https://github.com/brendanhay/ede) templates instead of simple-templates (??)
+- [ ] Atom feed
 
 ## License
 

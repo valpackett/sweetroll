@@ -92,7 +92,6 @@ library
         Sweetroll.Micropub
         Sweetroll.Monads
         Sweetroll.Pages
-        Sweetroll.Pagination
         Sweetroll.Rendering
         Sweetroll.Routes
         Sweetroll.Style

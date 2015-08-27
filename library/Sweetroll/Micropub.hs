@@ -80,7 +80,7 @@ postMicropub _ allParams = do
           if isJust reread -- not deleted after the delay
              then do
                notifyPuSH $ permalink (Proxy ∷ Proxy IndexRoute)
-               notifyPuSH $ dropQueryFragment $ permalink (Proxy ∷ Proxy CatRoute) category (-1)
+               notifyPuSH $ permalink (Proxy ∷ Proxy CatRouteE) category
              else return ()
         void $ fork $ do
           syndMs ← contentWebmentions $ Just $ pandocRead readHtml $ S.toString syndicationLinks

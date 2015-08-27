@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, TypeFamilies, FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, TypeFamilies, FlexibleContexts, DataKinds #-}
 
 -- | The module responsible for rendering pages into actual HTML
 module Sweetroll.Rendering where
@@ -18,7 +18,6 @@ import qualified Data.Text as T
 import           Data.Stringable
 import           Safe (atMay)
 import           Servant
-import           Sweetroll.Pagination
 import           Sweetroll.Pages
 import           Sweetroll.Routes
 import           Sweetroll.Conf
@@ -81,12 +80,12 @@ instance Templatable EntryPage where
               "name"             .= orEmptyMaybe entryName
             , "content"          .= content
             , "hasContent"       .= not (null content)
-            , "published"        .= asLText (fromMaybe "" (formatTimeText <$> published))
-            , "publishedAttr"    .= asLText (fromMaybe "" (formatTimeAttr <$> published))
+            , "published"        .= asLText (fromMaybe "" $ formatTimeText <$> published)
+            , "publishedAttr"    .= asLText (fromMaybe "" $ formatTimeAttr <$> published)
             , "permalink"        .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack slug)
             , "isUntitled"       .= null entryName
             , "category"         .= catName
-            , "categoryHref"     .= showLink (dropQueryFragment $ permalink (Proxy ∷ Proxy CatRoute) catName (-1))
+            , "categoryHref"     .= showLink (permalink (Proxy ∷ Proxy CatRouteE) catName)
             , "hasPrev"          .= isJust prev
             , "prevHref"         .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack $ orEmptyMaybe prev)
             , "hasNext"          .= isJust next
@@ -122,30 +121,23 @@ referenceContext _ = object [ ]
 
 instance Templatable CatPage where
   templateInLayout _ = categoryTemplate
-  renderBare tplf (View conf tpls hostInfo (CatPage name page)) = ViewResult html titleParts ctx
+  renderBare tplf (View conf tpls hostInfo (CatPage name slice)) = ViewResult html titleParts ctx
     where html = renderTemplate (tplf tpls) helpers ctx
           titleParts = [pack name]
           ctx = object [
               "name"            .= name
-            , "permalink"       .= pageLink (-1)
+            , "permalink"       .= showLink (sliceSelf slice)
             , "entries"         .= map resultContext entryResults
             , "renderedEntries" .= map resultHtml entryResults
-            , "firstHref"       .= (pageLink  $ firstPage page)
-            , "shouldFirst"     .= (thisPage page > firstPage page)
-            , "hasPrev"         .= (isJust    $ prevPage page)
-            , "prevHref"        .= (pageLink' $ prevPage page)
-            , "allPages"        .= map pageLink [firstPage page .. lastPage page]
-            , "hasNext"         .= (isJust    $ nextPage page)
-            , "nextHref"        .= (pageLink' $ nextPage page)
-            , "lastHref"        .= (pageLink  $ lastPage page)
-            , "shouldLast"      .= (thisPage page < lastPage page)
+            , "hasPrev"         .= isJust (sliceBefore slice)
+            , "prevHref"        .= orEmptyMaybe (showLink <$> sliceBefore slice)
+            , "hasNext"         .= isJust (sliceAfter slice)
+            , "nextHref"        .= orEmptyMaybe (showLink <$> sliceAfter slice)
             ]
           entryResults = map entryHtml entries
           entryHtml = renderBare entryInListTemplate . View conf tpls hostInfo . EntryPage name slugs
           slugs = map fst entries
-          entries = items page
-          pageLink n = showLink (permalink (Proxy ∷ Proxy CatRoute) name n)
-          pageLink' = pageLink . fromMaybe 0
+          entries = sliceItems slice
 
 instance Templatable IndexPage where
   templateInLayout _ = indexTemplate

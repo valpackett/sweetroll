@@ -22,7 +22,10 @@ type LoginRoute               = "login" :> ReqBody '[FormUrlEncoded] [(Text, Tex
 type IndieConfigRoute         = "indie-config" :> Get '[HTML] IndieConfig
 type DefaultCssRoute          = "default-style.css" :> Get '[CSS] LByteString
 type EntryRoute               = Capture "catName" String :> Capture "slug" String :> Get '[HTML] (WithLink (View EntryPage))
-type CatRoute                 = Capture "catName" String :> QueryParam "page" Int :> Get '[HTML] (WithLink (View CatPage))
+type CatRoute                 = Capture "catName" String :> QueryParam "before" Int :> QueryParam "after" Int :> Get '[HTML] (WithLink (View CatPage))
+type CatRouteE                = Capture "catName" String :> Get '[HTML] (WithLink (View CatPage))
+type CatRouteB                = Capture "catName" String :> QueryParam "before" Int :> Get '[HTML] (WithLink (View CatPage))
+type CatRouteA                = Capture "catName" String :> QueryParam "after" Int :> Get '[HTML] (WithLink (View CatPage))
 type IndexRoute               = Get '[HTML] (WithLink (View IndexPage))
 
 type PostMicropubRoute        = "micropub" :> AuthProtect :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] (Headers '[Header "Location" Text] [(Text, Text)])

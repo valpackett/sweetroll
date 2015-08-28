@@ -157,10 +157,11 @@ notifyPuSH l = do
     Just hubURI → do
       base ← getConfOpt baseURI
       let pingURI = l `relativeTo` base
+          body = writeForm $ [ (asText "hub.mode", asText "publish"), ("hub.url", toText $ show pingURI) ]
       let req = def { method = "POST"
                     , requestHeaders = [ (HT.hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
-                    , requestBody = RequestBodyBS . writeForm $ [ (asText "hub.mode", asText "publish"), ("hub.url", toText $ show pingURI) ] }
+                    , requestBody = RequestBodyBS body }
       req' ← setUri req hubURI
       void $ withSuccessfulRequest req' $ \_ → do
-        putStrLn $ "PubSubHubbub notified for <" ++ toText (show pingURI) ++ ">"
+        putStrLn $ "PubSubHubbub notified: " ++ S.toText body
         return $ Just ()

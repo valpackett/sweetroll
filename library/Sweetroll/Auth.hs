@@ -32,8 +32,8 @@ data AuthProtected α = AuthProtected Text α
 instance Enter α φ β ⇒ Enter (AuthProtected α) φ (AuthProtected β) where
   enter f (AuthProtected k a) = AuthProtected k $ enter f a
 
-instance HasServer rest ⇒ HasServer (AuthProtect :> rest) where
-  type ServerT (AuthProtect :> rest) α = AuthProtected (JWT VerifiedJWT → ServerT rest α)
+instance HasServer sublayout ⇒ HasServer (AuthProtect :> sublayout) where
+  type ServerT (AuthProtect :> sublayout) α = AuthProtected (JWT VerifiedJWT → ServerT sublayout α)
 
   route Proxy (AuthProtected secKey subserver) req respond =
     case asum [ L.lookup hAuthorization (Wai.requestHeaders req) >>= fromHeader
@@ -42,7 +42,7 @@ instance HasServer rest ⇒ HasServer (AuthProtect :> rest) where
       Just tok → do
         case decodeAndVerifySignature (secret secKey) (S.toText tok) of
           Nothing → respond . succeedWith $ Wai.responseLBS status401 [] "Invalid auth token."
-          Just decodedToken → route (Proxy ∷ Proxy rest) (subserver decodedToken) req respond
+          Just decodedToken → route (Proxy ∷ Proxy sublayout) (subserver decodedToken) req respond
 
 instance HasLink sub ⇒ HasLink (AuthProtect :> sub) where
   type MkLink (AuthProtect :> sub) = MkLink sub
@@ -69,7 +69,7 @@ makeAccessToken me = do
   conf ← getConf
   secs ← getSecs
   now ← liftIO getCurrentTime
-  return $ traceShowId [ ("access_token", signAccessToken (secretKey secs) (domainName conf) me now)
+  return [ ("access_token", signAccessToken (secretKey secs) (domainName conf) me now)
          , ("scope", "post"), ("me", me) ]
 
 postLogin ∷ [(Text, Text)] → Sweetroll [(Text, Text)]
@@ -77,10 +77,15 @@ postLogin params = do
   conf ← getConf
   let valid = makeAccessToken $ fromMaybe "unknown" $ lookup "me" params
   if testMode conf then valid else do
-    traceShowM params
     indieAuthReq ← liftIO $ HC.parseUrl $ indieAuthCheckEndpoint conf
     resp ← request (indieAuthReq { HC.method = "POST"
-                                 , HC.requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ] -- "indieauth suddenly stopped working" *facepalm*
+                                 , HC.requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
                                  , HC.requestBody = HC.RequestBodyBS $ writeForm params }) ∷ Sweetroll (HC.Response LByteString)
-    if HC.responseStatus resp == ok200 then valid
-    else throwError err401
+    if HC.responseStatus resp == ok200
+       then do
+         -- TODO: get scopes from the response
+         putStrLn $ toText $ "Authenticated a client: " ++ fromMaybe "unknown" (lookup "client_id" params)
+         valid
+       else do
+         putStrLn $ toText $ "Authentication error: " ++ show params
+         throwError err401

@@ -13,6 +13,7 @@ import           Data.Aeson (encode)
 import           Data.Aeson.Types
 import           Data.Aeson.Lens
 import           Data.List (elemIndex)
+import           Data.Foldable (asum)
 import qualified Data.Vector as V
 import qualified Data.Text as T
 import           Data.Stringable
@@ -115,7 +116,9 @@ instance Templatable EntryPage where
 referenceContext ∷ Value → Value
 referenceContext v@(Object _) = object [ "url" .= fromMaybe "" (v ^? key "properties" . key "url" . nth 0 . _String)
                                        , "name" .= fromMaybe "" (v ^? key "properties" . key "name" . nth 0 . _String)
-                                       , "content" .= fromMaybe "" (v ^? key "properties" . key "content" . nth 0 . key "html" . _String)]
+                                       , "content" .= fromMaybe "" (asum [ (v ^? key "properties" . key "content" . nth 0 . key "html" . _String)
+                                                                         , (v ^? key "properties" . key "content" . nth 0 . _String) ]) -- apparently p-content is a thing
+                                       ]
 referenceContext (String x) = object [ "url" .= x, "name" .= x ]
 referenceContext _ = object [ ]
 

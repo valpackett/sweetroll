@@ -10,7 +10,7 @@ import           Data.Default
 import           Data.Aeson
 import           Text.RawString.QQ
 import           Web.Simple.Templates.Language
-import           Sweetroll.Pagination (paginate)
+import           Network.URI (nullURI)
 import           Sweetroll.Pages
 import           Sweetroll.Rendering
 import           Sweetroll.Conf
@@ -70,15 +70,15 @@ spec = do
     it "renders categories" $ do
       let testEntries = [ ("f", mf2o [ "content" .= [ object [ "html" .= asText "First note"  ] ] ])
                         , ("s", mf2o [ "content" .= [ object [ "html" .= asText "Second note" ] ] ]) ]
-      testRender (CatPage "test" $ fromJust $ paginate False 10 1 testEntries) `shouldBe` [r|<category name="test">
+      testRender (CatPage "test" $ Slice testEntries Nothing nullURI Nothing) `shouldBe` [r|<category name="test">
 <e href="/test/f">First note</e>
 <e href="/test/s">Second note</e>
 </category>|]
 
     it "renders the index" $ do
-      let testCats = [ ("stuff", fromJust $ paginate False 10 1
-                                 [ ("first",  mf2o [ "content" .= [ object [ "html" .= asText "First"  ] ] ])
-                                 , ("second", mf2o [ "content" .= [ object [ "html" .= asText "Second" ] ] ]) ]) ]
+      let testEntries = [ ("first",  mf2o [ "content" .= [ object [ "html" .= asText "First"  ] ] ])
+                        , ("second", mf2o [ "content" .= [ object [ "html" .= asText "Second" ] ] ]) ]
+          testCats = [ ("stuff", Slice testEntries Nothing nullURI Nothing) ]
       testRender (IndexPage testCats) `shouldBe` [r|<index>
   <category name="stuff">
     <e href="/stuff/first">First</e>

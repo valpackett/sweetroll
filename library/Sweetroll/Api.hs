@@ -70,15 +70,17 @@ getEntry catName slug = do
       addLinks [selfLink] $ view $ EntryPage catName (map readSlug $ sort otherSlugs) (slug, e)
 
 sweetrollServerT ∷ SweetrollCtx → ServerT SweetrollAPI Sweetroll
-sweetrollServerT ctx = postLogin :<|> getIndieConfig :<|> getDefaultCss :<|> getEntry :<|> getCat :<|> getIndex
+sweetrollServerT ctx = getIndieConfig :<|> getDefaultCss
+                  :<|> postLogin :<|> AuthProtected key getAuth
                   :<|> AuthProtected key postMicropub :<|> AuthProtected key getMicropub
+                  :<|> getEntry :<|> getCat :<|> getIndex
     where key = secretKey $ _ctxSecs ctx
 
 sweetrollApp ∷ SweetrollCtx → Application
 sweetrollApp ctx = foldr ($) (sweetrollApp' ctx) [
                      staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
                    , routedMiddleware ((== (Just "bower")) . headMay) $ serveStaticFromLookup bowerComponents
-                   , autohead]
+                   , autohead ]
   where sweetrollApp' ∷ SweetrollCtx → Application
         sweetrollApp' = serve sweetrollAPI . sweetrollServer
         sweetrollServer ∷ SweetrollCtx → Server SweetrollAPI
@@ -99,7 +101,7 @@ addLinks ∷ (MonadSweetroll μ, AddHeader "Link" [L.Link] α β) ⇒ [L.Link] �
 addLinks ls a = do
   conf ← getConf
   micropub ← genLink "micropub" $ safeLink sweetrollAPI (Proxy ∷ Proxy PostMicropubRoute)
-  tokenEndpoint ← genLink "token_endpoint" $ safeLink sweetrollAPI (Proxy ∷ Proxy LoginRoute)
+  tokenEndpoint ← genLink "token_endpoint" $ safeLink sweetrollAPI (Proxy ∷ Proxy PostLoginRoute)
   let authorizationEndpoint = fromJust $ L.lnk (indieAuthRedirEndpoint conf) [(L.Rel, "authorization_endpoint")]
       hub = fromJust $ L.lnk (pushHub conf) [(L.Rel, "hub")]
   return . addHeader (micropub : tokenEndpoint : authorizationEndpoint : hub : ls) =<< a

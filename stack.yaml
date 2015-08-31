@@ -3,13 +3,14 @@ packages:
   - '.'
   - location: '../indieweb-algorithms'
     extra-dep: true
+  - location: '../hs-duktape'
+    extra-dep: true
 extra-deps:
   - microformats2-parser-1.0.1.3
   - http-link-header-1.0.1
   - xml-lens-0.1.6.3
   - lens-datetime-0.2.1
   - setters-0.1
-  - simple-templates-0.8.0.0
   - git-embed-0.1.0
   - hspec-expectations-pretty-diff-0.7.2.2
 resolver: lts-3.2

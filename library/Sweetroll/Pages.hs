@@ -4,15 +4,14 @@
 module Sweetroll.Pages where
 
 import           ClassyPrelude
-import           Data.Aeson.Types (Pair, Value)
+import           Data.Aeson.Types (Value)
 import           Network.URI (URI)
 import           Sweetroll.Util
 import           Sweetroll.Conf
 
 data View α = View
   { viewConf     ∷ SweetrollConf
-  , viewTpls     ∷ SweetrollTemplates
-  , viewHostInfo ∷ [Pair]
+  , viewRenderer ∷ ByteString → Value → Text
   , viewContent  ∷ α }
 
 data Slice α = Slice

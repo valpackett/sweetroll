@@ -72,8 +72,9 @@ It should write the default configuration to `conf/sweetroll.json` in your site 
 Edit that file, you probably want to change some options.
 
 Create a `templates` directory in your site directory.
-You can put HTML files there that will override the HTML files you see in this repo's `templates` directory.
-You need to put your h-card and rel-me markup into `templates/author.html`.
+You can override the HTML templates you see in this repo's `templates` directory with your own using your `templates` directory.
+The templating engine is embedded JavaScript via [lodash](http://lodash.com)'s `_.template`.
+You need to put your h-card and rel-me markup into `templates/author.ejs`.
 
 Restart Sweetroll after any changes to the config file or the templates.
 
@@ -86,10 +87,11 @@ Use Micropub clients like [Quill](https://quill.p3k.io) to post.
 - [http-link-header](https://github.com/myfreeweb/http-link-header), a parser for the Link header (RFC 5988)
 - [microformats2-parser](https://github.com/myfreeweb/microformats2-parser), a Microformats 2 parser
 - [indieweb-algorithms](https://github.com/myfreeweb/indieweb-algorithms), a collection of implementations of algorithms like [authorship](http://indiewebcamp.com/authorship) and link discovery
+- [hs-duktape](https://github.com/myfreeweb/hs-duktape), Haskell bindings to [duktape](http://duktape.org), a lightweight ECMAScript (JavaScript) engine
 
 ## TODO
 
-- [ ] JS lodash templates
+- [x] JS lodash templates
 - [ ] micropub updating and deleting (implement [FormUrlEncoded](https://github.com/haskell-servant/servant/blob/b9ce73fcac9643114ea4f98ad2fbf20e40109462/servant/src/Servant/API/ContentTypes.hs#L341) stuff for Value, To/FromJSON to support both form-urlencoded and JSON; // respond to ?q=syndicate-to with JSON too)
 - [ ] receiving webmention
 - [ ] microformats2 based [comments-presentation](http://indiewebcamp.com/comments-presentation)

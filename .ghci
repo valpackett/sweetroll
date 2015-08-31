@@ -1,6 +1,6 @@
 :set -itest-suite/ -package hspec -package Glob -package doctest -package directory -package case-insensitive
 
-:def serve  \_ -> return $ ":load library/Sweetroll/Api.hs\n:m + Data.Default Sweetroll.Api System.Directory Network.Wai.Handler.Warp\nsetCurrentDirectory \"/tmp/sroll\"\n\n(initSweetrollApp (def {testMode = True}) def (def {secretKey = \"TESTKEY\"})) >>= runSettings (setPort 3000 defaultSettings)\n\n"
+:def serve  \_ -> return $ ":load library/Sweetroll/Api.hs\n:m + Data.Default Sweetroll.Api System.Directory Network.Wai.Handler.Warp\nsetCurrentDirectory \"/tmp/sroll\"\n\n(initSweetrollApp (def {testMode = True}) (def {secretKey = \"TESTKEY\"})) >>= runSettings (setPort 3000 defaultSettings)\n\n"
 :def app    \_ -> return $ ":load test-suite/TestUtil.hs library/Sweetroll/Api.hs\n:m + Data.Default Sweetroll.Api TestUtil\nlet app = initSweetrollApp def def def\n"
 :def dtest  \_ -> return $ ":load test-suite/DocTest.hs\n:reload\n:ctags\n:main"
 :def test   \_ -> return $ ":load test-suite/Spec.hs\n:reload\n:ctags\n:main --color"

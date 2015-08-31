@@ -7,18 +7,16 @@ module Sweetroll.Rendering where
 
 import           ClassyPrelude hiding (fromString)
 import           Control.Lens hiding (Index, re, parts, (.=))
-import           Web.Simple.Templates.Language
 import           Network.HTTP.Media.MediaType
 import           Data.Aeson (encode)
 import           Data.Aeson.Types
 import           Data.Aeson.Lens
 import           Data.List (elemIndex)
-import           Data.Foldable (asum)
 import qualified Data.Vector as V
 import qualified Data.Text as T
 import           Data.Stringable
 import           Safe (atMay)
-import           Servant
+import           Servant hiding (toText)
 import           Sweetroll.Pages
 import           Sweetroll.Routes
 import           Sweetroll.Conf
@@ -38,7 +36,11 @@ instance MimeRender HTML Text where
   mimeRender _ = toLazyByteString
 
 instance Templatable α ⇒ MimeRender HTML (View α) where
-  mimeRender x = mimeRender x . renderInLayout
+  mimeRender x v@(View conf renderer _) = mimeRender x $ renderer (templateName v) (withMeta $ context v)
+    where withMeta d =
+            object [ "meta" .= object [ "base_uri" .= toText (show $ baseURI conf)
+                                      , "site_name" .= siteName conf ]
+                   , "data" .= d ]
 
 instance Accept CSS where
   contentType _ = "text" // "css"
@@ -46,125 +48,53 @@ instance Accept CSS where
 instance Stringable α ⇒ MimeRender CSS α where
   mimeRender _ = toLazyByteString
 
-
 view ∷ α → Sweetroll (View α)
 view content = do
   conf ← getConf
-  tpls ← getTpls
-  hostInfo ← getHostInfo
-  return $ View conf tpls hostInfo content
-
-data ViewResult = ViewResult
-  { resultHtml    ∷ Text
-  , resultTitle   ∷ [Text]
-  , resultContext ∷ Value }
+  renderer ← getRenderer
+  return $ View conf renderer content
 
 class Templatable α where
-  renderBare ∷ (SweetrollTemplates → Template) → View α → ViewResult
-  templateInLayout ∷ View α → (SweetrollTemplates → Template)
-  renderInLayout ∷ View α → Text
-  renderInLayout v@(View conf tpls hostInfo _) = renderTemplate (layoutTemplate tpls) helpers ctx
-      where ctx = object $ hostInfo ++ [
-                      "content"        .= innerHtml
-                    , "author"         .= renderRaw (authorTemplate tpls) hostInfo
-                    , "website_title"  .= siteName conf
-                    , "meta_title"     .= intercalate (titleSeparator conf) (titleParts ++ [siteName conf])
-                    ]
-            (ViewResult innerHtml titleParts _) = renderBare (templateInLayout v) v
+  templateName ∷ View α → ByteString
+  context ∷ View α → Value
 
 instance Templatable EntryPage where
-  templateInLayout _ = entryTemplate
-  renderBare tplf (View _ tpls _ (EntryPage catName otherSlugs (slug, e))) = ViewResult html titleParts ctx
-    where html = renderTemplate (tplf tpls) helpers ctx
-          titleParts = [ fromMaybe ("Note @ " ++ fromMaybe "" (formatTimeText <$> published)) entryName, pack catName ]
-          ctx = object [
-              "name"             .= orEmptyMaybe entryName
-            , "content"          .= content
-            , "hasContent"       .= not (null content)
-            , "published"        .= asLText (fromMaybe "" $ formatTimeText <$> published)
-            , "publishedAttr"    .= asLText (fromMaybe "" $ formatTimeAttr <$> published)
+  templateName _ = "entry"
+  context (View _ _ (EntryPage catName otherSlugs (slug, e))) = ctx
+    where ctx = object [
+              "entry"            .= e
             , "permalink"        .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack slug)
-            , "isUntitled"       .= null entryName
-            , "category"         .= catName
+            , "categoryName"     .= catName
             , "categoryHref"     .= showLink (permalink (Proxy ∷ Proxy CatRouteE) catName)
             , "hasPrev"          .= isJust prev
             , "prevHref"         .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack $ orEmptyMaybe prev)
             , "hasNext"          .= isJust next
             , "nextHref"         .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack $ orEmptyMaybe next)
-            , "syndication"      .= entrySyndication
-            , "hasSyndication"   .= not (null entrySyndication)
             , "hasTwitterId"     .= isJust twitterId
-            , "twitterId"        .= orEmptyMaybe twitterId
-            , "replyContexts"    .= map referenceContext entryInReplyTo
-            , "likeContexts"     .= map referenceContext entryLikeOf
-            , "isLike"           .= not (null entryLikeOf)
-            , "repostContexts"   .= map referenceContext entryRepostOf
-            ]
-          entryName = e ^? key "properties" . key "name" . nth 0 . _String
-          content = orEmptyMaybe $ e ^? key "properties" . key "content" . nth 0 . key "html" . _String
-          published = parseISOTime =<< e ^? key "properties" . key "published" . nth 0 . _String
+            , "twitterId"        .= orEmptyMaybe twitterId ]
           slugIdx = fromMaybe (-1) $ elemIndex slug otherSlugs
           prev = atMay otherSlugs $ slugIdx - 1
           next = atMay otherSlugs $ slugIdx + 1
           twitterId = lastMay =<< T.splitOn "/" <$> find ("twitter.com" `isInfixOf`) entrySyndication
           entrySyndication = mapMaybe (^? _String) $ V.toList $ fromMaybe V.empty $ e ^? key "properties" . key "syndication" . _Array
-          entryInReplyTo   = V.toList $ fromMaybe V.empty $ e ^? key "properties" . key "in-reply-to" . _Array
-          entryLikeOf      = V.toList $ fromMaybe V.empty $ e ^? key "properties" . key "like-of" . _Array
-          entryRepostOf    = V.toList $ fromMaybe V.empty $ e ^? key "properties" . key "repost-of" . _Array
-
--- XXX: authors aren't displayed; also this is ridiculous
-referenceContext ∷ Value → Value
-referenceContext v@(Object _) = object [ "url" .= fromMaybe "" (v ^? key "properties" . key "url" . nth 0 . _String)
-                                       , "name" .= fromMaybe "" (v ^? key "properties" . key "name" . nth 0 . _String)
-                                       , "content" .= fromMaybe "" (asum [ (v ^? key "properties" . key "content" . nth 0 . key "html" . _String)
-                                                                         , (v ^? key "properties" . key "content" . nth 0 . _String) ]) -- apparently p-content is a thing
-                                       ]
-referenceContext (String x) = object [ "url" .= x, "name" .= x ]
-referenceContext _ = object [ ]
 
 instance Templatable CatPage where
-  templateInLayout _ = categoryTemplate
-  renderBare tplf (View conf tpls hostInfo (CatPage name slice)) = ViewResult html titleParts ctx
-    where html = renderTemplate (tplf tpls) helpers ctx
-          titleParts = [pack name]
-          ctx = object [
+  templateName _ = "category"
+  context (View conf renderer (CatPage name slice)) = ctx
+    where ctx = object [
               "name"            .= name
             , "permalink"       .= showLink (sliceSelf slice)
-            , "entries"         .= map resultContext entryResults
-            , "renderedEntries" .= map resultHtml entryResults
-            , "hasPrev"         .= isJust (sliceBefore slice)
-            , "prevHref"        .= orEmptyMaybe (showLink <$> sliceBefore slice)
-            , "hasNext"         .= isJust (sliceAfter slice)
-            , "nextHref"        .= orEmptyMaybe (showLink <$> sliceAfter slice)
-            ]
-          entryResults = map entryHtml entries
-          entryHtml = renderBare entryInListTemplate . View conf tpls hostInfo . EntryPage name slugs
+            , "entries"         .= map entryContext entries
+            , "hasBefore"       .= isJust (sliceBefore slice)
+            , "beforeHref"      .= orEmptyMaybe (showLink <$> sliceBefore slice)
+            , "hasAfter"        .= isJust (sliceAfter slice)
+            , "afterHref"       .= orEmptyMaybe (showLink <$> sliceAfter slice) ]
+          entryContext = context . View conf renderer . EntryPage name slugs
           slugs = map fst entries
           entries = sliceItems slice
 
 instance Templatable IndexPage where
-  templateInLayout _ = indexTemplate
-  renderBare tplf (View conf tpls hostInfo (IndexPage cats)) = ViewResult html titleParts ctx
-    where html = renderTemplate (tplf tpls) helpers ctx
-          titleParts = []
-          ctx = object [ "categories" .= map catContext (sortOn (fromMaybe 999 . flip elemIndex (categoryOrder conf) . fst) cats) ]
-          catContext (n, p) = resultContext . renderBare categoryTemplate . View conf tpls hostInfo $ CatPage n p
-
-renderRaw ∷ Template → [Pair] → Text
-renderRaw t = renderTemplate t helpers . object
-
-helpers ∷ FunctionMap
-helpers = mapFromList [ ("syndicationName", toFunction syndicationName) ]
-
-syndicationName ∷ Text → Value
-syndicationName u | "app.net"       `isInfixOf` u = String "App.net"
-                  | "twitter.com"   `isInfixOf` u = String "Twitter"
-                  | "facebook.com"  `isInfixOf` u = String "Facebook"
-                  | "instagram.com" `isInfixOf` u = String "Instagram"
-                  | otherwise                     = String u
-
-formatTimeText ∷ Stringable α ⇒ UTCTime → α
-formatTimeText = fromString . formatTime defaultTimeLocale "%d.%m.%Y %I:%M %p"
-
-formatTimeAttr ∷ Stringable α ⇒ UTCTime → α
-formatTimeAttr = fromString . formatTime defaultTimeLocale "%Y-%m-%dT%H:%MZ"
+  templateName _ = "index"
+  context (View conf renderer (IndexPage cats)) = ctx
+    where ctx = object [ "categories" .= map catContext (sortOn (fromMaybe 999 . flip elemIndex (categoryOrder conf) . fst) cats) ]
+          catContext (n, p) = context (View conf renderer (CatPage n p))

@@ -1,0 +1,11 @@
+<% var data = scope.data %>
+<% var twitterLink = function (act) { return data.hasTwitterId ? 'https://twitter.com/intent/' + act + '?in_reply_to=' + data.twitterId : 'https://indiewebcamp.com/indie-config' } %>
+<indie-action do="reply" with="${ data.permalink }">
+	<a href="${ twitterLink('reply') }"><i class="fa fa-l fa-reply"></i>Reply</a>
+</indie-action>
+<indie-action do="repost" with="${ data.permalink }">
+	<a href="${ twitterLink('retweet') }"><i class="fa fa-l fa-retweet"></i>Repost</a>
+</indie-action>
+<indie-action do="like" with="${ data.permalink }">
+	<a href="${ twitterLink('favorite') }"><i class="fa fa-l fa-star"></i>Like</a>
+</indie-action>

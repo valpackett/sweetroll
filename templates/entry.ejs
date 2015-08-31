@@ -1,0 +1,88 @@
+<%= templates.header(scope) %>
+<% var data = scope.data %>
+<% var entry = data.entry %>
+<% var properties = entry.properties %>
+<% var isUntitled = _.isEmpty(properties.name) %>
+<% var syndicationName = function (x) {
+	if (_.includes(x, 'twitter.com')) return 'Twitter'
+	if (_.includes(x, 'facebook.com')) return 'Facebook'
+	if (_.includes(x, 'instagram.com')) return 'Instagram'
+	if (_.includes(x, 'app.net')) return 'App.net'
+	var matches = x.match(/^https?\:\/\/([^\/?#]+)/)
+	return (matches && matches[1]) || x
+} %>
+<main class="site-main entry-main ${ isUntitled ? 'note' : 'article' }-main">
+	<article class="entry h-entry ${ isUntitled ? 'note' : 'article' }-entry">
+		<header class="entry-header">
+			<% if (!isUntitled) { %>
+				<h1 class="p-name">
+					<a href="${ data.permalink }" class="u-url u-uid" rel="bookmark" tabindex="-1">
+						<%- properties.name %>
+					</a>
+				</h1>
+			<% } %>
+
+			posted <time class="dt-published" datetime="${ _.head(properties.published) }">
+				<% if (isUntitled) { %>
+					<a href="${ data.permalink }" class="u-url u-uid note-permalink" rel="bookmark">
+				<% } %>
+				<%- moment.utc(_.head(properties.published)).format('dddd, MMMM Do YYYY, HH:mm') %>
+				<% if (isUntitled) { %>
+					</a>
+				<% } %>
+			</time>
+
+			<%= templates.entryCiteReplies({ entry: entry, showRel: true, showContent: true }) %>
+
+			<%= templates.entryCiteReposts({ entry: entry, showRel: true }) %>
+
+		</header>
+
+		<%= templates.entryCiteLikes({ entry: entry, showRel: true, addClass: 'entry-content' }) %>
+
+		<% if (!_.isEmpty(properties.content)) { %>
+			<div class="entry-content e-content ${ isUntitled ? 'p-name' : '' }">
+				<% if (!isUntitled) { %>
+					<fragmention-target exact>
+				<% } %>
+				<% _.forEach(properties.content, function (content) { %>
+					<%= content.html || content.value || content %>
+				<% }) %>
+				<% if (!isUntitled) { %>
+					</fragmention-target>
+				<% } %>
+			</div>
+		<% } %>
+
+		<footer class="entry-footer">
+
+			<div class="entry-actions">
+				<%= templates.entryActions({ meta: scope.meta, data: data }) %>
+			</div>
+
+			<% if (!_.isEmpty(properties.syndication)) { %>
+				<div class="entry-syndication">
+					<h2>Elsewhere</h2>
+					<ul>
+						<% _.forEach(properties.syndication, function (repost) { %>
+							<li><a class="u-syndication" rel="syndication" href="${ repost }"><%- syndicationName(repost) %></a></li>
+						<% }) %>
+					</ul>
+				</div>
+			<% } %>
+
+			<nav class="entry-nav">
+				<h2>Navigation</h2>
+				<% if (data.hasPrev) { %>
+					<a href="${ data.prevHref }" rel="prev"><i class="fa fa-l fa-arrow-left"></i>previous</a>
+				<% } %>
+				<a rel="up category" class="p-category" href="${ data.categoryHref }">${ data.categoryName }</a>
+				<% if (data.hasNext) { %>
+					<a href="${ data.nextHref }" rel="next">next<i class="fa fa-r fa-arrow-right"></i></a>
+				<% } %>
+			</nav>
+
+		</footer>
+	</article>
+</main>
+<%= templates.footer(scope) %>

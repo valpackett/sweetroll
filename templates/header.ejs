@@ -3,8 +3,8 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<title>$meta_title$</title>
-		<link rel="openid.delegate" href="$base_url$">
+		<title>${ scope.meta.site_name }</title>
+		<link rel="openid.delegate" href="${ scope.meta.base_uri }">
 		<link rel="openid.server" href="https://indieauth.com/openid">
 		<link rel="stylesheet" href="/bower/fontawesome/css/font-awesome.min.css">
 		<link rel="stylesheet" href="/default-style.css">
@@ -18,25 +18,9 @@
 	</head>
 	<body>
 		<header class="site-header">
-			<h1><a href="/">$website_title$</a></h1>
+			<h1><a href="/">${ scope.meta.site_name }</a></h1>
 			<a href="#author" id="author-link" onclick="var a=document.getElementById('author');a.setAttribute('tabindex','-1');a.focus()">
 				<i class="fa fa-l fa-info-circle"></i><span>Skip to author info</span>
 			</a>
 		</header>
 		<div class="site-content">
-			$content$
-			<aside class="site-author h-card" id="author">
-				$author$
-			</aside>
-		</div>
-		<footer class="site-footer">
-			Powered by <a href="https://github.com/myfreeweb/sweetroll">Sweetroll</a>, an <a href="http://indiewebcamp.com">#IndieWeb</a> engine.
-			<!-- form action="https://indieauth.com/auth" method="get">
-			<button type="submit">Sign In</button>
-			<input type="hidden" name="me" value="$domain$" />
-			<input type="hidden" name="client_id" value="$base_url$" />
-			<input type="hidden" name="redirect_uri" value="$base_url$/login" />
-			</form -->
-		</footer>
-	</body>
-</html>

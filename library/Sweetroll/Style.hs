@@ -225,7 +225,7 @@ sweetrollStyle = do
     ".entry-in-list" ** ".entry-footer" ? paddingRight (em 1)
 
   query M.screen [M.maxWidth $ em 60] $ do
-    ".note-in-list" ** ".note-permalink" ? do
+    ".note-in-list" ** ".permalink" ? do
       marginTop $ em 0.75
       display block
 

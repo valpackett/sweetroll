@@ -1,0 +1,19 @@
+<%= templates.header(scope) %>
+<% var cat = scope.data %>
+<main class="site-main category-main">
+	<h1><%= cat.name %></h1>
+	<ul class="category-entries">
+		<% _.forEach(cat.entries, function (entry) { %>
+			<%= templates.entryInList({ meta: scope.meta, data: entry }) %>
+		<% }) %>
+	</ul>
+	<nav class="category-nav">
+		<% if (cat.hasAfter) { %>
+			<a href="${ cat.afterHref }"><i class="fa fa-l fa-arrow-up"></i>newer</a>
+		<% } %>
+		<% if (cat.hasBefore) { %>
+			<a href="${ cat.beforeHref }"><i class="fa fa-l fa-arrow-down"></i>older</a>
+		<% } %>
+	</nav>
+</main>
+<%= templates.footer(scope) %>

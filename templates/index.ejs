@@ -1,0 +1,17 @@
+<%= templates.header(scope) %>
+<main class="site-main index-main">
+	<% _.forEach(scope.data.categories, function (cat) { %>
+		<section class="index-category">
+			<h1><a href="${ cat.permalink }"><%= cat.name %></a></h1>
+			<ul>
+				<% _.forEach(cat.entries, function (entry) { %>
+					<%= templates.entryInList({ meta: scope.meta, data: entry }) %>
+				<% }) %>
+			</ul>
+			<% if (cat.hasBefore) { %>
+				<a href="${ cat.beforeHref }"><i class="fa fa-l fa-ellipsis-v"></i>older</a>
+			<% } %>
+		</section>
+	<% }) %>
+</main>
+<%= templates.footer(scope) %>

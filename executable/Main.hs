@@ -26,6 +26,7 @@ import           Git.Embed
 import           Options
 import           Gitson
 
+
 data AppOptions = AppOptions
   { port                     ∷ Int
   , socket                   ∷ String
@@ -96,8 +97,7 @@ main = runCommand $ \opts args → do
   let secs = def {
     secretKey                      = secret' }
 
-  tpls ← loadTemplates
-  let app' = initSweetrollApp conf tpls secs
+  let app' = initSweetrollApp conf secs
       app = case devlogging opts of
               Just True → return . logStdoutDev =<< app'
               _ → app'

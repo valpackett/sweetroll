@@ -86,8 +86,8 @@ sweetrollApp ctx = foldr ($) (sweetrollApp' ctx) [
         sweetrollServer ∷ SweetrollCtx → Server SweetrollAPI
         sweetrollServer c = enter (sweetrollToEither c) $ sweetrollServerT c
 
-initSweetrollApp ∷ SweetrollConf → SweetrollTemplates → SweetrollSecrets → IO Application
-initSweetrollApp conf tpls secs = initCtx conf tpls secs >>= return . sweetrollApp
+initSweetrollApp ∷ SweetrollConf → SweetrollSecrets → IO Application
+initSweetrollApp conf secs = initCtx conf secs >>= return . sweetrollApp
 
 
 genLink ∷ MonadSweetroll μ ⇒ Text → URI → μ L.Link

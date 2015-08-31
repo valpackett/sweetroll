@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-orphans -fno-warn-missing-methods #-}
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE PackageImports, ConstraintKinds, FlexibleContexts #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, QuasiQuotes #-}
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, UndecidableInstances #-}
 {-# LANGUAGE RankNTypes, TypeOperators, TypeFamilies, DataKinds #-}
+{-# LANGUAGE PackageImports, ConstraintKinds, FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | The Sweetroll monad that contains the application context + some
@@ -11,26 +11,31 @@ module Sweetroll.Monads where
 
 import           ClassyPrelude
 import           Control.Monad.Base
-import           Control.Monad.Reader
-import           Control.Monad.Except
+import           Control.Monad.Reader hiding (forM_)
+import           Control.Monad.Except hiding (forM_)
 import           Control.Monad.Trans.Either
 import           Control.Monad.Trans.Resource
 import           Control.Monad.Trans.Control
+import           System.Directory
+import           System.FilePath.Posix
+import           System.IO.Unsafe
 import           Data.Conduit
+import           Data.Maybe
 import           Data.Stringable hiding (length)
 import           Data.Aeson.Types
+import           Text.RawString.QQ
 import           Network.HTTP.Client.Internal (setUri) -- The fuck?
 import           Network.HTTP.Client.Conduit
 import           Network.HTTP.Types
 import "crypto-random" Crypto.Random
 import           Servant hiding (toText)
+import           Scripting.Duktape
 import           Sweetroll.Conf
 
 data SweetrollCtx = SweetrollCtx
   { _ctxConf     ∷ SweetrollConf
-  , _ctxTpls     ∷ SweetrollTemplates
   , _ctxSecs     ∷ SweetrollSecrets
-  , _ctxHostInfo ∷ [Pair]
+  , _ctxDuk      ∷ DuktapeCtx
   , _ctxHttpMgr  ∷ Manager
   , _ctxRng      ∷ SystemRNG }
 
@@ -43,7 +48,7 @@ newtype Sweetroll α = Sweetroll {
 
 instance MonadBaseControl IO Sweetroll where
   type StM Sweetroll α = StM (ReaderT SweetrollCtx (ExceptT ServantErr IO)) α
-  liftBaseWith f = Sweetroll $ liftBaseWith $ \r → f $ r . runSweetroll
+  liftBaseWith f = Sweetroll $ liftBaseWith $ \x → f $ x . runSweetroll
   restoreM       = Sweetroll . restoreM
 
 runSweetrollEither ∷ SweetrollCtx → Sweetroll α → EitherT ServantErr IO α
@@ -52,18 +57,42 @@ runSweetrollEither ctx sweet = EitherT $ liftIO $ runExceptT $ runReaderT (runSw
 sweetrollToEither ∷ SweetrollCtx → Sweetroll :~> EitherT ServantErr IO
 sweetrollToEither ctx = Nat $ runSweetrollEither ctx
 
-initCtx ∷ SweetrollConf → SweetrollTemplates → SweetrollSecrets → IO SweetrollCtx
-initCtx conf tpls secs = do
+initCtx ∷ SweetrollConf → SweetrollSecrets → IO SweetrollCtx
+initCtx conf secs = do
   httpClientMgr ← newManager
   sysRandom ← cprgCreate <$> createEntropyPool
+  duk ← createDuktapeCtx
+  loadTemplates $ fromJust duk
   return SweetrollCtx { _ctxConf     = conf
-                      , _ctxTpls     = tpls
                       , _ctxSecs     = secs
-                      , _ctxHostInfo = [ "domain"   .= domainName conf
-                                       , "s"        .= s conf
-                                       , "base_url" .= baseUrl conf ]
+                      , _ctxDuk      = fromJust duk
                       , _ctxHttpMgr  = httpClientMgr
                       , _ctxRng      = sysRandom }
+
+
+loadTemplates ∷ DuktapeCtx → IO ()
+loadTemplates duk = do
+  -- TODO: compile time check that bower deps have been fetched!
+  void $ evalDuktape duk $ fromJust $ lookup "lodash/lodash.min.js" bowerComponents
+  void $ evalDuktape duk $ fromJust $ lookup "moment/min/moment-with-locales.min.js" bowerComponents
+  void $ evalDuktape duk [r|
+    var SweetrollTemplates = {}
+    setTemplate = function (name, html) {
+      SweetrollTemplates[name] = _.template(html, {
+        'sourceURL': name, 'variable': 'scope',
+        'imports': { 'templates': SweetrollTemplates }
+      })
+    }|]
+  let setTpl tname thtml = void $ callDuktape duk Nothing "setTemplate" [ String $ toText $ dropExtensions tname, String $ toText thtml ]
+  forM_ defaultTemplates $ uncurry setTpl
+  hasUserTpls ← doesDirectoryExist "templates"
+  if hasUserTpls
+     then do
+       userTpls ← getDirectoryContents "templates"
+       forM_ (filter (\x → x /= "." && x /= "..") userTpls) $ \tname → do
+         thtml ← readFile $ "templates" </> tname
+         setTpl tname thtml
+      else return ()
 
 getCtx ∷ MonadSweetroll μ ⇒ μ SweetrollCtx
 getCtx = ask
@@ -74,17 +103,20 @@ getConf = asks _ctxConf
 getConfOpt ∷ MonadSweetroll μ ⇒ (SweetrollConf → α) → μ α
 getConfOpt f = asks $ f . _ctxConf
 
-getTpls ∷ MonadSweetroll μ ⇒ μ SweetrollTemplates
-getTpls = asks _ctxTpls
-
 getSecs ∷ MonadSweetroll μ ⇒ μ SweetrollSecrets
 getSecs = asks _ctxSecs
 
 getSec ∷ MonadSweetroll μ ⇒ (SweetrollSecrets → α) → μ α
 getSec f = asks $ f . _ctxSecs
 
-getHostInfo ∷ MonadSweetroll μ ⇒ μ [Pair]
-getHostInfo = asks _ctxHostInfo
+getRenderer ∷ MonadSweetroll μ ⇒ μ (ByteString → Value → Text)
+getRenderer = liftM renderer $ asks _ctxDuk
+  where renderer duk x y = txtVal $ unsafePerformIO $ callDuktape duk (Just "SweetrollTemplates") x [y]
+        {-# NOINLINE renderer #-}
+        txtVal (Right (Just (String t))) = t
+        txtVal (Right (Just _)) = "TEMPLATE ERROR: returned something other than a string"
+        txtVal (Right Nothing) = "TEMPLATE ERROR: returned nothing"
+        txtVal (Left e) = "TEMPLATE ERROR: " ++ toText e
 
 getRng ∷ MonadSweetroll μ ⇒ μ SystemRNG
 getRng = asks _ctxRng

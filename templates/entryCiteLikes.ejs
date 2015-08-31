@@ -1,0 +1,17 @@
+<% var properties = scope.entry.properties %>
+<% if (!_.isEmpty(properties['like-of'])) { %>
+	<div class="p-name ${ scope.addClass }">
+		<div class="u-like-of h-cite">
+			<% _.forEach(properties['like-of'], function (like) { %>
+				Liked
+				<a class="u-url" ${ scope.showRel ? 'rel="like-of"' : '' } href="${ _.head(like.properties.url) }">
+					<%- _.head(like.properties.name) %>
+				</a>
+				<% if (!_.isEmpty(like.properties.authors)) { %>
+					by
+					<%= templates.citeAuthors({ authors: like.properties.authors }) %>
+				<% } %>
+			<% }) %>
+		</div>
+	</div>
+<% } %>

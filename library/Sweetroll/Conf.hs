@@ -12,7 +12,6 @@ import           ClassyPrelude
 import           Text.Pandoc.Options
 import           Text.Highlighting.Kate.Styles (tango)
 import           Data.Stringable
-import           Data.Maybe (fromJust)
 import           Data.Setters
 import           Data.Default
 import           Data.Aeson
@@ -20,7 +19,7 @@ import           Data.Aeson.TH
 import           Data.Microformats2.Parser
 import           Data.FileEmbed
 import           Network.URI
-import           Web.Simple.Templates.Language
+
 
 newtype IndieConfig = MkIndieConfig Value
 
@@ -37,18 +36,6 @@ instance ToJSON SyndicationConfig where
 
 instance FromJSON SyndicationConfig where
   parseJSON v = return $ MkSyndicationConfig v
-
-
-data SweetrollTemplates = SweetrollTemplates
-  {           layoutTemplate ∷ Template
-  ,            entryTemplate ∷ Template
-  ,         categoryTemplate ∷ Template
-  ,            indexTemplate ∷ Template
-  ,      entryInListTemplate ∷ Template
-  ,           authorTemplate ∷ Template
-  ,         notFoundTemplate ∷ Template }
-
-$(declareSetters ''SweetrollTemplates)
 
 data SweetrollSecrets = SweetrollSecrets
   {                secretKey ∷ Text }
@@ -74,33 +61,8 @@ $(deriveJSON defaultOptions ''SweetrollConf)
 s ∷ SweetrollConf → String
 s conf = if httpsWorks conf then "s" else ""
 
-baseUrl ∷ SweetrollConf → Text
-baseUrl conf = mconcat ["http", toText $ s conf, "://", domainName conf]
-
 baseURI ∷ SweetrollConf → URI
 baseURI conf = URI ("http" ++ s conf ++ ":") (Just $ URIAuth "" (toString $ domainName conf) "") "" "" ""
-
-processTpl ∷ Stringable α ⇒ α → Template
-processTpl x = case compileTemplate . toText $ x of
-  Left e → Template { renderTemplate = \_ _ → "Template compilation error: " ++ pack e }
-  Right t → t
-
-loadTemplates ∷ IO SweetrollTemplates
-loadTemplates = foldM loadTpl def tplsWithSetters
-    where loadTpl c sf = readTpl c sf `catch` readFailHandler c
-          readTpl c (setter, file) = do
-            contents ← readFile $ "templates" </> file ∷ IO Text
-            return $ setter (processTpl contents) c
-          tplsWithSetters = [ (setCategoryTemplate,             "category.html")
-                            , (setEntryTemplate,                "entry.html")
-                            , (setLayoutTemplate,               "layout.html")
-                            , (setIndexTemplate,                "index.html")
-                            , (setEntryInListTemplate,          "entry-in-list.html")
-                            , (setAuthorTemplate,               "author.html")
-                            , (setNotFoundTemplate,             "404.html")
-                            ]
-          readFailHandler ∷ SweetrollTemplates → IOError → IO SweetrollTemplates
-          readFailHandler c _ = return c
 
 pandocReaderOptions ∷ ReaderOptions
 pandocReaderOptions = def { readerExtensions = githubMarkdownExtensions
@@ -144,17 +106,6 @@ instance Default SweetrollSecrets where
   def = SweetrollSecrets {
         secretKey                = "SECRET" } -- the executable sets to a secure random value by default
 
-instance Default SweetrollTemplates where
-  def = SweetrollTemplates {
-        layoutTemplate           = tpl "layout.html"
-      , entryTemplate            = tpl "entry.html"
-      , categoryTemplate         = tpl "category.html"
-      , indexTemplate            = tpl "index.html"
-      , entryInListTemplate      = tpl "entry-in-list.html"
-      , authorTemplate           = tpl "author.html"
-      , notFoundTemplate         = tpl "404.html" }
-      where tpl x = processTpl . snd . fromJust . find ((== x) . fst) $ files
-            files = $(embedDir "templates")
-
-bowerComponents ∷ [(FilePath, ByteString)]
+bowerComponents, defaultTemplates ∷ [(FilePath, ByteString)]
 bowerComponents = $(embedDir "bower_components")
+defaultTemplates = $(embedDir "templates")

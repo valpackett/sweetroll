@@ -76,7 +76,6 @@ library
       , mime-types
       , html-conduit
       , xml-lens
-      , crypto-random
       , async
       , highlighting-kate
       , pandoc

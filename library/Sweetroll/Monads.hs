@@ -27,7 +27,6 @@ import           Text.RawString.QQ
 import           Network.HTTP.Client.Internal (setUri) -- The fuck?
 import           Network.HTTP.Client.Conduit
 import           Network.HTTP.Types
-import "crypto-random" Crypto.Random
 import           Servant hiding (toText)
 import           Scripting.Duktape
 import           Sweetroll.Conf
@@ -36,8 +35,10 @@ data SweetrollCtx = SweetrollCtx
   { _ctxConf     ∷ SweetrollConf
   , _ctxSecs     ∷ SweetrollSecrets
   , _ctxDuk      ∷ DuktapeCtx
-  , _ctxHttpMgr  ∷ Manager
-  , _ctxRng      ∷ SystemRNG }
+  , _ctxHttpMgr  ∷ Manager }
+
+instance HasHttpManager SweetrollCtx where
+  getHttpManager = _ctxHttpMgr
 
 type MonadSweetroll = MonadReader SweetrollCtx
 
@@ -60,15 +61,12 @@ sweetrollToEither ctx = Nat $ runSweetrollEither ctx
 initCtx ∷ SweetrollConf → SweetrollSecrets → IO SweetrollCtx
 initCtx conf secs = do
   httpClientMgr ← newManager
-  sysRandom ← cprgCreate <$> createEntropyPool
   duk ← createDuktapeCtx
   loadTemplates $ fromJust duk
   return SweetrollCtx { _ctxConf     = conf
                       , _ctxSecs     = secs
                       , _ctxDuk      = fromJust duk
-                      , _ctxHttpMgr  = httpClientMgr
-                      , _ctxRng      = sysRandom }
-
+                      , _ctxHttpMgr  = httpClientMgr }
 
 loadTemplates ∷ DuktapeCtx → IO ()
 loadTemplates duk = do
@@ -94,9 +92,6 @@ loadTemplates duk = do
         Right h → setTpl tname h
         Left e → void $ putStrLn $ "Error when reading template " ++ toText tname ++ ": " ++ (toText $ show e)
 
-getCtx ∷ MonadSweetroll μ ⇒ μ SweetrollCtx
-getCtx = ask
-
 getConf ∷ MonadSweetroll μ ⇒ μ SweetrollConf
 getConf = asks _ctxConf
 
@@ -106,9 +101,6 @@ getConfOpt f = asks $ fromMaybe (fromJust $ f def) . f . _ctxConf
 getSecs ∷ MonadSweetroll μ ⇒ μ SweetrollSecrets
 getSecs = asks _ctxSecs
 
-getSec ∷ MonadSweetroll μ ⇒ (SweetrollSecrets → α) → μ α
-getSec f = asks $ f . _ctxSecs
-
 getRenderer ∷ MonadSweetroll μ ⇒ μ (ByteString → Value → Text)
 getRenderer = liftM renderer $ asks _ctxDuk
   where renderer duk x y = txtVal $ unsafePerformIO $ callDuktape duk (Just "SweetrollTemplates") x [y]
@@ -117,12 +109,6 @@ getRenderer = liftM renderer $ asks _ctxDuk
         txtVal (Right (Just _)) = "TEMPLATE ERROR: returned something other than a string"
         txtVal (Right Nothing) = "TEMPLATE ERROR: returned nothing"
         txtVal (Left e) = "TEMPLATE ERROR: " ++ toText e
-
-getRng ∷ MonadSweetroll μ ⇒ μ SystemRNG
-getRng = asks _ctxRng
-
-instance HasHttpManager SweetrollCtx where
-  getHttpManager = _ctxHttpMgr
 
 request ∷ Stringable α ⇒ Request → Sweetroll (Response α)
 request req = do

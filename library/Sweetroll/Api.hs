@@ -78,7 +78,7 @@ sweetrollServerT ctx = getIndieConfig :<|> getDefaultCss
 sweetrollApp ∷ SweetrollCtx → Application
 sweetrollApp ctx = foldr ($) (sweetrollApp' ctx) [
                      staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
-                   , routedMiddleware ((== (Just "bower")) . headMay) $ serveStaticFromLookup bowerComponents
+                   , routedMiddleware ((== Just "bower") . headMay) $ serveStaticFromLookup bowerComponents
                    , autohead ]
   where sweetrollApp' ∷ SweetrollCtx → Application
         sweetrollApp' = serve sweetrollAPI . sweetrollServer
@@ -86,7 +86,7 @@ sweetrollApp ctx = foldr ($) (sweetrollApp' ctx) [
         sweetrollServer c = enter (sweetrollToEither c) $ sweetrollServerT c
 
 initSweetrollApp ∷ SweetrollConf → SweetrollSecrets → IO Application
-initSweetrollApp conf secs = initCtx conf secs >>= return . sweetrollApp
+initSweetrollApp conf secs = liftM sweetrollApp $ initCtx conf secs
 
 
 genLink ∷ MonadSweetroll μ ⇒ Text → URI → μ L.Link

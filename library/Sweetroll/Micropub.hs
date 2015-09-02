@@ -46,9 +46,9 @@ postMicropub _ allParams = do
       inReplyTo ← paramToEntries "in-reply-to"
       likeOf ←    paramToEntries "like-of"
       repostOf ←  paramToEntries "repost-of"
-      let entryProps = [ "in-reply-to" .= map fst (catMaybes inReplyTo)
-                       , "like-of"     .= map fst (catMaybes likeOf)
-                       , "repost-of"   .= map fst (catMaybes repostOf) ]
+      let replyContexts = [ "in-reply-to" .= map fst (catMaybes inReplyTo)
+                          , "like-of"     .= map fst (catMaybes likeOf)
+                          , "repost-of"   .= map fst (catMaybes repostOf) ]
 
       -- ## Webmention-to-Syndication
       (MkSyndicationConfig syndConf) ← getConfOpt syndicationConfig
@@ -66,30 +66,20 @@ postMicropub _ allParams = do
           absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base
 
       -- ## Creating the entry
-      let entry = makeEntry allParams now absUrl content entryProps syndicationLinks
+      let entry = makeEntry allParams now absUrl content replyContexts syndicationLinks
           create x = liftIO $ transaction "./" $ saveNextDocument category slug x
           update x = liftIO $ transaction "./" $ saveDocumentByName category slug x
       create entry -- TODO: copy content for reposts
 
       -- ## Async notification jobs
       isTest ← getConfOpt testMode
-      unless isTest $ do
-        void $ fork $ do
-          threadDelay =<< return . (*1000000) =<< getConfOpt pushDelay
-          reread ← readDocumentByName category slug ∷ Sweetroll (Maybe Value)
-          if isJust reread -- not deleted after the delay
-             then do
-               notifyPuSH $ permalink (Proxy ∷ Proxy IndexRoute)
-               notifyPuSH $ permalink (Proxy ∷ Proxy CatRouteE) category
-             else return ()
-        void $ fork $ do
-          syndMs ← contentWebmentions $ Just $ pandocRead readHtml $ S.toString syndicationLinks
-          syndResults ← liftM catMaybes $ sendWebmentions absUrl syndMs
-          let processSynd resp = do
-                guard $ responseStatus resp == HT.ok200
-                v ← decode (responseBody resp) ∷ Maybe Value
-                v ^? key "url" . _String
-          update $ set (key "properties" . key "syndication") (Array $ V.fromList $ map String $ mapMaybe processSynd syndResults) entry
+      unless isTest $ void $ fork $ do
+        threadDelay =<< return . (*1000000) =<< getConfOpt pushDelay
+        reread ← readDocumentByName category slug ∷ Sweetroll (Maybe Value)
+        when (isJust reread) $ do -- not deleted after the delay
+          notifyPuSH $ permalink (Proxy ∷ Proxy IndexRoute)
+          notifyPuSH $ permalink (Proxy ∷ Proxy CatRouteE) category
+          update =<< syndicate entry absUrl syndicationLinks
           contMs ← contentWebmentions content
           let metaMs = catMaybes $ map snd $ concat $ map catMaybes [ inReplyTo, likeOf, repostOf ]
           void $ sendWebmentions absUrl (metaMs ++ contMs)
@@ -120,7 +110,7 @@ decideReader pars | f == "textile"     = readTextile
   where f = orEmptyMaybe $ lookup "format" pars
 
 makeEntry ∷ [(Text, Text)] → UTCTime → URI → Maybe Pandoc → [Pair] → Text → Value
-makeEntry pars now absUrl content entryProps syndicationLinks =
+makeEntry pars now absUrl content replyContexts syndicationLinks =
   object [ "type"       .= [ asText "h-entry" ]
          , "properties" .= object (("syndication" .= ([ ] ∷ [Value])) : filter (not . emptyVal . snd) props) ]
   where par = map S.toLazyText . maybeToList . (flip lookup) pars
@@ -129,11 +119,11 @@ makeEntry pars now absUrl content entryProps syndicationLinks =
                 , "content"     .= case content of
                                      Just c → Array $ V.fromList [ object [ "html" .= (renderHtml (writeHtml pandocWriterOptions c) ++ S.toLazyText syndicationLinks) ] ]
                                      Nothing → Array V.empty
-                , "published"   .= [ fromMaybe now . headMay . catMaybes $ parseISOTime <$> par "published" ]
+                , "published"   .= [ fromMaybe (toJSON now) $ headMay $ toJSON <$> par "published" ]
                 , "updated"     .= [ now ]
                 , "author"      .= par "author"
                 , "category"    .= filter (not . null) (join $ parseTags <$> par "category")
-                , "url"         .= [ show absUrl ] ] ++ entryProps
+                , "url"         .= [ show absUrl ] ] ++ replyContexts
 
 fetchEntry ∷ URI → Sweetroll (Maybe (Value, Maybe (TargetURI, EndpointURI)))
 fetchEntry uri = withSuccessfulRequestHtml uri $ \resp → do
@@ -149,6 +139,7 @@ fetchEntry uri = withSuccessfulRequestHtml uri $ \resp → do
       return $ Just (addAuthors $ fst mfEntry, fmap (uri, ) $ listToMaybe $ discoverWebmentionEndpoints mfRoot (linksFromHeader resp))
     _ → return Nothing
 
+
 notifyPuSH ∷ URI → Sweetroll ()
 notifyPuSH l = do
   hub ← getConfOpt pushHub
@@ -157,7 +148,7 @@ notifyPuSH l = do
     Just hubURI → do
       base ← getConfOpt baseURI
       let pingURI = l `relativeTo` base
-          body = writeForm $ [ (asText "hub.mode", asText "publish"), ("hub.url", toText $ show pingURI) ]
+          body = writeForm [ (asText "hub.mode", asText "publish"), ("hub.url", toText $ show pingURI) ]
       let req = def { method = "POST"
                     , requestHeaders = [ (HT.hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
                     , requestBody = RequestBodyBS body }
@@ -165,3 +156,13 @@ notifyPuSH l = do
       void $ withSuccessfulRequest req' $ \_ → do
         putStrLn $ "PubSubHubbub notified: " ++ S.toText body
         return $ Just ()
+
+syndicate ∷ Value → URI → Text → Sweetroll Value
+syndicate entry absUrl syndicationLinks = do
+  syndMs ← contentWebmentions $ Just $ pandocRead readHtml $ S.toString syndicationLinks
+  syndResults ← liftM catMaybes $ sendWebmentions absUrl syndMs
+  let processSynd resp = do
+        guard $ responseStatus resp == HT.ok200
+        v ← decode (responseBody resp) ∷ Maybe Value
+        v ^? key "url" . _String
+  return $ set (key "properties" . key "syndication") (Array $ V.fromList $ map String $ mapMaybe processSynd syndResults) entry

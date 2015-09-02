@@ -41,7 +41,7 @@ library
       , errors
       , directory
       , data-default
-      , stringable
+      , string-conversions
       , bytestring-conversion
       , text
       , bytestring
@@ -139,7 +139,7 @@ test-suite tests
         base >= 4.0.0.0 && < 5
       , classy-prelude
       , sweetroll
-      , stringable
+      , string-conversions
       , errors
       , http-types
       , network-uri

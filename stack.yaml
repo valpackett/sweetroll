@@ -5,6 +5,8 @@ packages:
     extra-dep: true
   - location: '../hs-duktape'
     extra-dep: true
+  - location: '../pcre-heavy'
+    extra-dep: true
 extra-deps:
   - microformats2-parser-1.0.1.3
   - http-link-header-1.0.1

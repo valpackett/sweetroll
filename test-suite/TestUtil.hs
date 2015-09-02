@@ -5,7 +5,7 @@ module TestUtil where
 import           ClassyPrelude
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.CaseInsensitive as CI
-import qualified Data.Stringable as S
+import           Data.String.Conversions
 import           Data.Default (def)
 import           Data.Aeson
 import           Data.Aeson.Types (Pair)
@@ -39,7 +39,7 @@ postAuthed ∷ Request → ByteString → LByteString → Application → IO SRe
 postAuthed r u b a = do
   now ← getCurrentTime
   let token = signAccessToken (secretKey def) "localhost" "me" now
-      r' = r { requestHeaders = requestHeaders r ++ [("Authorization", "Bearer " ++ (S.toByteString token))] }
+      r' = r { requestHeaders = requestHeaders r ++ [ ("Authorization", "Bearer " ++ cs token) ] }
   post' r' u b a
 
 header ∷ SResponse → String → String

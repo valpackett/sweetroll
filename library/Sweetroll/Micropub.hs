@@ -17,7 +17,7 @@ import           Data.Microformats2.Parser
 import           Data.Microformats2.Parser.Util (emptyVal)
 import           Data.IndieWeb.MicroformatsUtil
 import           Data.IndieWeb.Authorship
-import qualified Data.Stringable as S
+import           Data.String.Conversions
 import qualified Data.Vector as V
 import qualified Data.HashMap.Strict as HMS
 import           Text.Pandoc hiding (Link, Null)
@@ -42,7 +42,7 @@ postMicropub _ allParams = do
     Just "entry" → do
 
       -- ## Reply contexts
-      let paramToEntries x = mapM fetchEntry $ mapMaybe parseURI $ map S.toString $ maybeToList $ lookup x allParams
+      let paramToEntries x = mapM fetchEntry $ mapMaybe parseURI $ map cs $ maybeToList $ lookup x allParams
       inReplyTo ← paramToEntries "in-reply-to"
       likeOf ←    paramToEntries "like-of"
       repostOf ←  paramToEntries "repost-of"
@@ -62,7 +62,7 @@ postMicropub _ allParams = do
       base ← getConfOpt baseURI
       let category = decideCategory allParams
           slug = decideSlug allParams now
-          content = pandocRead (decideReader allParams) <$> S.toString <$> lookup "content" allParams
+          content = pandocRead (decideReader allParams) <$> cs <$> lookup "content" allParams
           absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base
 
       -- ## Creating the entry
@@ -113,11 +113,11 @@ makeEntry ∷ [(Text, Text)] → UTCTime → URI → Maybe Pandoc → [Pair] →
 makeEntry pars now absUrl content replyContexts syndicationLinks =
   object [ "type"       .= [ asText "h-entry" ]
          , "properties" .= object (("syndication" .= ([ ] ∷ [Value])) : filter (not . emptyVal . snd) props) ]
-  where par = map S.toLazyText . maybeToList . (flip lookup) pars
+  where par = map cs . maybeToList . (flip lookup) pars
         props = [ "name"        .= par "name"
                 , "summary"     .= par "summary"
                 , "content"     .= case content of
-                                     Just c → Array $ V.fromList [ object [ "html" .= (renderHtml (writeHtml pandocWriterOptions c) ++ S.toLazyText syndicationLinks) ] ]
+                                     Just c → Array $ V.fromList [ object [ "html" .= (renderHtml (writeHtml pandocWriterOptions c) ++ cs syndicationLinks) ] ]
                                      Nothing → Array V.empty
                 , "published"   .= [ fromMaybe (toJSON now) $ headMay $ toJSON <$> par "published" ]
                 , "updated"     .= [ now ]
@@ -154,12 +154,12 @@ notifyPuSH l = do
                     , requestBody = RequestBodyBS body }
       req' ← setUri req hubURI
       void $ withSuccessfulRequest req' $ \_ → do
-        putStrLn $ "PubSubHubbub notified: " ++ S.toText body
+        putStrLn $ "PubSubHubbub notified: " ++ cs body
         return $ Just ()
 
 syndicate ∷ Value → URI → Text → Sweetroll Value
 syndicate entry absUrl syndicationLinks = do
-  syndMs ← contentWebmentions $ Just $ pandocRead readHtml $ S.toString syndicationLinks
+  syndMs ← contentWebmentions $ Just $ pandocRead readHtml $ cs syndicationLinks
   syndResults ← liftM catMaybes $ sendWebmentions absUrl syndMs
   let processSynd resp = do
         guard $ responseStatus resp == HT.ok200

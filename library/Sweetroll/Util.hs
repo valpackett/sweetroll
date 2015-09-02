@@ -5,9 +5,10 @@
 module Sweetroll.Util where
 
 import           ClassyPrelude hiding (fromString, headMay)
-import           Data.Text.Lazy (replace, strip)
+import           Data.Text (replace, strip)
 import           Data.Char (isSpace)
-import           Data.Stringable hiding (length)
+import           Data.String.Conversions
+import           Data.String.Conversions.Monomorphic
 import           Data.Proxy
 import           Text.Regex.PCRE.Heavy
 import qualified Text.Pandoc as P
@@ -36,13 +37,13 @@ lookupFirst [] _ = Nothing
 --
 -- >>> slugify "Hello & World!"
 -- "hello-and-world"
-slugify ∷ Stringable α ⇒ α → α
-slugify = fromLazyText . filter (not . isSpace) . intercalate "-" . words .
+slugify ∷ Text → Text
+slugify = filter (not . isSpace) . intercalate "-" . words .
           replace "&" "and"  . replace "+" "plus" . replace "%" "percent" .
           replace "<" "lt"   . replace ">" "gt"   . replace "=" "eq" .
           replace "#" "hash" . replace "@" "at"   . replace "$" "dollar" .
           filter (`onotElem` ("!^*?()[]{}`./\\'\"~|" ∷ String)) .
-          toLower . strip . toLazyText
+          toLower . strip
 
 -- | Parses comma-separated tags into a list.
 --
@@ -54,13 +55,13 @@ slugify = fromLazyText . filter (not . isSpace) . intercalate "-" . words .
 --
 -- >>> parseTags ""
 -- []
-parseTags ∷ Stringable α ⇒ α → [α]
+parseTags ∷ Text → [Text]
 parseTags ts = mapMaybe (headMay . snd) $ scan r ts
   where r = [re|([^,]+),?\s?|]
 
 -- | Encodes key-value data as application/x-www-form-urlencoded.
-writeForm ∷ (Stringable α, Stringable β, Stringable γ) ⇒ [(α, β)] → γ
-writeForm = fromLazyByteString . mimeRender (Proxy ∷ Proxy FormUrlEncoded) . map (toText *** toText)
+writeForm ∷ (ConvertibleStrings α Text, ConvertibleStrings β Text, ConvertibleStrings LByteString γ) ⇒ [(α, β)] → γ
+writeForm = fromLBS . mimeRender (Proxy ∷ Proxy FormUrlEncoded) . map (toST *** toST)
 
 orEmptyMaybe ∷ IsString α ⇒ Maybe α → α
 orEmptyMaybe = fromMaybe ""
@@ -71,8 +72,8 @@ pandocRead x = PE.handleError . x pandocReaderOptions
 serveStaticFromLookup ∷ [(FilePath, ByteString)] → Middleware
 serveStaticFromLookup files app req respond =
   case lookup pth files of
-    Just bs → respond $ responseLBS ok200 [("Content-Type", ctype)] $ toLazyByteString bs
+    Just bs → respond $ responseLBS ok200 [("Content-Type", ctype)] $ cs bs
     Nothing → app req respond
-  where pth = toString $ intercalate "/" reqpath
+  where pth = cs $ intercalate "/" reqpath
         ctype = defaultMimeLookup $ fromMaybe "" $ lastMay reqpath
         reqpath = drop 1 $ pathInfo req

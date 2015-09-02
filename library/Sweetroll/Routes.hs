@@ -8,7 +8,7 @@ module Sweetroll.Routes where
 import           ClassyPrelude
 import qualified Network.HTTP.Link as L
 import           Servant hiding (toText)
-import           Data.Stringable
+import           Data.String.Conversions
 import           Sweetroll.Auth (AuthProtect)
 import           Sweetroll.Conf
 import           Sweetroll.Pages
@@ -45,4 +45,4 @@ permalink ∷ (IsElem α SweetrollAPI, HasLink α) ⇒ Proxy α → MkLink α --
 permalink = safeLink sweetrollAPI
 
 showLink ∷ URI → Text
-showLink = ("/" ++) . toText . show
+showLink = ("/" ++) . cs . show

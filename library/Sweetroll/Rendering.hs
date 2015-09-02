@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, TypeFamilies, FlexibleContexts, DataKinds #-}
+{-# LANGUAGE FlexibleInstances, UndecidableInstances, MultiParamTypeClasses, TypeFamilies, FlexibleContexts, DataKinds #-}
 
 -- | The module responsible for rendering pages into actual HTML
 module Sweetroll.Rendering where
@@ -16,9 +16,10 @@ import           Data.Foldable (asum)
 import           Data.Maybe (fromJust)
 import qualified Data.Vector as V
 import qualified Data.Text as T
-import           Data.Stringable
+import           Data.String.Conversions
+import           Data.String.Conversions.Monomorphic
 import           Safe (atMay)
-import           Servant hiding (toText)
+import           Servant
 import           Sweetroll.Pages
 import           Sweetroll.Routes
 import           Sweetroll.Conf
@@ -35,20 +36,20 @@ instance MimeRender HTML IndieConfig where
     ++ "location.protocol+'//'+location.hostname+location.pathname+'?handler=%s','Sweetroll')</script>"
 
 instance MimeRender HTML Text where
-  mimeRender _ = toLazyByteString
+  mimeRender _ = cs
 
 instance Templatable α ⇒ MimeRender HTML (View α) where
   mimeRender x v@(View conf renderer _) = mimeRender x $ renderer (templateName v) (withMeta $ context v)
     where withMeta d =
-            object [ "meta" .= object [ "base_uri" .= toText (show $ baseURI conf)
+            object [ "meta" .= object [ "base_uri" .= toLT (show $ baseURI conf)
                                       , "site_name" .= siteName conf ]
                    , "data" .= d ]
 
 instance Accept CSS where
   contentType _ = "text" // "css"
 
-instance Stringable α ⇒ MimeRender CSS α where
-  mimeRender _ = toLazyByteString
+instance ConvertibleStrings α LByteString ⇒ MimeRender CSS α where
+  mimeRender _ = cs
 
 view ∷ α → Sweetroll (View α)
 view content = do
@@ -74,7 +75,7 @@ instance Templatable EntryPage where
             , "nextHref"         .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack $ orEmptyMaybe next)
             , "hasTwitterId"     .= isJust twitterId
             , "twitterId"        .= orEmptyMaybe twitterId
-            , "titleParts"      .= [ titleName, toText catName ] ]
+            , "titleParts"      .= [ toLT titleName, toLT catName ] ]
           slugIdx = fromMaybe (-1) $ elemIndex slug otherSlugs
           prev = atMay otherSlugs $ slugIdx - 1
           next = atMay otherSlugs $ slugIdx + 1
@@ -94,7 +95,7 @@ instance Templatable CatPage where
             , "beforeHref"      .= orEmptyMaybe (showLink <$> sliceBefore slice)
             , "hasAfter"        .= isJust (sliceAfter slice)
             , "afterHref"       .= orEmptyMaybe (showLink <$> sliceAfter slice)
-            , "titleParts"      .= [ toText name ] ]
+            , "titleParts"      .= [ toLT name ] ]
           entryContext = context . View conf renderer . EntryPage name slugs
           slugs = map fst entries
           entries = sliceItems slice

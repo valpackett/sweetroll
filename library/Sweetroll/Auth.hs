@@ -13,7 +13,7 @@ import           ClassyPrelude
 import           Control.Monad.Except (throwError)
 import           Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import           Data.Foldable (asum)
-import qualified Data.Stringable as S
+import           Data.String.Conversions (cs)
 import qualified Data.List as L
 import           Web.JWT hiding (header)
 import           Network.HTTP.Types
@@ -40,7 +40,7 @@ instance HasServer sublayout ⇒ HasServer (AuthProtect :> sublayout) where
               , join $ L.lookup "access_token" $ Wai.queryString req ] of
       Nothing → respond . succeedWith $ Wai.responseLBS status401 [] "Authorization/access_token not found."
       Just tok → do
-        case decodeAndVerifySignature (secret secKey) (S.toText tok) of
+        case decodeAndVerifySignature (secret secKey) (cs tok) of
           Nothing → respond . succeedWith $ Wai.responseLBS status401 [] "Invalid auth token."
           Just decodedToken → route (Proxy ∷ Proxy sublayout) (subserver decodedToken) req respond
 
@@ -53,7 +53,7 @@ fromHeader "" = Nothing
 fromHeader au = return $ drop 7 au -- 7 chars in "Bearer "
 
 getAuth ∷ JWT VerifiedJWT → Sweetroll [(Text, Text)]
-getAuth token = return [("me", S.toText meVal)]
+getAuth token = return [("me", cs meVal)]
   where meVal = case sub $ claims token of
                   Just me → show me
                   _ → ""
@@ -84,8 +84,8 @@ postLogin params = do
     if HC.responseStatus resp == ok200
        then do
          -- TODO: get scopes from the response
-         putStrLn $ toText $ "Authenticated a client: " ++ fromMaybe "unknown" (lookup "client_id" params)
+         putStrLn $ cs $ "Authenticated a client: " ++ fromMaybe "unknown" (lookup "client_id" params)
          valid
        else do
-         putStrLn $ toText $ "Authentication error: " ++ show params
+         putStrLn $ cs $ "Authentication error: " ++ show params
          throwError err401

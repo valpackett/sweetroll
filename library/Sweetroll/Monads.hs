@@ -21,13 +21,13 @@ import           System.FilePath.Posix
 import           System.IO.Unsafe
 import           Data.Conduit
 import           Data.Maybe
-import           Data.Stringable hiding (length)
+import           Data.String.Conversions
 import           Data.Aeson.Types
 import           Text.RawString.QQ
 import           Network.HTTP.Client.Internal (setUri) -- The fuck?
 import           Network.HTTP.Client.Conduit
 import           Network.HTTP.Types
-import           Servant hiding (toText)
+import           Servant
 import           Scripting.Duktape
 import           Sweetroll.Conf
 
@@ -81,7 +81,7 @@ loadTemplates duk = do
         'imports': { 'templates': SweetrollTemplates }
       })
     }|]
-  let setTpl tname thtml = void $ callDuktape duk Nothing "setTemplate" [ String $ toText $ dropExtensions tname, String $ toText thtml ]
+  let setTpl tname thtml = void $ callDuktape duk Nothing "setTemplate" [ String $ cs $ dropExtensions tname, String $ cs thtml ]
   forM_ defaultTemplates $ uncurry setTpl
   hasUserTpls ← doesDirectoryExist "templates"
   when hasUserTpls $ do
@@ -90,7 +90,7 @@ loadTemplates duk = do
       thtml ← (try $ readFile $ "templates" </> tname) ∷ IO (Either IOException ByteString)
       case thtml of
         Right h → setTpl tname h
-        Left e → void $ putStrLn $ "Error when reading template " ++ toText tname ++ ": " ++ (toText $ show e)
+        Left e → void $ putStrLn $ "Error when reading template " ++ cs tname ++ ": " ++ (cs $ show e)
 
 getConf ∷ MonadSweetroll μ ⇒ μ SweetrollConf
 getConf = asks _ctxConf
@@ -108,17 +108,17 @@ getRenderer = liftM renderer $ asks _ctxDuk
         txtVal (Right (Just (String t))) = t
         txtVal (Right (Just _)) = "TEMPLATE ERROR: returned something other than a string"
         txtVal (Right Nothing) = "TEMPLATE ERROR: returned nothing"
-        txtVal (Left e) = "TEMPLATE ERROR: " ++ toText e
+        txtVal (Left e) = "TEMPLATE ERROR: " ++ cs e
 
-request ∷ Stringable α ⇒ Request → Sweetroll (Response α)
+request ∷ ConvertibleStrings LByteString α ⇒ Request → Sweetroll (Response α)
 request req = do
   resp ← httpLbs req
-  return $ resp { responseBody = fromLazyByteString $ responseBody resp }
+  return $ resp { responseBody = cs $ responseBody resp }
 
 withSuccessfulRequest ∷ Request → (Response (Source Sweetroll ByteString) → Sweetroll (Maybe α)) → Sweetroll (Maybe α)
 withSuccessfulRequest req a =
   withResponse req $ \resp → do
-    putStrLn $ toText $ "Request status for <" ++ show (getUri req) ++ ">: " ++ (show . statusCode . responseStatus $ resp)
+    putStrLn $ cs $ "Request status for <" ++ show (getUri req) ++ ">: " ++ (show . statusCode . responseStatus $ resp)
     if responseStatus resp `elem` [ok200, created201, accepted202, noContent204] then a resp else return Nothing
 
 withSuccessfulRequestHtml ∷ URI → (Response (Source Sweetroll ByteString) → Sweetroll (Maybe α)) → Sweetroll (Maybe α)

@@ -11,7 +11,7 @@ module Sweetroll.Conf (
 import           ClassyPrelude
 import           Text.Pandoc.Options
 import           Text.Highlighting.Kate.Styles (tango)
-import           Data.Stringable
+import           Data.String.Conversions
 import           Data.Setters
 import           Data.Default
 import           Data.Aeson
@@ -85,7 +85,7 @@ instance Default SweetrollSecrets where
         secretKey                = "SECRET" } -- the executable sets to a secure random value by default
 
 baseURI ∷ SweetrollConf → Maybe URI
-baseURI conf = Just $ URI (if fromMaybe False (httpsWorks conf) then "https:" else "http:") (Just $ URIAuth "" (toString $ fromMaybe "" $ domainName conf) "") "" "" ""
+baseURI conf = Just $ URI (if fromMaybe False (httpsWorks conf) then "https:" else "http:") (Just $ URIAuth "" (cs $ fromMaybe "" $ domainName conf) "") "" "" ""
 
 pandocReaderOptions ∷ ReaderOptions
 pandocReaderOptions = def { readerExtensions = githubMarkdownExtensions

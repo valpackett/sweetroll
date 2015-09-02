@@ -7,19 +7,19 @@ module Sweetroll.Style (
 
 import           ClassyPrelude hiding (rem, (**), (<>))
 import           Text.Highlighting.Kate.Format.HTML (styleToCss)
+import           Text.Pandoc
+import           Data.String.Conversions (cs)
 import           Clay hiding (round)
 import           Clay.Stylesheet
 import qualified Clay.Media as M
 import qualified Clay.Text as T
-import           Data.Stringable
-import           Text.Pandoc
 import           Sweetroll.Conf
 
 allCss, pandocCss, sweetrollCss ∷ LByteString
 
 allCss = pandocCss ++ sweetrollCss
-pandocCss = toLazyByteString . styleToCss . writerHighlightStyle $ pandocWriterOptions
-sweetrollCss = toLazyByteString . renderWith compact [] $ sweetrollStyle
+pandocCss = cs . styleToCss . writerHighlightStyle $ pandocWriterOptions
+sweetrollCss = cs . renderWith compact [] $ sweetrollStyle
 
 sweetrollStyle ∷ Css
 sweetrollStyle = do

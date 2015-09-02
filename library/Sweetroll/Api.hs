@@ -8,7 +8,6 @@ import           ClassyPrelude
 import           Control.Monad.Except (throwError)
 import           Data.Maybe (fromJust)
 import           Data.Aeson
-import qualified Data.Stringable as S
 import qualified Network.HTTP.Link as L
 import           Network.URI
 import           Network.Wai
@@ -92,18 +91,15 @@ initSweetrollApp conf secs = initCtx conf secs >>= return . sweetrollApp
 
 genLink ∷ MonadSweetroll μ ⇒ Text → URI → μ L.Link
 genLink rel u = do
-  conf ← getConf
-  let proto = if httpsWorks conf then "https:" else "http:"
-      base = URI proto (Just $ URIAuth "" (S.toString $ domainName conf) "") "" "" ""
+  base ← getConfOpt baseURI
   return $ L.Link (u `relativeTo` base) [(L.Rel, rel)]
 
 addLinks ∷ (MonadSweetroll μ, AddHeader "Link" [L.Link] α β) ⇒ [L.Link] → μ α → μ β
 addLinks ls a = do
-  conf ← getConf
   micropub ← genLink "micropub" $ safeLink sweetrollAPI (Proxy ∷ Proxy PostMicropubRoute)
   tokenEndpoint ← genLink "token_endpoint" $ safeLink sweetrollAPI (Proxy ∷ Proxy PostLoginRoute)
-  let authorizationEndpoint = fromJust $ L.lnk (indieAuthRedirEndpoint conf) [(L.Rel, "authorization_endpoint")]
-      hub = fromJust $ L.lnk (pushHub conf) [(L.Rel, "hub")]
+  authorizationEndpoint ← getConfOpt indieAuthRedirEndpoint >>= \x → return $ fromJust $ L.lnk x [(L.Rel, "authorization_endpoint")]
+  hub ← getConfOpt pushHub >>= \x → return $ fromJust $ L.lnk x [(L.Rel, "hub")]
   return . addHeader (micropub : tokenEndpoint : authorizationEndpoint : hub : ls) =<< a
 
 

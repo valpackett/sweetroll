@@ -7,10 +7,10 @@ import qualified Network.Wai.Handler.CGI as CGI
 import           Network.Wai.Handler.Warp
 import           Network.Wai.Middleware.RequestLogger
 import qualified Network.Socket as S
-import           System.Console.ANSI
 import           Control.Applicative
 import           Control.Monad
 import           Control.Exception
+import           System.Console.ANSI
 import           System.Directory
 import           System.Entropy
 import           Sweetroll.Conf
@@ -26,16 +26,12 @@ import           Git.Embed
 import           Options
 import           Gitson
 
-
 data AppOptions = AppOptions
   { port                     ∷ Int
   , socket                   ∷ String
   , protocol                 ∷ String
   , devlogging               ∷ Maybe Bool
   , domain                   ∷ Maybe String
-  , indieauthc               ∷ Maybe String
-  , indieauthr               ∷ Maybe String
-  , pushhub                  ∷ Maybe String
   , secret                   ∷ String
   , https                    ∷ Maybe Bool
   , repo                     ∷ FilePath }
@@ -47,9 +43,6 @@ instance Options AppOptions where
     <*> simpleOption "protocol"          "http"                                "The protocol for the server. One of: http, unix, cgi"
     <*> simpleOption "devlogging"        Nothing                               "Whether development logging should be enabled"
     <*> simpleOption "domain"            Nothing                               "The domain on which the server will run"
-    <*> simpleOption "indieauthc"        Nothing                               "The IndieAuth check endpoint to use"
-    <*> simpleOption "indieauthr"        Nothing                               "The IndieAuth redirect endpoint to use"
-    <*> simpleOption "pushhub"           Nothing                               "The PubSubHubbub hub to use"
     <*> simpleOption "secret"            "RANDOM"                              "The JWT secret key for IndieAuth"
     <*> simpleOption "https"             Nothing                               "Whether HTTPS works on the domain"
     <*> simpleOption "repo"              "./"                                  "The git repository directory of the website"
@@ -64,9 +57,9 @@ reset x = setReset >> putStr x
 
 putSweetroll = putStrLn "" >> putStr "  -=@@@ " >> green "Let me guess, someone stole your " >> boldYellow "sweetroll" >> green "?" >> setReset >> putStrLn " @@@=-"
 
-optToConf ∷ AppOptions → (a → SweetrollConf → SweetrollConf) → (AppOptions → Maybe a) → SweetrollConf → SweetrollConf
+optToConf ∷ AppOptions → (Maybe a → SweetrollConf → SweetrollConf) → (AppOptions → Maybe a) → SweetrollConf → SweetrollConf
 optToConf o s g c = case g o of
-  Just v → s v c
+  Just v → s (Just v) c
   _ → c
 
 main ∷ IO ()
@@ -83,10 +76,7 @@ main = runCommand $ \opts args → do
   origConf ← readDocument "conf" "sweetroll" ∷ IO (Maybe SweetrollConf)
   let o = optToConf opts
       fieldMapping = [ o setDomainName                  (\x → T.pack <$> domain x)
-                     , o setHttpsWorks                  https
-                     , o setIndieAuthCheckEndpoint      indieauthc
-                     , o setIndieAuthRedirEndpoint      indieauthr
-                     , o setPushHub                     pushhub ]
+                     , o setHttpsWorks                  https ]
       conf = foldr ($) (fromMaybe def origConf) fieldMapping
   when (isNothing origConf) . transaction "." . saveDocument "conf" "sweetroll" $ conf
 

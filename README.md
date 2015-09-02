@@ -103,6 +103,7 @@ Use Micropub clients like [Quill](https://quill.p3k.io) to post.
 - [ ] tags (add CSV support to gitson for storing stuff like this)
 - [ ] built-in TLS server, since we depend on `tls` already because of the client
 - [ ] Atom feed
+- [ ] hs-duktape: add functions for getting ByteStrings (get rid of ByteString → Text → ByteString conversion)
 
 ## License
 

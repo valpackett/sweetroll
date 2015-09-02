@@ -20,7 +20,6 @@ import           Data.Microformats2.Parser
 import           Data.FileEmbed
 import           Network.URI
 
-
 newtype IndieConfig = MkIndieConfig Value
 
 instance ToJSON IndieConfig where
@@ -41,28 +40,52 @@ data SweetrollSecrets = SweetrollSecrets
   {                secretKey ∷ Text }
 
 data SweetrollConf = SweetrollConf
-  {                 siteName ∷ Text
-  ,               domainName ∷ Text
-  ,               httpsWorks ∷ Bool
-  ,             itemsPerPage ∷ Int
-  ,           titleSeparator ∷ Text
-  ,            categoryOrder ∷ [String]
-  ,              indieConfig ∷ IndieConfig
-  ,        syndicationConfig ∷ SyndicationConfig
-  ,   indieAuthRedirEndpoint ∷ String
-  ,   indieAuthCheckEndpoint ∷ String -- Separated for debugging
-  ,                  pushHub ∷ String
-  ,                pushDelay ∷ Int
-  ,                 testMode ∷ Bool }
+  {                 siteName ∷ Maybe Text
+  ,               domainName ∷ Maybe Text
+  ,               httpsWorks ∷ Maybe Bool
+  ,             itemsPerPage ∷ Maybe Int
+  ,            categoryOrder ∷ Maybe [String]
+  ,              indieConfig ∷ Maybe IndieConfig
+  ,        syndicationConfig ∷ Maybe SyndicationConfig
+  ,   indieAuthRedirEndpoint ∷ Maybe String
+  ,   indieAuthCheckEndpoint ∷ Maybe String -- Separated for debugging
+  ,                  pushHub ∷ Maybe String
+  ,                pushDelay ∷ Maybe Int
+  ,                 testMode ∷ Maybe Bool }
 
 $(declareSetters ''SweetrollConf)
 $(deriveJSON defaultOptions ''SweetrollConf)
 
-s ∷ SweetrollConf → String
-s conf = if httpsWorks conf then "s" else ""
+instance Default SweetrollConf where
+  -- IMPORTANT: No Nothings here!!!
+  def = SweetrollConf {
+        siteName                 = Just "A new Sweetroll website"
+      , httpsWorks               = Just False
+      , domainName               = Just "localhost"
+      , itemsPerPage             = Just 20
+      , categoryOrder            = Just ["articles", "notes", "likes", "replies"]
+      , indieConfig              = Just $ MkIndieConfig $ object [
+                                       "reply"    .= asText "https://quill.p3k.io/new?reply={url}"
+                                     , "bookmark" .= asText "https://quill.p3k.io/bookmark?url={url}"
+                                     , "like"     .= asText "https://quill.p3k.io/favorite?url={url}"
+                                     , "repost"   .= asText "https://quill.p3k.io/repost?url={url}" ]
+      , syndicationConfig        = Just $ MkSyndicationConfig $ object [
+                                       "twitter.com"   .= asText "<a href=\"https://www.brid.gy/publish/twitter\"></a>"
+                                     , "facebook.com"  .= asText "<a href=\"https://www.brid.gy/publish/facebook\"></a>"
+                                     -- , "test"          .= asText "<a href=\"http://localhost:9247/post?type=link&amp;syndication=yep\"></a>"
+                                     , "instagram.com" .= asText "<a href=\"https://www.brid.gy/publish/instagram\"></a>" ]
+      , indieAuthCheckEndpoint   = Just "https://indieauth.com/auth"
+      , indieAuthRedirEndpoint   = Just "https://indieauth.com/auth"
+      , pushHub                  = Just "https://pubsubhubbub.superfeedr.com"
+      , pushDelay                = Just 3
+      , testMode                 = Just False }
 
-baseURI ∷ SweetrollConf → URI
-baseURI conf = URI ("http" ++ s conf ++ ":") (Just $ URIAuth "" (toString $ domainName conf) "") "" "" ""
+instance Default SweetrollSecrets where
+  def = SweetrollSecrets {
+        secretKey                = "SECRET" } -- the executable sets to a secure random value by default
+
+baseURI ∷ SweetrollConf → Maybe URI
+baseURI conf = Just $ URI (if fromMaybe False (httpsWorks conf) then "https:" else "http:") (Just $ URIAuth "" (toString $ fromMaybe "" $ domainName conf) "") "" "" ""
 
 pandocReaderOptions ∷ ReaderOptions
 pandocReaderOptions = def { readerExtensions = githubMarkdownExtensions
@@ -77,34 +100,6 @@ pandocWriterOptions = def { writerHtml5 = True
 
 mf2Options ∷ Mf2ParserSettings
 mf2Options = def
-
-instance Default SweetrollConf where
-  def = SweetrollConf {
-        siteName                 = "A new Sweetroll website"
-      , httpsWorks               = False
-      , domainName               = "localhost"
-      , itemsPerPage             = 20
-      , titleSeparator           = " / "
-      , categoryOrder            = ["articles", "notes", "likes", "replies"]
-      , indieConfig              = MkIndieConfig $ object [
-                                       "reply"    .= asText "https://quill.p3k.io/new?reply={url}"
-                                     , "bookmark" .= asText "https://quill.p3k.io/bookmark?url={url}"
-                                     , "like"     .= asText "https://quill.p3k.io/favorite?url={url}"
-                                     , "repost"   .= asText "https://quill.p3k.io/repost?url={url}" ]
-      , syndicationConfig        = MkSyndicationConfig $ object [
-                                       "twitter.com"   .= asText "<a href=\"https://www.brid.gy/publish/twitter\"></a>"
-                                     , "facebook.com"  .= asText "<a href=\"https://www.brid.gy/publish/facebook\"></a>"
-                                     -- , "test"          .= asText "<a href=\"http://localhost:9247/post?type=link&amp;syndication=yep\"></a>"
-                                     , "instagram.com" .= asText "<a href=\"https://www.brid.gy/publish/instagram\"></a>" ]
-      , indieAuthCheckEndpoint   = "https://indieauth.com/auth"
-      , indieAuthRedirEndpoint   = "https://indieauth.com/auth"
-      , pushHub                  = "https://pubsubhubbub.superfeedr.com"
-      , pushDelay                = 3
-      , testMode                 = False }
-
-instance Default SweetrollSecrets where
-  def = SweetrollSecrets {
-        secretKey                = "SECRET" } -- the executable sets to a secure random value by default
 
 bowerComponents, defaultTemplates ∷ [(FilePath, ByteString)]
 bowerComponents = $(embedDir "bower_components")

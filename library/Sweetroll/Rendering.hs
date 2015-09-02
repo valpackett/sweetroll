@@ -12,6 +12,8 @@ import           Data.Aeson (encode)
 import           Data.Aeson.Types
 import           Data.Aeson.Lens
 import           Data.List (elemIndex)
+import           Data.Foldable (asum)
+import           Data.Maybe (fromJust)
 import qualified Data.Vector as V
 import qualified Data.Text as T
 import           Data.Stringable
@@ -71,12 +73,15 @@ instance Templatable EntryPage where
             , "hasNext"          .= isJust next
             , "nextHref"         .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack $ orEmptyMaybe next)
             , "hasTwitterId"     .= isJust twitterId
-            , "twitterId"        .= orEmptyMaybe twitterId ]
+            , "twitterId"        .= orEmptyMaybe twitterId
+            , "titleParts"      .= [ titleName, toText catName ] ]
           slugIdx = fromMaybe (-1) $ elemIndex slug otherSlugs
           prev = atMay otherSlugs $ slugIdx - 1
           next = atMay otherSlugs $ slugIdx + 1
           twitterId = lastMay =<< T.splitOn "/" <$> find ("twitter.com" `isInfixOf`) entrySyndication
           entrySyndication = mapMaybe (^? _String) $ V.toList $ fromMaybe V.empty $ e ^? key "properties" . key "syndication" . _Array
+          titleName = orEmptyMaybe $ asum [ e ^? key "properties" . key "name" . nth 0 . _String
+                                          , e ^? key "properties" . key "published" . nth 0 . _String ]
 
 instance Templatable CatPage where
   templateName _ = "category"
@@ -88,7 +93,8 @@ instance Templatable CatPage where
             , "hasBefore"       .= isJust (sliceBefore slice)
             , "beforeHref"      .= orEmptyMaybe (showLink <$> sliceBefore slice)
             , "hasAfter"        .= isJust (sliceAfter slice)
-            , "afterHref"       .= orEmptyMaybe (showLink <$> sliceAfter slice) ]
+            , "afterHref"       .= orEmptyMaybe (showLink <$> sliceAfter slice)
+            , "titleParts"      .= [ toText name ] ]
           entryContext = context . View conf renderer . EntryPage name slugs
           slugs = map fst entries
           entries = sliceItems slice
@@ -96,5 +102,5 @@ instance Templatable CatPage where
 instance Templatable IndexPage where
   templateName _ = "index"
   context (View conf renderer (IndexPage cats)) = ctx
-    where ctx = object [ "categories" .= map catContext (sortOn (fromMaybe 999 . flip elemIndex (categoryOrder conf) . fst) cats) ]
+    where ctx = object [ "categories" .= map catContext (sortOn (fromMaybe 999 . flip elemIndex (fromMaybe (fromJust $ categoryOrder def) $ categoryOrder conf) . fst) cats) ]
           catContext (n, p) = context (View conf renderer (CatPage n p))

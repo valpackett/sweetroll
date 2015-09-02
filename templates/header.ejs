@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<title>${ scope.meta.site_name }</title>
+		<title><%= _(scope.data.titleParts || []).concat(scope.meta.site_name).value().join(' / ') %></title>
 		<link rel="openid.delegate" href="${ scope.meta.base_uri }">
 		<link rel="openid.server" href="https://indieauth.com/openid">
 		<link rel="stylesheet" href="/bower/fontawesome/css/font-awesome.min.css">
@@ -18,7 +18,7 @@
 	</head>
 	<body>
 		<header class="site-header">
-			<h1><a href="/">${ scope.meta.site_name }</a></h1>
+			<h1><a href="/"><%= scope.meta.site_name %></a></h1>
 			<a href="#author" id="author-link" onclick="var a=document.getElementById('author');a.setAttribute('tabindex','-1');a.focus()">
 				<i class="fa fa-l fa-info-circle"></i><span>Skip to author info</span>
 			</a>

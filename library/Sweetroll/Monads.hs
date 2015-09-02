@@ -86,13 +86,13 @@ loadTemplates duk = do
   let setTpl tname thtml = void $ callDuktape duk Nothing "setTemplate" [ String $ toText $ dropExtensions tname, String $ toText thtml ]
   forM_ defaultTemplates $ uncurry setTpl
   hasUserTpls ← doesDirectoryExist "templates"
-  if hasUserTpls
-     then do
-       userTpls ← getDirectoryContents "templates"
-       forM_ (filter (\x → x /= "." && x /= "..") userTpls) $ \tname → do
-         thtml ← readFile $ "templates" </> tname
-         setTpl tname thtml
-      else return ()
+  when hasUserTpls $ do
+    userTpls ← getDirectoryContents "templates"
+    forM_ (filter (not . ("." `isPrefixOf`)) userTpls) $ \tname → do -- Avoid ., .., .DS_Store and all hidden files really
+      thtml ← (try $ readFile $ "templates" </> tname) ∷ IO (Either IOException ByteString)
+      case thtml of
+        Right h → setTpl tname h
+        Left e → void $ putStrLn $ "Error when reading template " ++ toText tname ++ ": " ++ (toText $ show e)
 
 getCtx ∷ MonadSweetroll μ ⇒ μ SweetrollCtx
 getCtx = ask
@@ -100,8 +100,8 @@ getCtx = ask
 getConf ∷ MonadSweetroll μ ⇒ μ SweetrollConf
 getConf = asks _ctxConf
 
-getConfOpt ∷ MonadSweetroll μ ⇒ (SweetrollConf → α) → μ α
-getConfOpt f = asks $ f . _ctxConf
+getConfOpt ∷ MonadSweetroll μ ⇒ (SweetrollConf → Maybe α) → μ α
+getConfOpt f = asks $ fromMaybe (fromJust $ f def) . f . _ctxConf
 
 getSecs ∷ MonadSweetroll μ ⇒ μ SweetrollSecrets
 getSecs = asks _ctxSecs

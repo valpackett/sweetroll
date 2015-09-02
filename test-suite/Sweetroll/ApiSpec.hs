@@ -27,7 +27,7 @@ spec = around_ inDir $ do
   -- inside the app. Fsck it, just use unsafePerformIO here :D
   -- Spent a couple hours before realizing what's been stored here :-(
   -- And then realized the TVar was not needed, because JWT.
-  let app = initSweetrollApp (def { testMode = True, domainName = "localhost" }) def
+  let app = initSweetrollApp (def { testMode = Just True, domainName = Just "localhost" }) def
       transaction' = transaction "./"
 
   describe "GET /" $ do

@@ -66,18 +66,18 @@ signAccessToken key domain me now = encodeSigned HS256 (secret key) t
 
 makeAccessToken ∷ Text → Sweetroll [(Text, Text)]
 makeAccessToken me = do
-  conf ← getConf
+  domain ← getConfOpt domainName
   secs ← getSecs
   now ← liftIO getCurrentTime
-  return [ ("access_token", signAccessToken (secretKey secs) (domainName conf) me now)
+  return [ ("access_token", signAccessToken (secretKey secs) domain me now)
          , ("scope", "post"), ("me", me) ]
 
 postLogin ∷ [(Text, Text)] → Sweetroll [(Text, Text)]
 postLogin params = do
-  conf ← getConf
   let valid = makeAccessToken $ fromMaybe "unknown" $ lookup "me" params
-  if testMode conf then valid else do
-    indieAuthReq ← liftIO $ HC.parseUrl $ indieAuthCheckEndpoint conf
+  isTestMode ← getConfOpt testMode
+  if isTestMode then valid else do
+    indieAuthReq ← HC.parseUrl =<< getConfOpt indieAuthCheckEndpoint
     resp ← request (indieAuthReq { HC.method = "POST"
                                  , HC.requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
                                  , HC.requestBody = HC.RequestBodyBS $ writeForm params }) ∷ Sweetroll (HC.Response LByteString)

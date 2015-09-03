@@ -78,7 +78,7 @@ You need to put your h-card and rel-me markup into `templates/author.ejs`.
 
 Restart Sweetroll after any changes to the config file or the templates.
 
-Use Micropub clients like [Quill](https://quill.p3k.io) to post.
+Use Micropub clients like [Micropublish](https://micropublish.herokuapp.com) and [Quill](https://quill.p3k.io) to post.
 
 ## Libraries I made for this project
 
@@ -93,14 +93,14 @@ Use Micropub clients like [Quill](https://quill.p3k.io) to post.
 
 - [x] JS lodash templates
 - [ ] micropub updating and deleting (implement [FormUrlEncoded](https://github.com/haskell-servant/servant/blob/b9ce73fcac9643114ea4f98ad2fbf20e40109462/servant/src/Servant/API/ContentTypes.hs#L341) stuff for Value, To/FromJSON to support both form-urlencoded and JSON; // respond to ?q=syndicate-to with JSON too)
-- [ ] receiving webmention
-- [ ] microformats2 based [comments-presentation](http://indiewebcamp.com/comments-presentation)
+- [ ] receiving webmentions and [comments-presentation](http://indiewebcamp.com/comments-presentation)
 - [ ] hashcash in webmentions
 - [ ] posting [photos](http://indiewebcamp.com/photos) (note: we already depend on `JuicyPixels` somehow)
+- [ ] proxying reply-context and comments-presentation images (to avoid mixed content and possible tracking)
 - [ ] custom non-entry html pages
 - [ ] JS hooks for events like posting and webmentions (API: a Sweetroll object which is an EventEmitter and also has config/secrets getters; should be possible to make HTTP requests to e.g. send webmention notifications)
 - [ ] archive pages, ie. unpaginated pages
-- [ ] tags (add CSV support to gitson for storing stuff like this)
+- [ ] tags
 - [ ] built-in TLS server, since we depend on `tls` already because of the client
 - [ ] Atom feed
 - [ ] hs-duktape: add functions for getting ByteStrings (get rid of ByteString → Text → ByteString conversion)

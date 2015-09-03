@@ -126,3 +126,8 @@ withSuccessfulRequestHtml uri a = do
   req ← setUri def uri
   let req' = req { requestHeaders = [ (hAccept, "text/html; charset=utf-8") ] }
   withSuccessfulRequest req' a
+
+guardJust ∷ ServantErr → Sweetroll (Maybe α) → Sweetroll α
+guardJust e a = a >>= \x → case x of
+                               Just x' → return x'
+                               Nothing → throwError e

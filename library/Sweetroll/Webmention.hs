@@ -10,7 +10,6 @@ import           Data.Conduit
 import qualified Data.Conduit.Combinators as C
 import           Data.Aeson
 import           Data.List (nub)
-import           Data.String.Conversions
 import           Data.Microformats2.Parser
 import           Data.IndieWeb.Endpoints
 import           Network.HTTP.Link
@@ -28,12 +27,12 @@ type EndpointURI = URI
 sendWebmention ∷ URI → TargetURI → EndpointURI → Sweetroll (Maybe (Response LByteString))
 sendWebmention from to endpoint = do
   req ← setUri def endpoint
-  let reqBody = writeForm [(asText "source", show from), ("target", show to)]
+  let reqBody = writeForm [(asText "source", tshow from), ("target", tshow to)]
       req' = req { method = "POST"
                  , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
                  , requestBody = RequestBodyBS reqBody }
   withSuccessfulRequest req' $ \resp → do
-    putStrLn $ cs $ "Webmention posted for <" ++ show to ++ ">!"
+    putStrLn $ "Webmention posted for <" ++ tshow to ++ ">!"
     body ← responseBody resp $$ C.sinkLazy
     return $ Just $ resp { responseBody = body }
 

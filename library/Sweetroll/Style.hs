@@ -293,12 +293,12 @@ fSize x = do
   marginBottom . rem $ 29.7 / fromIntegral x
 
 flexValue x = do
-  "-webkit-flex" -: pack (show x)
-  "flex" -: pack (show x)
+  "-webkit-flex" -: tshow x
+  "flex" -: tshow x
 
 orderValue x = do
-  "-webkit-order" -: pack (show x)
-  "order" -: pack (show x)
+  "-webkit-order" -: tshow x
+  "order" -: tshow x
 
 newtype HyphensType = HyphensType Value
   deriving (Val, Inherit)

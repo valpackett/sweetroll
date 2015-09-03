@@ -83,7 +83,7 @@ postMicropub _ allParams = do
           contMs ← contentWebmentions content
           let metaMs = catMaybes $ map snd $ concat $ map catMaybes [ inReplyTo, likeOf, repostOf ]
           void $ sendWebmentions absUrl (metaMs ++ contMs)
-      return $ addHeader (toText $ show absUrl) []
+      return $ addHeader (tshow absUrl) []
     _ → throwError err400
 
 decideCategory ∷ [(Text, Text)] → CategoryName
@@ -123,7 +123,7 @@ makeEntry pars now absUrl content replyContexts syndicationLinks =
                 , "updated"     .= [ now ]
                 , "author"      .= par "author"
                 , "category"    .= filter (not . null) (join $ parseTags <$> par "category")
-                , "url"         .= [ show absUrl ] ] ++ replyContexts
+                , "url"         .= [ tshow absUrl ] ] ++ replyContexts
 
 fetchEntry ∷ URI → Sweetroll (Maybe (Value, Maybe (TargetURI, EndpointURI)))
 fetchEntry uri = withSuccessfulRequestHtml uri $ \resp → do
@@ -148,7 +148,7 @@ notifyPuSH l = do
     Just hubURI → do
       base ← getConfOpt baseURI
       let pingURI = l `relativeTo` base
-          body = writeForm [ (asText "hub.mode", asText "publish"), ("hub.url", toText $ show pingURI) ]
+          body = writeForm [ (asText "hub.mode", asText "publish"), ("hub.url", tshow pingURI) ]
       let req = def { method = "POST"
                     , requestHeaders = [ (HT.hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
                     , requestBody = RequestBodyBS body }

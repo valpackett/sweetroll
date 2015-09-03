@@ -97,7 +97,7 @@ library
         Sweetroll.Routes
         Sweetroll.Style
         Sweetroll.Util
-        Sweetroll.Webmention
+        Sweetroll.Webmention.Send
     ghc-options: -Wall
     hs-source-dirs: library
 

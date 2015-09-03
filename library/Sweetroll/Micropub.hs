@@ -34,7 +34,7 @@ import           Sweetroll.Auth
 import           Sweetroll.Util
 import           Sweetroll.Monads
 import           Sweetroll.Routes
-import           Sweetroll.Webmention
+import           Sweetroll.Webmention.Send
 
 postMicropub ∷ JWT VerifiedJWT → [(Text, Text)] → Sweetroll (Headers '[Header "Location" Text] [(Text, Text)])
 postMicropub _ allParams = do

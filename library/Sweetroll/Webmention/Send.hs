@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TupleSections #-}
 {-# LANGUAGE RankNTypes, FlexibleContexts #-}
 
-module Sweetroll.Webmention where
+module Sweetroll.Webmention.Send where
 
 import           ClassyPrelude
 import qualified Text.Pandoc as P

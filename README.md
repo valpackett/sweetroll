@@ -59,7 +59,7 @@ exec /home/greg/Stuff/bin/freebsd-amd64/sweetroll
         --secret="GENERATE YOUR LONG PSEUDORANDOM VALUE!...2MGy9ZkKgzexRpd7vl8"
 ```
 
-(Use something like `head -c 1024 < /dev/random | openssl dgst -sha256` to get the random value for the `secret`. No, not dynamically in the script. Copy and paste the value into the script. Otherwise you'll be logged out on every restart.)
+(Use something like `head -c 1024 < /dev/random | openssl dgst -sha512` to get the random value for the `secret`. No, not dynamically in the script. Copy and paste the value into the script. Otherwise you'll be logged out on every restart.)
 
 Run that script with [supervisord](http://supervisord.org) or whatever you prefer.
 Don't run as root, run as a separate user that has read-write access to the site directory.

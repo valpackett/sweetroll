@@ -10,9 +10,10 @@ maintainer:      greg@unrelenting.technology
 license:         PublicDomain
 license-file:    UNLICENSE
 build-type:      Simple
-cabal-version:   >= 1.18
+cabal-version:   >= 1.10
 extra-source-files:
     README.md
+    bower.json
 tested-with:
     GHC == 7.10.2
 
@@ -22,7 +23,7 @@ source-repository head
 
 library
     build-depends:
-        base >= 4.0.0.0 && < 5
+        base >= 4.8.0.0 && < 5
       , classy-prelude
       , mono-traversable
       , transformers
@@ -102,8 +103,7 @@ library
 
 executable sweetroll
     build-depends:
-        base >= 4.0.0.0 && < 5
-      , classy-prelude
+        base >= 4.8.0.0 && < 5
       , git-embed
       , cabal-file-th
       , options
@@ -113,20 +113,19 @@ executable sweetroll
       , wai-extra
       , ansi-terminal
       , directory
+      , cryptonite
       , text
-      , cryptohash
-      , entropy
-      , base64-bytestring
+      , bytestring
       , gitson
       , sweetroll
     default-language: Haskell2010
-    ghc-options: -O2 -threaded -rtsopts "-with-rtsopts=-N -qa -qm"
+    ghc-options: -Wall -O2 -threaded -rtsopts "-with-rtsopts=-N -qa -qm"
     hs-source-dirs: executable
     main-is: Main.hs
 
 test-suite examples
     build-depends:
-        base >= 4.0.0.0 && < 5
+        base >= 4.8.0.0 && < 5
       , Glob
       , doctest
     default-language: Haskell2010
@@ -136,7 +135,7 @@ test-suite examples
 
 test-suite tests
     build-depends:
-        base >= 4.0.0.0 && < 5
+        base >= 4.8.0.0 && < 5
       , classy-prelude
       , sweetroll
       , string-conversions

@@ -7,20 +7,19 @@ import qualified Network.Wai.Handler.CGI as CGI
 import           Network.Wai.Handler.Warp
 import           Network.Wai.Middleware.RequestLogger
 import qualified Network.Socket as S
-import           Control.Applicative
 import           Control.Monad
 import           Control.Exception
 import           System.Console.ANSI
 import           System.Directory
-import           System.Entropy
+import           System.IO
 import           Sweetroll.Conf
 import           Sweetroll.Api (initSweetrollApp)
 import qualified Data.Text as T
-import           Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import           Data.Streaming.Network (bindPath)
 import           Data.Maybe
-import qualified Data.ByteString.Base64 as B64
-import qualified Crypto.Hash.RIPEMD160 as H
+import qualified Data.ByteString as BS
+import           Crypto.Random
+import           Crypto.Hash
 import           Distribution.PackageDescription.TH
 import           Git.Embed
 import           Options
@@ -43,7 +42,7 @@ instance Options AppOptions where
     <*> simpleOption "protocol"          "http"                                "The protocol for the server. One of: http, unix, cgi"
     <*> simpleOption "devlogging"        Nothing                               "Whether development logging should be enabled"
     <*> simpleOption "domain"            Nothing                               "The domain on which the server will run"
-    <*> simpleOption "secret"            "RANDOM"                              "The JWT secret key for IndieAuth"
+    <*> simpleOption "secret"            "RANDOM"                              "The JWT secret key for IndieAuth. Must be at least 40 characters, otherwise a random one will be used"
     <*> simpleOption "https"             Nothing                               "Whether HTTPS works on the domain"
     <*> simpleOption "repo"              "./"                                  "The git repository directory of the website"
 
@@ -63,7 +62,7 @@ optToConf o s g c = case g o of
   _ → c
 
 main ∷ IO ()
-main = runCommand $ \opts args → do
+main = runCommand $ \opts _ → do
   setCurrentDirectory $ repo opts
   let printProto = case protocol opts of
                      "http" → reset " port "   >> boldMagenta (show $ port opts)
@@ -80,12 +79,13 @@ main = runCommand $ \opts args → do
       conf = foldr ($) (fromMaybe def origConf) fieldMapping
   when (isNothing origConf) . transaction "." . saveDocument "conf" "sweetroll" $ conf
 
-  randBytes ← getEntropy 64
-  let secret' = case secret opts of
-                  "RANDOM" → decodeUtf8 $ B64.encode $ H.hash randBytes
-                  k → T.pack k
-  let secs = def {
-    secretKey                      = secret' }
+  secretVal ← case secret opts of
+                k | length k >= 40 → return $ T.pack k
+                _ → do
+                  hPutStrLn stderr "Warning: the --secret value is shorter than 40 characters. Not using it and generating a random one. Authentication tokens will expire after restarting Sweetroll."
+                  randBytes ← getRandomBytes 64 ∷ IO BS.ByteString
+                  return $ T.pack $ show $ hashWith SHA3_512 randBytes
+  let secs = def { secretKey = secretVal }
 
   let app' = initSweetrollApp conf secs
       app = case devlogging opts of
@@ -96,6 +96,6 @@ main = runCommand $ \opts args → do
     "unix" → putSweetroll >>
       bracket (bindPath $ socket opts)
               S.close
-              (\socket → app >>= runSettingsSocket warpSettings socket)
+              (\sock → app >>= runSettingsSocket warpSettings sock)
     "cgi" → app' >>= CGI.run
     _ → putStrLn $ "Unsupported protocol: " ++ protocol opts

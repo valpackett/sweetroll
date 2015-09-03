@@ -35,6 +35,7 @@ lookupFirst [] _ = Nothing
 
 -- | Prepares a text for inclusion in a URL.
 --
+-- >>> :set -XOverloadedStrings
 -- >>> slugify "Hello & World!"
 -- "hello-and-world"
 slugify ∷ Text → Text

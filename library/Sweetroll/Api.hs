@@ -23,6 +23,7 @@ import           Sweetroll.Pages
 import           Sweetroll.Rendering
 import           Sweetroll.Auth
 import           Sweetroll.Micropub
+import           Sweetroll.Webmention.Receive
 import           Sweetroll.Style
 import           Sweetroll.Util
 
@@ -66,6 +67,7 @@ sweetrollServerT ∷ SweetrollCtx → ServerT SweetrollAPI Sweetroll
 sweetrollServerT ctx = getIndieConfig :<|> getDefaultCss
                   :<|> postLogin :<|> AuthProtected key getAuth
                   :<|> AuthProtected key postMicropub :<|> AuthProtected key getMicropub
+                  :<|> receiveWebmention
                   :<|> getEntry :<|> getCat :<|> getIndex
     where key = secretKey $ _ctxSecs ctx
 
@@ -90,11 +92,12 @@ genLink rel u = do
 
 addLinks ∷ (MonadSweetroll μ, AddHeader "Link" [L.Link] α β) ⇒ [L.Link] → μ α → μ β
 addLinks ls a = do
+  webmention ← genLink "webmention" $ safeLink sweetrollAPI (Proxy ∷ Proxy PostWebmentionRoute)
   micropub ← genLink "micropub" $ safeLink sweetrollAPI (Proxy ∷ Proxy PostMicropubRoute)
   tokenEndpoint ← genLink "token_endpoint" $ safeLink sweetrollAPI (Proxy ∷ Proxy PostLoginRoute)
   authorizationEndpoint ← getConfOpt indieAuthRedirEndpoint >>= \x → return $ fromJust $ L.lnk x [(L.Rel, "authorization_endpoint")]
   hub ← getConfOpt pushHub >>= \x → return $ fromJust $ L.lnk x [(L.Rel, "hub")]
-  return . addHeader (micropub : tokenEndpoint : authorizationEndpoint : hub : ls) =<< a
+  return . addHeader (webmention : micropub : tokenEndpoint : authorizationEndpoint : hub : ls) =<< a
 
 
 

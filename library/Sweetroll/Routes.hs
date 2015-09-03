@@ -26,6 +26,8 @@ type GetLoginRoute            = "login" :> AuthProtect :> Get '[FormUrlEncoded] 
 type PostMicropubRoute        = "micropub" :> AuthProtect :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] (Headers '[Header "Location" Text] [(Text, Text)])
 type GetMicropubRoute         = "micropub" :> AuthProtect :> QueryParam "q" Text :> Get '[FormUrlEncoded] [(Text, Text)]
 
+type PostWebmentionRoute      = "webmention" :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] ()
+
 type EntryRoute               = Capture "catName" String :> Capture "slug" String :> Get '[HTML] (WithLink (View EntryPage))
 type CatRoute                 = Capture "catName" String :> QueryParam "before" Int :> QueryParam "after" Int :> Get '[HTML] (WithLink (View CatPage))
 type CatRouteE                = Capture "catName" String :> Get '[HTML] (WithLink (View CatPage))
@@ -36,6 +38,7 @@ type IndexRoute               = Get '[HTML] (WithLink (View IndexPage))
 type SweetrollAPI             = IndieConfigRoute :<|> DefaultCssRoute
                            :<|> PostLoginRoute :<|> GetLoginRoute
                            :<|> PostMicropubRoute :<|> GetMicropubRoute
+                           :<|> PostWebmentionRoute
                            :<|> EntryRoute :<|> CatRoute :<|> IndexRoute
 
 sweetrollAPI ∷ Proxy SweetrollAPI

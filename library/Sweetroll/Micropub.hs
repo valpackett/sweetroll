@@ -8,18 +8,14 @@ module Sweetroll.Micropub (
 import           ClassyPrelude
 import           Control.Monad.Except (throwError)
 import           Control.Concurrent.Lifted (fork, threadDelay)
+import           Control.Monad.Trans.Control
 import           Control.Lens hiding ((.=))
 import           Data.Aeson
 import           Data.Aeson.Types
 import           Data.Aeson.Lens
-import           Data.Conduit
-import           Data.Microformats2.Parser
 import           Data.Microformats2.Parser.Util (emptyVal)
-import           Data.IndieWeb.MicroformatsUtil
-import           Data.IndieWeb.Authorship
 import           Data.String.Conversions
 import qualified Data.Vector as V
-import qualified Data.HashMap.Strict as HMS
 import           Text.Pandoc hiding (Link, Null)
 import qualified Text.Pandoc.Error as PE
 import           Text.Blaze.Html.Renderer.Text (renderHtml)
@@ -42,7 +38,10 @@ postMicropub _ allParams = do
     Just "entry" → do
 
       -- ## Reply contexts
-      let paramToEntries x = mapM fetchEntry $ mapMaybe parseURI $ map cs $ maybeToList $ lookup x allParams
+      let paramToEntries x = forM (mapMaybe parseURI $ map cs $ maybeToList $ lookup x allParams) $ \uri →
+            withSuccessfulRequestHtml uri $ \resp → 
+            withFetchEntryWithAuthors uri resp $ \mfRoot (mfE, _) →
+              return (mfE, fmap (uri, ) $ listToMaybe $ discoverWebmentionEndpoints mfRoot (linksFromHeader resp))
       inReplyTo ← paramToEntries "in-reply-to"
       likeOf ←    paramToEntries "like-of"
       repostOf ←  paramToEntries "repost-of"
@@ -67,22 +66,25 @@ postMicropub _ allParams = do
 
       -- ## Creating the entry
       let entry = makeEntry allParams now absUrl content replyContexts syndicationLinks
-          create x = liftIO $ transaction "./" $ saveNextDocument category slug x
-          update x = liftIO $ transaction "./" $ saveDocumentByName category slug x
-      create entry -- TODO: copy content for reposts
+      transaction "./" $ saveNextDocument category slug entry
+      -- TODO: copy content for reposts
 
       -- ## Async notification jobs
       isTest ← getConfOpt testMode
       unless isTest $ void $ fork $ do
         threadDelay =<< return . (*1000000) =<< getConfOpt pushDelay
-        reread ← readDocumentByName category slug ∷ Sweetroll (Maybe Value)
-        when (isJust reread) $ do -- not deleted after the delay
-          notifyPuSH $ permalink (Proxy ∷ Proxy IndexRoute)
-          notifyPuSH $ permalink (Proxy ∷ Proxy CatRouteE) category
-          update =<< syndicate entry absUrl syndicationLinks
-          contMs ← contentWebmentions content
-          let metaMs = catMaybes $ map snd $ concat $ map catMaybes [ inReplyTo, likeOf, repostOf ]
-          void $ sendWebmentions absUrl (metaMs ++ contMs)
+        transaction "./" $ do
+          -- check that it wasn't deleted after the delay
+          entry'm ← readDocumentByName category slug
+          case entry'm of
+            Just entry' → do
+              notifyPuSH $ permalink (Proxy ∷ Proxy IndexRoute)
+              notifyPuSH $ permalink (Proxy ∷ Proxy CatRouteE) category
+              saveDocumentByName category slug =<< syndicate entry' absUrl syndicationLinks
+              contMs ← contentWebmentions content
+              let metaMs = catMaybes $ map snd $ concat $ map catMaybes [ inReplyTo, likeOf, repostOf ]
+              void $ sendWebmentions absUrl (metaMs ++ contMs)
+            _ → return ()
       return $ addHeader (tshow absUrl) []
     _ → throwError err400
 
@@ -125,22 +127,8 @@ makeEntry pars now absUrl content replyContexts syndicationLinks =
                 , "category"    .= filter (not . null) (join $ parseTags <$> par "category")
                 , "url"         .= [ tshow absUrl ] ] ++ replyContexts
 
-fetchEntry ∷ URI → Sweetroll (Maybe (Value, Maybe (TargetURI, EndpointURI)))
-fetchEntry uri = withSuccessfulRequestHtml uri $ \resp → do
-  htmlDoc ← responseBody resp $$ sinkDoc
-  let mfRoot = parseMf2 mf2Options $ documentRoot htmlDoc
-  case headMay =<< allMicroformatsOfType "h-entry" mfRoot of
-    Just mfEntry → do
-      authors ← entryAuthors mf2Options (\u → withSuccessfulRequestHtml u $ \r → liftM Just $ responseBody r $$ sinkDoc) uri mfRoot mfEntry
-      let addAuthors (Object o) = Object $ HMS.adjust addAuthors' "properties" o
-          addAuthors x = x
-          addAuthors' (Object o) = Object $ HMS.insert "author" (Array $ V.fromList $ fromMaybe [] authors) o
-          addAuthors' x = x
-      return $ Just (addAuthors $ fst mfEntry, fmap (uri, ) $ listToMaybe $ discoverWebmentionEndpoints mfRoot (linksFromHeader resp))
-    _ → return Nothing
-
-
-notifyPuSH ∷ URI → Sweetroll ()
+notifyPuSH ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
+             URI → μ ()
 notifyPuSH l = do
   hub ← getConfOpt pushHub
   case parseURI hub of
@@ -157,12 +145,13 @@ notifyPuSH l = do
         putStrLn $ "PubSubHubbub notified: " ++ cs body
         return $ Just ()
 
-syndicate ∷ Value → URI → Text → Sweetroll Value
+syndicate ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
+            Value → URI → Text → μ Value
 syndicate entry absUrl syndicationLinks = do
   syndMs ← contentWebmentions $ Just $ pandocRead readHtml $ cs syndicationLinks
   syndResults ← liftM catMaybes $ sendWebmentions absUrl syndMs
   let processSynd resp = do
-        guard $ responseStatus resp == HT.ok200
+        guard $ responseStatus resp `elem` [ HT.ok200, HT.created201 ]
         v ← decode (responseBody resp) ∷ Maybe Value
         v ^? key "url" . _String
   return $ set (key "properties" . key "syndication") (Array $ V.fromList $ map String $ mapMaybe processSynd syndResults) entry

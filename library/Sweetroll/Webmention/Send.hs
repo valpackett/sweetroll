@@ -4,6 +4,7 @@
 module Sweetroll.Webmention.Send where
 
 import           ClassyPrelude
+import           Control.Monad.Trans.Control
 import qualified Text.Pandoc as P
 import qualified Text.Pandoc.Walk as PW
 import           Data.Conduit
@@ -24,7 +25,8 @@ import           Sweetroll.Monads
 type TargetURI = URI
 type EndpointURI = URI
 
-sendWebmention ∷ URI → TargetURI → EndpointURI → Sweetroll (Maybe (Response LByteString))
+sendWebmention ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
+                 URI → TargetURI → EndpointURI → μ (Maybe (Response LByteString))
 sendWebmention from to endpoint = do
   req ← setUri def endpoint
   let reqBody = writeForm [(asText "source", tshow from), ("target", tshow to)]
@@ -36,7 +38,8 @@ sendWebmention from to endpoint = do
     body ← responseBody resp $$ C.sinkLazy
     return $ Just $ resp { responseBody = body }
 
-sendWebmentions ∷ URI → [(TargetURI, EndpointURI)] → Sweetroll [Maybe (Response LByteString)]
+sendWebmentions ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
+                  URI → [(TargetURI, EndpointURI)] → μ [Maybe (Response LByteString)]
 sendWebmentions from ms = mapM (uncurry $ sendWebmention from) $ nub ms
 
 
@@ -46,13 +49,15 @@ linksFromHeader r = fromMaybe [] (lookup "Link" (responseHeaders r) >>= parseLin
 discoverWebmentionEndpoints ∷ Value → [Link] → [URI]
 discoverWebmentionEndpoints = discoverEndpoints [ "webmention", "http://webmention.org/" ]
 
-getWebmentionEndpoint ∷ Response (Source Sweetroll ByteString) → Sweetroll (Maybe EndpointURI)
+getWebmentionEndpoint ∷ (MonadThrow μ, MonadSweetroll μ) ⇒
+                        Response (Source μ ByteString) → μ (Maybe EndpointURI)
 getWebmentionEndpoint r = do
   htmlDoc ← responseBody r $$ sinkDoc
   let mf2Root = parseMf2 mf2Options $ documentRoot htmlDoc
   return $ listToMaybe $ discoverWebmentionEndpoints mf2Root (linksFromHeader r)
 
-findWebmentionEndpoints ∷ [TargetURI] → Sweetroll [(TargetURI, EndpointURI)]
+findWebmentionEndpoints ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
+                          [TargetURI] → μ [(TargetURI, EndpointURI)]
 findWebmentionEndpoints targets = do
   let getWebmentionEndpoint' uri = do
         endp ← withSuccessfulRequestHtml uri getWebmentionEndpoint
@@ -60,7 +65,8 @@ findWebmentionEndpoints targets = do
   rs ← mapM getWebmentionEndpoint' targets
   return $ catMaybes rs
 
-contentWebmentions ∷ Maybe P.Pandoc → Sweetroll [(TargetURI, EndpointURI)]
+contentWebmentions ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
+                     Maybe P.Pandoc → μ [(TargetURI, EndpointURI)]
 contentWebmentions content =
   case content of
     Nothing → return []

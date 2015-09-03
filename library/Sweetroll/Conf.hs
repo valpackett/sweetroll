@@ -76,7 +76,7 @@ instance Default SweetrollConf where
                                      , "instagram.com" .= asText "<a href=\"https://www.brid.gy/publish/instagram\"></a>" ]
       , indieAuthCheckEndpoint   = Just "https://indieauth.com/auth"
       , indieAuthRedirEndpoint   = Just "https://indieauth.com/auth"
-      , pushHub                  = Just "https://pubsubhubbub.superfeedr.com"
+      , pushHub                  = Just "https://switchboard.p3k.io"
       , pushDelay                = Just 3
       , testMode                 = Just False }
 

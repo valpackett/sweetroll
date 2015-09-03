@@ -98,6 +98,7 @@ library
         Sweetroll.Style
         Sweetroll.Util
         Sweetroll.Webmention.Send
+        Sweetroll.Webmention.Receive
     ghc-options: -Wall
     hs-source-dirs: library
 

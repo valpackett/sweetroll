@@ -33,6 +33,7 @@ import           Network.HTTP.Client.Internal (setUri) -- The fuck?
 import           Network.HTTP.Client.Conduit
 import           Network.HTTP.Types
 import           Servant
+import           Gitson
 import           Scripting.Duktape
 import           Sweetroll.Conf
 
@@ -40,12 +41,16 @@ data SweetrollCtx = SweetrollCtx
   { _ctxConf     ∷ SweetrollConf
   , _ctxSecs     ∷ SweetrollSecrets
   , _ctxDuk      ∷ DuktapeCtx
+  , _ctxLock     ∷ MVar ()
   , _ctxHttpMgr  ∷ Manager }
+
+type MonadSweetroll = MonadReader SweetrollCtx
 
 instance HasHttpManager SweetrollCtx where
   getHttpManager = _ctxHttpMgr
 
-type MonadSweetroll = MonadReader SweetrollCtx
+instance HasGitsonLock Sweetroll where
+  getGitsonLock = asks _ctxLock
 
 newtype Sweetroll α = Sweetroll {
   runSweetroll ∷ ReaderT SweetrollCtx (ExceptT ServantErr IO) α
@@ -65,13 +70,15 @@ sweetrollToEither ctx = Nat $ runSweetrollEither ctx
 
 initCtx ∷ SweetrollConf → SweetrollSecrets → IO SweetrollCtx
 initCtx conf secs = do
-  httpClientMgr ← newManager
+  hmg ← newManager
   duk ← createDuktapeCtx
+  lck ← newMVar ()
   loadTemplates $ fromJust duk
   return SweetrollCtx { _ctxConf     = conf
                       , _ctxSecs     = secs
                       , _ctxDuk      = fromJust duk
-                      , _ctxHttpMgr  = httpClientMgr }
+                      , _ctxLock     = lck
+                      , _ctxHttpMgr  = hmg }
 
 loadTemplates ∷ DuktapeCtx → IO ()
 loadTemplates duk = do

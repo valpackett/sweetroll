@@ -22,7 +22,7 @@ import           Sweetroll.Monads
 
 -- TODO: rate limiting
 -- TODO: status viewing
--- TODO: verify that it links to target
+-- TODO: update existing comments
 
 receiveWebmention ∷ [(Text, Text)] → Sweetroll ()
 receiveWebmention allParams = do
@@ -33,26 +33,46 @@ receiveWebmention allParams = do
   void $ case map cs $ splitOn "/" $ drop 1 $ cs $ uriPath target of
     (category : slug : []) → do
       void $ guardJust errWrongPath $ documentIdFromName category slug
-      void $ fork $ processWebmention category slug source
+      void $ fork $ processWebmention category slug source target
       throwError respAccepted
     _ → throwError errWrongPath
   return ()
 
-processWebmention ∷ String → String → URI → Sweetroll ()
-processWebmention category slug source =
+processWebmention ∷ String → String → URI → URI → Sweetroll ()
+processWebmention category slug source target =
   void $ withSuccessfulRequestHtml source $ \resp →
-  withFetchEntryWithAuthors source resp $ \_ (mfE, _) →
-    transaction "." $ do
-      entrym ← readDocumentByName category slug
-      case entrym of
-        Just entry → do
-          let addResponse (Object ps) = Object $ HMS.insertWith concVal "comment" (Array $ V.singleton mfE) ps
-              addResponse x = x
-              concVal (Array new) (Array old) = Array $ new ++ old
-              concVal anew@(Array _) _ = anew
-              concVal _ old = old
-          saveDocumentByName category slug $ key "properties" %~ addResponse $ (entry ∷ Value)
-        _ → return ()
+  withFetchEntryWithAuthors source resp $ \_ (unverifiedMention, _) →
+  transaction "." $ do
+    entrym ← readDocumentByName category slug
+    case (entrym, verifyMention target unverifiedMention) of
+      (Just entry, Just mention) → do
+        let updatedEntry = key "properties" %~ addMention mention $ (entry ∷ Value)
+        saveDocumentByName category slug updatedEntry
+      _ → return ()
+
+verifyMention ∷ URI → Value → Maybe Value
+verifyMention t m | propIncludesURI t "in-reply-to" m = Just $ addFlag "x-sweetroll-verified-reply"  m
+verifyMention t m | propIncludesURI t "like-of"     m = Just $ addFlag "x-sweetroll-verified-like"   m
+verifyMention t m | propIncludesURI t "repost-of"   m = Just $ addFlag "x-sweetroll-verified-repost" m
+-- TODO: check content
+verifyMention _ _ = Nothing
+
+propIncludesURI ∷ URI → Text → Value → Bool
+propIncludesURI t p m = elem t $ catMaybes $ map (parseURI <=< unCite) $ fromMaybe V.empty $ m ^? key "properties" . key p . _Array
+  where unCite v@(Object _) = cs <$> v ^? key "value" . _String
+        unCite (String s)   = Just $ cs s
+        unCite _            = Nothing
+
+addFlag ∷ Text → Value → Value
+addFlag k (Object o) = Object $ HMS.insert k (Bool True) o
+addFlag _ v = v
+
+addMention ∷ Value → Value → Value
+addMention m (Object props) = Object $ HMS.insertWith updateOrAdd "comment" (Array $ V.singleton m) props
+  where updateOrAdd (Array new) (Array old) = Array $ new ++ old
+        updateOrAdd anew@(Array _) _ = anew
+        updateOrAdd _ old = old
+addMention _ x = x
 
 errNoURIInField ∷ LByteString → ServantErr
 errNoURIInField f = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]

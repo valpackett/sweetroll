@@ -3,7 +3,7 @@
 	<div class="reference-context reply-context u-in-reply-to h-cite">
 		in reply to
 		<% if (_.isObject(reply)) { %>
-			<%= templates.citeAuthors({ authors: reply.properties.authors }) %>
+			<%= templates.citeAuthors({ authors: reply.properties.author }) %>
 			<p>
 				<a class="p-name u-url" ${ scope.showRel ? 'rel="in-reply-to"' : '' } href="${ _.head(reply.properties.url) }">
 					<%- _.head(reply.properties.name) %>

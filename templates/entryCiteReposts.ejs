@@ -4,7 +4,7 @@
 		<a class="u-url" ${ scope.showRel ? 'rel="repost-of"' : '' } href="${ _.head(repost.properties.url) }">repost</a>
 		<% if (!_.isEmpty(repost.properties.authors)) { %>
 			from
-			<%= templates.citeAuthors({ authors: repost.properties.authors }) %>
+			<%= templates.citeAuthors({ authors: repost.properties.author }) %>
 		<% } %>
 	</div>
 <% }) %>

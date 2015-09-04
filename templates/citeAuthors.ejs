@@ -1,4 +1,4 @@
 <% _.forEach(scope.authors, function (author, i) { %>
-	<a class="p-author h-card" href="${ _.head(author.url) }"><%- _.head(author.name) %></a>
-	<%= (i - 1 == _.size(reply.properties.authors)) ? ', ' : '' %>
+	<a class="p-author h-card" href="${ _.head(author.properties.url) }"><%- _.head(author.properties.name) %></a>
+	<%= (i - 1 == _.size(scope.authors)) ? ', ' : '' %>
 <% }) %>

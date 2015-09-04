@@ -93,7 +93,7 @@ Use Micropub clients like [Micropublish](https://micropublish.herokuapp.com) and
 
 - [x] JS lodash templates
 - [x] receiving webmentions
-- [ ] [comments-presentation](http://indiewebcamp.com/comments-presentation)
+- [x] [comments-presentation](http://indiewebcamp.com/comments-presentation)
 - [ ] hashcash in webmentions
 - [ ] micropub updating and deleting (implement [FormUrlEncoded](https://github.com/haskell-servant/servant/blob/b9ce73fcac9643114ea4f98ad2fbf20e40109462/servant/src/Servant/API/ContentTypes.hs#L341) stuff for Value, To/FromJSON to support both form-urlencoded and JSON; // respond to ?q=syndicate-to with JSON too)
 - [ ] posting [photos](http://indiewebcamp.com/photos) (note: we already depend on `JuicyPixels` somehow)

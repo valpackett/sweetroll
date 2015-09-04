@@ -119,6 +119,9 @@ sweetrollStyle = do
     backgroundColor $ rgba 246 242 195 153
   "fragmention-exact" ? do
     backgroundColor "#FFF8A7"
+  "blockquote" ? do
+    paddingLeft $ em 0.4
+    borderLeft solid (em 0.2) $ rgb 67 214 214
 
   ".site-content" <> ".index-main" ? do
     "display" -: "-webkit-flex"
@@ -175,6 +178,20 @@ sweetrollStyle = do
     ".entry-footer" ? do
       borderTop solid (px 1) $ rgb 57 204 204
       borderColor $ rgba 57 204 204 82
+    ".entry-response" ? do
+      sym2 margin nil (em 0.4)
+      sym2 padding (em 0.8) (em 0.4)
+      nthChild "even" & do
+        backgroundColor $ rgba 230 230 230 60
+    ".entry-response-header" ? do
+      "img" ? do
+        maxHeight $ em 2
+        maxWidth $ em 2
+        verticalAlign middle
+        marginBottom $ em 0.15
+    ".entry-response-content" ? do
+      marginLeft $ em 0.899
+      marginTop $ em 0.2
 
   ".article-entry" ? do
     ".entry-header a" ? color "#222"
@@ -204,8 +221,6 @@ sweetrollStyle = do
     "a" ? color "#0064cf"
     "blockquote" ? do
       marginTop $ em 0.4
-      paddingLeft $ em 0.4
-      borderLeft solid (em 0.2) $ rgb 57 204 204
 
   ".social-profiles" ? do
     listStyleType none
@@ -280,7 +295,7 @@ sweetrollStyle = do
 
 pageParts, entryParts ∷ Selector
 pageParts = ".site-header" <> ".site-content" <> ".site-footer"
-entryParts = ".entry-header" <> ".entry-content" <> ".entry-footer"
+entryParts = ".entry-header" <> ".entry-content" <> ".entry-footer" <> ".entry-responses"
 
 grayedOut ∷ Css
 grayedOut = color "#aaa"

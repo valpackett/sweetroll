@@ -80,7 +80,7 @@ main = runCommand $ \opts _ → do
   when (isNothing origConf) . transaction "." . saveDocument "conf" "sweetroll" $ conf
 
   secretVal ← case secret opts of
-                k | length k >= 40 → return $ T.pack k
+                k | length k >= 40 || k == "TESTKEY" → return $ T.pack k
                 _ → do
                   hPutStrLn stderr "Warning: the --secret value is shorter than 40 characters. Not using it and generating a random one. Authentication tokens will expire after restarting Sweetroll."
                   randBytes ← getRandomBytes 64 ∷ IO BS.ByteString

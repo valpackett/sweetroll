@@ -41,21 +41,22 @@ receiveWebmention allParams = do
 processWebmention ∷ String → String → URI → URI → Sweetroll ()
 processWebmention category slug source target =
   void $ withSuccessfulRequestHtml source $ \resp →
-  withFetchEntryWithAuthors source resp $ \_ (unverifiedMention, _) →
+  withFetchEntryWithAuthors source resp $ \_ (mention, _) →
   transaction "." $ do
     entrym ← readDocumentByName category slug
-    case (entrym, verifyMention target unverifiedMention) of
-      (Just entry, Just mention) → do
+    case (entrym, verifyMention target mention) of
+      (Just entry, True) → do
+        putStrLn $ "Received valid webmention for " ++ tshow target ++ " from " ++ tshow source
         let updatedEntry = key "properties" %~ addMention mention $ (entry ∷ Value)
         saveDocumentByName category slug updatedEntry
-      _ → return ()
+      _ → putStrLn $ "Received invalid webmention for " ++ tshow target ++ " from " ++ tshow source ++ ": " ++ tshow mention
 
-verifyMention ∷ URI → Value → Maybe Value
-verifyMention t m | propIncludesURI t "in-reply-to" m = Just $ addFlag "x-sweetroll-verified-reply"  m
-verifyMention t m | propIncludesURI t "like-of"     m = Just $ addFlag "x-sweetroll-verified-like"   m
-verifyMention t m | propIncludesURI t "repost-of"   m = Just $ addFlag "x-sweetroll-verified-repost" m
+verifyMention ∷ URI → Value → Bool
+verifyMention t m | propIncludesURI t "in-reply-to" m = True
+verifyMention t m | propIncludesURI t "like-of"     m = True
+verifyMention t m | propIncludesURI t "repost-of"   m = True
 -- TODO: check content
-verifyMention _ _ = Nothing
+verifyMention _ _ = False
 
 propIncludesURI ∷ URI → Text → Value → Bool
 propIncludesURI t p m = elem t $ catMaybes $ map (parseURI <=< unCite) $ fromMaybe V.empty $ m ^? key "properties" . key p . _Array
@@ -63,13 +64,9 @@ propIncludesURI t p m = elem t $ catMaybes $ map (parseURI <=< unCite) $ fromMay
         unCite (String s)   = Just $ cs s
         unCite _            = Nothing
 
-addFlag ∷ Text → Value → Value
-addFlag k (Object o) = Object $ HMS.insert k (Bool True) o
-addFlag _ v = v
-
 addMention ∷ Value → Value → Value
 addMention m (Object props) = Object $ HMS.insertWith updateOrAdd "comment" (Array $ V.singleton m) props
-  where updateOrAdd (Array new) (Array old) = Array $ new ++ old
+  where updateOrAdd (Array new) (Array old) = Array $ old ++ new
         updateOrAdd anew@(Array _) _ = anew
         updateOrAdd _ old = old
 addMention _ x = x

@@ -91,13 +91,13 @@ Use Micropub clients like [Micropublish](https://micropublish.herokuapp.com) and
 
 ## TODO
 
-- [x] JS lodash templates
 - [x] receiving webmentions
-- [x] [comments-presentation](http://indiewebcamp.com/comments-presentation)
+- [x] [comments-presentation](https://indiewebcamp.com/comments-presentation)
+- [ ] handling [deleted](https://indiewebcamp.com/deleted#Handling) posts with `410 Gone`
 - [ ] hashcash in webmentions
 - [ ] micropub updating and deleting (implement [FormUrlEncoded](https://github.com/haskell-servant/servant/blob/b9ce73fcac9643114ea4f98ad2fbf20e40109462/servant/src/Servant/API/ContentTypes.hs#L341) stuff for Value, To/FromJSON to support both form-urlencoded and JSON; // respond to ?q=syndicate-to with JSON too)
-- [ ] posting [photos](http://indiewebcamp.com/photos) (note: we already depend on `JuicyPixels` somehow)
-- [ ] proxying reply-context and comments-presentation images (to avoid mixed content and possible tracking)
+- [ ] posting [photos](https://indiewebcamp.com/photos)
+- [ ] proxying reply-context and comments-presentation images (to avoid mixed content and possible tracking) (note: we already depend on `JuicyPixels` through Pandoc)
 - [ ] custom non-entry html pages
 - [ ] JS hooks for events like posting and webmentions (API: a Sweetroll object which is an EventEmitter and also has config/secrets getters; should be possible to make HTTP requests to e.g. send webmention notifications)
 - [ ] archive pages, ie. unpaginated pages

@@ -50,9 +50,8 @@
 
 			<% if (!commentIsLike && !commentIsRepost && !_.isEmpty(commentContent)) { %>
 				<blockquote class="entry-response-content e-content">
-					<% _.forEach(commentContent, function (content) { %>
-						<%= content.html || content.value || content %>
-					<% }) %>
+					<% var content = _.head(commentContent) %>
+					<%= content.html || content.value || content %>
 				</blockquote>
 			<% } %>
 

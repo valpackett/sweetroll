@@ -19,6 +19,7 @@ import qualified Data.Text as T
 import           Data.String.Conversions
 import           Data.String.Conversions.Monomorphic
 import           Safe (atMay)
+import           Network.URI (nullURI)
 import           Servant
 import           Sweetroll.Pages
 import           Sweetroll.Routes
@@ -41,7 +42,7 @@ instance MimeRender HTML Text where
 instance Templatable α ⇒ MimeRender HTML (View α) where
   mimeRender x v@(View conf renderer _) = mimeRender x $ renderer (templateName v) (withMeta $ context v)
     where withMeta d =
-            object [ "meta" .= object [ "base_uri" .= toLT (show $ baseURI conf)
+            object [ "meta" .= object [ "base_uri" .= toLT (show $ fromMaybe nullURI $ baseURI conf)
                                       , "site_name" .= siteName conf ]
                    , "data" .= d ]
 

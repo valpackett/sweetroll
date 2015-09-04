@@ -145,10 +145,11 @@ withFetchEntryWithAuthors ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ
                             URI → Response (Source μ ByteString) → (Value → (Value, [Value]) → μ α) → μ (Maybe α)
 withFetchEntryWithAuthors uri resp a = do
   htmlDoc ← responseBody resp $$ sinkDoc
-  let mfRoot = parseMf2 mf2Options $ documentRoot htmlDoc
+  let mf2Options' = mf2Options { baseUri = Just uri }
+      mfRoot = parseMf2 mf2Options' $ documentRoot htmlDoc
   case headMay =<< allMicroformatsOfType "h-entry" mfRoot of
     Just mfEntry@(mfE, mfPs) → do
-      authors ← entryAuthors mf2Options (\u → withSuccessfulRequestHtml u $ \resp' → liftM Just $ responseBody resp' $$ sinkDoc) uri mfRoot mfEntry
+      authors ← entryAuthors mf2Options' (\u → withSuccessfulRequestHtml u $ \resp' → liftM Just $ responseBody resp' $$ sinkDoc) uri mfRoot mfEntry
       let addAuthors (Object o) = Object $ HMS.adjust addAuthors' "properties" o
           addAuthors x = x
           addAuthors' (Object o) = Object $ HMS.insert "author" (Array $ V.fromList $ fromMaybe [] authors) o

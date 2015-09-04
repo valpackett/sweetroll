@@ -11,22 +11,12 @@
 	var matches = x.match(/^https?\:\/\/([^\/?#]+)/)
 	return (matches && matches[1]) || x
 } %>
-<% var onlyHttpUrl = function (x) {
-	if (_.startsWith(x, 'http://') || _.startsWith(x, 'https://') || _.startsWith(x, '//')) return x;
-	return 'javascript:void(0)';
-} %>
 <main class="site-main entry-main ${ isUntitled ? 'note' : 'article' }-main">
 	<article class="entry h-entry ${ isUntitled ? 'note' : 'article' }-entry">
 		<header class="entry-header">
-			<% if (!isUntitled) { %>
-				<h1 class="p-name">
-					<a href="${ data.permalink }" class="u-url u-uid" rel="bookmark" tabindex="-1">
-						<%- properties.name %>
-					</a>
-				</h1>
-			<% } %>
 
-			posted <time class="dt-published" datetime="${ _.head(properties.published) }">
+			posted on
+			<time class="dt-published" datetime="${ _.head(properties.published) }">
 				<% if (isUntitled) { %>
 					<a href="${ data.permalink }" class="u-url u-uid note-permalink" rel="bookmark">
 				<% } %>
@@ -35,6 +25,20 @@
 					</a>
 				<% } %>
 			</time>
+			<% if (!_.isEmpty(properties.updated) && (_.head(properties.updated) != _.head(properties.published))) { %>
+				/ updated on
+				<time class="dt-updated" datetime="${ _.head(properties.updated) }">
+					<%- moment.utc(_.head(properties.updated)).format('dddd, MMMM Do YYYY, HH:mm') %>
+				</time>
+			<% } %>
+
+			<% if (!isUntitled) { %>
+				<h1 class="p-name">
+					<a href="${ data.permalink }" class="u-url u-uid" rel="bookmark" tabindex="-1">
+						<%- properties.name %>
+					</a>
+				</h1>
+			<% } %>
 
 			<%= templates.entryCiteReplies({ entry: entry, showRel: true, showContent: true }) %>
 
@@ -87,47 +91,11 @@
 			</nav>
 		</footer>
 
-		<section class="entry-responses">
-			<% _.forEach(properties.comment, function (comment) { %>
-				<div class="entry-response h-cite">
-
-					<header class="entry-response-header">
-						<% _.forEach(comment.properties.author, function (author, i) { %>
-							<% if (author.properties) { %>
-								<a class="p-author h-card" href="${ onlyHttpUrl(_.head(author.properties.url)) }">
-									<img src="${ onlyHttpUrl(_.head(author.properties.photo)) }" alt="Avatar" class="u-photo">
-									<span class="p-name"><%- _.head(author.properties.name) %></span>
-								</a>
-							<% } else { %>
-								<%= author %>
-							<% } %>
-							<%= (i - 1 == _.size(comment.properties.author)) ? ', ' : '' %>
-						<% }) %>
-						<% if (_.isEmpty(comment.properties.author)) { %>
-							Someone
-						<% } %>
-
-						<% var responseUrl = onlyHttpUrl(_.head(comment.properties.url)) %>
-						<% if (comment['x-sweetroll-verified-like']) { %>
-							<a href="${ responseUrl }" class="u-url u-uid">liked this</a>.
-						<% } else if (comment['x-sweetroll-verified-repost']) { %>
-							<a href="${ responseUrl }" class="u-url u-uid">reposted this</a>.
-						<% } else if (comment['x-sweetroll-verified-reply']) { %>
-							wrote a <a href="${ responseUrl }" class="u-url u-uid">reply</a><%= _.isEmpty(comment.properties.content) ? '.' : ':' %>
-						<% } %>
-					</header>
-
-					<% if (comment['x-sweetroll-verified-reply'] && !_.isEmpty(comment.properties.content)) { %>
-						<blockquote class="entry-response-content e-content">
-							<% _.forEach(comment.properties.content, function (content) { %>
-								<%= content.html || content.value || content %>
-							<% }) %>
-						</blockquote>
-					<% } %>
-
-			</div>
-			<% }) %>
-		</section>
+		<% if (!_.isEmpty(properties.comment)) { %>
+			<section class="entry-responses">
+				<%= templates.entryComments({ entry: entry }) %>
+			</section>
+		<% } %>
 
 	</article>
 </main>

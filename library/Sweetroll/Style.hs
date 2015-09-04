@@ -30,7 +30,7 @@ sweetrollStyle = do
     "-webkit-text-size-adjust" -: "100%"
     fontFamily ["Helvetica Neue"] [sansSerif]
     fontSize $ px 16
-    "line-height" -: "1.3"
+    "line-height" -: "1.55"
     backgroundColor "#ffffff"
     color "#3b3b3b"
 
@@ -176,10 +176,12 @@ sweetrollStyle = do
       paddingTop $ em 0.4
     ".entry-content" ? fontSize (pct 110)
     ".entry-footer" ? do
+      marginTop $ em 1.4
+      paddingTop $ em 1.28
+    ".entry-footer" <> ".entry-responses" ? do
       borderTop solid (px 1) $ rgb 57 204 204
       borderColor $ rgba 57 204 204 82
     ".entry-response" ? do
-      sym2 margin nil (em 0.4)
       sym2 padding (em 0.8) (em 0.4)
       nthChild "even" & do
         backgroundColor $ rgba 230 230 230 60
@@ -189,9 +191,13 @@ sweetrollStyle = do
         maxWidth $ em 2
         verticalAlign middle
         marginBottom $ em 0.15
+        sym borderRadius $ px 3
     ".entry-response-content" ? do
       marginLeft $ em 0.899
-      marginTop $ em 0.2
+      marginTop $ em 0.4
+    ".entry-response-responses" ? do
+      sym margin $ em 0.6
+      marginLeft $ em 1.4
 
   ".article-entry" ? do
     ".entry-header a" ? color "#222"
@@ -200,8 +206,9 @@ sweetrollStyle = do
   ".entry-footer" ? do
     paddingTop $ em 0.5
     color "#999"
-    "line-height" -: "1.8"
-    "a" ? marginLeft (em 0.8)
+    "line-height" -: "2.2"
+    "a" ? do
+      sym2 padding (em 1) (em 0.6)
     "indie-action" # firstChild ** a ? marginLeft nil
 
   ".entry-main" ? do
@@ -241,7 +248,6 @@ sweetrollStyle = do
 
   query M.screen [M.maxWidth $ em 60] $ do
     ".note-in-list" ** ".permalink" ? do
-      marginTop $ em 0.75
       display block
 
   query M.screen [M.minWidth $ em 56] $ do

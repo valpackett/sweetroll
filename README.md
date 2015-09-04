@@ -95,7 +95,8 @@ Use Micropub clients like [Micropublish](https://micropublish.herokuapp.com) and
 - [x] [comments-presentation](https://indiewebcamp.com/comments-presentation)
 - [ ] handling [deleted](https://indiewebcamp.com/deleted#Handling) posts with `410 Gone`
 - [ ] hashcash in webmentions
-- [ ] micropub updating and deleting (implement [FormUrlEncoded](https://github.com/haskell-servant/servant/blob/b9ce73fcac9643114ea4f98ad2fbf20e40109462/servant/src/Servant/API/ContentTypes.hs#L341) stuff for Value, To/FromJSON to support both form-urlencoded and JSON; // respond to ?q=syndicate-to with JSON too)
+- [ ] micropub updating and deleting (implement `FromFormUrlEncoded` for Value, To/FromJSON to support both form-urlencoded and JSON; // respond to ?q=syndicate-to with JSON too)
+- [ ] respond to [WebFinger](https://webfinger.net) with a link to the index page & links parsed from the index page by the mf2 parser (that will help with [remoteStorage](https://remotestorage.io) setup! should be possible to make a remoteStorage server that uses IndieAuth)
 - [ ] posting [photos](https://indiewebcamp.com/photos)
 - [ ] proxying reply-context and comments-presentation images (to avoid mixed content and possible tracking) (note: we already depend on `JuicyPixels` through Pandoc)
 - [ ] custom non-entry html pages

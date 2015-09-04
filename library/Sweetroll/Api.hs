@@ -11,6 +11,7 @@ import qualified Network.HTTP.Link as L
 import           Network.URI
 import           Network.Wai
 import           Network.Wai.Middleware.Autohead
+import           Network.Wai.Middleware.Cors
 import           Network.Wai.Middleware.Static
 import           Network.Wai.Middleware.Routed
 import           Servant
@@ -75,7 +76,8 @@ sweetrollApp ∷ SweetrollCtx → Application
 sweetrollApp ctx = foldr ($) (sweetrollApp' ctx) [
                      staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
                    , routedMiddleware ((== Just "bower") . headMay) $ serveStaticFromLookup bowerComponents
-                   , autohead ]
+                   , autohead
+                   , simpleCors ]
   where sweetrollApp' ∷ SweetrollCtx → Application
         sweetrollApp' = serve sweetrollAPI . sweetrollServer
         sweetrollServer ∷ SweetrollCtx → Server SweetrollAPI

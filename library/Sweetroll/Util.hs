@@ -5,6 +5,7 @@
 module Sweetroll.Util where
 
 import           ClassyPrelude hiding (fromString, headMay)
+import           Control.Error.Util (hush)
 import           Data.Text (replace, strip)
 import           Data.Char (isSpace)
 import           Data.String.Conversions
@@ -17,7 +18,7 @@ import           Safe (headMay)
 import           Network.Wai (Middleware, responseLBS, pathInfo)
 import           Network.Mime (defaultMimeLookup)
 import           Network.HTTP.Types.Status (ok200)
-import           Servant (mimeRender, FormUrlEncoded)
+import           Servant (mimeRender, mimeUnrender, FormUrlEncoded)
 import           Sweetroll.Conf (pandocReaderOptions)
 
 type CategoryName = String
@@ -63,6 +64,10 @@ parseTags ts = mapMaybe (headMay . snd) $ scan r ts
 -- | Encodes key-value data as application/x-www-form-urlencoded.
 writeForm ∷ (ConvertibleStrings α Text, ConvertibleStrings β Text, ConvertibleStrings LByteString γ) ⇒ [(α, β)] → γ
 writeForm = fromLBS . mimeRender (Proxy ∷ Proxy FormUrlEncoded) . map (toST *** toST)
+
+-- | Decodes key-value data from application/x-www-form-urlencoded.
+readForm ∷ (ConvertibleStrings Text α , ConvertibleStrings Text β, ConvertibleStrings γ LByteString) ⇒ γ → Maybe [(α, β)]
+readForm x = map (fromST *** fromST) <$> (hush $ mimeUnrender (Proxy ∷ Proxy FormUrlEncoded) $ toLBS x)
 
 orEmptyMaybe ∷ IsString α ⇒ Maybe α → α
 orEmptyMaybe = fromMaybe ""

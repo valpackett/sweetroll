@@ -38,7 +38,7 @@ post = post' defaultRequest
 postAuthed ∷ Request → ByteString → LByteString → Application → IO SResponse
 postAuthed r u b a = do
   now ← getCurrentTime
-  let token = signAccessToken (secretKey def) "localhost" "me" now
+  let token = signAccessToken (secretKey def) "localhost" "me" now "post" "test"
       r' = r { requestHeaders = requestHeaders r ++ [ ("Authorization", "Bearer " ++ cs token) ] }
   post' r' u b a
 

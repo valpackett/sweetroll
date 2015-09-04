@@ -122,11 +122,6 @@ getRenderer = liftM renderer $ asks _ctxDuk
         txtVal (Right Nothing) = "TEMPLATE ERROR: returned nothing"
         txtVal (Left e) = "TEMPLATE ERROR: " ++ cs e
 
-request ∷ (ConvertibleStrings LByteString α, MonadIO μ, MonadSweetroll μ) ⇒ Request → μ (Response α)
-request req = do
-  resp ← httpLbs req
-  return $ resp { responseBody = cs $ responseBody resp }
-
 withSuccessfulRequest ∷ (MonadIO μ, MonadBaseControl IO μ, MonadSweetroll μ) ⇒
                         Request → (Response (Source μ ByteString) → μ (Maybe α)) → μ (Maybe α)
 withSuccessfulRequest req a =

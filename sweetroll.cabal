@@ -60,6 +60,7 @@ library
       , wai
       , wai-extra
       , wai-middleware-static
+      , wai-cors
       , servant
       , servant-server
       , clay

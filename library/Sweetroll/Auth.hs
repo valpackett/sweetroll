@@ -11,10 +11,14 @@ module Sweetroll.Auth (
 
 import           ClassyPrelude
 import           Control.Monad.Except (throwError)
+import           Data.Aeson
+import           Data.Conduit
+import qualified Data.Conduit.Combinators as C
 import           Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import           Data.Foldable (asum)
 import           Data.String.Conversions (cs)
 import qualified Data.List as L
+import qualified Data.Map as M
 import           Web.JWT hiding (header)
 import           Network.HTTP.Types
 import qualified Network.HTTP.Client as HC
@@ -53,39 +57,46 @@ fromHeader "" = Nothing
 fromHeader au = return $ drop 7 au -- 7 chars in "Bearer "
 
 getAuth ∷ JWT VerifiedJWT → Sweetroll [(Text, Text)]
-getAuth token = return [("me", cs meVal)]
-  where meVal = case sub $ claims token of
-                  Just me → show me
-                  _ → ""
+getAuth token = return $ [ ("me", fromMaybe "" (fmap tshow $ sub $ claims token)) ] ++ unreg
+  where unreg = mapMaybe unValue $ M.toList $ unregisteredClaims $ claims token
+        unValue (k, (String s)) = Just (k, s)
+        unValue _ = Nothing
 
-signAccessToken ∷ Text → Text → Text → UTCTime → Text
-signAccessToken key domain me now = encodeSigned HS256 (secret key) t
+signAccessToken ∷ Text → Text → Text → UTCTime → Text → Text → Text
+signAccessToken sec domain me now scope clientId = encodeSigned HS256 (secret sec) t
   where t = def { iss = stringOrURI domain
                 , sub = stringOrURI me
-                , iat = intDate $ utcTimeToPOSIXSeconds now }
+                , iat = intDate $ utcTimeToPOSIXSeconds now
+                , unregisteredClaims = M.fromList [ ("scope", String scope)
+                                                  , ("client_id", String clientId) ] }
 
-makeAccessToken ∷ Text → Sweetroll [(Text, Text)]
-makeAccessToken me = do
+makeAccessToken ∷ Text → Text → Text → Sweetroll [(Text, Text)]
+makeAccessToken me scope clientId = do
   domain ← getConfOpt domainName
   secs ← getSecs
   now ← liftIO getCurrentTime
-  return [ ("access_token", signAccessToken (secretKey secs) domain me now)
-         , ("scope", "post"), ("me", me) ]
+  return [ ("access_token", signAccessToken (secretKey secs) domain me now scope clientId)
+         , ("scope", scope)
+         , ("client_id", clientId)
+         , ("me", me) ]
 
 postLogin ∷ [(Text, Text)] → Sweetroll [(Text, Text)]
 postLogin params = do
-  let valid = makeAccessToken $ fromMaybe "unknown" $ lookup "me" params
   isTestMode ← getConfOpt testMode
-  if isTestMode then valid else do
-    indieAuthReq ← HC.parseUrl =<< getConfOpt indieAuthCheckEndpoint
-    resp ← request (indieAuthReq { HC.method = "POST"
-                                 , HC.requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
-                                 , HC.requestBody = HC.RequestBodyBS $ writeForm params }) ∷ Sweetroll (HC.Response LByteString)
-    if HC.responseStatus resp == ok200
-       then do
-         -- TODO: get scopes from the response
-         putStrLn $ cs $ "Authenticated a client: " ++ fromMaybe "unknown" (lookup "client_id" params)
-         valid
-       else do
-         putStrLn $ cs $ "Authentication error: " ++ show params
-         throwError err401
+  if isTestMode
+     then makeAccessToken (fromMaybe "unknown" $ lookup "me" params) "post" "example.com"
+     else do
+       indieAuthReq ← HC.parseUrl =<< getConfOpt indieAuthCheckEndpoint
+       let req = indieAuthReq { HC.method = "POST"
+                              , HC.requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
+                              , HC.requestBody = HC.RequestBodyBS $ writeForm params }
+       resp ← withSuccessfulRequest req $ \resp → liftM readForm $ HC.responseBody resp $$ C.sinkLazy ∷ Sweetroll (Maybe [(Text, Text)]) -- TODO: check content-type
+       case resp of
+         Just indieAuthRespParams → do
+           putStrLn $ cs $ "Authenticated a client: " ++ fromMaybe "unknown" (lookup "client_id" params)
+           makeAccessToken (fromMaybe "" $ lookup "me" indieAuthRespParams)
+                           (fromMaybe "post" $ lookup "scope" indieAuthRespParams)
+                           (fromMaybe "example.com" $ lookup "client_id" indieAuthRespParams)
+         Nothing → do
+           putStrLn $ cs $ "Authentication error: " ++ show params
+           throwError err401

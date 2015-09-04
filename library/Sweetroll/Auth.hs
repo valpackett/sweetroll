@@ -23,6 +23,7 @@ import           Web.JWT hiding (header)
 import           Network.HTTP.Types
 import qualified Network.HTTP.Client as HC
 import qualified Network.Wai as Wai
+import           Network.URI
 import           Servant
 import           Servant.Server.Internal (succeedWith)
 import           Servant.Server.Internal.Enter
@@ -93,10 +94,13 @@ postLogin params = do
        resp ← withSuccessfulRequest req $ \resp → liftM readForm $ HC.responseBody resp $$ C.sinkLazy ∷ Sweetroll (Maybe [(Text, Text)]) -- TODO: check content-type
        case resp of
          Just indieAuthRespParams → do
+           domain ← getConfOpt domainName
+           let me = fromMaybe "" $ lookup "me" indieAuthRespParams
+           guardBool err401 $ Just domain == (fmap (cs . uriRegName) $ uriAuthority $ fromMaybe nullURI $ parseURI $ cs me)
            putStrLn $ cs $ "Authenticated a client: " ++ fromMaybe "unknown" (lookup "client_id" params)
-           makeAccessToken (fromMaybe "" $ lookup "me" indieAuthRespParams)
+           makeAccessToken me
                            (fromMaybe "post" $ lookup "scope" indieAuthRespParams)
-                           (fromMaybe "example.com" $ lookup "client_id" indieAuthRespParams)
+                           (fromMaybe "example.com" $ lookup "client_id" params)
          Nothing → do
            putStrLn $ cs $ "Authentication error: " ++ show params
            throwError err401

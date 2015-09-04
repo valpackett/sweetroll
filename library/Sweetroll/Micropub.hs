@@ -23,17 +23,17 @@ import           Network.URI
 import           Network.HTTP.Client hiding (Proxy)
 import           Network.HTTP.Client.Internal (setUri)
 import qualified Network.HTTP.Types as HT
+import           Web.JWT hiding (header, decode)
 import           Servant
 import           Gitson
 import           Sweetroll.Conf
-import           Sweetroll.Auth
 import           Sweetroll.Util
 import           Sweetroll.Monads
 import           Sweetroll.Routes
 import           Sweetroll.Webmention.Send
 
 postMicropub ∷ JWT VerifiedJWT → [(Text, Text)] → Sweetroll (Headers '[Header "Location" Text] [(Text, Text)])
-postMicropub _ allParams = do
+postMicropub token allParams = do
   case lookup "h" allParams of
     Just "entry" → do
 
@@ -45,9 +45,10 @@ postMicropub _ allParams = do
       inReplyTo ← paramToEntries "in-reply-to"
       likeOf ←    paramToEntries "like-of"
       repostOf ←  paramToEntries "repost-of"
-      let replyContexts = [ "in-reply-to" .= map fst (catMaybes inReplyTo)
-                          , "like-of"     .= map fst (catMaybes likeOf)
-                          , "repost-of"   .= map fst (catMaybes repostOf) ]
+      let moreFields = [ "in-reply-to" .= map fst (catMaybes inReplyTo)
+                       , "like-of"     .= map fst (catMaybes likeOf)
+                       , "repost-of"   .= map fst (catMaybes repostOf)
+                       , "client-id"   .= filter (/= "example.com") (catMaybes [ lookup "client_id" $ unregisteredClaims $ claims token ]) ]
 
       -- ## Webmention-to-Syndication
       (MkSyndicationConfig syndConf) ← getConfOpt syndicationConfig
@@ -65,7 +66,7 @@ postMicropub _ allParams = do
           absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base
 
       -- ## Creating the entry
-      let entry = makeEntry allParams now absUrl content replyContexts syndicationLinks
+      let entry = makeEntry allParams now absUrl content moreFields syndicationLinks
       transaction "./" $ saveNextDocument category slug entry
       -- TODO: copy content for reposts
 
@@ -112,7 +113,7 @@ decideReader pars | f == "textile"     = readTextile
   where f = orEmptyMaybe $ lookup "format" pars
 
 makeEntry ∷ [(Text, Text)] → UTCTime → URI → Maybe Pandoc → [Pair] → Text → Value
-makeEntry pars now absUrl content replyContexts syndicationLinks =
+makeEntry pars now absUrl content moreFields syndicationLinks =
   object [ "type"       .= [ asText "h-entry" ]
          , "properties" .= object (("syndication" .= ([ ] ∷ [Value])) : filter (not . emptyVal . snd) props) ]
   where par = map cs . maybeToList . (flip lookup) pars
@@ -125,7 +126,7 @@ makeEntry pars now absUrl content replyContexts syndicationLinks =
                 , "updated"     .= [ now ]
                 , "author"      .= par "author"
                 , "category"    .= filter (not . null) (join $ parseTags <$> par "category")
-                , "url"         .= [ tshow absUrl ] ] ++ replyContexts
+                , "url"         .= [ tshow absUrl ] ] ++ moreFields
 
 notifyPuSH ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
              URI → μ ()

@@ -25,8 +25,11 @@
 					</a>
 				<% } %>
 			</time>
+			<% if (!_.isEmpty(properties['client-id'])) { %>
+				using <a href="${ _.head(properties['client-id']) }" class="u-client-id"><%= _.head(properties['client-id']).replace('http://', '').replace('https://', '') %></a>
+			<% } %>
 			<% if (!_.isEmpty(properties.updated) && (_.head(properties.updated) != _.head(properties.published))) { %>
-				/ updated on
+				and updated on
 				<time class="dt-updated" datetime="${ _.head(properties.updated) }">
 					<%- moment.utc(_.head(properties.updated)).format('dddd, MMMM Do YYYY, HH:mm') %>
 				</time>

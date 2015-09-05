@@ -1,4 +1,3 @@
--- here be dragons
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-} -- because Data.Setters
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
 {-# LANGUAGE TemplateHaskell #-}

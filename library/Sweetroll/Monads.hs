@@ -2,7 +2,7 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, QuasiQuotes #-}
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, UndecidableInstances #-}
 {-# LANGUAGE RankNTypes, TypeOperators, TypeFamilies, DataKinds #-}
-{-# LANGUAGE PackageImports, ConstraintKinds, FlexibleContexts #-}
+{-# LANGUAGE ConstraintKinds, FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | The Sweetroll monad that contains the application context + some
@@ -102,7 +102,7 @@ loadTemplates duk = do
       thtml ← (try $ readFile $ "templates" </> tname) ∷ IO (Either IOException ByteString)
       case thtml of
         Right h → setTpl tname h
-        Left e → void $ putStrLn $ "Error when reading template " ++ cs tname ++ ": " ++ (cs $ show e)
+        Left e → void $ putStrLn $ "Error when reading template " ++ cs tname ++ ": " ++ cs (show e)
 
 getConf ∷ MonadSweetroll μ ⇒ μ SweetrollConf
 getConf = asks _ctxConf
@@ -152,16 +152,15 @@ withFetchEntryWithAuthors uri resp a = do
       liftM Just $ a mfRoot (addAuthors mfE, mfPs)
     _ → return Nothing
 
-guardJustP ∷ MonadError ServantErr μ ⇒ ServantErr → (Maybe α) → μ α
-guardJustP e x = case x of
-                   Just x' → return x'
-                   Nothing → throwError e
+guardJustP ∷ MonadError ServantErr μ ⇒ ServantErr → Maybe α → μ α
+guardJustP _ (Just x) = return x
+guardJustP e Nothing = throwError e
 
-guardJustM ∷ MonadError ServantErr μ ⇒ (μ ServantErr) → μ (Maybe α) → μ α
+guardJustM ∷ MonadError ServantErr μ ⇒ μ ServantErr → μ (Maybe α) → μ α
 guardJustM ea a = a >>= \x → ea >>= \e → guardJustP e x
 
 guardJust ∷ MonadError ServantErr μ ⇒ ServantErr → μ (Maybe α) → μ α
-guardJust e a = guardJustM (return e) a
+guardJust e = guardJustM (return e)
 
 guardBool ∷ MonadError ServantErr μ ⇒ ServantErr → Bool → μ ()
-guardBool e x = if x then return () else throwError e
+guardBool e x = unless x $ throwError e

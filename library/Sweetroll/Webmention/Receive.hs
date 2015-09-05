@@ -31,7 +31,7 @@ receiveWebmention allParams = do
   base ← getConfOpt baseURI
   guardBool errWrongDomain $ (uriRegName <$> uriAuthority target) == (uriRegName <$> uriAuthority base)
   void $ case map cs $ splitOn "/" $ drop 1 $ cs $ uriPath target of
-    (category : slug : []) → do
+    [ category, slug ] → do
       void $ guardJust errWrongPath $ documentIdFromName category slug
       void $ fork $ processWebmention category slug source target
       throwError respAccepted

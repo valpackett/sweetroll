@@ -67,7 +67,7 @@ writeForm = fromLBS . mimeRender (Proxy ∷ Proxy FormUrlEncoded) . map (toST **
 
 -- | Decodes key-value data from application/x-www-form-urlencoded.
 readForm ∷ (ConvertibleStrings Text α , ConvertibleStrings Text β, ConvertibleStrings γ LByteString) ⇒ γ → Maybe [(α, β)]
-readForm x = map (fromST *** fromST) <$> (hush $ mimeUnrender (Proxy ∷ Proxy FormUrlEncoded) $ toLBS x)
+readForm x = map (fromST *** fromST) <$> hush (mimeUnrender (Proxy ∷ Proxy FormUrlEncoded) $ toLBS x)
 
 orEmptyMaybe ∷ IsString α ⇒ Maybe α → α
 orEmptyMaybe = fromMaybe ""
@@ -81,5 +81,5 @@ serveStaticFromLookup files app req respond =
     Just bs → respond $ responseLBS ok200 [("Content-Type", ctype)] $ cs bs
     Nothing → app req respond
   where pth = cs $ intercalate "/" reqpath
-        ctype = defaultMimeLookup $ fromMaybe "" $ lastMay reqpath
+        ctype = defaultMimeLookup $ orEmptyMaybe $ lastMay reqpath
         reqpath = drop 1 $ pathInfo req

@@ -1,7 +1,34 @@
-:set -itest-suite/ -package hspec -package Glob -package doctest -package directory -package case-insensitive
+:set -itest-suite/
+:set -package hspec -package Glob -package doctest -package directory -package case-insensitive
 
-:def serve  \_ -> return $ ":load library/Sweetroll/Api.hs\n:m + Data.Default Sweetroll.Api System.Directory Network.Wai.Handler.Warp\nsetCurrentDirectory \"/tmp/sroll\"\n\n(initSweetrollApp (def {testMode = Just True}) (def {secretKey = \"TESTKEY\"})) >>= runSettings (setPort 3000 defaultSettings)\n\n"
-:def app    \_ -> return $ ":load test-suite/TestUtil.hs library/Sweetroll/Api.hs\n:m + Data.Default Sweetroll.Api TestUtil\nlet app = initSweetrollApp def def def\n"
-:def dtest  \_ -> return $ ":load test-suite/DocTest.hs\n:reload\n:ctags\n:main"
-:def test   \_ -> return $ ":load test-suite/Spec.hs\n:reload\n:ctags\n:main --color"
-:def retest \_ -> return $ ":load test-suite/Spec.hs\n:reload\n:ctags\n:main --color --rerun"
+:{
+:def app const $ return $ unlines
+     [ ":load test-suite/TestUtil.hs library/Sweetroll/Api.hs"
+     , ":m + Data.Default Sweetroll.Api Sweetroll.Conf TestUtil"
+     , "app <- initSweetrollApp (def {testMode = Just True}) (def {secretKey = \"TESTKEY\"})" ]
+:}
+
+:{
+:def serve \port -> return $ unlines
+     [ ":m + System.Directory Network.Wai.Handler.Warp Network.Wai.Middleware.RequestLogger"
+     , ":app"
+     , "setCurrentDirectory \"/tmp/sroll\""
+     , "runSettings (setPort " ++ (if port == "" then "3000" else port) ++ " defaultSettings) (logStdoutDev app)" ]
+:}
+
+:def test const $ return $ unlines [ ":load test-suite/Spec.hs", ":reload", ":main --color", ":ctags" ]
+
+:load executable/Main.hs
+
+let putCmd x y = putStr "   " >> green x >> setReset >> putStr " ~~~ " >> putStrLn y
+
+putSweetroll
+putStrLn "\n Available commands:"
+putCmd ":app       " "load the Sweetroll WAI Application into 'app'"
+putCmd ":serve     " "load :app and serve it on localhost:3000 with /tmp/sroll as the repo"
+putCmd ":serve 1234" "(or on any port really)"
+putCmd ":test      " "run hspec tests (and :ctags while we're at it)"
+putStrLn ""
+
+:set -XNoImplicitPrelude
+:m ClassyPrelude

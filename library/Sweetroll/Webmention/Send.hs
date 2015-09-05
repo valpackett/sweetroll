@@ -22,11 +22,12 @@ import           Sweetroll.Util
 import           Sweetroll.Conf
 import           Sweetroll.Monads
 
+type SourceURI = URI
 type TargetURI = URI
 type EndpointURI = URI
 
 sendWebmention ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
-                 URI → TargetURI → EndpointURI → μ (Maybe (Response LByteString))
+                 SourceURI → TargetURI → EndpointURI → μ (Maybe (Response LByteString))
 sendWebmention from to endpoint = do
   req ← setUri def endpoint
   let reqBody = writeForm [(asText "source", tshow from), ("target", tshow to)]
@@ -39,14 +40,14 @@ sendWebmention from to endpoint = do
     return $ Just $ resp { responseBody = body }
 
 sendWebmentions ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
-                  URI → [(TargetURI, EndpointURI)] → μ [Maybe (Response LByteString)]
+                  SourceURI → [(TargetURI, EndpointURI)] → μ [Maybe (Response LByteString)]
 sendWebmentions from ms = mapM (uncurry $ sendWebmention from) $ nub ms
 
 
 linksFromHeader ∷ ∀ body. Response body → [Link]
 linksFromHeader r = fromMaybe [] (lookup "Link" (responseHeaders r) >>= parseLinkHeader . decodeUtf8)
 
-discoverWebmentionEndpoints ∷ Value → [Link] → [URI]
+discoverWebmentionEndpoints ∷ Value → [Link] → [EndpointURI]
 discoverWebmentionEndpoints = discoverEndpoints [ "webmention", "http://webmention.org/" ]
 
 getWebmentionEndpoint ∷ (MonadThrow μ, MonadSweetroll μ) ⇒
@@ -67,11 +68,9 @@ findWebmentionEndpoints targets = do
 
 contentWebmentions ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
                      Maybe P.Pandoc → μ [(TargetURI, EndpointURI)]
-contentWebmentions content =
-  case content of
-    Nothing → return []
-    Just p → do
-      let extractLink (P.Link _ (u, _)) = catMaybes [ parseURI u ]
-          extractLink _ = []
-          links = PW.query extractLink p
-      findWebmentionEndpoints links
+contentWebmentions Nothing = return []
+contentWebmentions (Just p) = do
+  let extractLink (P.Link _ (u, _)) = catMaybes [ parseURI u ]
+      extractLink _ = []
+      links = PW.query extractLink p
+  findWebmentionEndpoints links

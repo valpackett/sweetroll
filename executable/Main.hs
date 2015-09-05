@@ -87,15 +87,16 @@ main = runCommand $ \opts _ → do
                   return $ T.pack $ show $ hashWith SHA3_512 randBytes
   let secs = def { secretKey = secretVal }
 
-  let app' = initSweetrollApp conf secs
-      app = case devlogging opts of
-              Just True → return . logStdoutDev =<< app'
-              _ → app'
+  let addLogging = case devlogging opts of
+                     Just True → logStdoutDev
+                     _ → id
+
+  app ← liftM addLogging $ initSweetrollApp conf secs
   case protocol opts of
-    "http" → putSweetroll >> app >>= runSettings warpSettings
+    "http" → putSweetroll >> runSettings warpSettings app
     "unix" → putSweetroll >>
       bracket (bindPath $ socket opts)
               S.close
-              (\sock → app >>= runSettingsSocket warpSettings sock)
-    "cgi" → app' >>= CGI.run
+              (\sock → runSettingsSocket warpSettings sock app)
+    "cgi" → CGI.run app
     _ → putStrLn $ "Unsupported protocol: " ++ protocol opts

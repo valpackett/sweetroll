@@ -44,7 +44,7 @@ instance HasServer sublayout ⇒ HasServer (AuthProtect :> sublayout) where
     case asum [ L.lookup hAuthorization (Wai.requestHeaders req) >>= fromHeader
               , join $ L.lookup "access_token" $ Wai.queryString req ] of
       Nothing → respond . succeedWith $ Wai.responseLBS status401 [] "Authorization/access_token not found."
-      Just tok → do
+      Just tok →
         case decodeAndVerifySignature (secret secKey) (cs tok) of
           Nothing → respond . succeedWith $ Wai.responseLBS status401 [] "Invalid auth token."
           Just decodedToken → route (Proxy ∷ Proxy sublayout) (subserver decodedToken) req respond
@@ -58,9 +58,9 @@ fromHeader "" = Nothing
 fromHeader au = return $ drop 7 au -- 7 chars in "Bearer "
 
 getAuth ∷ JWT VerifiedJWT → Sweetroll [(Text, Text)]
-getAuth token = return $ [ ("me", fromMaybe "" (fmap tshow $ sub $ claims token)) ] ++ unreg
+getAuth token = return $ [ ("me", maybe "" tshow $ sub $ claims token) ] ++ unreg
   where unreg = mapMaybe unValue $ M.toList $ unregisteredClaims $ claims token
-        unValue (k, (String s)) = Just (k, s)
+        unValue (k, String s) = Just (k, s)
         unValue _ = Nothing
 
 signAccessToken ∷ Text → Text → Text → UTCTime → Text → Text → Text
@@ -91,11 +91,12 @@ postLogin params = do
        let req = indieAuthReq { HC.method = "POST"
                               , HC.requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
                               , HC.requestBody = HC.RequestBodyBS $ writeForm params }
-       resp ← withSuccessfulRequest req $ \resp → liftM readForm $ HC.responseBody resp $$ C.sinkLazy ∷ Sweetroll (Maybe [(Text, Text)]) -- TODO: check content-type
+       resp ← withSuccessfulRequest req $ \resp →
+                liftM readForm $ HC.responseBody resp $$ C.sinkLazy ∷ Sweetroll (Maybe [(Text, Text)]) -- TODO: check content-type
        case resp of
          Just indieAuthRespParams → do
            domain ← getConfOpt domainName
-           let me = fromMaybe "" $ lookup "me" indieAuthRespParams
+           let me = orEmptyMaybe $ lookup "me" indieAuthRespParams
            guardBool err401 $ Just domain == (fmap (cs . uriRegName) $ uriAuthority $ fromMaybe nullURI $ parseURI $ cs me)
            putStrLn $ cs $ "Authenticated a client: " ++ fromMaybe "unknown" (lookup "client_id" params)
            makeAccessToken me

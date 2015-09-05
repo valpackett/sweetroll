@@ -5,8 +5,11 @@ module Sweetroll.ApiSpec (spec) where
 
 import           ClassyPrelude
 import           Control.Lens hiding (Index, re, parts, (.=), contains)
+import           Control.Monad.Trans.Writer
 import           Test.Hspec
 import           System.Directory
+import           Data.Conduit.Shell (run, proc, conduit, ($|))
+import           Data.Conduit.Combinators (sinkNull)
 import           Data.Aeson.Lens
 import           Data.Default
 import           Data.Aeson
@@ -56,6 +59,12 @@ spec = around_ inDir $ do
     it "returns 404 for nonexistent entries" $ do
       resp ← app >>= get "/things/not-a-thing"
       simpleStatus resp `shouldBe` notFound404
+
+    it "returns 410 for deleted entries" $ do
+      transaction' $ saveNextDocument "gonethings" "gone-thing" $ mf2o [ "name" .= [ asText "something" ] ]
+      transaction' $ tell [ void $ run (proc "git" [ "rm", "gonethings/000001-gone-thing.json" ] $| conduit sinkNull) ]
+      resp ← app >>= get "/gonethings/gone-thing"
+      simpleStatus resp `shouldBe` gone410
 
     it "renders entries" $ do
       transaction' $ saveNextDocument "articles" "hello-world" $ mf2o [ "name" .= [ asText "Hello, World!" ] ]

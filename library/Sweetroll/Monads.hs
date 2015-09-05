@@ -152,13 +152,16 @@ withFetchEntryWithAuthors uri resp a = do
       liftM Just $ a mfRoot (addAuthors mfE, mfPs)
     _ → return Nothing
 
-guardJust ∷ MonadError ServantErr μ ⇒ ServantErr → μ (Maybe α) → μ α
-guardJust e a = a >>= \x → guardJustP e x
-
 guardJustP ∷ MonadError ServantErr μ ⇒ ServantErr → (Maybe α) → μ α
 guardJustP e x = case x of
                    Just x' → return x'
                    Nothing → throwError e
+
+guardJustM ∷ MonadError ServantErr μ ⇒ (μ ServantErr) → μ (Maybe α) → μ α
+guardJustM ea a = a >>= \x → ea >>= \e → guardJustP e x
+
+guardJust ∷ MonadError ServantErr μ ⇒ ServantErr → μ (Maybe α) → μ α
+guardJust e a = guardJustM (return e) a
 
 guardBool ∷ MonadError ServantErr μ ⇒ ServantErr → Bool → μ ()
 guardBool e x = if x then return () else throwError e

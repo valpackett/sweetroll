@@ -7,6 +7,9 @@ module Sweetroll.Api where
 import           ClassyPrelude
 import           Data.Maybe (fromJust)
 import           Data.Aeson
+import           Data.String.Conversions
+import           Data.Conduit.Shell (run, proc, conduit, ProcessException, ($|), (=$=))
+import qualified Data.Conduit.Combinators as CL
 import qualified Network.HTTP.Link as L
 import           Network.URI
 import           Network.Wai
@@ -52,13 +55,13 @@ getIndex = do
 getCat ∷ String → Maybe Int → Maybe Int → Sweetroll (WithLink (View CatPage))
 getCat catName before after = do
   ipp ← getConfOpt itemsPerPage
-  slice ← guardJust err404 $ liftM snd $ readCategory ipp before after catName
+  slice ← guardJustM (renderError err404 "404") $ liftM snd $ readCategory ipp before after catName
   selfLink ← genLink "self" $ sliceSelf slice
   addLinks [selfLink] $ view $ CatPage catName slice
 
 getEntry ∷ String → String → Sweetroll (WithLink (View EntryPage))
 getEntry catName slug = do
-  entry ← guardJust err404 $ readDocumentByName catName slug
+  entry ← guardJustM (notFoundOrGone catName slug) $ readDocumentByName catName slug
   -- TODO: cacheHTTPDate (maximumMay $ entryUpdated e)
   otherSlugs ← listDocumentKeys catName
   selfLink ← genLink "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy EntryRoute) catName slug
@@ -121,6 +124,7 @@ readCategory perPage before after catName = liftIO $ do
   maybes ← mapM (readEntry catName . snd) items
   return $ (catName, ) $ case sequence maybes of
     Nothing → Nothing
+    Just [] → Nothing
     Just ms → Just $ Slice {
                 sliceItems  = ms
               , sliceBefore = case (fst <$> lastMay allItems, fst <$> lastMay items) of
@@ -141,3 +145,13 @@ visibleCat (slug, Just cat) = (not . null $ sliceItems cat)
                               && slug /= "static"
                               && slug /= "conf"
 visibleCat (_, Nothing) = False
+
+notFoundOrGone ∷ (MonadIO μ, MonadSweetroll μ) ⇒ CategoryName → EntrySlug → μ ServantErr
+notFoundOrGone catName slug = do
+  isGone ← liftIO (try $ run (proc "git" [ "log", "--all", "--diff-filter=D", "--find-renames", "--name-only", "--pretty=format:" ]
+                              $| conduit (CL.linesUnboundedAscii
+                                          =$= CL.any (\x → cs catName `isPrefixOf` x && (cs slug ++ ".json") `isSuffixOf` x)))
+                   ∷ IO (Either ProcessException Bool))
+  case isGone of
+    Right True → renderError err410 "410"
+    _ → renderError err404 "404"

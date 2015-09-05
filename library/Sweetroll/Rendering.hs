@@ -20,6 +20,7 @@ import           Data.String.Conversions
 import           Data.String.Conversions.Monomorphic
 import           Safe (atMay)
 import           Network.URI (nullURI)
+import           Network.HTTP.Types
 import           Servant
 import           Sweetroll.Pages
 import           Sweetroll.Routes
@@ -40,11 +41,13 @@ instance MimeRender HTML Text where
   mimeRender _ = cs
 
 instance Templatable α ⇒ MimeRender HTML (View α) where
-  mimeRender x v@(View conf renderer _) = mimeRender x $ renderer (templateName v) (withMeta $ context v)
-    where withMeta d =
-            object [ "meta" .= object [ "base_uri" .= toLT (show $ fromMaybe nullURI $ baseURI conf)
-                                      , "site_name" .= siteName conf ]
-                   , "data" .= d ]
+  mimeRender x v@(View conf renderer _) = mimeRender x $ renderer (templateName v) (withMeta conf $ context v)
+
+withMeta ∷ ToJSON α ⇒ SweetrollConf → α → Value
+withMeta conf d =
+  object [ "meta" .= object [ "base_uri" .= toLT (show $ fromMaybe nullURI $ baseURI conf)
+                            , "site_name" .= siteName conf ]
+         , "data" .= d ]
 
 instance Accept CSS where
   contentType _ = "text" // "css"
@@ -106,3 +109,10 @@ instance Templatable IndexPage where
   context (View conf renderer (IndexPage cats)) = ctx
     where ctx = object [ "categories" .= map catContext (sortOn (fromMaybe 999 . flip elemIndex (fromMaybe (fromJust $ categoryOrder def) $ categoryOrder conf) . fst) cats) ]
           catContext (n, p) = context (View conf renderer (CatPage n p))
+
+renderError ∷ MonadSweetroll μ ⇒ ServantErr → ByteString → μ ServantErr
+renderError origErr tplName = do
+  renderer ← getRenderer
+  conf ← getConf
+  return $ origErr { errHeaders = (hContentType, "text/html; charset=utf-8") : errHeaders origErr
+                   , errBody = cs $ renderer tplName (withMeta conf $ object []) }

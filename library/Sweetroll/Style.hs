@@ -78,12 +78,12 @@ sweetrollStyle = do
     color black
   small ? fontSize (pct 80)
   sub <> sup ? do
-    fontSize $ pct 80
+    fontSize $ pct 75
     lineHeight nil
     position relative
     verticalAlign baseline
-  sub ? top (em (-0.5))
-  sup ? bottom (em (-0.25))
+  sup ? top (em (-0.5))
+  sub ? bottom (em (-0.25))
   img ? do
     borderWidth nil
     maxWidth $ pct 100

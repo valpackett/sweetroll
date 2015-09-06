@@ -5,7 +5,7 @@ A website engine for [the indie web] with curved swords. *Curved! Swords!*
 - uses [Git]+[JSON] for storage
 - supports [Micropub] for posting
 - sends [Webmentions]
-- supports the webmention-to-[syndication] process ([Bridgy Publish])
+- supports the webmention-to-[syndication] / Syndicate by Reference process ([Bridgy Publish])
 - supports [indie-config]
 - has a [JSON Web Tokens]-based [token-endpoint]
 - allows posting in [CommonMark Markdown] and other markup languages (powered by [Pandoc])
@@ -94,9 +94,12 @@ Use Micropub clients like [Micropublish](https://micropublish.herokuapp.com) and
 - [x] receiving webmentions
 - [x] [comments-presentation](https://indiewebcamp.com/comments-presentation)
 - [x] handling [deleted](https://indiewebcamp.com/deleted#Handling) posts with `410 Gone`
+- [ ] Syndicate by Reference: use the `Location` header instead of JSON
 - [ ] hashcash in webmentions
 - [ ] micropub updating and deleting (implement `FromFormUrlEncoded` for Value, To/FromJSON to support both form-urlencoded and JSON; // respond to ?q=syndicate-to with JSON too)
-- [ ] respond to [WebFinger](https://webfinger.net) with a link to the index page & links parsed from the index page by the mf2 parser
+- [ ] indieweb-algorithms: [mf2-shim](https://github.com/indieweb/php-mf2-shim)
+- [ ] templates: more consistency / abstraction with dates and reply buttons, etc.
+- [ ] respond to [WebFinger](https://webfinger.net) with a link to the index page & links parsed from the index page by the mf2 parser & custom links from the config
 - [ ] posting [photos](https://indiewebcamp.com/photos)
 - [ ] proxying reply-context and comments-presentation images (to avoid mixed content and possible tracking) (note: we already depend on `JuicyPixels` through Pandoc)
 - [ ] custom non-entry html pages

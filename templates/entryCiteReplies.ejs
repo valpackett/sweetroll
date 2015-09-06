@@ -4,18 +4,24 @@
 		in reply to
 		<% if (_.isObject(reply)) { %>
 			<%= templates.citeAuthors({ authors: reply.properties.author }) %>
-			<p>
-				<a class="p-name u-url" ${ scope.showRel ? 'rel="in-reply-to"' : '' } href="${ _.head(reply.properties.url) }">
-					<%- _.head(reply.properties.name) %>
-				</a>
-			</p>
-			<% if (scope.showContent && !_.isEmpty(reply.properties.content)) { %>
-				<blockquote class="reply-content">
-					<% _.forEach(reply.properties.content, function (content) { %>
-						<%= content.html || content.value || content %>
-					<% }) %>
-				</blockquote>
-			<% } %>
+
+			<% var content = _.head(scope.showContent
+				? _(reply.properties.content || []).concat(reply.properties.summary || [], reply.properties.name || []).value()
+				: _(reply.properties.name || []).concat(reply.properties.summary || [], reply.properties.content || []).value()) %>
+			<blockquote class="reply-content">
+				<%= content.html || content.value || content %>
+			</blockquote>
+
+			<a class="p-name u-url reply-permalink" ${ scope.showRel ? 'rel="in-reply-to"' : '' } href="${ _.head(reply.properties.url) }">
+				<% if (!_.isEmpty(reply.properties.published)) { %>
+					<time class="dt-published" datetime="${ _.head(reply.properties.published) }">
+						<%- moment.utc(_.head(reply.properties.published)).format('MMM Do YYYY, HH:mm') %>
+					</time>
+				<% } else { %>
+					permalink
+				<% } %>
+			</a>
+
 		<% } else { %>
 			<a class="p-name u-url" href="${ reply }"><%- reply %></a>
 		<% } %>

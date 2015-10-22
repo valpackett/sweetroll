@@ -22,4 +22,4 @@ extra-deps:
   - setters-0.1
   - git-embed-0.1.0
   - hspec-expectations-pretty-diff-0.7.2.2
-resolver: lts-3.4
+resolver: lts-3.10

@@ -167,4 +167,5 @@ test-suite tests
     main-is: Spec.hs
     other-modules:
         Sweetroll.ApiSpec
+        TestUtil
     type: exitcode-stdio-1.0

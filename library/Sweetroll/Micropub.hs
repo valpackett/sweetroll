@@ -153,6 +153,5 @@ syndicate entry absUrl syndicationLinks = do
   syndResults ← liftM catMaybes $ sendWebmentions absUrl syndMs
   let processSynd resp = do
         guard $ responseStatus resp `elem` [ HT.ok200, HT.created201 ]
-        v ← decode (responseBody resp) ∷ Maybe Value
-        v ^? key "url" . _String
+        lookup "Location" (responseHeaders resp) >>= return . decodeUtf8
   return $ set (key "properties" . key "syndication") (Array $ V.fromList $ map String $ mapMaybe processSynd syndResults) entry

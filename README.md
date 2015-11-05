@@ -26,7 +26,7 @@ I'm running it on [my website](https://unrelenting.technology).
 [Micropub]: https://indiewebcamp.com/micropub
 [Webmentions]: https://indiewebcamp.com/webmention
 [syndication]: https://indiewebcamp.com/POSSE
-[Bridgy Publish]: https://www.brid.gy/about#publishing
+[Bridgy Publish]: https://brid.gy/about#publishing
 [indie-config]: https://indiewebcamp.com/indie-config
 [token-endpoint]: https://indiewebcamp.com/token-endpoint
 

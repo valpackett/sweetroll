@@ -69,10 +69,10 @@ instance Default SweetrollConf where
                                      , "like"     .= asText "https://quill.p3k.io/favorite?url={url}"
                                      , "repost"   .= asText "https://quill.p3k.io/repost?url={url}" ]
       , syndicationConfig        = Just $ MkSyndicationConfig $ object [
-                                       "twitter.com"   .= asText "<a href=\"https://www.brid.gy/publish/twitter\"></a>"
-                                     , "facebook.com"  .= asText "<a href=\"https://www.brid.gy/publish/facebook\"></a>"
+                                       "twitter.com"   .= asText "<a href=\"https://brid.gy/publish/twitter\"></a>"
+                                     , "facebook.com"  .= asText "<a href=\"https://brid.gy/publish/facebook\"></a>"
                                      -- , "test"          .= asText "<a href=\"http://localhost:9247/post?type=link&amp;syndication=yep\"></a>"
-                                     , "instagram.com" .= asText "<a href=\"https://www.brid.gy/publish/instagram\"></a>" ]
+                                     , "instagram.com" .= asText "<a href=\"https://brid.gy/publish/instagram\"></a>" ]
       , indieAuthCheckEndpoint   = Just "https://indieauth.com/auth"
       , indieAuthRedirEndpoint   = Just "https://indieauth.com/auth"
       , pushHub                  = Just "https://switchboard.p3k.io"

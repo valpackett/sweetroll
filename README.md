@@ -32,37 +32,50 @@ I'm running it on [my website](https://unrelenting.technology).
 
 ## Usage
 
-*Installing Sweetroll on a server requires basic UNIX sysadmin skills. If you can't do it, ask your friends for help or check out [other IndieWeb projects](https://indiewebcamp.com/projects): some of them have hosted versions, some run on shared PHP hosting.*
+*Installing Sweetroll on a server requires some UNIX sysadmin skills. If you can't do it, ask your friends for help or check out [other IndieWeb projects](https://indiewebcamp.com/projects): some of them have hosted versions, some run on shared PHP hosting.*
 
 First, you need to get a binary of Sweetroll.
 I haven't uploaded any yet, so you have to build from source.
 
-Get [stack](https://github.com/commercialhaskell/stack), `git clone` the repo, `cd` into it and do a `stack build`.
+### Buliding from source
+
+- get [stack](https://github.com/commercialhaskell/stack) (from your OS package manager or `cabal install stack`)
+- get [bower](http://bower.io) (get node/[npm](https://www.npmjs.com) from your OS package manager, `npm install -g bower`)
+- `git clone` the repo
+- `cd` into it
+- `bower install`
+- `stack build`
+
 When it's done, it says where it put the binary (something like `.stack-work/install/your-platform/some/versions/.../bin`).
 
-*Note: running the binary might require `libgmp`.*
+### Running on a server
 
-Then you need to pick a directory where your website's content files will be, and run `git init` there.
+Copy the binary to the server (using `scp`, usually).
 
-Write a script called something like `run-sweetroll`, don't forget to replace everything with your values:
+Create a user account on the server (for example, `sweetroll`).
+
+Create a directory where your website's content files will be, and run `git init` there.
+
+Make sure the user has read and write permissions on the directory.
+
+And configure your favorite service management program (don't forget to replace everything with your values!) to run Sweetroll as that user!
+
+Here's an example for [runit](http://smarden.org/runit/index.html):
 
 ```bash
 #!/bin/sh
 
 umask g+w
-exec /home/greg/Stuff/bin/freebsd-amd64/sweetroll
+exec chpst -u sweetroll /home/sweetroll/.local/bin/sweetroll
         --https \ # this means HTTPS is *working*! i.e. you have it set up on your reverse proxy!
         --protocol=unix \ # will run on /var/run/sweetroll/sweetroll.sock by default; you can override with --socket
   # or: --protocol=http --port=3030 \
         --domain=unrelenting.technology \ # your actual domain!
-        --repo="/home/greg/Stuff/website" \ # the site directory! don't forget to run `git init` inside of it first
-        --secret="GENERATE YOUR LONG PSEUDORANDOM VALUE!...2MGy9ZkKgzexRpd7vl8"
+        --repo="/home/sweetroll/repo" \ # the site directory! don't forget to run `git init` inside of it first
+        --secret="GENERATE YOUR LONG PSEUDORANDOM VALUE!...2MGy9ZkKgzexRpd7vl8" 2>&1
 ```
 
 (Use something like `head -c 1024 < /dev/random | openssl dgst -sha512` to get the random value for the `secret`. No, not dynamically in the script. Copy and paste the value into the script. Otherwise you'll be logged out on every restart.)
-
-Run that script with [supervisord](http://supervisord.org) or whatever you prefer.
-Don't run as root, run as a separate user that has read-write access to the site directory.
 
 Putting a reverse proxy in front of Sweetroll is not *required*, but you might want to run other software at different URLs, etc.
 I wrote [443d](https://github.com/myfreeweb/443d) as a lightweight alternative to nginx.
@@ -80,6 +93,31 @@ Restart Sweetroll after any changes to the config file or the templates.
 
 Use Micropub clients like [Micropublish](https://micropublish.herokuapp.com) and [Quill](https://quill.p3k.io) to post.
 
+## Development
+
+Use [stack](https://github.com/commercialhaskell/stack) to build.  
+Use ghci to run tests and the server while developing (see the `.ghci` file).
+
+The `:serve` command in ghci runs the server in test mode, which means you don't need to authenticate using IndieAuth.
+
+```bash
+$ stack build
+
+$ stack test && rm tests.tix
+
+$ (mkdir /tmp/sroll && cd /tmp/sroll && git init)
+
+$ stack ghci --ghc-options="-fno-hpc"
+:serve
+
+$ http -f post localhost:3000/login | sed -Ee 's/.*access_token=([^&]+).*/\1/' > token
+
+$ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=entry content=HelloWorld
+```
+
+(the `http` command in the examples is [HTTPie](https://github.com/jkbrzt/httpie))
+
+
 ## Libraries I made for this project
 
 - [gitson](https://github.com/myfreeweb/gitson), a git-backed storage engine
@@ -91,10 +129,7 @@ Use Micropub clients like [Micropublish](https://micropublish.herokuapp.com) and
 
 ## TODO
 
-- [x] receiving webmentions
-- [x] [comments-presentation](https://indiewebcamp.com/comments-presentation)
-- [x] handling [deleted](https://indiewebcamp.com/deleted#Handling) posts with `410 Gone`
-- [ ] Syndicate by Reference: use the `Location` header instead of JSON
+- [x] Syndicate by Reference: use the `Location` header instead of JSON
 - [ ] hashcash in webmentions
 - [ ] micropub updating and deleting (implement `FromFormUrlEncoded` for Value, To/FromJSON to support both form-urlencoded and JSON; // respond to ?q=syndicate-to with JSON too)
 - [ ] indieweb-algorithms: [mf2-shim](https://github.com/indieweb/php-mf2-shim)

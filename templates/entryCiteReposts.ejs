@@ -1,10 +1,19 @@
 <% var properties = scope.entry.properties %>
 <% _.forEach(properties['repost-of'], function (repost) { %>
 	<div class="reference-context repost-context u-repost-of h-cite">
-		<a class="u-url" ${ scope.showRel ? 'rel="repost-of"' : '' } href="${ _.head(repost.properties.url) }">repost</a>
-		<% if (!_.isEmpty(repost.properties.authors)) { %>
-			from
-			<%= templates.citeAuthors({ authors: repost.properties.author }) %>
+		<% if (_.isObject(repost)) { %>
+			<a class="u-url" ${ scope.showRel ? 'rel="repost-of"' : '' } href="${ _.head(repost.properties.url) }">repost</a>
+			<% if (!_.isEmpty(repost.properties.authors)) { %>
+				from
+				<%= templates.citeAuthors({ authors: repost.properties.author }) %>
+			<% } %>
+		<% } else if (_.isString(repost)) { %>
+			repost from 
+			<a class="u-url" ${ scope.showRel ? 'rel="repost-of"' : '' } href="${ repost }">
+				<%- repost %>
+			</a>
+		<% } else { %>
+			something weird
 		<% } %>
 	</div>
 <% }) %>

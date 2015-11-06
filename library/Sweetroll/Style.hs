@@ -246,14 +246,10 @@ sweetrollStyle = do
     pageParts ? width (pct 75)
     ".entry-in-list" ** ".entry-footer" ? paddingRight (em 1)
 
-  query M.screen [M.maxWidth $ em 60] $ do
-    ".note-in-list" ** ".permalink" ? do
-      display block
-
   query M.screen [M.minWidth $ em 56] $ do
     -- based on https://github.com/seaneking/postcss-responsive-type
     html ? ("font-size" -: "calc(12px + 9 * ((100vw - 600px) / 1024))")
-    pageParts ? width (pct 90)
+    pageParts ? width (pct 95)
     "#author-link" ? do
       fontSize $ rem 1
       marginTop $ rem 0
@@ -261,10 +257,9 @@ sweetrollStyle = do
       transition "opacity" (sec 0.3) easeInOut (sec 0)
       opacity 0
       focus & opacity 1
-    ".site-content" <> ".index-main" ? do
+    ".site-content" ? do
       "-webkit-flex-direction" -: "row"
       "flex-direction" -: "row"
-    ".site-content" ? do
       "-webkit-justify-content" -: "center"
       "justify-content" -: "center"
     ".site-author" ? do
@@ -274,21 +269,25 @@ sweetrollStyle = do
     ".site-main" ? do
       flexValue 3
       orderValue 10
-    ".index-main" ? do
-      overflowX auto
-      -- http://lea.verou.me/2012/04/background-attachment-local/
-      "background" -: "/* Shadow covers */ linear-gradient(270deg, white 30%, rgba(255,255,255,0)) 100% 0, linear-gradient(-90deg, rgba(255,255,255,0), white 70%), /* Shadows */ radial-gradient(farthest-side at left, rgba(0,0,0,.2), rgba(0,0,0,0)), radial-gradient(farthest-side at right, rgba(0,0,0,.2), rgba(0,0,0,0)) 100% 0"
-      "background-size" -: "2em 100%, 2em 100%, 1em 100%, 1em 100%"
-      "background-attachment" -: "local, local, scroll, scroll"
-      backgroundRepeat noRepeat
     ".entry-main" <> ".category-main" ? maxWidth (em 45)
-    ".index-category" ? do
+    ".index-categories" ? do
       flexValue 1
-      minWidth $ em 30
-      maxWidth $ em 40
+    ".index-category" ? do
       sym2 padding nil $ em 1
     ".entry-footer" ? do
       fontSize $ pct 95
+
+  query M.screen [M.minWidth $ em 65] $ do
+    ".index-main" ? do
+      "-webkit-flex-direction" -: "row"
+      "flex-direction" -: "row"
+
+  query M.screen [M.maxWidth $ em 70] $ do
+    ".note-in-list" ** ".permalink" ? do
+      display block
+
+  query M.screen [M.minWidth $ em 70] $ do
+    pageParts ? width (pct 90)
 
   query M.screen [M.minWidth $ em 80] $ do
     html ? ("font-size" -: "calc(12px + 9 * ((60em + 25vw - 600px) / 1024))")

@@ -22,8 +22,10 @@
 				<% } %>
 			</a>
 
-		<% } else { %>
+		<% } else if (_.isString(reply)) { %>
 			<a class="p-name u-url" href="${ reply }"><%- reply %></a>
+		<% } else { %>
+			something weird
 		<% } %>
 	</div>
 <% }) %>

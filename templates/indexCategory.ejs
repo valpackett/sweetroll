@@ -1,0 +1,12 @@
+<% var data = scope.data %>
+<section class="index-category" id="index-category-${ _.snakeCase(data.name) }">
+	<h1><a href="${ data.permalink }"><%= data.name %></a></h1>
+	<ul>
+		<% _.forEach(data.entries, function (entry) { %>
+			<%= templates.entryInList({ meta: scope.meta, data: entry }) %>
+		<% }) %>
+	</ul>
+	<% if (data.hasBefore) { %>
+		<a href="${ data.beforeHref }"><i class="fa fa-l fa-ellipsis-v"></i>older</a>
+	<% } %>
+</section>

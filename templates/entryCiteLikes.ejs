@@ -4,12 +4,20 @@
 		<div class="u-like-of h-cite">
 			<% _.forEach(properties['like-of'], function (like) { %>
 				Liked
-				<a class="u-url" ${ scope.showRel ? 'rel="like-of"' : '' } href="${ _.head(like.properties.url) }">
-					<%- _.head(like.properties.name) %>
-				</a>
-				<% if (!_.isEmpty(like.properties.authors)) { %>
-					by
-					<%= templates.citeAuthors({ authors: like.properties.author }) %>
+				<% if (_.isObject(like)) { %>
+					<a class="u-url" ${ scope.showRel ? 'rel="like-of"' : '' } href="${ _.head(like.properties.url) }">
+						<%- _.head(like.properties.name) %>
+					</a>
+					<% if (!_.isEmpty(like.properties.authors)) { %>
+						by
+						<%= templates.citeAuthors({ authors: like.properties.author }) %>
+					<% } %>
+				<% } else if (_.isString(like)) { %>
+					<a class="u-url" ${ scope.showRel ? 'rel="like-of"' : '' } href="${ like }">
+						<%- like %>
+					</a>
+				<% } else { %>
+					something weird
 				<% } %>
 			<% }) %>
 		</div>

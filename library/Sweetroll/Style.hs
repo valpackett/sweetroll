@@ -150,6 +150,9 @@ sweetrollStyle = do
     boxShadow 0 (px 3) (px 13) $ rgba 0 0 0 64
     sym borderRadius $ px 3
 
+  ".note-in-list" ** ".permalink" ? do
+    display block
+
   ".entry-in-list" ? do
     listStyleType none
     display block
@@ -260,8 +263,6 @@ sweetrollStyle = do
     ".site-content" ? do
       "-webkit-flex-direction" -: "row"
       "flex-direction" -: "row"
-      "-webkit-justify-content" -: "center"
-      "justify-content" -: "center"
     ".site-author" ? do
       flexValue 1
       orderValue 1
@@ -269,11 +270,14 @@ sweetrollStyle = do
     ".site-main" ? do
       flexValue 3
       orderValue 10
-    ".entry-main" <> ".category-main" ? maxWidth (em 45)
+      overflow hidden
     ".index-categories" ? do
       flexValue 1
-    ".index-category" ? do
+      overflow hidden
+    ".index-category" <> ".category-main" ? do
       sym2 padding nil $ em 1
+    ".entry-main" ? do
+      sym padding $ em 1
     ".entry-footer" ? do
       fontSize $ pct 95
 
@@ -281,22 +285,22 @@ sweetrollStyle = do
     ".index-main" ? do
       "-webkit-flex-direction" -: "row"
       "flex-direction" -: "row"
-
-  query M.screen [M.maxWidth $ em 70] $ do
-    ".note-in-list" ** ".permalink" ? do
-      display block
-
-  query M.screen [M.minWidth $ em 70] $ do
-    pageParts ? width (pct 90)
+    ".category-main" ** ".note-in-list" ** ".permalink" ? do
+      display inline
 
   query M.screen [M.minWidth $ em 80] $ do
     html ? ("font-size" -: "calc(12px + 9 * ((60em + 25vw - 600px) / 1024))")
-    pageParts ? width (pct 85)
+    pageParts ? do
+      width $ pct 90
+      maxWidth $ em 80
     ".site-header" ? sym2 padding (em 3) nil
-    ".entry-main" <> ".category-main" ? maxWidth (em 50)
     ".site-author" ? do
       maxWidth $ em 18
       marginRight $ em 2
+
+  query M.screen [M.minWidth $ em 105] $ do
+    ".note-in-list" ** ".permalink" ? do
+      display inline
 
 pageParts, entryParts ∷ Selector
 pageParts = ".site-header" <> ".site-content" <> ".site-footer"

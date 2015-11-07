@@ -42,6 +42,9 @@ postAuthed r u b a = do
       r' = r { requestHeaders = requestHeaders r ++ [ ("Authorization", "Bearer " ++ cs token) ] }
   post' r' u b a
 
+formRequest ∷ Request
+formRequest = defaultRequest { requestHeaders = [ ("Content-Type", "application/x-www-form-urlencoded") ] }
+
 header ∷ SResponse → String → String
 header resp x = B8.unpack $ orEmptyMaybe $ lookup (CI.mk $ B8.pack x) (simpleHeaders resp)
 

@@ -91,8 +91,7 @@ spec = around_ inDir $ around_ withServer $ do
 
   describe "POST /micropub" $ do
     it "creates entries" $ do
-      resp ← app >>= postAuthed (defaultRequest { Wai.requestHeaders = [ ("Content-Type", "application/x-www-form-urlencoded") ] })
-                                "/micropub" "h=entry&name=First&slug=first&content=Hello&category=test,demo"
+      resp ← app >>= postAuthed formRequest "/micropub" "h=entry&name=First&slug=first&content=Hello&category=test,demo"
       simpleStatus resp `shouldBe` created201
       header resp "Location" `shouldBe` "http://localhost:8998/articles/first"
       written ← readDocumentById "articles" 1 ∷ IO (Maybe Value)
@@ -104,8 +103,7 @@ spec = around_ inDir $ around_ withServer $ do
         Nothing → error "article not written"
 
     it "requires auth" $ do
-      resp ← app >>= post' (defaultRequest { Wai.requestHeaders = [ ("Content-Type", "application/x-www-form-urlencoded") ] })
-                           "/micropub" "h=entry&name=First&slug=first&content=Hello&category=test,demo"
+      resp ← app >>= post' formRequest "/micropub" "h=entry&name=First&slug=first&content=Hello&category=test,demo"
       simpleStatus resp `shouldBe` unauthorized401
       resp' ← app >>= post' (defaultRequest { Wai.requestHeaders = [ ("Content-Type", "application/x-www-form-urlencoded")
                                                                    , ("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtZSIsImlzcyI6ImxvY2FsaG9zdCIsImlhdCI6MTQzODAxNjU5N30.KQRooUPpnhlhA0_xRbHF8q4AesUu5x6QNoVUuFavVng") ] })
@@ -116,21 +114,25 @@ spec = around_ inDir $ around_ withServer $ do
         saveNextDocument "notes" "reply-target" $ mf2o [ "content" .= [ asText "Hello, World!" ] ]
         saveNextDocument "notes" "other-reply-target" $ mf2o [ "content" .= [ asText "World, Hello!" ] ]
         saveNextDocument "replies" "reply-to-nonexistent" $ mf2o [ "content" .= [ asText "NOPE" ], "in-reply-to" .= [ asText "http://localhost:8998/notes/not-reply-target" ] ]
-        saveNextDocument "replies" "reply-to-other" $ mf2o [ "content" .= [ asText "NOPE" ], "in-reply-to" .= [ asText "http://localhost:8998/notes/other-reply-target" ] ]
+        saveNextDocument "replies" "reply-to-other" $ mf2o [ "content" .= [ asText "Yo" ], "in-reply-to" .= [ asText "http://localhost:8998/notes/other-reply-target" ] ]
 
   describe "POST /webmention" $ before_ makeMentionPosts $ do
-    it "saves correct replies" $ do
-      resp ← app >>= postAuthed (defaultRequest { Wai.requestHeaders = [ ("Content-Type", "application/x-www-form-urlencoded") ] })
-                                "/webmention" "source=http://localhost:8998/replies/reply-to-other&target=http://localhost:8998/notes/other-reply-target"
+    it "saves correct replies and updates them" $ do
+      resp ← app >>= postAuthed formRequest "/webmention" "source=http://localhost:8998/replies/reply-to-other&target=http://localhost:8998/notes/other-reply-target"
       simpleStatus resp `shouldBe` accepted202
-      target ← readDocumentByName "notes" "other-reply-target" ∷ IO (Maybe Value)
-      let comments x = (fromJust target) ^? key "properties" . key "comment" . x
-      length <$> comments _Array `shouldBe` Just 1
-      comments (nth 0 . key "properties" . key "url" . nth 0 . _String) `shouldBe` Just "http://localhost:8998/replies/reply-to-other"
+      let expectText t = do
+            target ← readDocumentByName "notes" "other-reply-target" ∷ IO (Maybe Value)
+            let comments x = (fromJust target) ^? key "properties" . key "comment" . x
+            length <$> comments _Array `shouldBe` Just 1
+            comments (nth 0 . key "properties" . key "url" . nth 0 . _String) `shouldBe` Just "http://localhost:8998/replies/reply-to-other"
+            comments (nth 0 . key "properties" . key "content" . nth 0 . key "html" . _String) `shouldBe` Just t
+      expectText " Yo "
+      transaction' $ saveDocumentByName "replies" "reply-to-other" $ mf2o [ "content" .= [ asText "HELLO" ], "in-reply-to" .= [ asText "http://localhost:8998/notes/other-reply-target" ] ]
+      void $ app >>= postAuthed formRequest "/webmention" "source=http://localhost:8998/replies/reply-to-other&target=http://localhost:8998/notes/other-reply-target"
+      expectText " HELLO "
 
     it "rejects replies to other things" $ do
-      resp ← app >>= postAuthed (defaultRequest { Wai.requestHeaders = [ ("Content-Type", "application/x-www-form-urlencoded") ] })
-                                "/webmention" "source=http://localhost:8998/replies/reply-to-nonexistent&target=http://localhost:8998/notes/reply-target"
+      resp ← app >>= postAuthed formRequest "/webmention" "source=http://localhost:8998/replies/reply-to-nonexistent&target=http://localhost:8998/notes/reply-target"
       simpleStatus resp `shouldBe` accepted202
       target ← readDocumentByName "notes" "reply-target" ∷ IO (Maybe Value)
       (fromJust target) ^? key "properties" . key "comment" . _Array `shouldBe` Nothing

@@ -22,7 +22,6 @@ import           Sweetroll.Monads
 
 -- TODO: rate limiting
 -- TODO: status viewing
--- TODO: update existing comments
 
 receiveWebmention ∷ [(Text, Text)] → Sweetroll ()
 receiveWebmention allParams = do
@@ -67,9 +66,14 @@ propIncludesURI t p m = elem t $ catMaybes $ map (parseURI <=< unCite) $ fromMay
 
 addMention ∷ Value → Value → Value
 addMention m (Object props) = Object $ HMS.insertWith updateOrAdd "comment" (Array $ V.singleton m) props
-  where updateOrAdd (Array new) (Array old) = Array $ old ++ new
+  -- XXX: This is terrible.
+  where updateOrAdd (Array new) (Array old) = Array $ case V.findIndex (\c → hasIntersection mentionUrls $ fromMaybe V.empty $ c ^? key "properties" . key "url" . _Array) old of
+                                                        Just idx → old V.// [(idx, m)]
+                                                        Nothing → old ++ new
         updateOrAdd anew@(Array _) _ = anew
         updateOrAdd _ old = old
+        mentionUrls = fromMaybe V.empty $ m ^? key "properties" . key "url" . _Array
+        hasIntersection x = not . null . V.filter (`V.elem` x)
 addMention _ x = x
 
 errNoURIInField ∷ LByteString → ServantErr

@@ -34,7 +34,7 @@ sendWebmention from to endpoint = do
       req' = req { method = "POST"
                  , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
                  , requestBody = RequestBodyBS reqBody }
-  withSuccessfulRequest req' $ \resp → do
+  withRequest req' $ \resp → do
     putStrLn $ "Webmention posted for <" ++ tshow to ++ ">!"
     body ← responseBody resp $$ C.sinkLazy
     return $ Just $ resp { responseBody = body }
@@ -61,7 +61,7 @@ findWebmentionEndpoints ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, 
                           [TargetURI] → μ [(TargetURI, EndpointURI)]
 findWebmentionEndpoints targets = do
   let getWebmentionEndpoint' uri = do
-        endp ← withSuccessfulRequestHtml uri getWebmentionEndpoint
+        endp ← withRequestHtml uri getWebmentionEndpoint
         return $ (uri, ) <$> endp
   rs ← mapM getWebmentionEndpoint' targets
   return $ catMaybes rs

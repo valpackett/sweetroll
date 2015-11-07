@@ -122,12 +122,24 @@ getRenderer = liftM renderer $ asks _ctxDuk
         txtVal (Right Nothing) = "TEMPLATE ERROR: returned nothing"
         txtVal (Left e) = "TEMPLATE ERROR: " ++ cs e
 
+withRequest ∷ (MonadIO μ, MonadBaseControl IO μ, MonadSweetroll μ) ⇒
+              Request → (Response (Source μ ByteString) → μ α) → μ α
+withRequest req a =
+  withResponse (req { checkStatus = \_ _ _ → Nothing }) $ \resp → do
+    putStrLn $ cs $ "Request status for <" ++ show (getUri req) ++ ">: " ++ (show . statusCode . responseStatus $ resp)
+    a resp
+
 withSuccessfulRequest ∷ (MonadIO μ, MonadBaseControl IO μ, MonadSweetroll μ) ⇒
                         Request → (Response (Source μ ByteString) → μ (Maybe α)) → μ (Maybe α)
-withSuccessfulRequest req a =
-  withResponse req $ \resp → do
-    putStrLn $ cs $ "Request status for <" ++ show (getUri req) ++ ">: " ++ (show . statusCode . responseStatus $ resp)
-    if responseStatus resp `elem` [ok200, created201, accepted202, noContent204] then a resp else return Nothing
+withSuccessfulRequest req a = withRequest req $ \resp → 
+  if responseStatus resp `elem` [ok200, created201, accepted202, noContent204] then a resp else return Nothing
+
+withRequestHtml ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
+                  URI → (Response (Source μ ByteString) → μ α) → μ α
+withRequestHtml uri a = do
+  req ← setUri def uri
+  let req' = req { requestHeaders = [ (hAccept, "text/html; charset=utf-8") ] }
+  withRequest req' a
 
 withSuccessfulRequestHtml ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
                             URI → (Response (Source μ ByteString) → μ (Maybe α)) → μ (Maybe α)

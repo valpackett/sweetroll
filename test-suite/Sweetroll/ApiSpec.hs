@@ -113,31 +113,43 @@ spec = around_ inDir $ around_ withServer $ do
   let makeMentionPosts = transaction' $ do
         saveNextDocument "notes" "reply-target" $ mf2o [ "content" .= [ asText "Hello, World!" ] ]
         saveNextDocument "notes" "other-reply-target" $ mf2o [ "content" .= [ asText "World, Hello!" ] ]
+        saveNextDocument "replies" "reply-to-target" $ mf2o [ "content" .= [ asText "Yo" ], "in-reply-to" .= [ asText "http://localhost:8998/notes/reply-target" ] ]
         saveNextDocument "replies" "reply-to-nonexistent" $ mf2o [ "content" .= [ asText "NOPE" ], "in-reply-to" .= [ asText "http://localhost:8998/notes/not-reply-target" ] ]
-        saveNextDocument "replies" "reply-to-other" $ mf2o [ "content" .= [ asText "Yo" ], "in-reply-to" .= [ asText "http://localhost:8998/notes/other-reply-target" ] ]
+        saveNextDocument "replies" "reply-to-other" $ mf2o [ "content" .= [ asText "N0pe" ], "in-reply-to" .= [ asText "http://localhost:8998/notes/other-reply-target" ] ]
 
   describe "POST /webmention" $ before_ makeMentionPosts $ do
-    it "saves correct replies and updates them" $ do
-      resp ← app >>= postAuthed formRequest "/webmention" "source=http://localhost:8998/replies/reply-to-other&target=http://localhost:8998/notes/other-reply-target"
+    let expectTargetToHaveOneMentionWithText t = do
+          target ← readDocumentByName "notes" "reply-target" ∷ IO (Maybe Value)
+          let comments x = (fromJust target) ^? key "properties" . key "comment" . x
+          length <$> comments _Array `shouldBe` Just 1
+          comments (nth 0 . key "properties" . key "url" . nth 0 . _String) `shouldBe` Just "http://localhost:8998/replies/reply-to-target"
+          comments (nth 0 . key "properties" . key "content" . nth 0 . key "html" . _String) `shouldBe` Just t
+        expectTargetToHaveNoMentions = do
+          target ← readDocumentByName "notes" "reply-target" ∷ IO (Maybe Value)
+          let comments x = (fromJust target) ^? key "properties" . key "comment" . x
+          (length <$> comments _Array) `shouldSatisfy` (`elem` [Just 0, Nothing])
+
+
+    it "saves, updates and deletes correct replies" $ do
+      resp ← app >>= postAuthed formRequest "/webmention" "source=http://localhost:8998/replies/reply-to-target&target=http://localhost:8998/notes/reply-target"
       simpleStatus resp `shouldBe` accepted202
-      let expectText t = do
-            target ← readDocumentByName "notes" "other-reply-target" ∷ IO (Maybe Value)
-            let comments x = (fromJust target) ^? key "properties" . key "comment" . x
-            length <$> comments _Array `shouldBe` Just 1
-            comments (nth 0 . key "properties" . key "url" . nth 0 . _String) `shouldBe` Just "http://localhost:8998/replies/reply-to-other"
-            comments (nth 0 . key "properties" . key "content" . nth 0 . key "html" . _String) `shouldBe` Just t
-      expectText " Yo "
-      transaction' $ saveDocumentByName "replies" "reply-to-other" $ mf2o [ "content" .= [ asText "HELLO" ], "in-reply-to" .= [ asText "http://localhost:8998/notes/other-reply-target" ] ]
-      void $ app >>= postAuthed formRequest "/webmention" "source=http://localhost:8998/replies/reply-to-other&target=http://localhost:8998/notes/other-reply-target"
-      expectText " HELLO "
+      expectTargetToHaveOneMentionWithText " Yo "
+      transaction' $ saveDocumentByName "replies" "reply-to-target" $ mf2o [ "content" .= [ asText "HELLO" ], "in-reply-to" .= [ asText "http://localhost:8998/notes/reply-target" ] ]
+      void $ app >>= postAuthed formRequest "/webmention" "source=http://localhost:8998/replies/reply-to-target&target=http://localhost:8998/notes/reply-target"
+      expectTargetToHaveOneMentionWithText " HELLO "
+      transaction' $ tell [ void $ run (proc "git" [ "rm", "replies/000001-reply-to-target.json" ] $| conduit sinkNull) ]
+      void $ app >>= postAuthed formRequest "/webmention" "source=http://localhost:8998/replies/reply-to-target&target=http://localhost:8998/notes/reply-target"
+      expectTargetToHaveNoMentions
 
     it "rejects replies to other things" $ do
       resp ← app >>= postAuthed formRequest "/webmention" "source=http://localhost:8998/replies/reply-to-nonexistent&target=http://localhost:8998/notes/reply-target"
       simpleStatus resp `shouldBe` accepted202
-      target ← readDocumentByName "notes" "reply-target" ∷ IO (Maybe Value)
-      (fromJust target) ^? key "properties" . key "comment" . _Array `shouldBe` Nothing
+      resp1 ← app >>= postAuthed formRequest "/webmention" "source=http://localhost:8998/replies/reply-to-other&target=http://localhost:8998/notes/reply-target"
+      simpleStatus resp1 `shouldBe` accepted202
+      expectTargetToHaveNoMentions
 
 
+-- needed for self-webmentioning basically
 withServer ∷ IO () → IO ()
 withServer x = do
   tid ← forkOS $ Warp.run 8998 =<< app

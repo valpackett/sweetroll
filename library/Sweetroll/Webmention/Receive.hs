@@ -15,13 +15,13 @@ import           Data.Aeson
 import           Data.Aeson.Lens
 import           Network.URI
 import           Network.HTTP.Types
+import           Network.HTTP.Client.Conduit
 import           Servant
 import           Gitson
 import           Sweetroll.Conf
 import           Sweetroll.Monads
 
 -- TODO: rate limiting
--- TODO: status viewing
 
 receiveWebmention ∷ [(Text, Text)] → Sweetroll ()
 receiveWebmention allParams = do
@@ -40,16 +40,27 @@ receiveWebmention allParams = do
 
 processWebmention ∷ String → String → URI → URI → Sweetroll ()
 processWebmention category slug source target =
-  void $ withSuccessfulRequestHtml source $ \resp →
-  withFetchEntryWithAuthors source resp $ \_ (mention, _) →
-  transaction "." $ do
-    entrym ← readDocumentByName category slug
-    case (entrym, verifyMention target mention) of
-      (Just entry, True) → do
-        putStrLn $ "Received valid webmention for " ++ tshow target ++ " from " ++ tshow source
-        let updatedEntry = key "properties" %~ addMention mention $ (entry ∷ Value)
-        saveDocumentByName category slug updatedEntry
-      _ → putStrLn $ "Received invalid webmention for " ++ tshow target ++ " from " ++ tshow source ++ ": " ++ tshow mention
+  void $ withRequestHtml source $ \resp → do
+    let withEntry x =
+          transaction "." $ do
+            entrym ← readDocumentByName category slug
+            case entrym of
+              Just entry → x entry
+              _ → putStrLn $ "Received webmention for nonexistent " ++ tshow target ++ " from " ++ tshow source
+    case statusCode (responseStatus resp) of
+      410 → withEntry $ \entry → do
+              putStrLn $ "Received gone webmention for " ++ tshow target ++ " from " ++ tshow source
+              let updatedEntry = key "properties" %~ removeMentionOf source $ (entry ∷ Value)
+              saveDocumentByName category slug updatedEntry
+      200 → void $ withFetchEntryWithAuthors source resp $ \_ (mention, _) →
+              if verifyMention target mention
+                 then withEntry $ \entry → do
+                   putStrLn $ "Received correct webmention for " ++ tshow target ++ " from " ++ tshow source
+                   let updatedEntry = key "properties" %~ addMention mention $ (entry ∷ Value)
+                   saveDocumentByName category slug updatedEntry
+                 else putStrLn $ "Received unverified webmention for " ++ tshow target ++ " from " ++ tshow source ++ ": " ++ tshow mention
+      _ → return ()
+    return $ Just ()
 
 verifyMention ∷ URI → Value → Bool
 verifyMention t m | propIncludesURI t "in-reply-to" m = True
@@ -67,14 +78,26 @@ propIncludesURI t p m = elem t $ catMaybes $ map (parseURI <=< unCite) $ fromMay
 addMention ∷ Value → Value → Value
 addMention m (Object props) = Object $ HMS.insertWith updateOrAdd "comment" (Array $ V.singleton m) props
   -- XXX: This is terrible.
-  where updateOrAdd (Array new) (Array old) = Array $ case V.findIndex (\c → hasIntersection mentionUrls $ fromMaybe V.empty $ c ^? key "properties" . key "url" . _Array) old of
+  where updateOrAdd (Array new) (Array old) = Array $ case V.findIndex (intersectingUrls $ urls m) old of
                                                         Just idx → old V.// [(idx, m)]
                                                         Nothing → old ++ new
         updateOrAdd anew@(Array _) _ = anew
         updateOrAdd _ old = old
-        mentionUrls = fromMaybe V.empty $ m ^? key "properties" . key "url" . _Array
-        hasIntersection x = not . null . V.filter (`V.elem` x)
 addMention _ x = x
+
+removeMentionOf ∷ URI → Value → Value
+removeMentionOf uri (Object props) = Object $ HMS.adjust removeMention "comment" props
+  -- XXX: Use URI equality, not text equality?
+  where removeMention (Array ms) = Array $ V.filter (not . intersectingUrls (V.fromList [String $ tshow uri])) ms
+        removeMention x = x
+removeMentionOf _ x = x
+
+intersectingUrls ∷ Vector Value → Value → Bool
+intersectingUrls us e = hasIntersection us (urls e)
+  where hasIntersection x = not . null . V.filter (`V.elem` x)
+
+urls ∷ Value → Vector Value
+urls x = fromMaybe V.empty $ x ^? key "properties" . key "url" . _Array
 
 errNoURIInField ∷ LByteString → ServantErr
 errNoURIInField f = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]

@@ -91,7 +91,7 @@ postLogin params = do
        let req = indieAuthReq { HC.method = "POST"
                               , HC.requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
                               , HC.requestBody = HC.RequestBodyBS $ writeForm params }
-       resp ← withSuccessfulRequest req $ \resp →
+       resp ← withRequest req $ \resp →
                 liftM readForm $ HC.responseBody resp $$ C.sinkLazy ∷ Sweetroll (Maybe [(Text, Text)]) -- TODO: check content-type
        case resp of
          Just indieAuthRespParams → do

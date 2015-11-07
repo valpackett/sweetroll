@@ -142,7 +142,7 @@ notifyPuSH l = do
                     , requestHeaders = [ (HT.hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
                     , requestBody = RequestBodyBS body }
       req' ← setUri req hubURI
-      void $ withSuccessfulRequest req' $ \_ → do
+      void $ withRequest req' $ \_ → do
         putStrLn $ "PubSubHubbub notified: " ++ cs body
         return $ Just ()
 

@@ -13,6 +13,7 @@ import           Text.Highlighting.Kate.Styles (tango)
 import           Data.String.Conversions
 import           Data.Setters
 import           Data.Default
+import           Data.Foldable (asum)
 import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.Microformats2.Parser
@@ -84,7 +85,9 @@ instance Default SweetrollSecrets where
         secretKey                = "SECRET" } -- the executable sets to a secure random value by default
 
 baseURI ∷ SweetrollConf → Maybe URI
-baseURI conf = Just $ URI (if fromMaybe False (httpsWorks conf) then "https:" else "http:") (Just $ URIAuth "" (cs $ fromMaybe "" $ domainName conf) "") "" "" ""
+baseURI conf = asum [ parseURI $ (if fromMaybe False (httpsWorks conf) then "https://" else "http://") ++ (unpack $ fromMaybe "" $ domainName conf) -- need to parse because we need the :PORT parsed correctly for dev
+                    , parseURI $ unpack $ fromMaybe "" $ domainName conf -- in case someone puts "https://" in the field which is clearly called DOMAIN NAME
+                    , Just $ URI (if fromMaybe False (httpsWorks conf) then "https:" else "http:") (Just $ URIAuth "" (cs $ fromMaybe "" $ domainName conf) "") "" "" "" ]
 
 pandocReaderOptions ∷ ReaderOptions
 pandocReaderOptions = def { readerExtensions = githubMarkdownExtensions

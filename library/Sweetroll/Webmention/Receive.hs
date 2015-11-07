@@ -29,11 +29,12 @@ receiveWebmention allParams = do
   source ← guardJustP (errNoURIInField "source") $ parseURI =<< cs <$> lookup "source" allParams
   target ← guardJustP (errNoURIInField "target") $ parseURI =<< cs <$> lookup "target" allParams
   base ← getConfOpt baseURI
+  shouldBeSync ← getConfOpt testMode
   guardBool errWrongDomain $ (uriRegName <$> uriAuthority target) == (uriRegName <$> uriAuthority base)
   void $ case map cs $ splitOn "/" $ drop 1 $ cs $ uriPath target of
     [ category, slug ] → do
       void $ guardJust errWrongPath $ documentIdFromName category slug
-      void $ fork $ processWebmention category slug source target
+      (if shouldBeSync then void else void . fork) $ processWebmention category slug source target
       throwError respAccepted
     _ → throwError errWrongPath
   return ()

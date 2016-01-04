@@ -150,9 +150,10 @@ test-suite tests
       , network-uri
       , case-insensitive
       , wai
+      , wai-extra
+      , warp
       , directory
       , gitson
-      , wai-extra
       , bytestring
       , raw-strings-qq
       , pandoc

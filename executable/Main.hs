@@ -1,8 +1,9 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
-{-# LANGUAGE UnicodeSyntax, TemplateHaskell #-}
+{-# LANGUAGE UnicodeSyntax, TemplateHaskell, FlexibleContexts #-}
 
 module Main (main) where
 
+import           Prelude
 import qualified Network.Wai.Handler.CGI as CGI
 import           Network.Wai.Handler.Warp
 import           Network.Wai.Middleware.RequestLogger

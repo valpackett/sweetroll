@@ -1,0 +1,179 @@
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TupleSections #-}
+{-# LANGUAGE FlexibleContexts, TypeFamilies, DataKinds #-}
+
+module Sweetroll.Micropub.Endpoint (
+  postMicropub
+) where
+
+import           ClassyPrelude
+import           Control.Concurrent.Lifted (fork, threadDelay)
+import           Control.Monad.Trans.Control
+import           Control.Lens hiding ((.=), (|>))
+import           Data.Aeson
+import           Data.Aeson.Lens
+import           Data.Microformats2.Parser.Util (emptyVal)
+import           Data.String.Conversions
+import qualified Data.Vector as V
+import           Data.Foldable (asum)
+import           Text.Pandoc hiding (Link, Null)
+import           Text.Blaze.Html.Renderer.Text (renderHtml)
+import           Network.URI
+import           Network.HTTP.Client hiding (Proxy)
+import           Network.HTTP.Client.Internal (setUri)
+import qualified Network.HTTP.Types as HT
+import           Web.JWT hiding (header, decode)
+import           Servant
+import           Gitson
+import           Sweetroll.Conf
+import           Sweetroll.Util
+import           Sweetroll.Monads
+import           Sweetroll.Routes
+import           Sweetroll.Micropub.Request
+import           Sweetroll.Webmention.Send
+
+infixl 1 |>
+(|>) ∷ Monad μ ⇒ μ α → (α → β) → μ β
+(|>) = flip liftM
+
+postMicropub ∷ JWT VerifiedJWT → MicropubRequest
+             → Sweetroll (Headers '[Header "Location" Text] [(Text, Text)])
+postMicropub token (Create htype props synds) = do
+  now ← liftIO getCurrentTime
+  base ← getConfOpt baseURI
+  isTest ← getConfOpt testMode
+  (MkSyndicationConfig syndConf) ← getConfOpt syndicationConfig
+
+  let syndLinks = getSyndLinks synds syndConf
+      content = readContent =<< lookup "content" props
+      category = decideCategory props
+      slug = decideSlug props now
+      absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base
+  obj ← return props
+        >>= fetchReplyContexts "in-reply-to"
+        >>= fetchReplyContexts "like-of"
+        >>= fetchReplyContexts "repost-of"
+        |>  setDates now
+        |>  setClientId token
+        |>  setUrl absUrl
+        |>  setContent content syndLinks
+        |>  wrapWithType htype
+        -- TODO: copy content for reposts
+  traceShowM obj
+  transaction "./" $ saveNextDocument category slug obj
+  unless isTest $ void $ fork $ do
+    threadDelay =<< (*1000000) `liftM` getConfOpt pushDelay
+    transaction "./" $ do
+      -- check that it wasn't deleted after the delay
+      obj'm ← readDocumentByName category slug
+      case obj'm of
+        Just obj' → do
+          notifyPuSH $ permalink (Proxy ∷ Proxy IndexRoute)
+          notifyPuSH $ permalink (Proxy ∷ Proxy CatRouteE) category
+          saveDocumentByName category slug =<< syndicate obj' absUrl (cs syndLinks)
+          contMs ← contentWebmentions content
+          -- XXX: not tested yet
+          let metaMs = [ (target, endpoint) | k ← [ "in-reply-to", "like-of", "repost-of" ]
+                                            , ctx ← V.toList $ fromMaybe V.empty $ obj' ^? key "properties" . key k . _Array
+                                            , endpoint ← mapMaybe (parseURI . cs) $ mapMaybe onlyString $ V.toList $ fromMaybe V.empty $ ctx ^? key "webmention-endpoint" . _Array
+                                            , target   ← maybeToList $ (parseURI . cs) =<< ctx ^? key "fetched-url" . _String ]
+          void $ sendWebmentions absUrl (metaMs ++ contMs)
+        _ → return ()
+  return $ addHeader (tshow absUrl) []
+
+getSyndLinks ∷ [ObjSyndication] → Value → LText
+getSyndLinks synds syndConf =
+  case syndConf of
+    Object o → cs $ concat $ mapMaybe (^? _String) $ mapMaybe (flip lookup o) $ filter inSyndicateTo $ keys o
+    _ → ""
+  where inSyndicateTo x = any (x `isInfixOf`) synds
+
+fetchReplyContexts ∷ Text → ObjProperties → Sweetroll ObjProperties
+fetchReplyContexts k props = do
+    newCtxs ← updateCtxs $ lookup k props
+    return $ insertMap k newCtxs props
+  where updateCtxs (Just (Array v)) = Array `liftM` mapM fetch v
+        updateCtxs _ = return $ Array V.empty
+        fetch (String u) = case parseURI $ cs u of
+          Nothing → return $ String u
+          Just uri → do
+            r ← withSuccessfulRequestHtml uri $ \resp →
+              withFetchEntryWithAuthors uri resp $ \mfRoot ((Object entry), _) →
+                return $ Object $ insertMap "webmention-endpoint" (toJSON $ traceShowId $ map tshow $ discoverWebmentionEndpoints mfRoot (linksFromHeader resp))
+                                $ insertMap "fetched-url" (toJSON u) entry
+            return $ fromMaybe (String u) r
+        fetch x = return x
+
+setDates ∷ UTCTime → ObjProperties → ObjProperties
+setDates now = insertMap "updated" (toJSON [ now ]) . insertWith (\_ x → x) "published" (toJSON [ now ])
+
+setClientId ∷ JWT VerifiedJWT → ObjProperties → ObjProperties
+setClientId token = insertMap "client-id" $ toJSON $ filter (/= "example.com") (catMaybes [ lookup "client_id" $ unregisteredClaims $ claims token ])
+
+setUrl ∷ URI → ObjProperties → ObjProperties
+setUrl url = insertMap "url" $ toJSON  [ tshow url ]
+
+setContent ∷ Maybe Pandoc → LText → ObjProperties → ObjProperties
+setContent content syndLinks = insertMap "content" $ toJSON [ object [ "html" .= h ] ]
+  where h = (fromMaybe "" $ (renderHtml . writeHtml pandocWriterOptions) `liftM` content) ++ cs syndLinks
+
+wrapWithType ∷ ObjType → ObjProperties → Value
+wrapWithType htype props =
+  object [ "type"       .= [ htype ]
+         , "properties" .= insertMap "syndication" (Array V.empty) props ]
+
+decideCategory ∷ ObjProperties → CategoryName
+decideCategory props | hasProp "name"          = "articles"
+                     | hasProp "in-reply-to"   = "replies"
+                     | hasProp "like-of"       = "likes"
+                     | otherwise               = "notes"
+  where hasProp = isJust . flip lookup props
+
+decideSlug ∷ ObjProperties → UTCTime → EntrySlug
+decideSlug props now = unpack . fromMaybe fallback $ getProp =<< lookup "slug" props
+  where fallback = slugify . fromMaybe (formatTimeSlug now) $ asum [ getProp =<< lookup "name" props
+                                                                   , getProp =<< lookup "summary" props ]
+        formatTimeSlug = pack . formatTime defaultTimeLocale "%Y-%m-%d-%H-%M-%S"
+        getProp (Array a)  = headMay $ mapMaybe onlyString $ V.toList a
+        getProp (String s) = Just s
+        getProp _          = Nothing
+
+readContent ∷ Value → Maybe Pandoc
+readContent c = asum [ readWith readHtml       =<< c ^? key "html"
+                     , readWith readTextile    =<< c ^? key "textile"
+                     , readWith readOrg        =<< asum [ c ^? key "org", c ^? key "orgmode", c ^? key "org-mode" ]
+                     , readWith readRST        =<< asum [ c ^? key "rst", c ^? key "rest", c ^? key "restructuredtext" ]
+                     , readWith readLaTeX      =<< asum [ c ^? key "tex", c ^? key "latex" ]
+                     , readWith readMarkdown   =<< asum [ c ^? key "markdown", c ^? key "gfm" ]
+                     , readWith readCommonMark =<< c ^? key "value"
+                     , readWith readCommonMark c ]
+  where readWith rdr (Array a)  = Just $ pandocRead rdr $ cs $ concat $ mapMaybe onlyString $ V.toList a
+        readWith rdr (String t) = Just $ pandocRead rdr $ cs t
+        readWith _   _          = Nothing
+
+notifyPuSH ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
+             URI → μ ()
+notifyPuSH l = do
+  hub ← getConfOpt pushHub
+  case parseURI hub of
+    Nothing → return ()
+    Just hubURI → do
+      base ← getConfOpt baseURI
+      let pingURI = l `relativeTo` base
+          body = writeForm [ (asText "hub.mode", asText "publish"), ("hub.url", tshow pingURI) ]
+      let req = def { method = "POST"
+                    , requestHeaders = [ (HT.hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
+                    , requestBody = RequestBodyBS body }
+      req' ← setUri req hubURI
+      void $ withRequest req' $ \_ → do
+        putStrLn $ "PubSubHubbub notified: " ++ cs body
+        return $ Just ()
+
+syndicate ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
+            Value → URI → LText → μ Value
+syndicate entry absUrl syndLinks = do
+  syndMs ← contentWebmentions $ Just $ pandocRead readHtml $ cs syndLinks
+  syndResults ← catMaybes `liftM` sendWebmentions absUrl syndMs
+  let processSynd resp = do
+        guard $ responseStatus resp `elem` [ HT.ok200, HT.created201 ]
+        decodeUtf8 `liftM` lookup "Location" (responseHeaders resp)
+  return $ set (key "properties" . key "syndication") (Array $ V.fromList $ map String $ mapMaybe processSynd syndResults) entry

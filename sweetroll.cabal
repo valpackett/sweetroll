@@ -51,6 +51,7 @@ library
       , blaze-html
       , time
       , pcre-heavy
+      , attoparsec
       , aeson
       , lens-aeson
       , jwt

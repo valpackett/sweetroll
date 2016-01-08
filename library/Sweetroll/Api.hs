@@ -26,7 +26,7 @@ import           Sweetroll.Routes
 import           Sweetroll.Pages
 import           Sweetroll.Rendering
 import           Sweetroll.Auth
-import           Sweetroll.Micropub
+import           Sweetroll.Micropub.Endpoint
 import           Sweetroll.Webmention.Receive
 import           Sweetroll.Style
 import           Sweetroll.Util

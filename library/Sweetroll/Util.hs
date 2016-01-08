@@ -11,10 +11,9 @@ import           Data.Char (isSpace)
 import           Data.String.Conversions
 import           Data.String.Conversions.Monomorphic
 import           Data.Proxy
-import           Text.Regex.PCRE.Heavy
+import           Data.Aeson
 import qualified Text.Pandoc as P
 import qualified Text.Pandoc.Error as PE
-import           Safe (headMay)
 import           Network.Wai (Middleware, responseLBS, pathInfo)
 import           Network.Mime (defaultMimeLookup)
 import           Network.HTTP.Types.Status (ok200)
@@ -24,15 +23,9 @@ import           Sweetroll.Conf (pandocReaderOptions)
 type CategoryName = String
 type EntrySlug = String
 
--- | Tries to find a key-value pair by key and return the value, trying all given keys.
---
--- >>> lookupFirst ["hdd", "ram"] [("cpus", 1), ("ram", 1024)]
--- Just 1024
-lookupFirst ∷ Eq α ⇒ [α] → [(α, β)] → Maybe β
-lookupFirst (x:xs) ps = case lookup x ps of
-  Nothing → lookupFirst xs ps
-  m → m
-lookupFirst [] _ = Nothing
+onlyString ∷ Value → Maybe Text
+onlyString (String t) = Just t
+onlyString _          = Nothing
 
 -- | Prepares a text for inclusion in a URL.
 --
@@ -46,20 +39,6 @@ slugify = filter (not . isSpace) . intercalate "-" . words .
           replace "#" "hash" . replace "@" "at"   . replace "$" "dollar" .
           filter (`onotElem` ("!^*?()[]{}`./\\'\"~|" ∷ String)) .
           toLower . strip
-
--- | Parses comma-separated tags into a list.
---
--- >>> parseTags "article,note, first post"
--- ["article","note","first post"]
--- 
--- >>> parseTags "one tag"
--- ["one tag"]
---
--- >>> parseTags ""
--- []
-parseTags ∷ Text → [Text]
-parseTags ts = mapMaybe (headMay . snd) $ scan r ts
-  where r = [re|([^,]+),?\s?|]
 
 -- | Encodes key-value data as application/x-www-form-urlencoded.
 writeForm ∷ (ConvertibleStrings α Text, ConvertibleStrings β Text, ConvertibleStrings LByteString γ) ⇒ [(α, β)] → γ

@@ -11,6 +11,7 @@ import           Servant hiding (toText)
 import           Data.String.Conversions
 import           Sweetroll.Auth (AuthProtect)
 import           Sweetroll.Conf
+import           Sweetroll.Micropub.Request
 import           Sweetroll.Pages
 
 data HTML
@@ -23,7 +24,7 @@ type DefaultCssRoute          = "default-style.css" :> Get '[CSS] LByteString
 
 type PostLoginRoute           = "login" :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] [(Text, Text)]
 type GetLoginRoute            = "login" :> AuthProtect :> Get '[FormUrlEncoded] [(Text, Text)]
-type PostMicropubRoute        = "micropub" :> AuthProtect :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] (Headers '[Header "Location" Text] [(Text, Text)])
+type PostMicropubRoute        = "micropub" :> AuthProtect :> ReqBody '[FormUrlEncoded, JSON] MicropubRequest :> Post '[FormUrlEncoded, JSON] (Headers '[Header "Location" Text] [(Text, Text)])
 type GetMicropubRoute         = "micropub" :> AuthProtect :> QueryParam "q" Text :> Get '[FormUrlEncoded] [(Text, Text)]
 
 type PostWebmentionRoute      = "webmention" :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] ()

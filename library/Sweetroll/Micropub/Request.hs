@@ -38,7 +38,7 @@ formKey = do
 formToObject ∷ [(Text, Text)] → Value
 formToObject f = foldl' assign (object []) $ (map . first) parseKey f
   where parseKey x = fromMaybe [ x ] $ hush $ parseOnly formKey x
-        assign (Object o) (k : [], v) = Object $ insertWith concatJSON k (toJSON [ v ]) o
+        assign (Object o) ([k], v) = Object $ insertWith concatJSON k (toJSON [ v ]) o
         assign (Object o) (k : k' : ks, v) = Object $ insertWith (\_ o' → assign o' (k' : ks, v)) k (assign (object []) (k' : ks, v)) o
         assign x _ = x
         concatJSON (Array v1) (Array v2) = Array $ v1 ++ v2
@@ -51,6 +51,6 @@ instance FromFormUrlEncoded MicropubRequest where
     case lookup "mp-action" f of
       Nothing → let (Object o') = formToObject f
                     o = deleteMap "h" o'
-                    h = "h-" ++ (fromMaybe "entry" $ lookup "h" f) in
+                    h = "h-" ++ fromMaybe "entry" (lookup "h" f) in
                       Right $ Create h o []
       _ → Left "Unknown action type"

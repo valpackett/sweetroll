@@ -1,17 +1,20 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE GADTs, FlexibleContexts, QuasiQuotes #-}
+{-# LANGUAGE GADTs, RankNTypes, FlexibleContexts, QuasiQuotes #-}
 
 -- | Various functions used inside Sweetroll.
 module Sweetroll.Util where
 
 import           ClassyPrelude hiding (fromString, headMay)
 import           Control.Error.Util (hush)
+import           Control.Lens
 import           Data.Text (replace, strip)
 import           Data.Char (isSpace)
 import           Data.String.Conversions
 import           Data.String.Conversions.Monomorphic
 import           Data.Proxy
-import           Data.Aeson
+import           Data.Aeson.Lens
+import           Data.Text (splitOn)
+import           Network.URI
 import qualified Text.Pandoc as P
 import qualified Text.Pandoc.Error as PE
 import           Network.Wai (Middleware, responseLBS, pathInfo)
@@ -23,9 +26,10 @@ import           Sweetroll.Conf (pandocReaderOptions)
 type CategoryName = String
 type EntrySlug = String
 
-onlyString ∷ Value → Maybe Text
-onlyString (String t) = Just t
-onlyString _          = Nothing
+firstStr o l = (o ^? l . _String) <|> (o ^? l . values . _String)
+
+uriPathParts ∷ ConvertibleStrings Text α ⇒ URI → [α]
+uriPathParts = map cs . splitOn "/" . drop 1 . cs . uriPath
 
 -- | Prepares a text for inclusion in a URL.
 --
@@ -37,7 +41,7 @@ slugify = filter (not . isSpace) . intercalate "-" . words .
           replace "&" "and"  . replace "+" "plus" . replace "%" "percent" .
           replace "<" "lt"   . replace ">" "gt"   . replace "=" "eq" .
           replace "#" "hash" . replace "@" "at"   . replace "$" "dollar" .
-          filter (`onotElem` ("!^*?()[]{}`./\\'\"~|" ∷ String)) .
+          filter (`onotElem` asString "!^*?()[]{}`./\\'\"~|") .
           toLower . strip
 
 -- | Encodes key-value data as application/x-www-form-urlencoded.

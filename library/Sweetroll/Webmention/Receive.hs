@@ -10,7 +10,6 @@ import           Control.Concurrent.Lifted (fork)
 import qualified Data.HashMap.Strict as HMS
 import qualified Data.Vector as V
 import           Data.String.Conversions
-import           Data.Text (splitOn)
 import           Data.Aeson
 import           Data.Aeson.Lens
 import           Network.URI
@@ -20,6 +19,7 @@ import           Servant
 import           Gitson
 import           Sweetroll.Conf
 import           Sweetroll.Monads
+import           Sweetroll.Util
 
 -- TODO: rate limiting
 
@@ -30,7 +30,7 @@ receiveWebmention allParams = do
   base ← getConfOpt baseURI
   shouldBeSync ← getConfOpt testMode
   guardBool errWrongDomain $ (uriRegName <$> uriAuthority target) == (uriRegName <$> uriAuthority base)
-  void $ case map cs $ splitOn "/" $ drop 1 $ cs $ uriPath target of
+  void $ case uriPathParts target of
     [ category, slug ] → do
       void $ guardJust errWrongPath $ documentIdFromName category slug
       (if shouldBeSync then void else void . fork) $ processWebmention category slug source target
@@ -47,7 +47,7 @@ processWebmention category slug source target =
             case entrym of
               Just entry → x entry
               _ → putStrLn $ "Received webmention for nonexistent " ++ tshow target ++ " from " ++ tshow source
-    case statusCode (responseStatus resp) of
+    case statusCode $ responseStatus resp of
       410 → withEntry $ \entry → do
               putStrLn $ "Received gone webmention for " ++ tshow target ++ " from " ++ tshow source
               let updatedEntry = key "properties" %~ removeMentionOf source $ (entry ∷ Value)

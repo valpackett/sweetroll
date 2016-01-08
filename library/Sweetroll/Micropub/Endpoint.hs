@@ -11,7 +11,6 @@ import           Control.Monad.Trans.Control
 import           Control.Lens hiding ((.=), (|>))
 import           Data.Aeson
 import           Data.Aeson.Lens
-import           Data.Microformats2.Parser.Util (emptyVal)
 import           Data.String.Conversions
 import qualified Data.Vector as V
 import           Data.Foldable (asum)
@@ -58,7 +57,6 @@ postMicropub token (Create htype props synds) = do
         |>  setContent content syndLinks
         |>  wrapWithType htype
         -- TODO: copy content for reposts
-  traceShowM obj
   transaction "./" $ saveNextDocument category slug obj
   unless isTest $ void $ fork $ do
     threadDelay =<< (*1000000) `liftM` getConfOpt pushDelay
@@ -66,18 +64,13 @@ postMicropub token (Create htype props synds) = do
       -- check that it wasn't deleted after the delay
       obj'm ← readDocumentByName category slug
       case obj'm of
+        Nothing → return ()
         Just obj' → do
           notifyPuSH $ permalink (Proxy ∷ Proxy IndexRoute)
           notifyPuSH $ permalink (Proxy ∷ Proxy CatRouteE) category
           saveDocumentByName category slug =<< syndicate obj' absUrl (cs syndLinks)
           contMs ← contentWebmentions content
-          -- XXX: not tested yet
-          let metaMs = [ (target, endpoint) | k ← [ "in-reply-to", "like-of", "repost-of" ]
-                                            , ctx ← V.toList $ fromMaybe V.empty $ obj' ^? key "properties" . key k . _Array
-                                            , endpoint ← mapMaybe (parseURI . cs) $ mapMaybe onlyString $ V.toList $ fromMaybe V.empty $ ctx ^? key "webmention-endpoint" . _Array
-                                            , target   ← maybeToList $ (parseURI . cs) =<< ctx ^? key "fetched-url" . _String ]
-          void $ sendWebmentions absUrl (metaMs ++ contMs)
-        _ → return ()
+          void $ sendWebmentions absUrl $ contMs ++ replyContextWebmentions obj'
   return $ addHeader (tshow absUrl) []
 
 getSyndLinks ∷ [ObjSyndication] → Value → LText
@@ -98,16 +91,24 @@ fetchReplyContexts k props = do
           Just uri → do
             r ← withSuccessfulRequestHtml uri $ \resp →
               withFetchEntryWithAuthors uri resp $ \mfRoot ((Object entry), _) →
-                return $ Object $ insertMap "webmention-endpoint" (toJSON $ traceShowId $ map tshow $ discoverWebmentionEndpoints mfRoot (linksFromHeader resp))
+                return $ Object $ insertMap "webmention-endpoint" (toJSON $ map tshow $ discoverWebmentionEndpoints mfRoot (linksFromHeader resp))
                                 $ insertMap "fetched-url" (toJSON u) entry
             return $ fromMaybe (String u) r
         fetch x = return x
+
+-- XXX: not tested yet
+replyContextWebmentions ∷ Value → [(TargetURI, EndpointURI)]
+replyContextWebmentions obj =
+  [ (tgt, endp) | k    ← [ "in-reply-to", "like-of", "repost-of" ]
+                , ctx  ← obj ^.. key "properties" . key k . values
+                , endp ← mapMaybe (parseURI . cs) $ ctx ^.. key "webmention-endpoint" . values . _String
+                , tgt  ← maybeToList $ (parseURI . cs) =<< ctx ^? key "fetched-url" . _String ]
 
 setDates ∷ UTCTime → ObjProperties → ObjProperties
 setDates now = insertMap "updated" (toJSON [ now ]) . insertWith (\_ x → x) "published" (toJSON [ now ])
 
 setClientId ∷ JWT VerifiedJWT → ObjProperties → ObjProperties
-setClientId token = insertMap "client-id" $ toJSON $ filter (/= "example.com") (catMaybes [ lookup "client_id" $ unregisteredClaims $ claims token ])
+setClientId token = insertMap "client-id" $ toJSON $ filter (/= "example.com") $ catMaybes [ lookup "client_id" $ unregisteredClaims $ claims token ]
 
 setUrl ∷ URI → ObjProperties → ObjProperties
 setUrl url = insertMap "url" $ toJSON  [ tshow url ]
@@ -129,26 +130,23 @@ decideCategory props | hasProp "name"          = "articles"
   where hasProp = isJust . flip lookup props
 
 decideSlug ∷ ObjProperties → UTCTime → EntrySlug
-decideSlug props now = unpack . fromMaybe fallback $ getProp =<< lookup "slug" props
-  where fallback = slugify . fromMaybe (formatTimeSlug now) $ asum [ getProp =<< lookup "name" props
-                                                                   , getProp =<< lookup "summary" props ]
+decideSlug props now = unpack . fromMaybe fallback $ getProp "slug"
+  where fallback = slugify . fromMaybe (formatTimeSlug now) $ getProp "name" <|> getProp "summary"
         formatTimeSlug = pack . formatTime defaultTimeLocale "%Y-%m-%d-%H-%M-%S"
-        getProp (Array a)  = headMay $ mapMaybe onlyString $ V.toList a
-        getProp (String s) = Just s
-        getProp _          = Nothing
+        getProp k = firstStr (Object props) (key k)
 
 readContent ∷ Value → Maybe Pandoc
-readContent c = asum [ readWith readHtml       =<< c ^? key "html"
-                     , readWith readTextile    =<< c ^? key "textile"
-                     , readWith readOrg        =<< asum [ c ^? key "org", c ^? key "orgmode", c ^? key "org-mode" ]
-                     , readWith readRST        =<< asum [ c ^? key "rst", c ^? key "rest", c ^? key "restructuredtext" ]
-                     , readWith readLaTeX      =<< asum [ c ^? key "tex", c ^? key "latex" ]
-                     , readWith readMarkdown   =<< asum [ c ^? key "markdown", c ^? key "gfm" ]
-                     , readWith readCommonMark =<< c ^? key "value"
-                     , readWith readCommonMark c ]
-  where readWith rdr (Array a)  = Just $ pandocRead rdr $ cs $ concat $ mapMaybe onlyString $ V.toList a
-        readWith rdr (String t) = Just $ pandocRead rdr $ cs t
-        readWith _   _          = Nothing
+readContent c = asum [ readWith readHtml       $ key "html"
+                     , readWith readTextile    $ key "textile"
+                     , readWith readOrg        $ key "org"
+                     , readWith readRST        $ key "rst"
+                     , readWith readLaTeX      $ key "tex"
+                     , readWith readLaTeX      $ key "latex"
+                     , readWith readMarkdown   $ key "markdown"
+                     , readWith readMarkdown   $ key "gfm"
+                     , readWith readCommonMark $ key "value"
+                     , readWith readCommonMark id ]
+  where readWith rdr l = pandocRead rdr . cs <$> firstStr c l
 
 notifyPuSH ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
              URI → μ ()

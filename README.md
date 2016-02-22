@@ -4,16 +4,17 @@ A website engine for [the indie web] with curved swords. *Curved! Swords!*
 
 - uses [Git]+[JSON] for storage
 - supports [Micropub] for posting
-- sends [Webmentions]
+- allows posting in [CommonMark Markdown] and other markup languages (powered by [Pandoc])
+- sends and receives [Webmentions]
 - supports the webmention-to-[syndication] / Syndicate by Reference process ([Bridgy Publish])
+- sends [PubSubHubbub] notifications on new posts (for [readers])
 - supports [indie-config]
 - has a [JSON Web Tokens]-based [token-endpoint]
-- allows posting in [CommonMark Markdown] and other markup languages (powered by [Pandoc])
 - written in [Haskell]
 
 I'm running it on [my website](https://unrelenting.technology).
 
-*Privacy notice*: if you post your git repo on a public host like GitHub or Bitbucket, your "deleted" entries are not really deleted.
+*Privacy notice*: if you expose your website's **git repo** publicly, your "deleted" entries are not really deleted.
 
 [the indie web]: https://indiewebcamp.com
 [Git]: https://git-scm.com
@@ -27,6 +28,8 @@ I'm running it on [my website](https://unrelenting.technology).
 [Webmentions]: https://indiewebcamp.com/webmention
 [syndication]: https://indiewebcamp.com/POSSE
 [Bridgy Publish]: https://brid.gy/about#publishing
+[PubSubHubbub]: https://indiewebcamp.com/PubSubHubbub
+[readers]: https://indiewebcamp.com/readers
 [indie-config]: https://indiewebcamp.com/indie-config
 [token-endpoint]: https://indiewebcamp.com/token-endpoint
 
@@ -39,8 +42,8 @@ I haven't uploaded any yet, so you have to build from source.
 
 ### Buliding from source
 
-- get [stack](https://github.com/commercialhaskell/stack) (from your OS package manager or `cabal install stack`)
-- get [bower](http://bower.io) (get node/[npm](https://www.npmjs.com) from your OS package manager, `npm install -g bower`)
+- get [stack] (from your OS package manager or `cabal install stack`)
+- get [bower] (get node/[npm](https://www.npmjs.com) from your OS package manager, `npm install -g bower`)
 - `git clone` the repo
 - `cd` into it
 - `bower install`
@@ -95,12 +98,14 @@ Use Micropub clients like [Micropublish](https://micropublish.herokuapp.com) and
 
 ## Development
 
-Use [stack](https://github.com/commercialhaskell/stack) to build.  
+Use [stack] to build (and [bower] to get front-end dependencies).  
 Use ghci to run tests and the server while developing (see the `.ghci` file).
 
 The `:serve` command in ghci runs the server in test mode, which means you don't need to authenticate using IndieAuth.
 
 ```bash
+$ bower install
+
 $ stack build
 
 $ stack test && rm tests.tix
@@ -129,23 +134,44 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
 
 ## TODO
 
-- [x] Syndicate by Reference: use the `Location` header instead of JSON
-- [ ] hashcash in webmentions
-- [ ] micropub updating and deleting (implement `FromFormUrlEncoded` for Value, To/FromJSON to support both form-urlencoded and JSON; // respond to ?q=syndicate-to with JSON too)
-- [ ] indieweb-algorithms: [mf2-shim](https://github.com/indieweb/php-mf2-shim)
-- [ ] templates: more consistency / abstraction with dates and reply buttons, etc.
-- [ ] respond to [WebFinger](https://webfinger.net) with a link to the index page & links parsed from the index page by the mf2 parser & custom links from the config
-- [ ] posting [photos](https://indiewebcamp.com/photos)
+- [ ] Atom feed (should be followable from [GNU Social](https://indiewebcamp.com/GNU_social) i.e. should be PubSubHubbub'd, should be based on HTML as the source of truth)
+- [ ] support [WebFinger](https://webfinger.net) with HTML as the source of truth as well (but also additional links from config e.g. for [remoteStorage](https://remotestorage.io))
+- [ ] event system: hooks on micropub posting and webmention processing
+  - [ ] cleaning a cache (which is not there yet... should be an in-process cache with fast expiration -- protection against DDoS or Hacker News effect)
+  - [ ] real-time page updates with Server-Sent Events (make a Web Component for HTML-based updating)
+  - [ ] JS hooks as plugins (API: a Sweetroll object which is an EventEmitter and also has config/secrets getters; should be possible to make HTTP requests to e.g. send webmention notifications)
+    - [ ] Telegram bot (posting, webmention notifications, webmention deletion, etc.) as JS plugin (so, API also needs to allow handling HTTP requests)
+  - [ ] static mode: on these events, regenerate website pages into static HTML files
+    - [ ] IPFS support! (see [hs-ipfs-api](https://github.com/davidar/hs-ipfs-api)) publishing there in the event handler too. Oh, and [IPFS supports custom services](https://ipfs.io/ipfs/QmTkzDwWqPbnAh5YiV5VwcTLnGdwSNsNTn2aDxdXBFca7D/example#/ipfs/QmQwAP9vFjbCtKvD8RkJdCvPHqLQjZfW7Mqbbqx18zd8j7/api/service/readme.md)! IPFS-Webmention, because why not.
+    - [ ] S3 support & running on AWS Lambda... or good old CGI, which is actually kinda similar to Lambda
+- webmention
+  - [ ] hashcash
+    - [ ] throttle non-hashcashed requests to avoid [DDoS](https://indiewebcamp.com/DDOS)
+  - [ ] moderation tools
+    - [ ] different modes in config: allow all, allow known good domains (e.g. domains replied to), premoderate all, turn off webmention
+  - [ ] [blocking](https://indiewebcamp.com/block) domains
+    - [ ] sharing block lists
+- micropub
+  - [ ] handle update requests
+  - [ ] handle delete requests
+  - [ ] respond to ?q=syndicate-to with JSON
+  - [ ] support posting [photos](https://indiewebcamp.com/photos)
+- [ ] figure out URL/canonical/etc. handling for alternative networks & mirrors like .onion & IPFS -- including webmentions!
+- [ ] indieweb-algorithms: [mf2-shim](https://github.com/indieweb/php-mf2-shim) style functionality!
 - [ ] proxying reply-context and comments-presentation images (to avoid mixed content and possible tracking) (note: we already depend on `JuicyPixels` through Pandoc)
 - [ ] custom non-entry html pages
-- [ ] JS hooks for events like posting and webmentions (API: a Sweetroll object which is an EventEmitter and also has config/secrets getters; should be possible to make HTTP requests to e.g. send webmention notifications)
 - [ ] archive pages, ie. unpaginated pages
 - [ ] tags
-- [ ] built-in TLS server, since we depend on `tls` already because of the client
-- [ ] Atom feed
+- [ ] a thread-pool of hs-duktape instances for template rendering! currently there's one context for all threads
 - [ ] hs-duktape: add functions for getting ByteStrings (get rid of ByteString → Text → ByteString conversion)
+- [ ] built-in TLS server, since we depend on `tls` already because of the client
+- [ ] templates: more consistency / abstraction with dates and reply buttons, etc.
+- [ ] something about [search](https://indiewebcamp.com/search)
 
 ## License
 
 This is free and unencumbered software released into the public domain.  
 For more information, please refer to the `UNLICENSE` file or [unlicense.org](http://unlicense.org).
+
+[stack]: https://github.com/commercialhaskell/stack
+[bower]: http://bower.io

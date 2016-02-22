@@ -42,8 +42,8 @@ I haven't uploaded any yet, so you have to build from source.
 
 ### Buliding from source
 
-- get [stack] (from your OS package manager or `cabal install stack`)
-- get [bower] (get node/[npm](https://www.npmjs.com) from your OS package manager, `npm install -g bower`)
+- get [stack] \(from your OS package manager or `cabal install stack`)
+- get [bower] \(get node/[npm](https://www.npmjs.com) from your OS package manager, `npm install -g bower`)
 - `git clone` the repo
 - `cd` into it
 - `bower install`

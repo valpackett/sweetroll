@@ -134,39 +134,51 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
 
 ## TODO
 
-- [ ] Atom feed (should be followable from [GNU Social](https://indiewebcamp.com/GNU_social) i.e. should be PubSubHubbub'd, should be based on HTML as the source of truth)
-- [ ] support [WebFinger](https://webfinger.net) with HTML as the source of truth as well (but also additional links from config e.g. for [remoteStorage](https://remotestorage.io))
+- html/frontend/templating
+  - [ ] Atom feed (should be followable from [GNU Social](https://indiewebcamp.com/GNU_social) i.e. should be PubSubHubbub'd, should be based on HTML as the source of truth)
+  - [ ] support [WebFinger](https://webfinger.net) with HTML as the source of truth as well (but also additional links from config e.g. for [remoteStorage](https://remotestorage.io))
+  - [ ] better note like display ("Liked a note by User Name" then gray smaller quote, like in Twitter notifications)
+  - [ ] more consistency / abstraction with dates and reply buttons, etc.
+  - [ ] figure out URL/canonical/etc. handling for alternative networks & mirrors like .onion & IPFS -- including webmentions!
+  - [ ] custom non-entry html pages
+  - [ ] archive pages, ie. unpaginated pages
+  - [ ] proxying reply-context and comments-presentation images (to avoid mixed content and possible tracking) (note: we already depend on `JuicyPixels` through Pandoc)
+  - [ ] indieweb-components: a component for a Medium-style popup on selection that offers a fragmention link and (?) indie-config repost-quote-something (look how [selection-sharer](https://github.com/xdamman/selection-sharer) works on mobile!! but probably should look the same just at the opposite direction than iOS's popup)
+  - [ ] a thread pool of hs-duktape instances for template rendering! currently there's one context for all threads
+  - [ ] hs-duktape: add functions for getting ByteStrings (get rid of ByteString → Text → ByteString conversion)
+  - [ ] built-in TLS server, since we depend on `tls` already because of the client
 - [ ] event system: hooks on micropub posting and webmention processing
   - [ ] cleaning a cache (which is not there yet... should be an in-process cache with fast expiration -- protection against DDoS or Hacker News effect)
   - [ ] real-time page updates with Server-Sent Events (make a Web Component for HTML-based updating)
   - [ ] JS hooks as plugins (API: a Sweetroll object which is an EventEmitter and also has config/secrets getters; should be possible to make HTTP requests to e.g. send webmention notifications)
     - [ ] Telegram bot (posting, webmention notifications, webmention deletion, etc.) as JS plugin (so, API also needs to allow handling HTTP requests)
   - [ ] static mode: on these events, regenerate website pages into static HTML files
-    - [ ] IPFS support! (see [hs-ipfs-api](https://github.com/davidar/hs-ipfs-api)) publishing there in the event handler too. Oh, and [IPFS supports custom services](https://ipfs.io/ipfs/QmTkzDwWqPbnAh5YiV5VwcTLnGdwSNsNTn2aDxdXBFca7D/example#/ipfs/QmQwAP9vFjbCtKvD8RkJdCvPHqLQjZfW7Mqbbqx18zd8j7/api/service/readme.md)! IPFS-Webmention, because why not.
+    - [ ] IPFS support! (see/improve [hs-ipfs-api](https://github.com/davidar/hs-ipfs-api)) publishing there in the event handler too. Oh, and [IPFS supports custom services](https://ipfs.io/ipfs/QmTkzDwWqPbnAh5YiV5VwcTLnGdwSNsNTn2aDxdXBFca7D/example#/ipfs/QmQwAP9vFjbCtKvD8RkJdCvPHqLQjZfW7Mqbbqx18zd8j7/api/service/readme.md)! IPFS-Webmention, because why not.
     - [ ] S3 support & running on AWS Lambda... or good old CGI, which is actually kinda similar to Lambda
-- webmention
+- webmention ([YAY W3C DRAFT](http://webmention.net/draft/)!)
   - [ ] hashcash
     - [ ] throttle non-hashcashed requests to avoid [DDoS](https://indiewebcamp.com/DDOS)
   - [ ] moderation tools
-    - [ ] different modes in config: allow all, allow known good domains (e.g. domains replied to), premoderate all, turn off webmention
-  - [ ] [blocking](https://indiewebcamp.com/block) domains
-    - [ ] sharing block lists
-- micropub
+    - [ ] different modes in config: allow all (except blocked), allow known good domains (e.g. domains replied to), premoderate all, turn off webmention
+    - [ ] [blocking](https://indiewebcamp.com/block) domains
+      - [ ] sharing block lists
+  - [ ] fix the awful code in `Sweetroll.Webmention.Receive` with some cool lenses or something
+  - [ ] reverify/refetch to update user profiles and stuff
+  - [ ] [salmentions](https://indiewebcamp.com/Salmention)
+  - [ ] threaded deduplication (fix [repeated replies like there](https://unrelenting.technology/replies/2015-09-06-20-29-54))
+- micropub ([YAY W3C DRAFT](http://micropub.net/draft/)!)
   - [ ] handle update requests
   - [ ] handle delete requests
-  - [ ] respond to ?q=syndicate-to with JSON
+  - [ ] handle undelete requests
+  - [ ] editing interface: when logged in, display a (Polymer-based) Web Component *on the site* that shows a top panel, overlays edit/remove buttons on top of microformats entries (including replies!), submits edits/deletes over micropub, (actually make that extensible, micropub+microformats as just one supported thing)
+    - [ ] microadmin/microsettings/what's-a-good-name: extension to micropub for site settings. `?q=settings-schema` to get [JSON Schema](http://json-schema.org) of settings, display the form, `{mp-action: settings}` to update
+    - [ ] markup formats support (`rel=alternate` for getting the source, field like `content[markdown]` for submitting) and `?q=markup-formats`
+  - [ ] respond to `?q=syndicate-to` with JSON
+  - [ ] respond to `?q=source`
   - [ ] support posting [photos](https://indiewebcamp.com/photos)
-- [ ] figure out URL/canonical/etc. handling for alternative networks & mirrors like .onion & IPFS -- including webmentions!
 - [ ] indieweb-algorithms: [mf2-shim](https://github.com/indieweb/php-mf2-shim) style functionality!
-- [ ] proxying reply-context and comments-presentation images (to avoid mixed content and possible tracking) (note: we already depend on `JuicyPixels` through Pandoc)
-- [ ] custom non-entry html pages
-- [ ] archive pages, ie. unpaginated pages
 - [ ] tags
-- [ ] a thread-pool of hs-duktape instances for template rendering! currently there's one context for all threads
-- [ ] hs-duktape: add functions for getting ByteStrings (get rid of ByteString → Text → ByteString conversion)
-- [ ] built-in TLS server, since we depend on `tls` already because of the client
-- [ ] templates: more consistency / abstraction with dates and reply buttons, etc.
-- [ ] something about [search](https://indiewebcamp.com/search)
+- [ ] something about [search](https://indiewebcamp.com/search) ([full-text-search](https://hackage.haskell.org/package/full-text-search) i guess)
 
 ## License
 

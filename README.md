@@ -138,13 +138,14 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
   - [ ] Atom feed (should be followable from [GNU Social](https://indiewebcamp.com/GNU_social) i.e. should be PubSubHubbub'd, should be based on HTML as the source of truth)
   - [ ] support [WebFinger](https://webfinger.net) with HTML as the source of truth as well (but also additional links from config e.g. for [remoteStorage](https://remotestorage.io))
   - [ ] better note like display ("Liked a note by User Name" then gray smaller quote, like in Twitter notifications)
+  - [ ] new index page layout: switching between filters like on Twitter profiles
   - [ ] more consistency / abstraction with dates and reply buttons, etc.
   - [ ] figure out URL/canonical/etc. handling for alternative networks & mirrors like .onion & IPFS -- including webmentions!
   - [ ] custom non-entry html pages
   - [ ] archive pages, ie. unpaginated pages
   - [ ] proxying reply-context and comments-presentation images (to avoid mixed content and possible tracking) (note: we already depend on `JuicyPixels` through Pandoc)
   - [ ] indieweb-components: a component for a Medium-style popup on selection that offers a fragmention link and (?) indie-config repost-quote-something (look how [selection-sharer](https://github.com/xdamman/selection-sharer) works on mobile!! but probably should look the same just at the opposite direction than iOS's popup)
-  - [ ] a thread pool of hs-duktape instances for template rendering! currently there's one context for all threads
+  - [ ] a pool of hs-duktape instances for template rendering! currently there's one context for all threads
   - [ ] hs-duktape: add functions for getting ByteStrings (get rid of ByteString → Text → ByteString conversion)
   - [ ] built-in TLS server, since we depend on `tls` already because of the client
 - [ ] event system: hooks on micropub posting and webmention processing
@@ -156,6 +157,7 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
     - [ ] IPFS support! (see/improve [hs-ipfs-api](https://github.com/davidar/hs-ipfs-api)) publishing there in the event handler too. Oh, and [IPFS supports custom services](https://ipfs.io/ipfs/QmTkzDwWqPbnAh5YiV5VwcTLnGdwSNsNTn2aDxdXBFca7D/example#/ipfs/QmQwAP9vFjbCtKvD8RkJdCvPHqLQjZfW7Mqbbqx18zd8j7/api/service/readme.md)! IPFS-Webmention, because why not.
     - [ ] S3 support & running on AWS Lambda... or good old CGI, which is actually kinda similar to Lambda
 - webmention ([YAY W3C DRAFT](http://webmention.net/draft/)!)
+  - [ ] stop using pandoc walk for finding urls
   - [ ] hashcash
     - [ ] throttle non-hashcashed requests to avoid [DDoS](https://indiewebcamp.com/DDOS)
   - [ ] moderation tools
@@ -177,8 +179,11 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
   - [ ] respond to `?q=source`
   - [ ] support posting [photos](https://indiewebcamp.com/photos)
 - [ ] indieweb-algorithms: [mf2-shim](https://github.com/indieweb/php-mf2-shim) style functionality!
-- [ ] tags
 - [ ] something about [search](https://indiewebcamp.com/search) ([full-text-search](https://hackage.haskell.org/package/full-text-search) i guess)
+- [ ] tags? (hmm could just rely on search instead of keeping exact indexes)
+- [ ] consider dropping clay and just using css (I thought I should add color scheme customization but like, no)
+- [ ] refactor the HTTP request mess in `Sweetroll.Monads`
+- [ ] extract `formToObject` from `Sweetroll.Micropub.Request` into a separate library
 
 ## License
 

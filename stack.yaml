@@ -16,10 +16,7 @@ packages:
       commit: 81088e2af9c72cf2806b3e8e9825282774a76e73
     extra-dep: true
 extra-deps:
-  - http-link-header-1.0.1
-  - xml-lens-0.1.6.3
   - lens-datetime-0.2.1
   - setters-0.1
   - git-embed-0.1.0
-  - hspec-expectations-pretty-diff-0.7.2.3
-resolver: lts-3.20
+resolver: lts-5.4

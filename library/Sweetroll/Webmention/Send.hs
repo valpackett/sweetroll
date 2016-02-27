@@ -70,7 +70,7 @@ contentWebmentions ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, Monad
                      Maybe P.Pandoc → μ [(TargetURI, EndpointURI)]
 contentWebmentions Nothing = return []
 contentWebmentions (Just p) = do
-  let extractLink (P.Link _ (u, _)) = catMaybes [ parseURI u ]
+  let extractLink (P.Link _ _ (u, _)) = catMaybes [ parseURI u ]
       extractLink _ = []
       links = PW.query extractLink p
   findWebmentionEndpoints links

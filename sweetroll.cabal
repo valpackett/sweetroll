@@ -93,7 +93,8 @@ library
         Sweetroll.Api
         Sweetroll.Auth
         Sweetroll.Conf
-        Sweetroll.Micropub
+        Sweetroll.Micropub.Endpoint
+        Sweetroll.Micropub.Request
         Sweetroll.Monads
         Sweetroll.Pages
         Sweetroll.Rendering

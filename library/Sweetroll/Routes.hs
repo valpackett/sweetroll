@@ -26,7 +26,7 @@ type DefaultCssRoute          = "default-style.css" :> Get '[CSS] LByteString
 type PostLoginRoute           = "login" :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] [(Text, Text)]
 type GetLoginRoute            = "login" :> AuthProtect :> Get '[FormUrlEncoded] [(Text, Text)]
 type PostMicropubRoute        = "micropub" :> AuthProtect :> ReqBody '[FormUrlEncoded, JSON] MicropubRequest :> Post '[FormUrlEncoded, JSON] (Headers '[Header "Location" Text] MicropubResponse)
-type GetMicropubRoute         = "micropub" :> AuthProtect :> QueryParam "q" Text :> Get '[FormUrlEncoded, JSON] MicropubResponse
+type GetMicropubRoute         = "micropub" :> AuthProtect :> QueryParam "q" Text :> QueryParams "properties" Text :> QueryParam "url" Text :> Get '[FormUrlEncoded, JSON] MicropubResponse
 
 type PostWebmentionRoute      = "webmention" :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] ()
 

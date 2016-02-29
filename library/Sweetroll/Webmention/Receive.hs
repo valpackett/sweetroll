@@ -27,16 +27,11 @@ receiveWebmention ∷ [(Text, Text)] → Sweetroll ()
 receiveWebmention allParams = do
   source ← guardJustP (errNoURIInField "source") $ parseURI =<< cs <$> lookup "source" allParams
   target ← guardJustP (errNoURIInField "target") $ parseURI =<< cs <$> lookup "target" allParams
-  base ← getConfOpt baseURI
+  (category, slug) ← parseEntryURI target
+  void $ guardJust errWrongPath $ documentIdFromName category slug
   shouldBeSync ← getConfOpt testMode
-  guardBool errWrongDomain $ (uriRegName <$> uriAuthority target) == (uriRegName <$> uriAuthority base)
-  void $ case uriPathParts target of
-    [ category, slug ] → do
-      void $ guardJust errWrongPath $ documentIdFromName category slug
-      (if shouldBeSync then void else void . fork) $ processWebmention category slug source target
-      throwError respAccepted
-    _ → throwError errWrongPath
-  return ()
+  (if shouldBeSync then void else void . fork) $ processWebmention category slug source target
+  throwError respAccepted
 
 processWebmention ∷ String → String → URI → URI → Sweetroll ()
 processWebmention category slug source target =
@@ -98,18 +93,6 @@ intersectingUrls us e = hasIntersection us (urls e)
 
 urls ∷ Value → Vector Value
 urls x = fromMaybe V.empty $ x ^? key "properties" . key "url" . _Array
-
-errNoURIInField ∷ LByteString → ServantErr
-errNoURIInField f = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]
-                           , errBody    = "You didn't put a valid absolute URI in the '" ++ f ++ "' field of the www-form-urlencoded request body." }
-
-errWrongDomain ∷ ServantErr
-errWrongDomain = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]
-                        , errBody    = "The target URI is not on this domain." }
-
-errWrongPath ∷ ServantErr
-errWrongPath = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]
-                      , errBody    = "The target URI is not a resource that exists on this domain." }
 
 respAccepted ∷ ServantErr -- XXX: Only way to return custom HTTP response codes
 respAccepted = ServantErr { errHTTPCode = 202

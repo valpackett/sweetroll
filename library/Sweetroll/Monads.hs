@@ -32,10 +32,12 @@ import           Text.RawString.QQ
 import           Network.HTTP.Client.Internal (setUri) -- The fuck?
 import           Network.HTTP.Client.Conduit
 import           Network.HTTP.Types
+import           Network.URI
 import           Servant
 import           Gitson
 import           Scripting.Duktape
 import           Sweetroll.Conf
+import           Sweetroll.Util
 
 data SweetrollCtx = SweetrollCtx
   { _ctxConf     ∷ SweetrollConf
@@ -163,6 +165,27 @@ withFetchEntryWithAuthors uri resp a = do
           addAuthors' x = x
       liftM Just $ a mfRoot (addAuthors mfE, mfPs)
     _ → return Nothing
+
+parseEntryURI ∷ (MonadError ServantErr μ, MonadSweetroll μ) ⇒
+                URI → μ (String, String)
+parseEntryURI uri = do
+  base ← getConfOpt baseURI
+  guardBool errWrongDomain $ (uriRegName <$> uriAuthority uri) == (uriRegName <$> uriAuthority base)
+  case uriPathParts uri of
+    [ category, slug ] → return (category, slug)
+    _ → throwError errWrongPath
+
+errWrongDomain ∷ ServantErr
+errWrongDomain = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]
+                        , errBody    = "The target URI is not on this domain." }
+
+errWrongPath ∷ ServantErr
+errWrongPath = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]
+                      , errBody    = "The target URI is not a resource that exists on this domain." }
+
+errNoURIInField ∷ LByteString → ServantErr
+errNoURIInField f = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]
+                           , errBody    = "You didn't put a valid absolute URI in the '" ++ f ++ "' field of the www-form-urlencoded request body." }
 
 guardJustP ∷ MonadError ServantErr μ ⇒ ServantErr → Maybe α → μ α
 guardJustP _ (Just x) = return x

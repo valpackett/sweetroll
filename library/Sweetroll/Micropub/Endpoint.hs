@@ -37,13 +37,19 @@ infixl 1 |>
 (|>) ∷ Monad μ ⇒ μ α → (α → β) → μ β
 (|>) = flip liftM
 
-getMicropub ∷ JWT VerifiedJWT → Maybe Text → Sweetroll MicropubResponse
-getMicropub _ (Just "syndicate-to") = do
+getMicropub ∷ JWT VerifiedJWT → Maybe Text → [Text] → Maybe Text → Sweetroll MicropubResponse
+getMicropub _ (Just "syndicate-to") _ _ = do
   (MkSyndicationConfig syndConf) ← getConfOpt syndicationConfig
   return $ SyndicateTo $ case syndConf of
              Object o → keys o
              _ → []
-getMicropub token _ = getAuth token |> AuthInfo
+getMicropub _ (Just "source") props (Just url) = do
+  -- TODO: props filtering
+  target ← guardJustP (errNoURIInField "url") $ parseURI $ cs url
+  (category, slug) ← parseEntryURI target
+  entry ← guardJust errWrongPath $ readDocumentByName category slug
+  return $ Source entry
+getMicropub token _ _ _ = getAuth token |> AuthInfo
 
 postMicropub ∷ JWT VerifiedJWT → MicropubRequest
              → Sweetroll (Headers '[Header "Location" Text] MicropubResponse)

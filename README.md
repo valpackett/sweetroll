@@ -176,7 +176,7 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
     - [ ] microadmin/microsettings/what's-a-good-name: extension to micropub for site settings. `?q=settings-schema` to get [JSON Schema](http://json-schema.org) of settings, display the form, `{mp-action: settings}` to update
     - [ ] markup formats support (`rel=alternate` for getting the source, field like `content[markdown]` for submitting) and `?q=markup-formats`
   - [x] respond to `?q=syndicate-to` with JSON
-  - [ ] respond to `?q=source`
+  - [x] respond to `?q=source`
   - [ ] support posting [photos](https://indiewebcamp.com/photos)
 - [ ] indieweb-algorithms: [mf2-shim](https://github.com/indieweb/php-mf2-shim) style functionality!
 - [ ] something about [search](https://indiewebcamp.com/search) ([full-text-search](https://hackage.haskell.org/package/full-text-search) i guess)

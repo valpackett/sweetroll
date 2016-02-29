@@ -175,7 +175,7 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
   - [ ] editing interface: when logged in, display a (Polymer-based) Web Component *on the site* that shows a top panel, overlays edit/remove buttons on top of microformats entries (including replies!), submits edits/deletes over micropub, (actually make that extensible, micropub+microformats as just one supported thing)
     - [ ] microadmin/microsettings/what's-a-good-name: extension to micropub for site settings. `?q=settings-schema` to get [JSON Schema](http://json-schema.org) of settings, display the form, `{mp-action: settings}` to update
     - [ ] markup formats support (`rel=alternate` for getting the source, field like `content[markdown]` for submitting) and `?q=markup-formats`
-  - [ ] respond to `?q=syndicate-to` with JSON
+  - [x] respond to `?q=syndicate-to` with JSON
   - [ ] respond to `?q=source`
   - [ ] support posting [photos](https://indiewebcamp.com/photos)
 - [ ] indieweb-algorithms: [mf2-shim](https://github.com/indieweb/php-mf2-shim) style functionality!

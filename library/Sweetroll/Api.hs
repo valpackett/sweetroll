@@ -31,14 +31,6 @@ import           Sweetroll.Webmention.Receive
 import           Sweetroll.Style
 import           Sweetroll.Util
 
-getMicropub ∷ JWT VerifiedJWT → Maybe Text → Sweetroll [(Text, Text)]
-getMicropub _ (Just "syndicate-to") = do
-  (MkSyndicationConfig syndConf) ← getConfOpt syndicationConfig
-  return $ case syndConf of
-             Object o → map ("syndicate-to[]", ) $ keys o
-             _ → []
-getMicropub token _ = getAuth token
-
 getIndieConfig ∷ Sweetroll IndieConfig
 getIndieConfig = getConfOpt indieConfig
 

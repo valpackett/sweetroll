@@ -95,6 +95,7 @@ library
         Sweetroll.Conf
         Sweetroll.Micropub.Endpoint
         Sweetroll.Micropub.Request
+        Sweetroll.Micropub.Response
         Sweetroll.Monads
         Sweetroll.Pages
         Sweetroll.Rendering

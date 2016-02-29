@@ -1,8 +1,9 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TupleSections #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
 {-# LANGUAGE FlexibleContexts, TypeFamilies, DataKinds #-}
 
 module Sweetroll.Micropub.Endpoint (
-  postMicropub
+  getMicropub
+, postMicropub
 ) where
 
 import           ClassyPrelude
@@ -25,17 +26,27 @@ import           Servant
 import           Gitson
 import           Sweetroll.Conf
 import           Sweetroll.Util
+import           Sweetroll.Auth
 import           Sweetroll.Monads
 import           Sweetroll.Routes
 import           Sweetroll.Micropub.Request
+import           Sweetroll.Micropub.Response
 import           Sweetroll.Webmention.Send
 
 infixl 1 |>
 (|>) ∷ Monad μ ⇒ μ α → (α → β) → μ β
 (|>) = flip liftM
 
+getMicropub ∷ JWT VerifiedJWT → Maybe Text → Sweetroll MicropubResponse
+getMicropub _ (Just "syndicate-to") = do
+  (MkSyndicationConfig syndConf) ← getConfOpt syndicationConfig
+  return $ SyndicateTo $ case syndConf of
+             Object o → keys o
+             _ → []
+getMicropub token _ = getAuth token |> AuthInfo
+
 postMicropub ∷ JWT VerifiedJWT → MicropubRequest
-             → Sweetroll (Headers '[Header "Location" Text] [(Text, Text)])
+             → Sweetroll (Headers '[Header "Location" Text] MicropubResponse)
 postMicropub token (Create htype props synds) = do
   now ← liftIO getCurrentTime
   base ← getConfOpt baseURI
@@ -71,7 +82,7 @@ postMicropub token (Create htype props synds) = do
           saveDocumentByName category slug =<< syndicate obj' absUrl (cs syndLinks)
           contMs ← contentWebmentions content
           void $ sendWebmentions absUrl $ contMs ++ replyContextWebmentions obj'
-  return $ addHeader (tshow absUrl) []
+  return $ addHeader (tshow absUrl) Posted
 
 getSyndLinks ∷ [ObjSyndication] → Value → LText
 getSyndLinks synds syndConf =

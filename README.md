@@ -164,10 +164,9 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
     - [ ] different modes in config: allow all (except blocked), allow known good domains (e.g. domains replied to), premoderate all, turn off webmention
     - [ ] [blocking](https://indiewebcamp.com/block) domains
       - [ ] sharing block lists
-  - [ ] fix the awful code in `Sweetroll.Webmention.Receive` with some cool lenses or something
   - [ ] reverify/refetch to update user profiles and stuff
-  - [ ] [salmentions](https://indiewebcamp.com/Salmention)
-  - [ ] threaded deduplication (fix [repeated replies like there](https://unrelenting.technology/replies/2015-09-06-20-29-54))
+  - [ ] send [salmentions](https://indiewebcamp.com/Salmention)
+  - [ ] deduplicate threaded replies like [there](https://unrelenting.technology/replies/2015-09-06-20-29-54) (that one is formatted as a reply both to my post and to the reply)
 - micropub ([YAY W3C DRAFT](http://micropub.net/draft/)!)
   - [ ] handle update requests
   - [ ] handle delete requests
@@ -182,7 +181,6 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
 - [ ] something about [search](https://indiewebcamp.com/search) ([full-text-search](https://hackage.haskell.org/package/full-text-search) i guess)
 - [ ] tags? (hmm could just rely on search instead of keeping exact indexes)
 - [ ] consider dropping clay and just using css (I thought I should add color scheme customization but like, no)
-- [ ] refactor the HTTP request mess in `Sweetroll.Monads`
 - [ ] extract `formToObject` from `Sweetroll.Micropub.Request` into a separate library
 
 ## License

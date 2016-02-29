@@ -19,9 +19,6 @@ import           Servant
 import           Gitson
 import           Sweetroll.Conf
 import           Sweetroll.Monads
-import           Sweetroll.Util
-
--- TODO: rate limiting
 
 receiveWebmention ∷ [(Text, Text)] → Sweetroll ()
 receiveWebmention allParams = do
@@ -61,7 +58,7 @@ verifyMention ∷ URI → Value → Bool
 verifyMention t m | propIncludesURI t "in-reply-to" m = True
 verifyMention t m | propIncludesURI t "like-of"     m = True
 verifyMention t m | propIncludesURI t "repost-of"   m = True
--- TODO: check content
+-- TODO: check content (if we're going to support mentions that aren't replies, etc.)
 verifyMention _ _ = False
 
 propIncludesURI ∷ URI → Text → Value → Bool
@@ -70,6 +67,12 @@ propIncludesURI t p m = elem t $ catMaybes $ map (parseURI <=< unCite) $ fromMay
         unCite (String s)   = Just $ cs s
         unCite _            = Nothing
 
+-- 0. write tests for this! and rename to upsert, not add
+-- 1. don't write it all into "comment", keep likes and reposts separate
+-- 2. first, check if entry is contained in nested entries -- update there if it is
+--    (so, fromMaybe newAtRoot findEntry, where findEntry is depth-first search, and it returns a lens)
+-- 3. delete first-level entries that are duplicates of nested entires (entries that reply to posts on two levels)
+--    (filter where findEntry returns None)
 addMention ∷ Value → Value → Value
 addMention m (Object props) = Object $ HMS.insertWith updateOrAdd "comment" (Array $ V.singleton m) props
   -- XXX: This is terrible.

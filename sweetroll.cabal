@@ -54,6 +54,7 @@ library
       , attoparsec
       , aeson
       , lens-aeson
+      , aeson-qq
       , jwt
       , gitson
       , microformats2-parser
@@ -163,6 +164,7 @@ test-suite tests
       , lens
       , aeson
       , lens-aeson
+      , aeson-qq
       , data-default
       , hspec
       , sweetroll
@@ -172,5 +174,6 @@ test-suite tests
     main-is: Spec.hs
     other-modules:
         Sweetroll.ApiSpec
+        Sweetroll.Webmention.ReceiveSpec
         TestUtil
     type: exitcode-stdio-1.0

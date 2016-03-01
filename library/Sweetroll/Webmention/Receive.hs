@@ -1,17 +1,17 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TupleSections #-}
-{-# LANGUAGE RankNTypes, FlexibleContexts #-}
+{-# LANGUAGE GADTs, RankNTypes, FlexibleContexts, QuasiQuotes #-}
 
 module Sweetroll.Webmention.Receive where
 
 import           ClassyPrelude
-import           Control.Lens
+import           Control.Lens hiding (snoc)
 import           Control.Monad.Except (throwError)
 import           Control.Concurrent.Lifted (fork)
 import qualified Data.HashMap.Strict as HMS
-import qualified Data.Vector as V
 import           Data.String.Conversions
 import           Data.Aeson
 import           Data.Aeson.Lens
+import           Data.Aeson.QQ
 import           Network.URI
 import           Network.HTTP.Types
 import           Network.HTTP.Client.Conduit
@@ -42,13 +42,13 @@ processWebmention category slug source target =
     case statusCode $ responseStatus resp of
       410 → withEntry $ \entry → do
               putStrLn $ "Received gone webmention for " ++ tshow target ++ " from " ++ tshow source
-              let updatedEntry = key "properties" %~ removeMentionOf source $ (entry ∷ Value)
+              let updatedEntry = upsertMention (entry ∷ Value) tombstone
               saveDocumentByName category slug updatedEntry
       200 → void $ withFetchEntryWithAuthors source resp $ \_ (mention, _) →
               if verifyMention target mention
                  then withEntry $ \entry → do
                    putStrLn $ "Received correct webmention for " ++ tshow target ++ " from " ++ tshow source
-                   let updatedEntry = key "properties" %~ addMention mention $ (entry ∷ Value)
+                   let updatedEntry = upsertMention (entry ∷ Value) $ ensurePresentUrl source mention
                    saveDocumentByName category slug updatedEntry
                  else putStrLn $ "Received unverified webmention for " ++ tshow target ++ " from " ++ tshow source ++ ": " ++ tshow mention
       _ → return ()
@@ -62,43 +62,53 @@ verifyMention t m | propIncludesURI t "repost-of"   m = True
 verifyMention _ _ = False
 
 propIncludesURI ∷ URI → Text → Value → Bool
-propIncludesURI t p m = elem t $ catMaybes $ map (parseURI <=< unCite) $ fromMaybe V.empty $ m ^? key "properties" . key p . _Array
+propIncludesURI t p m = elem t $ catMaybes $ map (parseURI <=< unCite) $ fromMaybe empty $ m ^? key "properties" . key p . _Array
   where unCite v@(Object _) = cs <$> v ^? key "value" . _String
         unCite (String s)   = Just $ cs s
         unCite _            = Nothing
 
--- 0. write tests for this! and rename to upsert, not add
--- 1. don't write it all into "comment", keep likes and reposts separate
--- 2. first, check if entry is contained in nested entries -- update there if it is
---    (so, fromMaybe newAtRoot findEntry, where findEntry is depth-first search, and it returns a lens)
--- 3. delete first-level entries that are duplicates of nested entires (entries that reply to posts on two levels)
---    (filter where findEntry returns None)
-addMention ∷ Value → Value → Value
-addMention m (Object props) = Object $ HMS.insertWith updateOrAdd "comment" (Array $ V.singleton m) props
-  -- XXX: This is terrible.
-  where updateOrAdd (Array new) (Array old) = Array $ case V.findIndex (intersectingUrls $ urls m) old of
-                                                        Just idx → old V.// [(idx, m)]
-                                                        Nothing → old ++ new
-        updateOrAdd anew@(Array _) _ = anew
-        updateOrAdd _ old = old
-addMention _ x = x
-
-removeMentionOf ∷ URI → Value → Value
-removeMentionOf uri (Object props) = Object $ HMS.adjust removeMention "comment" props
-  -- XXX: Use URI equality, not text equality?
-  where removeMention (Array ms) = Array $ V.filter (not . intersectingUrls (V.fromList [String $ tshow uri])) ms
-        removeMention x = x
-removeMentionOf _ x = x
+upsertMention ∷ Value → Value → Value
+upsertMention root mention = if replaced
+                                then root'
+                                else if isJust $ root' ^? responses
+                                  then root' & responses . _Array %~ (flip snoc mention)
+                                  else root' & key "properties" . _Object %~ (HMS.insert "comment" (Array $ singleton mention))
+  where (replaced, root') = dfReplace False root
+        -- depth-first replacement, flag is True when replacement was already performed
+        dfReplace flag x =
+            let (flag', rsps) = foldl' step (flag, []) (x ^.. responses . values)
+                x' = x & responses .~ Array (reverse $ fromList rsps) in
+                if flag'
+                   then (True, x')
+                   else if intersectingUrls (urls mention) x
+                     then (True, mention)
+                     else (False, x')
+        step (True, acc) el = (True, el : acc)
+        step (False, acc) el = let (rflag, rel) = dfReplace False el in (rflag, rel : acc)
+        responses = key "properties" . key "comment"
 
 intersectingUrls ∷ Vector Value → Value → Bool
 intersectingUrls us e = hasIntersection us (urls e)
-  where hasIntersection x = not . null . V.filter (`V.elem` x)
+  where hasIntersection x = not . null . filter (`elem` x)
 
 urls ∷ Value → Vector Value
-urls x = fromMaybe V.empty $ x ^? key "properties" . key "url" . _Array
+urls x = fromMaybe empty $ x ^? key "properties" . key "url" . _Array
+
+ensurePresentUrl ∷ URI → Value → Value
+ensurePresentUrl source mention = mention & key "properties" . key "url" . _Array %~ ensure
+  where ensure v | length v > 0 = v
+        ensure v = snoc v $ String $ tshow source
 
 respAccepted ∷ ServantErr -- XXX: Only way to return custom HTTP response codes
 respAccepted = ServantErr { errHTTPCode = 202
                           , errReasonPhrase = "Accepted"
                           , errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]
                           , errBody    = "Your webmention will be processed soon." }
+
+tombstone ∷ Value
+tombstone = [aesonQQ|{ "properties": {
+    "content": [ {"html": "This entry has been deleted."} ]
+  },
+  "value": "This entry has been deleted.",
+  "type": ["h-entry", "h-x-tombstone"]
+}|]

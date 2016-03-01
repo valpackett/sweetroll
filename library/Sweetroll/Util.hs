@@ -26,7 +26,7 @@ import           Sweetroll.Conf (pandocReaderOptions)
 type CategoryName = String
 type EntrySlug = String
 
-firstStr v l = (v ^? l . _String) <|> (v ^? l . values . _String)
+firstStr v l = (v ^? l . _String) <|> (v ^? values . l . _String) <|> (v ^? l . values . _String)
 
 uriPathParts ∷ ConvertibleStrings Text α ⇒ URI → [α]
 uriPathParts = map cs . splitOn "/" . drop 1 . cs . uriPath

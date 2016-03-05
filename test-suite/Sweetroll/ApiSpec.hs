@@ -95,7 +95,7 @@ spec = around_ inDir $ around_ withServer $ do
       resp ← app >>= postAuthed formRequest "/micropub" "h=entry&name=First&slug=first&content=Hello&category[]=test&category[]=demo&in-reply-to=http://localhost:8998/notes/reply-target"
       simpleStatus resp `shouldBe` created201
       header resp "Location" `shouldBe` "http://localhost:8998/articles/first"
-      written ← readDocumentById "articles" 1 ∷ IO (Maybe Value)
+      written ← readDocumentByName "articles" "first" ∷ IO (Maybe Value)
       case written of
         Just article → do
           article ^. key "properties" . key "content" . nth 0 . key "html" . _String  `shouldBe` "<p>Hello</p>"

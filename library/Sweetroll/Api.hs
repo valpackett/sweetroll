@@ -24,6 +24,7 @@ import           Sweetroll.Conf
 import           Sweetroll.Monads
 import           Sweetroll.Routes
 import           Sweetroll.Pages
+import           Sweetroll.Slice
 import           Sweetroll.Rendering
 import           Sweetroll.Auth
 import           Sweetroll.Micropub.Endpoint
@@ -101,35 +102,20 @@ addLinks ls a = do
 readSlug ∷ String → EntrySlug
 readSlug x = drop 1 $ fromMaybe "-404" $ snd <$> maybeReadIntString x -- errors should never happen
 
-readEntry ∷ MonadIO μ ⇒ EntrySlug → String → μ (Maybe (EntrySlug, Value))
+readEntry ∷ MonadIO μ ⇒ CategoryName → EntrySlug → μ (Maybe (EntrySlug, Value))
 readEntry category slug = liftIO $ do
   doc ← readDocumentByName category slug ∷ IO (Maybe Value)
   return $ (slug, ) <$> doc
 
-readCategory ∷ MonadIO μ ⇒ Int → Maybe Int → Maybe Int → CategoryName → μ (CategoryName, Maybe (Slice (EntrySlug, Value)))
-readCategory perPage before after catName = liftIO $ do
+readCategory ∷ Int → Maybe Int → Maybe Int → CategoryName → Sweetroll (CategoryName, Maybe (Slice (EntrySlug, Value)))
+readCategory perPage before after catName = do
   ks ← listDocumentKeys catName
-  let allItems = sortOn (negate . fst) $ map (second $ drop 1) $ mapMaybe maybeReadIntString ks
-      mayFilterFst f (Just y) xs = filter (f y . fst) xs
-      mayFilterFst _ Nothing  xs = xs
-      items = take perPage $ mayFilterFst (<) after $ mayFilterFst (>) before allItems
-  maybes ← mapM (readEntry catName . snd) items
+  let slice = sliceCategory perPage before after catName $ map (second $ drop 1) $ mapMaybe maybeReadIntString ks
+  maybes ← mapM (\u → liftM snd (parseEntryURIRelative u) >>= readEntry catName) $ sliceItems slice
   return $ (catName, ) $ case sequence maybes of
     Nothing → Nothing
     Just [] → Nothing
-    Just ms → Just $ Slice {
-                sliceItems  = ms
-              , sliceBefore = case (fst <$> lastMay allItems, fst <$> lastMay items) of
-                                (Just minId, Just lastId) | lastId > minId → Just $ permalink (Proxy ∷ Proxy CatRouteB) catName lastId
-                                _ → Nothing
-              , sliceSelf   = case (before, after) of
-                                (Just b, Just a)   → permalink (Proxy ∷ Proxy CatRoute)  catName b a
-                                (Just b, Nothing)  → permalink (Proxy ∷ Proxy CatRouteB) catName b
-                                (Nothing, Just a)  → permalink (Proxy ∷ Proxy CatRouteA) catName a
-                                (Nothing, Nothing) → permalink (Proxy ∷ Proxy CatRouteE) catName
-              , sliceAfter  = case (fst <$> headMay allItems, fst <$> headMay items) of
-                                (Just maxId, Just headId) | headId < maxId → Just $ permalink (Proxy ∷ Proxy CatRouteA) catName headId
-                                _ → Nothing }
+    Just ms → Just $ slice { sliceItems = ms }
 
 visibleCat ∷ (CategoryName, Maybe (Slice (EntrySlug, Value))) → Bool
 visibleCat (slug, Just cat) = (not . null $ sliceItems cat)

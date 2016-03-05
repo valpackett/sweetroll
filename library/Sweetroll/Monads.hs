@@ -171,6 +171,10 @@ parseEntryURI ∷ (MonadError ServantErr μ, MonadSweetroll μ) ⇒
 parseEntryURI uri = do
   base ← getConfOpt baseURI
   guardBool errWrongDomain $ (uriRegName <$> uriAuthority uri) == (uriRegName <$> uriAuthority base)
+  parseEntryURIRelative uri
+
+parseEntryURIRelative ∷ (MonadError ServantErr μ) ⇒ URI → μ (String, String)
+parseEntryURIRelative uri =
   case uriPathParts uri of
     [ category, slug ] → return (category, slug)
     _ → throwError errWrongPath

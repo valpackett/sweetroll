@@ -102,6 +102,7 @@ library
         Sweetroll.Rendering
         Sweetroll.Routes
         Sweetroll.Style
+        Sweetroll.Slice
         Sweetroll.Util
         Sweetroll.Webmention.Send
         Sweetroll.Webmention.Receive

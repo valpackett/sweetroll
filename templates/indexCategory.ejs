@@ -1,12 +1,17 @@
-<% var data = scope.data %>
-<section class="index-category" id="index-category-${ _.snakeCase(data.name) }">
-	<h1><a href="${ data.permalink }"><%= data.name %></a></h1>
+<% var category = scope.category, entries = scope.entries %>
+<section class="index-category" id="index-category-${ _.snakeCase(category.name) }">
+	<h1><a href="${ category.permalink }"><%- category.name %></a></h1>
 	<ul>
-		<% _.forEach(data.entries, function (entry) { %>
-			<%= templates.entryInList({ meta: scope.meta, data: entry }) %>
+		<% _.forEach(category.entryUrls, function (entryUrl) { %>
+			<%= templates.entryInList({ meta: scope.meta, entry: entries[entryUrl], permalink: entryUrl }) %>
 		<% }) %>
 	</ul>
-	<% if (data.hasBefore) { %>
-		<a href="${ data.beforeHref }"><i class="fa fa-l fa-ellipsis-v"></i>older</a>
-	<% } %>
+	<nav class="category-nav">
+		<% if (category.hasAfter) { %>
+			<a href="${ category.afterHref }"><i class="fa fa-l fa-arrow-up"></i>newer</a>
+		<% } %>
+		<% if (category.hasBefore) { %>
+			<a href="${ category.beforeHref }"><i class="fa fa-l fa-arrow-down"></i>older</a>
+		<% } %>
+	</nav>
 </section>

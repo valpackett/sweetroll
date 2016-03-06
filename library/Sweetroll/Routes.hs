@@ -1,5 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE TypeOperators, TypeFamilies, DataKinds #-}
+{-# LANGUAGE TypeOperators, TypeFamilies, DataKinds, RecordWildCards #-}
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, MultiParamTypeClasses #-}
 
 -- | The HTTP routes
@@ -14,6 +14,7 @@ import           Sweetroll.Conf
 import           Sweetroll.Micropub.Request
 import           Sweetroll.Micropub.Response
 import           Sweetroll.Pages
+import           Sweetroll.Slice
 
 data HTML
 data CSS
@@ -31,11 +32,11 @@ type GetMicropubRoute         = "micropub" :> AuthProtect :> QueryParam "q" Text
 type PostWebmentionRoute      = "webmention" :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] ()
 
 type EntryRoute               = Capture "catName" String :> Capture "slug" String :> Get '[HTML] (WithLink (View EntryPage))
-type CatRoute                 = Capture "catName" String :> QueryParam "before" Int :> QueryParam "after" Int :> Get '[HTML] (WithLink (View CatPage))
-type CatRouteE                = Capture "catName" String :> Get '[HTML] (WithLink (View CatPage))
-type CatRouteB                = Capture "catName" String :> QueryParam "before" Int :> Get '[HTML] (WithLink (View CatPage))
-type CatRouteA                = Capture "catName" String :> QueryParam "after" Int :> Get '[HTML] (WithLink (View CatPage))
-type IndexRoute               = Get '[HTML] (WithLink (View IndexPage))
+type CatRoute                 = Capture "catName" String :> QueryParam "before" Int :> QueryParam "after" Int :> Get '[HTML] (WithLink (View IndexedPage))
+type CatRouteE                = Capture "catName" String :> Get '[HTML] (WithLink (View IndexedPage))
+type CatRouteB                = Capture "catName" String :> QueryParam "before" Int :> Get '[HTML] (WithLink (View IndexedPage))
+type CatRouteA                = Capture "catName" String :> QueryParam "after" Int :> Get '[HTML] (WithLink (View IndexedPage))
+type IndexRoute               = Get '[HTML] (WithLink (View IndexedPage))
 
 type SweetrollAPI             = IndieConfigRoute :<|> DefaultCssRoute
                            :<|> PostLoginRoute :<|> GetLoginRoute
@@ -51,3 +52,6 @@ permalink = safeLink sweetrollAPI
 
 showLink ∷ URI → Text
 showLink = ("/" ++) . cs . show
+
+catLink ∷ Slice α → URI
+catLink Slice{..} = permalink (Proxy ∷ Proxy CatRouteE) sliceCatName

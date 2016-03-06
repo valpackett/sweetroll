@@ -5,8 +5,8 @@ module Sweetroll.Pages where
 
 import           ClassyPrelude
 import           Data.Aeson.Types (Value)
-import           Network.URI (URI)
 import           Sweetroll.Util
+import           Sweetroll.Slice
 import           Sweetroll.Conf
 
 data View α = View
@@ -14,14 +14,6 @@ data View α = View
   , viewRenderer ∷ ByteString → Value → Text
   , viewContent  ∷ α }
 
-data Slice α = Slice
-  { sliceItems  ∷ [α]
-  , sliceBefore ∷ Maybe URI
-  , sliceSelf   ∷ URI
-  , sliceAfter  ∷ Maybe URI }
-
 data EntryPage = EntryPage CategoryName [EntrySlug] (EntrySlug, Value)
 
-data CatPage = CatPage CategoryName (Slice (EntrySlug, Value))
-
-data IndexPage = IndexPage [(CategoryName, Slice (EntrySlug, Value))]
+data IndexedPage = IndexedPage [Slice String] (HashMap String Value)

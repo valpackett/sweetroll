@@ -3,8 +3,8 @@
 	return 'javascript:void(0)'
 } %>
 <% var isValidRef = function (x) {
-	return _.any(x, function (v) {
-		return _.any(scope.entry.properties.url, function (u) {
+	return _.some(x, function (v) {
+		return _.some(scope.entry.properties.url, function (u) {
 			return _.startsWith(v, u) || _.startsWith(v.value, u)
 		})
 	})

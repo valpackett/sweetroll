@@ -10,6 +10,7 @@ import           Data.Aeson
 import           Data.String.Conversions
 import           Data.Conduit.Shell (run, proc, conduit, ProcessException, ($|), (=$=))
 import qualified Data.Conduit.Combinators as CL
+import qualified Data.HashMap.Strict as HMS
 import qualified Network.HTTP.Link as L
 import           Network.URI
 import           Network.Wai
@@ -38,19 +39,21 @@ getIndieConfig = getConfOpt indieConfig
 getDefaultCss ∷ Sweetroll LByteString
 getDefaultCss = return allCss
 
-getIndex ∷ Sweetroll (WithLink (View IndexPage))
+getIndex ∷ Sweetroll (WithLink (View IndexedPage))
 getIndex = do
   ipp ← getConfOpt itemsPerPage
-  cats ← listCollections >>= mapM (readCategory ipp Nothing Nothing)
+  catNames ← getConfOpt categoryOrder
+  cats ← mapM (readCategory ipp Nothing Nothing) catNames
   selfLink ← genLink "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy IndexRoute)
-  addLinks [selfLink] $ view $ IndexPage $ map (second fromJust) $ filter visibleCat cats
+  addLinks [selfLink] $ view $ IndexedPage (map fst cats) (mconcat $ map snd cats)
 
-getCat ∷ String → Maybe Int → Maybe Int → Sweetroll (WithLink (View CatPage))
+getCat ∷ String → Maybe Int → Maybe Int → Sweetroll (WithLink (View IndexedPage))
 getCat catName before after = do
   ipp ← getConfOpt itemsPerPage
-  slice ← guardJustM (renderError err404 "404") $ liftM snd $ readCategory ipp before after catName
-  selfLink ← genLink "self" $ sliceSelf slice
-  addLinks [selfLink] $ view $ CatPage catName slice
+  (slice, entries) ← readCategory ipp before after catName
+  guardBoolM (renderError err404 "404") (length (sliceItems slice) > 0)
+  selfLink ← genLink "self" $ catLink slice
+  addLinks [selfLink] $ view $ IndexedPage [slice] entries
 
 getEntry ∷ String → String → Sweetroll (WithLink (View EntryPage))
 getEntry catName slug = do
@@ -107,22 +110,18 @@ readEntry category slug = liftIO $ do
   doc ← readDocumentByName category slug ∷ IO (Maybe Value)
   return $ (slug, ) <$> doc
 
-readCategory ∷ Int → Maybe Int → Maybe Int → CategoryName → Sweetroll (CategoryName, Maybe (Slice (EntrySlug, Value)))
+readCategory ∷ Int → Maybe Int → Maybe Int → CategoryName → Sweetroll (Slice String, HashMap String Value)
 readCategory perPage before after catName = do
   ks ← listDocumentKeys catName
   let slice = sliceCategory perPage before after catName $ map (second $ drop 1) $ mapMaybe maybeReadIntString ks
-  maybes ← mapM (\u → liftM snd (parseEntryURIRelative u) >>= readEntry catName) $ sliceItems slice
-  return $ (catName, ) $ case sequence maybes of
-    Nothing → Nothing
-    Just [] → Nothing
-    Just ms → Just $ slice { sliceItems = ms }
-
-visibleCat ∷ (CategoryName, Maybe (Slice (EntrySlug, Value))) → Bool
-visibleCat (slug, Just cat) = (not . null $ sliceItems cat)
-                              && slug /= "templates"
-                              && slug /= "static"
-                              && slug /= "conf"
-visibleCat (_, Nothing) = False
+  entries ← foldM (\entries u → do
+                    entry ← liftM snd (parseEntryURIRelative $ fromJust $ parseURIReference u) >>= readEntry catName -- XXX: eliminate URI
+                    return $ case entry of
+                               Just (_, v) → insertMap u v entries
+                               Nothing → entries)
+                  HMS.empty
+                  (sliceItems slice)
+  return (slice, entries)
 
 notFoundOrGone ∷ (MonadIO μ, MonadSweetroll μ) ⇒ CategoryName → EntrySlug → μ ServantErr
 notFoundOrGone catName slug = do

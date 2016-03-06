@@ -13,9 +13,6 @@ import           Data.Aeson.Types
 import           Data.Aeson.Lens
 import           Data.List (elemIndex)
 import           Data.Foldable (asum)
-import           Data.Maybe (fromJust)
-import qualified Data.Vector as V
-import qualified Data.Text as T
 import           Data.String.Conversions
 import           Data.String.Conversions.Monomorphic
 import           Safe (atMay)
@@ -23,6 +20,7 @@ import           Network.URI (nullURI)
 import           Network.HTTP.Types
 import           Servant
 import           Sweetroll.Pages
+import           Sweetroll.Slice
 import           Sweetroll.Routes
 import           Sweetroll.Conf
 import           Sweetroll.Util
@@ -77,38 +75,28 @@ instance Templatable EntryPage where
             , "prevHref"         .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack $ orEmptyMaybe prev)
             , "hasNext"          .= isJust next
             , "nextHref"         .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack $ orEmptyMaybe next)
-            , "hasTwitterId"     .= isJust twitterId
-            , "twitterId"        .= orEmptyMaybe twitterId
             , "titleParts"      .= [ toLT titleName, toLT catName ] ]
           slugIdx = fromMaybe (-1) $ elemIndex slug otherSlugs
           prev = atMay otherSlugs $ slugIdx - 1
           next = atMay otherSlugs $ slugIdx + 1
-          twitterId = lastMay =<< T.splitOn "/" <$> find ("twitter.com" `isInfixOf`) entrySyndication
-          entrySyndication = mapMaybe (^? _String) $ V.toList $ fromMaybe V.empty $ e ^? key "properties" . key "syndication" . _Array
           titleName = orEmptyMaybe $ asum [ e ^? key "properties" . key "name" . nth 0 . _String
                                           , e ^? key "properties" . key "published" . nth 0 . _String ]
 
-instance Templatable CatPage where
-  templateName _ = "category"
-  context (View conf renderer (CatPage name slice)) = ctx
-    where ctx = object [
-              "name"            .= name
-            , "permalink"       .= showLink (sliceSelf slice)
-            , "entries"         .= map entryContext entries
-            , "hasBefore"       .= isJust (sliceBefore slice)
-            , "beforeHref"      .= orEmptyMaybe (showLink <$> sliceBefore slice)
-            , "hasAfter"        .= isJust (sliceAfter slice)
-            , "afterHref"       .= orEmptyMaybe (showLink <$> sliceAfter slice)
-            , "titleParts"      .= [ toLT name ] ]
-          entryContext = context . View conf renderer . EntryPage name slugs
-          slugs = map fst entries
-          entries = sliceItems slice
-
-instance Templatable IndexPage where
+instance Templatable IndexedPage where
   templateName _ = "index"
-  context (View conf renderer (IndexPage cats)) = ctx
-    where ctx = object [ "categories" .= map catContext (sortOn (fromMaybe 999 . flip elemIndex (fromMaybe (fromJust $ categoryOrder def) $ categoryOrder conf) . fst) cats) ]
-          catContext (n, p) = context (View conf renderer (CatPage n p))
+  context (View _ _ (IndexedPage cats entries)) = ctx
+    where ctx = object [ "categories" .= map catContext cats
+                       , "entries" .= entries ]
+          catContext slice = object [
+              "name"            .= sliceCatName slice
+            , "permalink"       .= showLink (catLink slice)
+            , "entryUrls"       .= sliceItems slice
+            , "hasBefore"       .= isJust (sliceBefore slice)
+            , "beforeHref"      .= orEmptyMaybe (showLink . permalink (Proxy ∷ Proxy CatRouteB) (sliceCatName slice) <$> sliceBefore slice)
+            , "hasAfter"        .= isJust (sliceAfter slice)
+            , "afterHref"       .= orEmptyMaybe (showLink . permalink (Proxy ∷ Proxy CatRouteA) (sliceCatName slice) <$> sliceAfter slice)
+            , "titleParts"      .= [ toLT $ sliceCatName slice ] ]
+
 
 renderError ∷ MonadSweetroll μ ⇒ ServantErr → ByteString → μ ServantErr
 renderError origErr tplName = do

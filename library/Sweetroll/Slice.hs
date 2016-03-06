@@ -1,35 +1,36 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, GADTs #-}
 
--- | Functions that deal with Slices (the definition of which is in Sweetroll.Pages)
+-- | Slices are results of pagination, basically.
 module Sweetroll.Slice where
 
 import           ClassyPrelude
-import           Servant (Proxy(..), URI(..))
-import           Sweetroll.Pages
-import           Sweetroll.Routes
 import           Sweetroll.Util
 
-mkCatSlice ∷ Maybe Int → Maybe Int → CategoryName → [(Int, String)] → [(Int, α)] → Slice α
-mkCatSlice before after catName allKeys items =
-  Slice {
-    sliceItems  = map snd items
-  , sliceBefore = case (fst <$> lastMay allKeys, fst <$> lastMay items) of
-                    (Just minId, Just lastId) | lastId > minId →
-                      Just $ permalink (Proxy ∷ Proxy CatRouteB) catName lastId
-                    _ → Nothing
-  , sliceSelf   = case (before, after) of
-                    (Just b, Just a)   → permalink (Proxy ∷ Proxy CatRoute)  catName b a
-                    (Just b, Nothing)  → permalink (Proxy ∷ Proxy CatRouteB) catName b
-                    (Nothing, Just a)  → permalink (Proxy ∷ Proxy CatRouteA) catName a
-                    (Nothing, Nothing) → permalink (Proxy ∷ Proxy CatRouteE) catName
-  , sliceAfter  = case (fst <$> headMay allKeys, fst <$> headMay items) of
-                    (Just maxId, Just headId) | headId < maxId →
-                      Just $ permalink (Proxy ∷ Proxy CatRouteA) catName headId
-                    _ → Nothing }
+data Slice α = Slice
+  { sliceItems   ∷ [α]
+  , sliceBefore  ∷ Maybe Int
+  , sliceCatName ∷ CategoryName
+  , sliceAfter   ∷ Maybe Int }
 
-sliceCategory ∷ Int → Maybe Int → Maybe Int → CategoryName → [(Int, String)] → Slice URI
+-- TODO: instance Semigroup Slice where
+
+mkCatSlice ∷ CategoryName → [Int] → [(Int, α)] → Slice α
+mkCatSlice catName allIds items =
+  Slice {
+    sliceItems   = map snd items
+  , sliceBefore  = case (lastMay allIds, fst <$> lastMay items) of
+                     (Just minId, Just lastId) | lastId > minId →
+                       Just lastId
+                     _ → Nothing
+  , sliceCatName = catName
+  , sliceAfter   = case (headMay allIds, fst <$> headMay items) of
+                     (Just maxId, Just headId) | headId < maxId →
+                       Just headId
+                     _ → Nothing }
+
+sliceCategory ∷ Int → Maybe Int → Maybe Int → CategoryName → [(Int, String)] → Slice String
 sliceCategory perPage before after catName unsortedKeys =
-  mkCatSlice before after catName allKeys $ map (\(a, x) → (a, permalink (Proxy ∷ Proxy EntryRoute) catName x)) items
+  mkCatSlice catName (map fst allKeys) $ map (\(a, x) → (a, "/" ++ catName ++ "/" ++ x)) items
   where items = rangeFilter allKeys
         allKeys = sortOn (negate . fst) unsortedKeys
         rangeFilter = case (before, after) of

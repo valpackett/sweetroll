@@ -85,7 +85,7 @@ initCtx conf secs = do
 loadTemplates ∷ DuktapeCtx → IO ()
 loadTemplates duk = do
   -- TODO: compile time check that bower deps have been fetched!
-  void $ evalDuktape duk $ fromJust $ lookup "lodash/lodash.min.js" bowerComponents
+  void $ evalDuktape duk $ fromJust $ lookup "lodash/dist/lodash.min.js" bowerComponents
   void $ evalDuktape duk $ fromJust $ lookup "moment/min/moment-with-locales.min.js" bowerComponents
   void $ evalDuktape duk [r|
     var SweetrollTemplates = {}
@@ -203,3 +203,6 @@ guardJust e = guardJustM (return e)
 
 guardBool ∷ MonadError ServantErr μ ⇒ ServantErr → Bool → μ ()
 guardBool e x = unless x $ throwError e
+
+guardBoolM ∷ MonadError ServantErr μ ⇒ μ ServantErr → Bool → μ ()
+guardBoolM ea x = ea >>= \e → guardBool e x

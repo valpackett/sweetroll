@@ -1,5 +1,4 @@
-<% var data = scope.data %>
-<% var entry = data.entry %>
+<% var permalink = scope.permalink, entry = scope.entry %>
 <% var properties = entry.properties %>
 <% var isUntitled = _.isEmpty(properties.name) %>
 <li class="h-entry entry-in-list ${ isUntitled ? 'note' : 'article' }-in-list">
@@ -19,16 +18,16 @@
 			</div>
 		<% } %>
 	<% } else { %>
-		<a class="u-url p-name" href="${ data.permalink }"><%- properties.name %></a>
+		<a class="u-url p-name" href="${ permalink }"><%- properties.name %></a>
 	<% } %>
 
 	<footer class="entry-footer">
 
 		<% if (isUntitled && _.isEmpty(properties['like-of'])) { %>
-			<%= templates.entryActions({ meta: scope.meta, data: data }) %>
+			<%= templates.entryActions({ meta: scope.meta, entry: entry, permalink: permalink }) %>
 		<% } %>
 
-		<a class="u-url permalink" href="${ data.permalink }">
+		<a class="u-url permalink" href="${ permalink }">
 			<i class="fa fa-l fa-clock-o"></i><time class="dt-published" datetime="${ _.head(properties.published) }"><%- moment.utc(_.head(properties.published)).format('MMM Do YYYY, HH:mm') %></time>
 		</a>
 	</footer>

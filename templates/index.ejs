@@ -1,14 +1,9 @@
 <%= templates.header(scope) %>
+<% var categories = scope.data.categories, entries = scope.data.entries %>
 <main class="site-main index-main">
 	<div class="index-categories">
-		<% var cat = _.find(scope.data.categories, 'name', 'notes') %>
-		<% if (cat) { %>
-			<%= templates.indexCategory({ meta: scope.meta, data: cat }) %>
-		<% } %>
-	</div>
-	<div class="index-categories">
-		<% _.reject(scope.data.categories, 'name', 'notes').forEach(function (cat) { %>
-			<%= templates.indexCategory({ meta: scope.meta, data: cat }) %>
+		<% categories.forEach(function (cat) { %>
+			<%= templates.indexCategory({ meta: scope.meta, category: cat, entries: entries }) %>
 		<% }) %>
 	</div>
 </main>

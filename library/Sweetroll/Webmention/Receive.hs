@@ -70,14 +70,14 @@ propIncludesURI t p m = elem t $ catMaybes $ map (parseURI <=< unCite) $ fromMay
 upsertMention ∷ Value → Value → Value
 upsertMention root mention = if replaced
                                 then root'
-                                else if isJust $ root' ^? responses
-                                  then root' & responses . _Array %~ (flip snoc mention)
+                                else if isJust $ root' ^? key "properties" . key "comment"
+                                  then root' & key "properties" . key "comment" . _Array %~ (flip snoc mention)
                                   else root' & key "properties" . _Object %~ (HMS.insert "comment" (Array $ singleton mention))
   where (replaced, root') = dfReplace False root
         -- depth-first replacement, flag is True when replacement was already performed
         dfReplace flag x =
-            let (flag', rsps) = foldl' step (flag, []) (x ^.. responses . values)
-                x' = x & responses .~ Array (reverse $ fromList rsps) in
+            let (flag', rsps) = foldl' step (flag, []) (x ^.. key "properties" . key "comment" . values)
+                x' = x & key "properties" . key "comment" .~ Array (reverse $ fromList rsps) in
                 if flag'
                    then (True, x')
                    else if intersectingUrls (urls mention) x
@@ -85,7 +85,6 @@ upsertMention root mention = if replaced
                      else (False, x')
         step (True, acc) el = (True, el : acc)
         step (False, acc) el = let (rflag, rel) = dfReplace False el in (rflag, rel : acc)
-        responses = key "properties" . key "comment"
 
 intersectingUrls ∷ Vector Value → Value → Bool
 intersectingUrls us e = hasIntersection us (urls e)

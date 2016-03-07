@@ -22,6 +22,7 @@ import           System.IO.Unsafe
 import qualified Data.Vector as V
 import qualified Data.HashMap.Strict as HMS
 import           Data.Conduit
+import           Data.Pool
 import           Data.Maybe
 import           Data.String.Conversions
 import           Data.Aeson.Types
@@ -29,6 +30,7 @@ import           Data.Microformats2.Parser
 import           Data.IndieWeb.MicroformatsUtil
 import           Data.IndieWeb.Authorship
 import           Text.RawString.QQ
+import           GHC.Conc (getNumCapabilities)
 import           Network.HTTP.Client.Internal (setUri) -- The fuck?
 import           Network.HTTP.Client.Conduit
 import           Network.HTTP.Types
@@ -42,7 +44,7 @@ import           Sweetroll.Util
 data SweetrollCtx = SweetrollCtx
   { _ctxConf     ∷ SweetrollConf
   , _ctxSecs     ∷ SweetrollSecrets
-  , _ctxDuk      ∷ DuktapeCtx
+  , _ctxTplPool  ∷ Pool DuktapeCtx
   , _ctxLock     ∷ MVar ()
   , _ctxHttpMgr  ∷ Manager }
 
@@ -73,18 +75,19 @@ sweetrollToEither ctx = Nat $ runSweetrollEither ctx
 initCtx ∷ SweetrollConf → SweetrollSecrets → IO SweetrollCtx
 initCtx conf secs = do
   hmg ← newManager
-  duk ← createDuktapeCtx
   lck ← newMVar ()
-  loadTemplates $ fromJust duk
+  cpus ← getNumCapabilities
+  --        static pool, basically: max 4, don't expire
+  tplPool ← createPool createTemplateCtx (\_ → return ()) 1 999999999999 cpus
   return SweetrollCtx { _ctxConf     = conf
                       , _ctxSecs     = secs
-                      , _ctxDuk      = fromJust duk
+                      , _ctxTplPool  = tplPool
                       , _ctxLock     = lck
                       , _ctxHttpMgr  = hmg }
 
-loadTemplates ∷ DuktapeCtx → IO ()
-loadTemplates duk = do
-  -- TODO: compile time check that bower deps have been fetched!
+createTemplateCtx ∷ IO DuktapeCtx
+createTemplateCtx = do
+  duk ← liftM fromJust $ createDuktapeCtx
   void $ evalDuktape duk $ fromJust $ lookup "lodash/dist/lodash.min.js" bowerComponents
   void $ evalDuktape duk $ fromJust $ lookup "moment/min/moment-with-locales.min.js" bowerComponents
   void $ evalDuktape duk [r|
@@ -105,6 +108,7 @@ loadTemplates duk = do
       case thtml of
         Right h → setTpl tname h
         Left e → void $ putStrLn $ "Error when reading template " ++ cs tname ++ ": " ++ cs (show e)
+  return duk
 
 getConf ∷ MonadSweetroll μ ⇒ μ SweetrollConf
 getConf = asks _ctxConf
@@ -116,8 +120,8 @@ getSecs ∷ MonadSweetroll μ ⇒ μ SweetrollSecrets
 getSecs = asks _ctxSecs
 
 getRenderer ∷ MonadSweetroll μ ⇒ μ (ByteString → Value → Text)
-getRenderer = liftM renderer $ asks _ctxDuk
-  where renderer duk x y = txtVal $ unsafePerformIO $ callDuktape duk (Just "SweetrollTemplates") x [y]
+getRenderer = liftM renderer $ asks _ctxTplPool
+  where renderer p x y = txtVal $ unsafePerformIO $ withResource p $ \duk → callDuktape duk (Just "SweetrollTemplates") x [y]
         {-# NOINLINE renderer #-}
         txtVal (Right (Just (String t))) = t
         txtVal (Right (Just _)) = "TEMPLATE ERROR: returned something other than a string"

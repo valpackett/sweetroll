@@ -147,7 +147,7 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
   - [ ] archive pages, ie. unpaginated pages
   - [ ] proxying reply-context and comments-presentation images (to avoid mixed content and possible tracking) (note: we already depend on `JuicyPixels` through Pandoc)
   - [ ] indieweb-components: a component for a Medium-style popup on selection that offers a fragmention link and (?) indie-config repost-quote-something (look how [selection-sharer](https://github.com/xdamman/selection-sharer) works on mobile!! but probably should look the same just at the opposite direction than iOS's popup)
-  - [ ] a pool of hs-duktape instances for template rendering! currently there's one context for all threads
+  - [x] a pool of hs-duktape instances for template rendering!
   - [ ] hs-duktape: add functions for getting ByteStrings (get rid of ByteString → Text → ByteString conversion)
   - [ ] built-in TLS server, since we depend on `tls` already because of the client
 - [ ] event system: hooks on micropub posting and webmention processing

@@ -4,6 +4,7 @@
 module Main (main) where
 
 import           Prelude
+import           GHC.Conc (getNumCapabilities)
 import qualified Network.Wai.Handler.CGI as CGI
 import           Network.Wai.Handler.Warp
 import           Network.Wai.Middleware.RequestLogger
@@ -55,7 +56,7 @@ green x = setReset >> setSGR [ SetColor Foreground Dull Green ] >> putStr x
 blue  x = setReset >> setSGR [ SetColor Foreground Dull Blue ] >> putStr x
 reset x = setReset >> putStr x
 
-putSweetroll = putStrLn "" >> putStr "  -=@@@ " >> green "Let me guess, someone stole your " >> boldYellow "sweetroll" >> green "?" >> setReset >> putStrLn " @@@=-"
+putSweetroll = putStrLn "" >> putStr "   -=@@@ " >> green "Let me guess, someone stole your " >> boldYellow "sweetroll" >> green "?" >> setReset >> putStrLn " @@@=-"
 
 optToConf ∷ AppOptions → (Maybe a → SweetrollConf → SweetrollConf) → (AppOptions → Maybe a) → SweetrollConf → SweetrollConf
 optToConf o s g c = case g o of
@@ -65,12 +66,13 @@ optToConf o s g c = case g o of
 main ∷ IO ()
 main = runCommand $ \opts _ → do
   setCurrentDirectory $ repo opts
+  cpus ← getNumCapabilities
   let printProto = case protocol opts of
                      "http" → reset " port "   >> boldMagenta (show $ port opts)
                      "unix" → reset " socket " >> boldMagenta (show $ socket opts)
                      _      → setReset
       version = $(packageVariable $ pkgVersion . package) ++ "/" ++ $(embedGitShortRevision)
-      printListening = boldYellow "     Sweetroll " >> red version >> reset " running on " >> blue (protocol opts) >> printProto >> setReset >> putStrLn ""
+      printListening = boldYellow " Sweetroll " >> red version >> reset " running on " >> blue (protocol opts) >> printProto >> reset " with " >> green (show cpus ++ " CPUs") >> putStrLn ""
       warpSettings = setBeforeMainLoop printListening $ setPort (port opts) defaultSettings
 
   origConf ← readDocument "conf" "sweetroll" ∷ IO (Maybe SweetrollConf)

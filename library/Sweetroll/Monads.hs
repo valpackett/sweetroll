@@ -196,7 +196,9 @@ guardJustP _ (Just x) = return x
 guardJustP e Nothing = throwError e
 
 guardJustM ∷ MonadError ServantErr μ ⇒ μ ServantErr → μ (Maybe α) → μ α
-guardJustM ea a = a >>= \x → ea >>= \e → guardJustP e x
+guardJustM ea a = a >>= \x → case x of
+                                 Just v → return v
+                                 Nothing → throwError =<< ea
 
 guardJust ∷ MonadError ServantErr μ ⇒ ServantErr → μ (Maybe α) → μ α
 guardJust e = guardJustM (return e)
@@ -205,4 +207,5 @@ guardBool ∷ MonadError ServantErr μ ⇒ ServantErr → Bool → μ ()
 guardBool e x = unless x $ throwError e
 
 guardBoolM ∷ MonadError ServantErr μ ⇒ μ ServantErr → Bool → μ ()
-guardBoolM ea x = ea >>= \e → guardBool e x
+guardBoolM ea False = throwError =<< ea
+guardBoolM _ True = return ()

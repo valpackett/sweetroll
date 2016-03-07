@@ -1,9 +1,9 @@
 <%= templates.header(scope) %>
-<% var categories = scope.data.categories, entries = scope.data.entries %>
+<% var categoryNames = scope.data.categoryNames, slices = scope.data.slices, entries = scope.data.entries %>
 <main class="site-main index-main">
 	<div class="index-categories">
-		<% categories.forEach(function (cat) { %>
-			<%= templates.indexCategory({ meta: scope.meta, category: cat, entries: entries }) %>
+		<% categoryNames.forEach(function (catName) { %>
+			<%= templates.indexSlice({ meta: scope.meta, slice: slices[catName], entries: entries }) %>
 		<% }) %>
 	</div>
 </main>

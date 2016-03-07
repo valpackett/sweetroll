@@ -84,13 +84,14 @@ instance Templatable EntryPage where
 
 instance Templatable IndexedPage where
   templateName _ = "index"
-  context (View _ _ (IndexedPage cats entries)) = ctx
-    where ctx = object [ "categories" .= map catContext cats
+  context (View _ _ (IndexedPage catNames slices entries)) = ctx
+    where ctx = object [ "categoryNames" .= catNames
+                       , "slices" .= object (map (\s → toST (sliceCatName s) .= sliceContext s) slices)
                        , "entries" .= entries ]
-          catContext slice = object [
+          sliceContext slice = object [
               "name"            .= sliceCatName slice
             , "permalink"       .= showLink (catLink slice)
-            , "entryUrls"       .= sliceItems slice
+            , "entryUrls"       .= map snd (sliceItems slice)
             , "hasBefore"       .= isJust (sliceBefore slice)
             , "beforeHref"      .= orEmptyMaybe (showLink . permalink (Proxy ∷ Proxy CatRouteB) (sliceCatName slice) <$> sliceBefore slice)
             , "hasAfter"        .= isJust (sliceAfter slice)

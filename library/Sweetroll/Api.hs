@@ -43,17 +43,20 @@ getIndex ∷ Sweetroll (WithLink (View IndexedPage))
 getIndex = do
   ipp ← getConfOpt itemsPerPage
   catNames ← getConfOpt categoryOrder
-  cats ← mapM (readCategory ipp Nothing Nothing) catNames
+  (slices, entries) ← foldM (\(slices, entries) catName →
+                              readCategory ipp Nothing Nothing entries catName >>= \(slices', entries') → return (slices ++ slices', entries'))
+                            ([], HMS.empty)
+                            catNames
   selfLink ← genLink "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy IndexRoute)
-  addLinks [selfLink] $ view $ IndexedPage (map fst cats) (mconcat $ map snd cats)
+  addLinks [selfLink] $ view $ IndexedPage catNames slices entries
 
 getCat ∷ String → Maybe Int → Maybe Int → Sweetroll (WithLink (View IndexedPage))
 getCat catName before after = do
   ipp ← getConfOpt itemsPerPage
-  (slice, entries) ← readCategory ipp before after catName
+  (slice : slices, entries) ← readCategory ipp before after HMS.empty catName
   guardBoolM (renderError err404 "404") (length (sliceItems slice) > 0)
   selfLink ← genLink "self" $ catLink slice
-  addLinks [selfLink] $ view $ IndexedPage [slice] entries
+  addLinks [selfLink] $ view $ IndexedPage [catName] (slice : slices) entries
 
 getEntry ∷ String → String → Sweetroll (WithLink (View EntryPage))
 getEntry catName slug = do
@@ -110,18 +113,25 @@ readEntry category slug = liftIO $ do
   doc ← readDocumentByName category slug ∷ IO (Maybe Value)
   return $ (slug, ) <$> doc
 
-readCategory ∷ Int → Maybe Int → Maybe Int → CategoryName → Sweetroll (Slice String, HashMap String Value)
-readCategory perPage before after catName = do
-  ks ← listDocumentKeys catName
-  let slice = sliceCategory perPage before after catName $ map (second $ drop 1) $ mapMaybe maybeReadIntString ks
-  entries ← foldM (\entries u → do
-                    entry ← liftM snd (parseEntryURIRelative $ fromJust $ parseURIReference u) >>= readEntry catName -- XXX: eliminate URI
-                    return $ case entry of
-                               Just (_, v) → insertMap u v entries
-                               Nothing → entries)
-                  HMS.empty
-                  (sliceItems slice)
-  return (slice, entries)
+readCategory ∷ Int → Maybe Int → Maybe Int → HashMap String Value → CategoryName
+             → Sweetroll ([Slice String], HashMap String Value)
+readCategory perPage before after initialEntries catsName =
+  foldM readCategory' ([], initialEntries) $ defaultSplitOn "+" catsName
+  where readCategory' (prevSlices, prevEntries) catName = do
+          ks ← listDocumentKeys catName
+          let newSlice = sliceCategory perPage before after catName $ map (second $ drop 1) $ mapMaybe maybeReadIntString ks
+              newSlices = case prevSlices of
+                            (s : ss) → mergeSlices perPage (isJust after) newSlice s : newSlice : s : ss
+                            [] → [newSlice]
+          newEntries ← foldM (\entries u →
+                               if u `member` entries then return entries else do
+                                 entry ← liftM snd (parseEntryURIRelative $ fromJust $ parseURIReference u) >>= readEntry catName -- XXX: eliminate URI
+                                 return $ case entry of
+                                            Just (_, v) → insertMap u v entries
+                                            Nothing → entries)
+                             prevEntries
+                             (map snd $ sliceItems newSlice)
+          return (newSlices, newEntries)
 
 notFoundOrGone ∷ (MonadIO μ, MonadSweetroll μ) ⇒ CategoryName → EntrySlug → μ ServantErr
 notFoundOrGone catName slug = do

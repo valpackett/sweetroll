@@ -16,4 +16,4 @@ data View α = View
 
 data EntryPage = EntryPage CategoryName [EntrySlug] (EntrySlug, Value)
 
-data IndexedPage = IndexedPage [Slice String] (HashMap String Value)
+data IndexedPage = IndexedPage [CategoryName] [Slice String] (HashMap String Value)

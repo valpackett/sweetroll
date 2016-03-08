@@ -27,7 +27,7 @@
 			</time>
 			<% if (!_.isEmpty(properties['client-id'])) { %>
 				using <a href="${ _.head(properties['client-id']) }" class="u-client-id">
-					<%= _.trimEnd(_.head(properties['client-id']).replace('http://', '').replace('https://', ''), '/') %>
+					<%- _.trimEnd(_.head(properties['client-id']).replace('http://', '').replace('https://', ''), '/') %>
 				</a>
 			<% } %>
 			<% if (!_.isEmpty(properties.updated) && (_.head(properties.updated) != _.head(properties.published))) { %>

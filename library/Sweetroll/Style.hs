@@ -272,10 +272,11 @@ sweetrollStyle = do
       flexValue 3
       orderValue 10
       overflow hidden
-    ".index-categories" ? do
+      display block
+    ".index-main" ? do
       flexValue 1
       overflow hidden
-    ".index-category" <> ".category-main" ? do
+    ".index-category" ? do
       sym2 padding nil $ em 1
     ".entry-main" ? do
       sym padding $ em 1
@@ -286,8 +287,6 @@ sweetrollStyle = do
     ".index-main" ? do
       "-webkit-flex-direction" -: "row"
       "flex-direction" -: "row"
-    ".category-main" ** ".note-in-list" ** ".permalink" ? do
-      display inline
 
   query M.screen [M.minWidth $ em 80] $ do
     html ? ("font-size" -: "calc(12px + 9 * ((60em + 25vw - 600px) / 1024))")

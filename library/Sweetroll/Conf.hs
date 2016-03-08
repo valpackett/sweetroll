@@ -14,6 +14,7 @@ import           Data.String.Conversions
 import           Data.Setters
 import           Data.Default
 import           Data.Foldable (asum)
+import qualified Data.HashMap.Strict as HMS
 import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.Microformats2.Parser
@@ -44,7 +45,9 @@ data SweetrollConf = SweetrollConf
   ,               domainName ∷ Maybe Text
   ,               httpsWorks ∷ Maybe Bool
   ,             itemsPerPage ∷ Maybe Int
-  ,            categoryOrder ∷ Maybe [String]
+  ,      categoriesInLanding ∷ Maybe [String]
+  ,          categoriesInNav ∷ Maybe [String]
+  ,           categoryTitles ∷ Maybe (HashMap Text Text)
   ,              indieConfig ∷ Maybe IndieConfig
   ,        syndicationConfig ∷ Maybe SyndicationConfig
   ,   indieAuthRedirEndpoint ∷ Maybe String
@@ -63,7 +66,11 @@ instance Default SweetrollConf where
       , httpsWorks               = Just False
       , domainName               = Just "localhost"
       , itemsPerPage             = Just 20
-      , categoryOrder            = Just ["articles", "notes", "likes", "replies"]
+      , categoriesInLanding      = Just $ [ "articles+notes" ]
+      , categoriesInNav          = Just $ [ "articles+notes", "articles", "replies+likes" ]
+      , categoryTitles           = Just $ HMS.fromList [ ("articles+notes", "Notes and articles")
+                                                       , ("articles", "Articles")
+                                                       , ("replies+likes", "Responses") ]
       , indieConfig              = Just $ MkIndieConfig $ object [
                                        "reply"    .= asText "https://quill.p3k.io/new?reply={url}"
                                      , "bookmark" .= asText "https://quill.p3k.io/bookmark?url={url}"

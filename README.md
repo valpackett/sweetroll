@@ -137,7 +137,8 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
 - html/frontend/templating
   - [x] flexible index/category pages
   - [x] merging category slices
-  - [ ] new index page layout: switching between filters like on Twitter profiles
+  - [x] new index page layout: like switching between filters on Twitter profiles
+  - [ ] ?? prev/next navigation + combined categories == kinda weird...
   - [ ] Atom feed (should be followable from [GNU Social](https://indiewebcamp.com/GNU_social) i.e. should be PubSubHubbub'd, should be based on HTML as the source of truth)
   - [ ] support [WebFinger](https://webfinger.net) with HTML as the source of truth as well (but also additional links from config e.g. for [remoteStorage](https://remotestorage.io))
   - [ ] better note like display ("Liked a note by User Name" then gray smaller quote, like in Twitter notifications)

@@ -6,13 +6,10 @@
 module Sweetroll.Rendering where
 
 import           ClassyPrelude hiding (fromString)
-import           Control.Lens hiding (Index, re, parts, (.=))
 import           Network.HTTP.Media.MediaType
 import           Data.Aeson (encode)
 import           Data.Aeson.Types
-import           Data.Aeson.Lens
 import           Data.List (elemIndex)
-import           Data.Foldable (asum)
 import           Data.String.Conversions
 import           Data.String.Conversions.Monomorphic
 import           Safe (atMay)
@@ -43,8 +40,11 @@ instance Templatable α ⇒ MimeRender HTML (View α) where
 
 withMeta ∷ ToJSON α ⇒ SweetrollConf → α → Value
 withMeta conf d =
-  object [ "meta" .= object [ "base_uri" .= toLT (show $ fromMaybe nullURI $ baseURI conf)
-                            , "site_name" .= siteName conf ]
+  object [ "meta" .= object [ "baseUri" .= toLT (show $ fromMaybe nullURI $ baseURI conf)
+                            , "siteName" .= siteName conf
+                            , "categoriesInLanding" .= categoriesInLanding conf
+                            , "categoriesInNav" .= categoriesInNav conf
+                            , "categoryTitles" .= categoryTitles conf ]
          , "data" .= d ]
 
 instance Accept CSS where
@@ -74,18 +74,15 @@ instance Templatable EntryPage where
             , "hasPrev"          .= isJust prev
             , "prevHref"         .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack $ orEmptyMaybe prev)
             , "hasNext"          .= isJust next
-            , "nextHref"         .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack $ orEmptyMaybe next)
-            , "titleParts"      .= [ toLT titleName, toLT catName ] ]
+            , "nextHref"         .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack $ orEmptyMaybe next) ]
           slugIdx = fromMaybe (-1) $ elemIndex slug otherSlugs
           prev = atMay otherSlugs $ slugIdx - 1
           next = atMay otherSlugs $ slugIdx + 1
-          titleName = orEmptyMaybe $ asum [ e ^? key "properties" . key "name" . nth 0 . _String
-                                          , e ^? key "properties" . key "published" . nth 0 . _String ]
 
 instance Templatable IndexedPage where
   templateName _ = "index"
   context (View _ _ (IndexedPage catNames slices entries)) = ctx
-    where ctx = object [ "categoryNames" .= catNames
+    where ctx = object [ "categoriesRequested" .= catNames
                        , "slices" .= object (map (\s → toST (sliceCatName s) .= sliceContext s) slices)
                        , "entries" .= entries ]
           sliceContext slice = object [
@@ -95,8 +92,7 @@ instance Templatable IndexedPage where
             , "hasBefore"       .= isJust (sliceBefore slice)
             , "beforeHref"      .= orEmptyMaybe (showLink . permalink (Proxy ∷ Proxy CatRouteB) (sliceCatName slice) <$> sliceBefore slice)
             , "hasAfter"        .= isJust (sliceAfter slice)
-            , "afterHref"       .= orEmptyMaybe (showLink . permalink (Proxy ∷ Proxy CatRouteA) (sliceCatName slice) <$> sliceAfter slice)
-            , "titleParts"      .= [ toLT $ sliceCatName slice ] ]
+            , "afterHref"       .= orEmptyMaybe (showLink . permalink (Proxy ∷ Proxy CatRouteA) (sliceCatName slice) <$> sliceAfter slice) ]
 
 
 renderError ∷ MonadSweetroll μ ⇒ ServantErr → ByteString → μ ServantErr

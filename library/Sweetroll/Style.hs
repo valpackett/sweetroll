@@ -5,7 +5,7 @@ module Sweetroll.Style (
 , sweetrollStyle
 ) where
 
-import           ClassyPrelude hiding (rem, (**), (<>))
+import           ClassyPrelude hiding (span, rem, (**), (<>))
 import           Text.Highlighting.Kate.Format.HTML (styleToCss)
 import           Text.Pandoc
 import           Data.String.Conversions (cs)
@@ -278,6 +278,9 @@ sweetrollStyle = do
       overflow hidden
     ".index-category" ? do
       sym2 padding nil $ em 1
+    ".main-nav" ** (span <> a) ? do
+      fontSize $ em 1.2
+      sym margin $ em 0.7
     ".entry-main" ? do
       sym padding $ em 1
     ".entry-footer" ? do

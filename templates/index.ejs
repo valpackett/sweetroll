@@ -1,8 +1,29 @@
 <%= templates.header(scope) %>
-<% var categoryNames = scope.data.categoryNames, slices = scope.data.slices, entries = scope.data.entries %>
+<% var slices = scope.data.slices, entries = scope.data.entries %>
 <main class="site-main index-main">
-	<% categoryNames.forEach(function (catName) { %>
-		<%= templates.indexSlice({ meta: scope.meta, slice: slices[catName], entries: entries }) %>
-	<% }) %>
+	<% var landingCatName = _.head(scope.meta.categoriesInLanding) %>
+	<% var currentCatName = _.head(scope.data.categoriesRequested) /* This template only shows one category */ %>
+	<nav class="main-nav">
+		<% scope.meta.categoriesInNav.forEach(function (name) { %>
+			<% if (name != currentCatName) { %><a href="/${name != landingCatName ? name : ''}"><% } else { %><span><% } %>
+			<%- scope.meta.categoryTitles[name] || _.capitalize(name)  %><% if (name != currentCatName) { %></a><% } else { %></span><% } %>
+		<% }) %>
+	</nav>
+	<% var slice = slices[currentCatName] %>
+	<section class="index-category" id="index-category-${ _.snakeCase(slice.name) }">
+		<ul>
+			<% _.forEach(slice.entryUrls, function (entryUrl) { %>
+				<%= templates.entryInList({ entry: entries[entryUrl], permalink: entryUrl }) %>
+			<% }) %>
+		</ul>
+		<nav class="category-nav">
+			<% if (slice.hasAfter) { %>
+				<a href="${ slice.afterHref }"><i class="fa fa-l fa-arrow-up"></i>newer</a>
+			<% } %>
+			<% if (slice.hasBefore) { %>
+				<a href="${ slice.beforeHref }"><i class="fa fa-l fa-arrow-down"></i>older</a>
+			<% } %>
+		</nav>
+	</section>
 </main>
 <%= templates.footer(scope) %>

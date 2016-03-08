@@ -42,7 +42,7 @@ getDefaultCss = return allCss
 getIndex ∷ Sweetroll (WithLink (View IndexedPage))
 getIndex = do
   ipp ← getConfOpt itemsPerPage
-  catNames ← getConfOpt categoryOrder
+  catNames ← getConfOpt categoriesInLanding
   (slices, entries) ← foldM (\(slices, entries) catName →
                               readCategory ipp Nothing Nothing entries catName >>= \(slices', entries') → return (slices ++ slices', entries'))
                             ([], HMS.empty)

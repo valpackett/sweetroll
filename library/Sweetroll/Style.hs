@@ -146,6 +146,10 @@ sweetrollStyle = do
 
   ".index-category" ? marginBottom (em 2)
 
+  ".main-nav" ** (span <> a) ? do
+    fontSize $ em 1.2
+    sym margin $ em 0.7
+
   ".entry-in-list" <> ".note-entry" ? do
     boxShadow 0 (px 3) (px 13) $ rgba 0 0 0 64
     sym borderRadius $ px 3
@@ -232,6 +236,9 @@ sweetrollStyle = do
     "a" ? color "#0064cf"
     "blockquote" ? do
       marginTop $ em 0.4
+      fontSize $ em 0.9
+      margin (em 0.5) nil (em 0.5) nil
+      color "#545454"
 
   ".social-profiles" ? do
     listStyleType none
@@ -273,23 +280,14 @@ sweetrollStyle = do
       orderValue 10
       overflow hidden
       display block
-    ".index-main" ? do
-      flexValue 1
-      overflow hidden
     ".index-category" ? do
       sym2 padding nil $ em 1
-    ".main-nav" ** (span <> a) ? do
-      fontSize $ em 1.2
-      sym margin $ em 0.7
     ".entry-main" ? do
       sym padding $ em 1
     ".entry-footer" ? do
       fontSize $ pct 95
-
-  query M.screen [M.minWidth $ em 65] $ do
-    ".index-main" ? do
-      "-webkit-flex-direction" -: "row"
-      "flex-direction" -: "row"
+    ".note-in-list" ** ".permalink" ? do
+      display inline
 
   query M.screen [M.minWidth $ em 80] $ do
     html ? ("font-size" -: "calc(12px + 9 * ((60em + 25vw - 600px) / 1024))")
@@ -300,10 +298,6 @@ sweetrollStyle = do
     ".site-author" ? do
       maxWidth $ em 18
       marginRight $ em 2
-
-  query M.screen [M.minWidth $ em 105] $ do
-    ".note-in-list" ** ".permalink" ? do
-      display inline
 
 pageParts, entryParts ∷ Selector
 pageParts = ".site-header" <> ".site-content" <> ".site-footer"

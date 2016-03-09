@@ -1,17 +1,18 @@
 <% var properties = scope.entry.properties %>
 <% if (!_.isEmpty(properties['like-of'])) { %>
 	<div class="p-name ${ scope.addClass }">
-		<div class="u-like-of h-cite">
+		<div class="reference-context like-context u-like-of h-cite">
 			<% _.forEach(properties['like-of'], function (like) { %>
 				Liked
 				<% if (_.isObject(like)) { %>
 					<a class="u-url" ${ scope.showRel ? 'rel="like-of"' : '' } href="${ _.head(like.properties.url) }">
-						<%- _.head(like.properties.name) %>
+						a post
 					</a>
 					<% if (!_.isEmpty(like.properties.author)) { %>
-						by
-						<%= templates.citeAuthors({ authors: like.properties.author }) %>
+						by <%= templates.citeAuthors({ authors: like.properties.author }) %>
 					<% } %>
+
+					<%= templates.citeContent({ long: false, properties: like.properties }) %>
 				<% } else if (_.isString(like)) { %>
 					<a class="u-url" ${ scope.showRel ? 'rel="like-of"' : '' } href="${ like }">
 						<%- like %>

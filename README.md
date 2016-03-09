@@ -141,8 +141,8 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
   - [ ] ?? prev/next navigation + combined categories == kinda weird...
   - [ ] Atom feed (should be followable from [GNU Social](https://indiewebcamp.com/GNU_social) i.e. should be PubSubHubbub'd, should be based on HTML as the source of truth)
   - [ ] support [WebFinger](https://webfinger.net) with HTML as the source of truth as well (but also additional links from config e.g. for [remoteStorage](https://remotestorage.io))
-  - [ ] better note like display ("Liked a note by User Name" then gray smaller quote, like in Twitter notifications)
-  - [ ] more consistency / abstraction with dates and reply buttons, etc.
+  - [x] better note like display ("Liked a note by User Name" then gray smaller quote, like in Twitter notifications)
+  - [x] more consistency / abstraction with cite contexts, etc.
   - [ ] figure out URL/canonical/etc. handling for alternative networks & mirrors like .onion & IPFS -- including webmentions!
   - [ ] custom non-entry html pages
   - [ ] archive pages, ie. unpaginated pages (basically `?after=0&before=9223372036854775807` but... "archive" design?)

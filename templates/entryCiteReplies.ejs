@@ -1,27 +1,17 @@
 <% var properties = scope.entry.properties %>
 <% _.forEach(properties['in-reply-to'], function (reply) { %>
 	<div class="reference-context reply-context u-in-reply-to h-cite">
-		in reply to
+		In reply to
 		<% if (_.isObject(reply)) { %>
-			<%= templates.citeAuthors({ authors: reply.properties.author }) %>
-
-			<% var content = _.head(scope.showContent
-				? _(reply.properties.content || []).concat(reply.properties.summary || [], reply.properties.name || []).value()
-				: _(reply.properties.name || []).concat(reply.properties.summary || [], reply.properties.content || []).value()) %>
-			<blockquote class="reply-content">
-				<%= content.html || content.value || content %>
-			</blockquote>
-
 			<a class="p-name u-url reply-permalink" ${ scope.showRel ? 'rel="in-reply-to"' : '' } href="${ _.head(reply.properties.url) }">
-				<% if (!_.isEmpty(reply.properties.published)) { %>
-					<time class="dt-published" datetime="${ _.head(reply.properties.published) }">
-						<%- moment.utc(_.head(reply.properties.published)).format('MMM Do YYYY, HH:mm') %>
-					</time>
-				<% } else { %>
-					permalink
-				<% } %>
+				a post
 			</a>
 
+			<% if (!_.isEmpty(reply.properties.author)) { %>
+				by <%= templates.citeAuthors({ authors: reply.properties.author }) %>
+			<% } %>
+
+			<%= templates.citeContent({ long: false, properties: reply.properties }) %>
 		<% } else if (_.isString(reply)) { %>
 			<a class="p-name u-url" href="${ reply }"><%- reply %></a>
 		<% } else { %>

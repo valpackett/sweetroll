@@ -41,12 +41,11 @@ spec = around_ inDir $ around_ withServer $ do
   describe "GET /" $ do
     it "renders the index" $ do
       transaction' $ do
-        saveNextDocument "posts" "first" $ mf2o [ "name" .= [ asText "Post 1" ] ]
-        saveNextDocument "thingies" "tweeeet" $ mf2o [ "content" .= object [ "html" .= asText "Something 1" ] ]
+        saveNextDocument "articles" "first" $ mf2o [ "name" .= [ asText "Post 1" ] ]
+        saveNextDocument "notes" "tweeeet" $ mf2o [ "content" .= object [ "html" .= asText "Something 1" ] ]
       resp ← app >>= get "/"
-      simpleBody resp `shouldSatisfy` (`contains` "posts")
-      simpleBody resp `shouldSatisfy` (`contains` "thingies")
       simpleBody resp `shouldSatisfy` (`contains` "Post 1")
+      simpleBody resp `shouldSatisfy` (`contains` "Something 1")
       simpleStatus resp `shouldBe` ok200
 
   describe "GET /:category" $ do

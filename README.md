@@ -108,11 +108,11 @@ $ bower install
 
 $ stack build
 
-$ stack test && rm tests.tix
+$ stack test
 
 $ (mkdir /tmp/sroll && cd /tmp/sroll && git init)
 
-$ stack ghci --ghc-options="-fno-hpc"
+$ stack ghci
 :serve
 
 $ http -f post localhost:3000/login | sed -Ee 's/.*access_token=([^&]+).*/\1/' > token

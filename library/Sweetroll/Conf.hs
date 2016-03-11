@@ -38,7 +38,8 @@ instance FromJSON SyndicationConfig where
   parseJSON v = return $ MkSyndicationConfig v
 
 data SweetrollSecrets = SweetrollSecrets
-  {                secretKey ∷ Text }
+  {                secretKey ∷ Text
+  ,          proxySigningKey ∷ ByteString }
 
 data SweetrollConf = SweetrollConf
   {                 siteName ∷ Maybe Text
@@ -89,7 +90,8 @@ instance Default SweetrollConf where
 
 instance Default SweetrollSecrets where
   def = SweetrollSecrets {
-        secretKey                = "SECRET" } -- the executable sets to a secure random value by default
+        secretKey                = "SECRET" -- the executable sets to a secure random value by default
+      , proxySigningKey          = "SECRET" }
 
 baseURI ∷ SweetrollConf → Maybe URI
 baseURI conf = asum [ parseURI $ (if fromMaybe False (httpsWorks conf) then "https://" else "http://") ++ (unpack $ fromMaybe "" $ domainName conf) -- need to parse because we need the :PORT parsed correctly for dev

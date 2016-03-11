@@ -40,6 +40,8 @@ library
       , lens
       , setters
       , safe
+      , cryptonite
+      , memory
       , errors
       , directory
       , data-default
@@ -64,6 +66,7 @@ library
       , wai-extra
       , wai-middleware-static
       , wai-cors
+      , wai-conduit
       , servant
       , servant-server
       , clay
@@ -100,6 +103,7 @@ library
         Sweetroll.Micropub.Response
         Sweetroll.Monads
         Sweetroll.Pages
+        Sweetroll.Proxy
         Sweetroll.Rendering
         Sweetroll.Routes
         Sweetroll.Style
@@ -123,6 +127,7 @@ executable sweetroll
       , ansi-terminal
       , directory
       , cryptonite
+      , memory
       , text
       , bytestring
       , gitson

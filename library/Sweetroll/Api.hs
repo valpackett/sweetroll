@@ -31,6 +31,7 @@ import           Sweetroll.Auth
 import           Sweetroll.Micropub.Endpoint
 import           Sweetroll.Webmention.Receive
 import           Sweetroll.Style
+import           Sweetroll.Proxy
 import           Sweetroll.Util
 
 getIndieConfig ∷ Sweetroll IndieConfig
@@ -61,7 +62,7 @@ getCat catName before after = do
 getEntry ∷ String → String → Sweetroll (WithLink (View EntryPage))
 getEntry catName slug = do
   entry ← guardJustM (notFoundOrGone catName slug) $ readDocumentByName catName slug
-  -- TODO: cacheHTTPDate (maximumMay $ entryUpdated e)
+  -- TODO: cacheHTTPDate -- don't forget responses' dates! -- 204 will be thrown before rendering!
   otherSlugs ← listDocumentKeys catName
   selfLink ← genLink "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy EntryRoute) catName slug
   addLinks [selfLink] $ view $ EntryPage catName (map readSlug $ sort otherSlugs) (slug, entry)
@@ -79,6 +80,7 @@ sweetrollApp ctx = simpleCors
                  $ autohead
                  $ (staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static")
                  $ mapUrls $ mount "bower" (serveStaticFromLookup bowerComponents)
+                         <|> mount "proxy" (requestProxy ctx)
                          <|> mountRoot (serve sweetrollAPI $ sweetrollServer ctx)
   where sweetrollServer c = enter (sweetrollToEither c) $ sweetrollServerT c
 

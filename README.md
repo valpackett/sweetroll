@@ -146,11 +146,14 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
   - [ ] figure out URL/canonical/etc. handling for alternative networks & mirrors like .onion & IPFS -- including webmentions!
   - [ ] custom non-entry html pages
   - [ ] archive pages, ie. unpaginated pages (basically `?after=0&before=9223372036854775807` but... "archive" design?)
-  - [ ] proxying reply-context and comments-presentation images (to avoid mixed content and possible tracking) (note: we already depend on `JuicyPixels` through Pandoc)
+  - proxying for reply/repost/responses/etc images (to avoid mixed content and possible tracking)
+    - [x] the proxy
+    - [ ] the html processing
   - [ ] indieweb-components: a component for a Medium-style popup on selection that offers a fragmention link and (?) indie-config repost-quote-something (look how [selection-sharer](https://github.com/xdamman/selection-sharer) works on mobile!! but probably should look the same just at the opposite direction than iOS's popup)
   - [x] a pool of hs-duktape instances for template rendering!
   - [ ] built-in TLS server, since we depend on `tls` already because of the client
 - [ ] event system: hooks on micropub posting and webmention processing
+  - [ ] pubsubhubbub (move here)
   - [ ] cleaning a cache (which is not there yet... should be an in-process cache with fast expiration -- protection against DDoS or Hacker News effect)
   - [ ] real-time page updates with Server-Sent Events (make a Web Component for HTML-based updating)
   - [ ] JS hooks as plugins (API: a Sweetroll object which is an EventEmitter and also has config/secrets getters; should be possible to make HTTP requests to e.g. send webmention notifications)

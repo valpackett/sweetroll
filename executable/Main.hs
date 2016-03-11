@@ -20,6 +20,8 @@ import qualified Data.Text as T
 import           Data.Streaming.Network (bindPath)
 import           Data.Maybe
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as C8
+import qualified Data.ByteArray as BA
 import           Crypto.Random
 import           Crypto.Hash
 import           Distribution.PackageDescription.TH
@@ -83,12 +85,13 @@ main = runCommand $ \opts _ → do
   when (isNothing origConf) . transaction "." . saveDocument "conf" "sweetroll" $ conf
 
   secretVal ← case secret opts of
-                k | length k >= 40 || k == "TESTKEY" → return $ T.pack k
+                k | length k >= 40 || k == "TESTKEY" → return $ hashWith SHA3_512 $ C8.pack k
                 _ → do
                   hPutStrLn stderr "Warning: the --secret value is shorter than 40 characters. Not using it and generating a random one. Authentication tokens will expire after restarting Sweetroll."
                   randBytes ← getRandomBytes 64 ∷ IO BS.ByteString
-                  return $ T.pack $ show $ hashWith SHA3_512 randBytes
-  let secs = def { secretKey = secretVal }
+                  return $ hashWith SHA3_512 randBytes
+  let secs = def { secretKey = T.pack $ show secretVal
+                 , proxySigningKey = BA.pack $ BA.unpack secretVal }
 
   let addLogging = case devlogging opts of
                      Just True → logStdoutDev

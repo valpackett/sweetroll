@@ -19,19 +19,12 @@ import           Control.Monad.Trans.Control
 import           System.Directory
 import           System.FilePath.Posix
 import           System.IO.Unsafe
-import qualified Data.Vector as V
-import qualified Data.HashMap.Strict as HMS
-import           Data.Conduit
 import           Data.Pool
 import           Data.Maybe
 import           Data.String.Conversions
 import           Data.Aeson.Types
-import           Data.Microformats2.Parser
-import           Data.IndieWeb.MicroformatsUtil
-import           Data.IndieWeb.Authorship
 import           Text.RawString.QQ
 import           GHC.Conc (getNumCapabilities)
-import           Network.HTTP.Client.Internal (setUri) -- The fuck?
 import           Network.HTTP.Client.Conduit
 import           Network.HTTP.Types
 import           Network.URI
@@ -77,7 +70,7 @@ initCtx conf secs = do
   hmg ← newManager
   lck ← newMVar ()
   cpus ← getNumCapabilities
-  --        static pool, basically: max 4, don't expire
+  --        static pool, basically: max Ncpus, don't expire
   tplPool ← createPool createTemplateCtx (\_ → return ()) 1 999999999999 cpus
   return SweetrollCtx { _ctxConf     = conf
                       , _ctxSecs     = secs
@@ -127,48 +120,6 @@ getRenderer = liftM renderer $ asks _ctxTplPool
         txtVal (Right (Just _)) = "TEMPLATE ERROR: returned something other than a string"
         txtVal (Right Nothing) = "TEMPLATE ERROR: returned nothing"
         txtVal (Left e) = "TEMPLATE ERROR: " ++ cs e
-
-withRequest ∷ (MonadIO μ, MonadBaseControl IO μ, MonadSweetroll μ) ⇒
-              Request → (Response (Source μ ByteString) → μ α) → μ α
-withRequest req a =
-  withResponse (req { checkStatus = \_ _ _ → Nothing }) $ \resp → do
-    putStrLn $ cs $ "Request status for <" ++ show (getUri req) ++ ">: " ++ (show . statusCode . responseStatus $ resp)
-    a resp
-
-withSuccessfulRequest ∷ (MonadIO μ, MonadBaseControl IO μ, MonadSweetroll μ) ⇒
-                        Request → (Response (Source μ ByteString) → μ (Maybe α)) → μ (Maybe α)
-withSuccessfulRequest req a = withRequest req $ \resp → 
-  if responseStatus resp `elem` [ok200, created201, accepted202, noContent204] then a resp else return Nothing
-
-withRequestHtml ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
-                  URI → (Response (Source μ ByteString) → μ α) → μ α
-withRequestHtml uri a = do
-  req ← setUri def uri
-  let req' = req { requestHeaders = [ (hAccept, "text/html; charset=utf-8") ] }
-  withRequest req' a
-
-withSuccessfulRequestHtml ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
-                            URI → (Response (Source μ ByteString) → μ (Maybe α)) → μ (Maybe α)
-withSuccessfulRequestHtml uri a = do
-  req ← setUri def uri
-  let req' = req { requestHeaders = [ (hAccept, "text/html; charset=utf-8") ] }
-  withSuccessfulRequest req' a
-
-withFetchEntryWithAuthors ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
-                            URI → Response (Source μ ByteString) → (Value → (Value, [Value]) → μ α) → μ (Maybe α)
-withFetchEntryWithAuthors uri resp a = do
-  htmlDoc ← responseBody resp $$ sinkDoc
-  let mf2Options' = mf2Options { baseUri = Just uri }
-      mfRoot = parseMf2 mf2Options' $ documentRoot htmlDoc
-  case headMay =<< allMicroformatsOfType "h-entry" mfRoot of
-    Just mfEntry@(mfE, mfPs) → do
-      authors ← entryAuthors mf2Options' (\u → withSuccessfulRequestHtml u $ \resp' → liftM Just $ responseBody resp' $$ sinkDoc) uri mfRoot mfEntry
-      let addAuthors (Object o) = Object $ HMS.adjust addAuthors' "properties" o
-          addAuthors x = x
-          addAuthors' (Object o) = Object $ HMS.insert "author" (Array $ V.fromList $ fromMaybe [] authors) o
-          addAuthors' x = x
-      liftM Just $ a mfRoot (addAuthors mfE, mfPs)
-    _ → return Nothing
 
 parseEntryURI ∷ (MonadError ServantErr μ, MonadSweetroll μ) ⇒
                 URI → μ (String, String)

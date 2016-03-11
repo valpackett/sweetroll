@@ -11,25 +11,22 @@ module Sweetroll.Auth (
 
 import           ClassyPrelude
 import           Control.Monad.Except (throwError)
+import           Control.Error.Util (note)
 import           Data.Aeson
-import           Data.Conduit
-import qualified Data.Conduit.Combinators as C
 import           Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import           Data.Foldable (asum)
 import           Data.String.Conversions (cs)
 import qualified Data.List as L
 import qualified Data.Map as M
 import           Web.JWT hiding (header)
-import           Network.HTTP.Types
-import qualified Network.HTTP.Client as HC
 import qualified Network.Wai as Wai
-import           Network.URI
 import           Servant
 import           Servant.Server.Internal (succeedWith)
 import           Servant.Server.Internal.Enter
 import           Sweetroll.Monads
 import           Sweetroll.Conf
 import           Sweetroll.Util
+import           Sweetroll.HTTPClient hiding (Header)
 
 data AuthProtect
 data AuthProtected α = AuthProtected Text α
@@ -87,14 +84,10 @@ postLogin params = do
   if isTestMode
      then makeAccessToken (fromMaybe "unknown" $ lookup "me" params) "post" "example.com"
      else do
-       indieAuthReq ← HC.parseUrl =<< getConfOpt indieAuthCheckEndpoint
-       let req = indieAuthReq { HC.method = "POST"
-                              , HC.requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
-                              , HC.requestBody = HC.RequestBodyBS $ writeForm params }
-       resp ← withRequest req $ \resp →
-                liftM readForm $ HC.responseBody resp $$ C.sinkLazy ∷ Sweetroll (Maybe [(Text, Text)]) -- TODO: check content-type
-       case resp of
-         Just indieAuthRespParams → do
+       checkURI ← getConfOpt indieAuthCheckEndpoint
+       resp0 ← runHTTP $ reqS checkURI >>= postForm params >>= performWithBytes
+       case (note "Could not read form" . readForm) =<< responseBody <$> resp0 of
+         Right (indieAuthRespParams ∷ [(Text, Text)]) → do
            domain ← getConfOpt domainName
            let me = orEmptyMaybe $ lookup "me" indieAuthRespParams
            guardBool err401 $ Just domain == (fmap (cs . uriRegName) $ uriAuthority $ fromMaybe nullURI $ parseURI $ cs me)
@@ -102,6 +95,6 @@ postLogin params = do
            makeAccessToken me
                            (fromMaybe "post" $ lookup "scope" indieAuthRespParams)
                            (fromMaybe "example.com" $ lookup "client_id" params)
-         Nothing → do
-           putStrLn $ cs $ "Authentication error: " ++ show params
+         Left e → do
+           putStrLn $ cs $ "Authentication error: " ++ e ++ " / params: " ++ tshow params
            throwError err401

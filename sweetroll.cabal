@@ -84,6 +84,7 @@ library
       , http-date
       , mime-types
       , html-conduit
+      , xml-conduit
       , xml-lens
       , async
       , highlighting-kate
@@ -98,6 +99,7 @@ library
         Sweetroll.Api
         Sweetroll.Auth
         Sweetroll.Conf
+        Sweetroll.HTTPClient
         Sweetroll.Micropub.Endpoint
         Sweetroll.Micropub.Request
         Sweetroll.Micropub.Response

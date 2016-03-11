@@ -7,20 +7,14 @@ import           ClassyPrelude
 import           Control.Monad.Trans.Control
 import qualified Text.Pandoc as P
 import qualified Text.Pandoc.Walk as PW
-import           Data.Conduit
-import qualified Data.Conduit.Combinators as C
 import           Data.Aeson
 import           Data.List (nub)
 import           Data.Microformats2.Parser
 import           Data.IndieWeb.Endpoints
 import           Network.HTTP.Link
-import           Network.HTTP.Types
-import           Network.HTTP.Client.Internal (setUri) -- The fuck?
-import           Network.HTTP.Client.Conduit
-import           Network.URI
-import           Sweetroll.Util
 import           Sweetroll.Conf
 import           Sweetroll.Monads
+import           Sweetroll.HTTPClient hiding (Header)
 
 type SourceURI = URI
 type TargetURI = URI
@@ -29,15 +23,14 @@ type EndpointURI = URI
 sendWebmention ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
                  SourceURI → TargetURI → EndpointURI → μ (Maybe (Response LByteString))
 sendWebmention from to endpoint = do
-  req ← setUri def endpoint
-  let reqBody = writeForm [(asText "source", tshow from), ("target", tshow to)]
-      req' = req { method = "POST"
-                 , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
-                 , requestBody = RequestBodyBS reqBody }
-  withRequest req' $ \resp → do
-    putStrLn $ "Webmention posted for <" ++ tshow to ++ ">!"
-    body ← responseBody resp $$ C.sinkLazy
-    return $ Just $ resp { responseBody = body }
+  resp ← runHTTP $ reqU endpoint >>= anyStatus
+                 >>= postForm [ ("source", tshow from), ("target", tshow to) ]
+                 >>= performWithBytes
+  let result = case resp of
+                 Left e → "error: " ++ e
+                 Right _ → "success"
+  putStrLn $ "Webmention sending result for <" ++ tshow to ++ ">: " ++ result ++ "!"
+  return $ hush resp
 
 sendWebmentions ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
                   SourceURI → [(TargetURI, EndpointURI)] → μ [Maybe (Response LByteString)]
@@ -50,19 +43,16 @@ linksFromHeader r = fromMaybe [] (lookup "Link" (responseHeaders r) >>= parseLin
 discoverWebmentionEndpoints ∷ Value → [Link] → [EndpointURI]
 discoverWebmentionEndpoints = discoverEndpoints [ "webmention", "http://webmention.org/" ]
 
-getWebmentionEndpoint ∷ (MonadThrow μ, MonadSweetroll μ) ⇒
-                        Response (Source μ ByteString) → μ (Maybe EndpointURI)
-getWebmentionEndpoint r = do
-  htmlDoc ← responseBody r $$ sinkDoc
-  let mf2Root = parseMf2 mf2Options $ documentRoot htmlDoc
-  return $ listToMaybe $ discoverWebmentionEndpoints mf2Root (linksFromHeader r)
+getWebmentionEndpoint ∷ Response Document → Maybe EndpointURI
+getWebmentionEndpoint r = listToMaybe $ discoverWebmentionEndpoints mf2Root (linksFromHeader r)
+    where mf2Root = parseMf2 mf2Options $ documentRoot $ responseBody r
 
 findWebmentionEndpoints ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
                           [TargetURI] → μ [(TargetURI, EndpointURI)]
 findWebmentionEndpoints targets = do
   let getWebmentionEndpoint' uri = do
-        endp ← withRequestHtml uri getWebmentionEndpoint
-        return $ (uri, ) <$> endp
+        resp ← runHTTP $ reqU uri >>= anyStatus >>= performWithHtml
+        return $ liftM (uri, ) $ getWebmentionEndpoint =<< (hush resp)
   rs ← mapM getWebmentionEndpoint' targets
   return $ catMaybes rs
 

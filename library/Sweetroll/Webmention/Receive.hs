@@ -12,13 +12,11 @@ import           Data.String.Conversions
 import           Data.Aeson
 import           Data.Aeson.Lens
 import           Data.Aeson.QQ
-import           Network.URI
-import           Network.HTTP.Types
-import           Network.HTTP.Client.Conduit
 import           Servant
 import           Gitson
 import           Sweetroll.Conf
 import           Sweetroll.Monads
+import           Sweetroll.HTTPClient hiding (Header)
 
 receiveWebmention ∷ [(Text, Text)] → Sweetroll ()
 receiveWebmention allParams = do
@@ -31,28 +29,34 @@ receiveWebmention allParams = do
   throwError respAccepted
 
 processWebmention ∷ String → String → URI → URI → Sweetroll ()
-processWebmention category slug source target =
-  void $ withRequestHtml source $ \resp → do
-    let withEntry x =
-          transaction "." $ do
-            entrym ← readDocumentByName category slug
-            case entrym of
-              Just entry → x entry
-              _ → putStrLn $ "Received webmention for nonexistent " ++ tshow target ++ " from " ++ tshow source
-    case statusCode $ responseStatus resp of
-      410 → withEntry $ \entry → do
-              putStrLn $ "Received gone webmention for " ++ tshow target ++ " from " ++ tshow source
-              let updatedEntry = upsertMention (entry ∷ Value) tombstone
+processWebmention category slug source target = do
+  let forfrom = "for " ++ tshow target ++ " from " ++ tshow source
+      withEntry x =
+        transaction "." $ do
+          entrym ← readDocumentByName category slug
+          case entrym of
+            Just entry → x entry
+            _ → putStrLn $ "Received webmention for nonexistent " ++ tshow target ++ " from " ++ tshow source
+  resp0 ← runHTTP $ reqU source >>= anyStatus >>= performWithHtml
+  case resp0 of
+    Left e → putStrLn $ "Error fetching webmention " ++ forfrom ++ ": " ++ e
+    Right resp → 
+      case statusCode $ responseStatus resp of
+        410 → withEntry $ \entry → do
+                putStrLn $ "Received gone webmention " ++ forfrom ++ tshow source
+                let updatedEntry = upsertMention (entry ∷ Value) tombstone
+                saveDocumentByName category slug updatedEntry
+        200 → do
+          (mention0, _, _) ← fetchEntryWithAuthors source resp
+          case mention0 of
+            Just mention@(Object _) | verifyMention target mention → withEntry $ \entry → do
+              putStrLn $ "Received correct webmention for " ++ tshow target ++ " from " ++ tshow source
+              let updatedEntry = upsertMention (entry ∷ Value) $ ensurePresentUrl source mention
               saveDocumentByName category slug updatedEntry
-      200 → void $ withFetchEntryWithAuthors source resp $ \_ (mention, _) →
-              if verifyMention target mention
-                 then withEntry $ \entry → do
-                   putStrLn $ "Received correct webmention for " ++ tshow target ++ " from " ++ tshow source
-                   let updatedEntry = upsertMention (entry ∷ Value) $ ensurePresentUrl source mention
-                   saveDocumentByName category slug updatedEntry
-                 else putStrLn $ "Received unverified webmention for " ++ tshow target ++ " from " ++ tshow source ++ ": " ++ tshow mention
-      _ → return ()
-    return $ Just ()
+            Just mention@(Object _) → putStrLn $ "Received unverified webmention " ++ forfrom ++ ": " ++ tshow mention
+            Just mention → putStrLn $ "Received incorrect webmention " ++ forfrom ++ ": " ++ tshow mention
+            Nothing → putStrLn $ "Received unreadable webmention " ++ forfrom
+        _ → return ()
 
 verifyMention ∷ URI → Value → Bool
 verifyMention t m | propIncludesURI t "in-reply-to" m = True

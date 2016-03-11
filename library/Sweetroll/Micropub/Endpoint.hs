@@ -17,10 +17,6 @@ import qualified Data.Vector as V
 import           Data.Foldable (asum)
 import           Text.Pandoc hiding (Link, Null)
 import           Text.Blaze.Html.Renderer.Text (renderHtml)
-import           Network.URI
-import           Network.HTTP.Client hiding (Proxy)
-import           Network.HTTP.Client.Internal (setUri)
-import qualified Network.HTTP.Types as HT
 import           Web.JWT hiding (header, decode)
 import           Servant
 import           Gitson
@@ -32,6 +28,7 @@ import           Sweetroll.Routes
 import           Sweetroll.Micropub.Request
 import           Sweetroll.Micropub.Response
 import           Sweetroll.Webmention.Send
+import           Sweetroll.HTTPClient hiding (Header)
 
 infixl 1 |>
 (|>) ∷ Monad μ ⇒ μ α → (α → β) → μ β
@@ -103,14 +100,20 @@ fetchReplyContexts k props = do
     return $ insertMap k newCtxs props
   where updateCtxs (Just (Array v)) = Array `liftM` mapM fetch v
         updateCtxs _ = return $ Array V.empty
-        fetch (String u) = case parseURI $ cs u of
-          Nothing → return $ String u
-          Just uri → do
-            r ← withSuccessfulRequestHtml uri $ \resp →
-              withFetchEntryWithAuthors uri resp $ \mfRoot ((Object entry), _) →
-                return $ Object $ insertMap "webmention-endpoint" (toJSON $ map tshow $ discoverWebmentionEndpoints mfRoot (linksFromHeader resp))
-                                $ insertMap "fetched-url" (toJSON u) entry
-            return $ fromMaybe (String u) r
+        fetch (String u) = do -- XXX: use a guard-ish thing
+          case parseURI $ cs u of
+            Nothing → return $ String u
+            Just uri → do
+              resp0 ← runHTTP $ reqU uri >>= performWithHtml
+              case resp0 of
+                Left _ → return $ String u
+                Right resp → do
+                  (entry0, _, mfRoot) ← fetchEntryWithAuthors uri resp
+                  case entry0 of
+                    Just (Object entry) →
+                      return $ Object $ insertMap "webmention-endpoint" (toJSON $ map tshow $ discoverWebmentionEndpoints mfRoot (linksFromHeader resp))
+                                      $ insertMap "fetched-url" (toJSON u) entry
+                    _ → return $ String u
         fetch x = return x
 
 -- XXX: not tested yet
@@ -174,14 +177,14 @@ notifyPuSH l = do
     Just hubURI → do
       base ← getConfOpt baseURI
       let pingURI = l `relativeTo` base
-          body = writeForm [ (asText "hub.mode", asText "publish"), ("hub.url", tshow pingURI) ]
-      let req = def { method = "POST"
-                    , requestHeaders = [ (HT.hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
-                    , requestBody = RequestBodyBS body }
-      req' ← setUri req hubURI
-      void $ withRequest req' $ \_ → do
-        putStrLn $ "PubSubHubbub notified: " ++ cs body
-        return $ Just ()
+      resp ← runHTTP $ reqU hubURI >>= anyStatus
+                       >>= postForm [ ("hub.mode", "publish"), ("hub.url", tshow pingURI) ]
+                       >>= performWithVoid
+      let status = case resp of
+                     Right _ → "successfully"
+                     Left e → "unsuccessfully (" ++ e ++ ")"
+      putStrLn $ "PubSubHubbub notified " ++ status ++ " for " ++ tshow pingURI ++ " to hub " ++ tshow hubURI
+      return ()
 
 syndicate ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
             Value → URI → LText → μ Value
@@ -189,6 +192,6 @@ syndicate entry absUrl syndLinks = do
   syndMs ← contentWebmentions $ Just $ pandocRead readHtml $ cs syndLinks
   syndResults ← catMaybes `liftM` sendWebmentions absUrl syndMs
   let processSynd resp = do
-        guard $ responseStatus resp `elem` [ HT.ok200, HT.created201 ]
+        guard $ responseStatus resp `elem` [ ok200, created201 ]
         decodeUtf8 `liftM` lookup "Location" (responseHeaders resp)
   return $ set (key "properties" . key "syndication") (Array $ V.fromList $ map String $ mapMaybe processSynd syndResults) entry

@@ -17,9 +17,9 @@ import           Data.Text (splitOn)
 import           Network.URI
 import qualified Text.Pandoc as P
 import qualified Text.Pandoc.Error as PE
-import           Network.Wai (Middleware, responseLBS, pathInfo)
+import           Network.Wai (Application, responseLBS, pathInfo)
 import           Network.Mime (defaultMimeLookup)
-import           Network.HTTP.Types.Status (ok200)
+import           Network.HTTP.Types.Status
 import           Servant (mimeRender, mimeUnrender, FormUrlEncoded)
 import           Sweetroll.Conf (pandocReaderOptions)
 
@@ -58,11 +58,11 @@ orEmptyMaybe = fromMaybe ""
 pandocRead ∷ (P.ReaderOptions → String → Either PE.PandocError P.Pandoc) → String → P.Pandoc
 pandocRead x = PE.handleError . x pandocReaderOptions
 
-serveStaticFromLookup ∷ [(FilePath, ByteString)] → Middleware
-serveStaticFromLookup files app req respond =
-  case lookup pth files of
-    Just bs → respond $ responseLBS ok200 [("Content-Type", ctype)] $ cs bs
-    Nothing → app req respond
+serveStaticFromLookup ∷ [(FilePath, ByteString)] → Application
+serveStaticFromLookup files req respond =
+  respond $ case lookup pth files of
+    Just bs → responseLBS ok200 [("Content-Type", ctype)] $ cs bs
+    Nothing → responseLBS notFound404 [("Content-Type", "text/plain")] "File not found"
   where pth = cs $ intercalate "/" reqpath
         ctype = defaultMimeLookup $ orEmptyMaybe $ lastMay reqpath
-        reqpath = drop 1 $ pathInfo req
+        reqpath = pathInfo req

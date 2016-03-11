@@ -14,10 +14,10 @@ import qualified Data.HashMap.Strict as HMS
 import qualified Network.HTTP.Link as L
 import           Network.URI
 import           Network.Wai
+import           Network.Wai.UrlMap
 import           Network.Wai.Middleware.Autohead
 import           Network.Wai.Middleware.Cors
-import           Network.Wai.Middleware.Static
-import           Network.Wai.Middleware.Routed
+import           Network.Wai.Middleware.Static hiding ((<|>))
 import           Servant
 import           Gitson
 import           Gitson.Util (maybeReadIntString)
@@ -75,15 +75,12 @@ sweetrollServerT ctx = getIndieConfig :<|> getDefaultCss
     where key = secretKey $ _ctxSecs ctx
 
 sweetrollApp ∷ SweetrollCtx → Application
-sweetrollApp ctx = foldr ($) (sweetrollApp' ctx) [
-                     staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static"
-                   , routedMiddleware ((== Just "bower") . headMay) $ serveStaticFromLookup bowerComponents
-                   , autohead
-                   , simpleCors ]
-  where sweetrollApp' ∷ SweetrollCtx → Application
-        sweetrollApp' = serve sweetrollAPI . sweetrollServer
-        sweetrollServer ∷ SweetrollCtx → Server SweetrollAPI
-        sweetrollServer c = enter (sweetrollToEither c) $ sweetrollServerT c
+sweetrollApp ctx = simpleCors
+                 $ autohead
+                 $ (staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static")
+                 $ mapUrls $ mount "bower" (serveStaticFromLookup bowerComponents)
+                         <|> mountRoot (serve sweetrollAPI $ sweetrollServer ctx)
+  where sweetrollServer c = enter (sweetrollToEither c) $ sweetrollServerT c
 
 initSweetrollApp ∷ SweetrollConf → SweetrollSecrets → IO Application
 initSweetrollApp conf secs = liftM sweetrollApp $ initCtx conf secs

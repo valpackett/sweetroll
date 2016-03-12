@@ -105,12 +105,12 @@ library
         Sweetroll.Micropub.Response
         Sweetroll.Monads
         Sweetroll.Pages
+        Sweetroll.Prelude
         Sweetroll.Proxy
         Sweetroll.Rendering
         Sweetroll.Routes
         Sweetroll.Style
         Sweetroll.Slice
-        Sweetroll.Util
         Sweetroll.Webmention.Send
         Sweetroll.Webmention.Receive
     ghc-options: -Wall

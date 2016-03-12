@@ -6,13 +6,8 @@ module Sweetroll.Micropub.Endpoint (
 , postMicropub
 ) where
 
-import           ClassyPrelude
+import           Sweetroll.Prelude
 import           Control.Concurrent.Lifted (fork, threadDelay)
-import           Control.Monad.Trans.Control
-import           Control.Lens hiding ((.=), (|>))
-import           Data.Aeson
-import           Data.Aeson.Lens
-import           Data.String.Conversions
 import qualified Data.Vector as V
 import           Text.Pandoc hiding (Link, Null)
 import           Text.Blaze.Html.Renderer.Text (renderHtml)
@@ -20,18 +15,13 @@ import           Web.JWT hiding (header, decode)
 import           Servant
 import           Gitson
 import           Sweetroll.Conf
-import           Sweetroll.Util
 import           Sweetroll.Auth
 import           Sweetroll.Monads
 import           Sweetroll.Routes
 import           Sweetroll.Micropub.Request
 import           Sweetroll.Micropub.Response
 import           Sweetroll.Webmention.Send
-import           Sweetroll.HTTPClient hiding (Header)
-
-infixl 1 |>
-(|>) ∷ Monad μ ⇒ μ α → (α → β) → μ β
-(|>) = flip liftM
+import           Sweetroll.HTTPClient
 
 getMicropub ∷ JWT VerifiedJWT → Maybe Text → [Text] → Maybe Text → Sweetroll MicropubResponse
 getMicropub _ (Just "syndicate-to") _ _ = do
@@ -48,7 +38,7 @@ getMicropub _ (Just "source") props (Just url) = do
 getMicropub token _ _ _ = getAuth token |> AuthInfo
 
 postMicropub ∷ JWT VerifiedJWT → MicropubRequest
-             → Sweetroll (Headers '[Header "Location" Text] MicropubResponse)
+             → Sweetroll (Headers '[Servant.Header "Location" Text] MicropubResponse)
 postMicropub token (Create htype props synds) = do
   now ← liftIO getCurrentTime
   base ← getConfOpt baseURI

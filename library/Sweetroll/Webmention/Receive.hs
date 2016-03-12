@@ -3,14 +3,10 @@
 
 module Sweetroll.Webmention.Receive where
 
-import           ClassyPrelude
-import           Control.Lens hiding (snoc)
-import           Control.Monad.Except (throwError)
+import           Sweetroll.Prelude hiding (snoc)
+import           Control.Lens (snoc)
 import           Control.Concurrent.Lifted (fork)
 import qualified Data.HashMap.Strict as HMS
-import           Data.String.Conversions
-import           Data.Aeson
-import           Data.Aeson.Lens
 import           Data.Aeson.QQ
 import           Servant
 import           Gitson

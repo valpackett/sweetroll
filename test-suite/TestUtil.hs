@@ -2,19 +2,14 @@
 
 module TestUtil where
 
-import           ClassyPrelude
+import           Sweetroll.Prelude
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.CaseInsensitive as CI
-import           Data.String.Conversions
-import           Data.Default (def)
-import           Data.Aeson
 import           Data.Aeson.Types (Pair)
 import           Network.Wai
 import           Network.Wai.Test
-import           Network.HTTP.Types
 import           Sweetroll.Conf (secretKey)
 import           Sweetroll.Auth (signAccessToken)
-import           Sweetroll.Util (orEmptyMaybe)
 
 contains ∷ EqSequence α ⇒ α → α → Bool
 contains = flip isInfixOf

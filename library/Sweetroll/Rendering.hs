@@ -5,22 +5,15 @@
 -- | The module responsible for rendering pages into actual HTML
 module Sweetroll.Rendering where
 
-import           ClassyPrelude hiding (fromString)
+import           Sweetroll.Prelude hiding (fromString)
 import           Network.HTTP.Media.MediaType
-import           Data.Aeson (encode)
-import           Data.Aeson.Types
 import           Data.List (elemIndex)
-import           Data.String.Conversions
-import           Data.String.Conversions.Monomorphic
 import           Safe (atMay)
-import           Network.URI (nullURI)
-import           Network.HTTP.Types
 import           Servant
 import           Sweetroll.Pages
 import           Sweetroll.Slice
 import           Sweetroll.Routes
 import           Sweetroll.Conf
-import           Sweetroll.Util
 import           Sweetroll.Monads
 
 instance Accept HTML where
@@ -53,8 +46,8 @@ instance Accept CSS where
 instance ConvertibleStrings α LByteString ⇒ MimeRender CSS α where
   mimeRender _ = cs
 
-view ∷ α → Sweetroll (View α)
-view content = do
+mkView ∷ α → Sweetroll (View α)
+mkView content = do
   conf ← getConf
   renderer ← getRenderer
   return $ View conf renderer content

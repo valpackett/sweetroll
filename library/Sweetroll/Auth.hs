@@ -9,13 +9,8 @@ module Sweetroll.Auth (
 , module Sweetroll.Auth
 ) where
 
-import           ClassyPrelude
-import           Control.Monad.Except (throwError)
-import           Control.Error.Util (note)
-import           Data.Aeson
+import           Sweetroll.Prelude hiding (iat, au)
 import           Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
-import           Data.String.Conversions (cs)
-import qualified Data.List as L
 import qualified Data.Map as M
 import           Web.JWT hiding (header)
 import qualified Network.Wai as Wai
@@ -24,7 +19,6 @@ import           Servant.Server.Internal (succeedWith)
 import           Servant.Server.Internal.Enter
 import           Sweetroll.Monads
 import           Sweetroll.Conf
-import           Sweetroll.Util
 import           Sweetroll.HTTPClient hiding (Header)
 
 data AuthProtect
@@ -37,8 +31,8 @@ instance HasServer sublayout ⇒ HasServer (AuthProtect :> sublayout) where
   type ServerT (AuthProtect :> sublayout) α = AuthProtected (JWT VerifiedJWT → ServerT sublayout α)
 
   route Proxy (AuthProtected secKey subserver) req respond =
-    case asum [ L.lookup hAuthorization (Wai.requestHeaders req) >>= fromHeader
-              , join $ L.lookup "access_token" $ Wai.queryString req ] of
+    case asum [ lookup hAuthorization (Wai.requestHeaders req) >>= fromHeader
+              , join $ lookup "access_token" $ Wai.queryString req ] of
       Nothing → respond . succeedWith $ Wai.responseLBS status401 [] "Authorization/access_token not found."
       Just tok →
         case decodeAndVerifySignature (secret secKey) (cs tok) of

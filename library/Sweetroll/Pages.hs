@@ -3,9 +3,7 @@
 -- | The definitions of pages
 module Sweetroll.Pages where
 
-import           ClassyPrelude
-import           Data.Aeson.Types (Value)
-import           Sweetroll.Util
+import           Sweetroll.Prelude
 import           Sweetroll.Slice
 import           Sweetroll.Conf
 

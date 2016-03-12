@@ -3,12 +3,9 @@
 
 module Sweetroll.Webmention.Send where
 
-import           ClassyPrelude
-import           Control.Monad.Trans.Control
+import           Sweetroll.Prelude hiding (from, to)
 import qualified Text.Pandoc as P
 import qualified Text.Pandoc.Walk as PW
-import           Data.Aeson
-import           Data.List (nub)
 import           Data.Microformats2.Parser
 import           Data.IndieWeb.Endpoints
 import           Network.HTTP.Link

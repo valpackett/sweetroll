@@ -9,30 +9,22 @@
 -- functions that use it, such as HTTP client requests.
 module Sweetroll.Monads where
 
-import           ClassyPrelude
+import           Sweetroll.Prelude
 import           Control.Monad.Base
 import           Control.Monad.Reader hiding (forM_)
 import           Control.Monad.Except hiding (forM_)
-import           Control.Monad.Trans.Either
-import           Control.Monad.Trans.Resource
-import           Control.Monad.Trans.Control
 import           System.Directory
 import           System.FilePath.Posix
 import           System.IO.Unsafe
 import           Data.Pool
 import           Data.Maybe
-import           Data.String.Conversions
-import           Data.Aeson.Types
 import           Text.RawString.QQ
 import           GHC.Conc (getNumCapabilities)
 import           Network.HTTP.Client.Conduit
-import           Network.HTTP.Types
-import           Network.URI
 import           Servant
 import           Gitson
 import           Scripting.Duktape
 import           Sweetroll.Conf
-import           Sweetroll.Util
 
 data SweetrollCtx = SweetrollCtx
   { _ctxConf     ∷ SweetrollConf
@@ -127,40 +119,3 @@ parseEntryURI uri = do
   base ← getConfOpt baseURI
   guardBool errWrongDomain $ (uriRegName <$> uriAuthority uri) == (uriRegName <$> uriAuthority base)
   parseEntryURIRelative uri
-
-parseEntryURIRelative ∷ (MonadError ServantErr μ) ⇒ URI → μ (String, String)
-parseEntryURIRelative uri =
-  case uriPathParts uri of
-    [ category, slug ] → return (category, slug)
-    _ → throwError errWrongPath
-
-errWrongDomain ∷ ServantErr
-errWrongDomain = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]
-                        , errBody    = "The target URI is not on this domain." }
-
-errWrongPath ∷ ServantErr
-errWrongPath = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]
-                      , errBody    = "The target URI is not a resource that exists on this domain." }
-
-errNoURIInField ∷ LByteString → ServantErr
-errNoURIInField f = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]
-                           , errBody    = "You didn't put a valid absolute URI in the '" ++ f ++ "' field of the www-form-urlencoded request body." }
-
-guardJustP ∷ MonadError ServantErr μ ⇒ ServantErr → Maybe α → μ α
-guardJustP _ (Just x) = return x
-guardJustP e Nothing = throwError e
-
-guardJustM ∷ MonadError ServantErr μ ⇒ μ ServantErr → μ (Maybe α) → μ α
-guardJustM ea a = a >>= \x → case x of
-                                 Just v → return v
-                                 Nothing → throwError =<< ea
-
-guardJust ∷ MonadError ServantErr μ ⇒ ServantErr → μ (Maybe α) → μ α
-guardJust e = guardJustM (return e)
-
-guardBool ∷ MonadError ServantErr μ ⇒ ServantErr → Bool → μ ()
-guardBool e x = unless x $ throwError e
-
-guardBoolM ∷ MonadError ServantErr μ ⇒ μ ServantErr → Bool → μ ()
-guardBoolM ea False = throwError =<< ea
-guardBoolM _ True = return ()

@@ -8,15 +8,10 @@ module Sweetroll.Micropub.Request (
 , formToObject
 ) where
 
-import           ClassyPrelude hiding (first)
+import           Sweetroll.Prelude hiding (first)
 import           Control.Arrow (first)
-import           Control.Error.Util (hush)
-import           Control.Lens
-import           Data.Aeson
-import           Data.Aeson.Lens
 import           Data.Attoparsec.Text as AP
 import           Servant
-import           Sweetroll.Util
 
 type ObjType = Text
 type ObjProperties = Object

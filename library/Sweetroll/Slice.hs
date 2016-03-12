@@ -3,8 +3,7 @@
 -- | Slices are results of pagination, basically.
 module Sweetroll.Slice where
 
-import           ClassyPrelude
-import           Sweetroll.Util
+import           Sweetroll.Prelude
 
 data Slice α = Slice
   { sliceItems   ∷ [(Int, α)]

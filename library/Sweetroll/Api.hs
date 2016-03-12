@@ -4,15 +4,12 @@
 
 module Sweetroll.Api where
 
-import           ClassyPrelude
+import           Sweetroll.Prelude
 import           Data.Maybe (fromJust)
-import           Data.Aeson
-import           Data.String.Conversions
 import           Data.Conduit.Shell (run, proc, conduit, ProcessException, ($|), (=$=))
 import qualified Data.Conduit.Combinators as CL
 import qualified Data.HashMap.Strict as HMS
 import qualified Network.HTTP.Link as L
-import           Network.URI
 import           Network.Wai
 import           Network.Wai.UrlMap
 import           Network.Wai.Middleware.Autohead
@@ -32,7 +29,6 @@ import           Sweetroll.Micropub.Endpoint
 import           Sweetroll.Webmention.Receive
 import           Sweetroll.Style
 import           Sweetroll.Proxy
-import           Sweetroll.Util
 
 getIndieConfig ∷ Sweetroll IndieConfig
 getIndieConfig = getConfOpt indieConfig
@@ -49,7 +45,7 @@ getIndex = do
                             ([], HMS.empty)
                             catNames
   selfLink ← genLink "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy IndexRoute)
-  addLinks [selfLink] $ view $ IndexedPage catNames slices entries
+  addLinks [selfLink] $ mkView $ IndexedPage catNames slices entries
 
 getCat ∷ String → Maybe Int → Maybe Int → Sweetroll (WithLink (View IndexedPage))
 getCat catName before after = do
@@ -57,7 +53,7 @@ getCat catName before after = do
   (slice : slices, entries) ← readCategory ipp before after HMS.empty catName
   guardBoolM (renderError err404 "404") (length (sliceItems slice) > 0)
   selfLink ← genLink "self" $ catLink slice
-  addLinks [selfLink] $ view $ IndexedPage [catName] (slice : slices) entries
+  addLinks [selfLink] $ mkView $ IndexedPage [catName] (slice : slices) entries
 
 getEntry ∷ String → String → Sweetroll (WithLink (View EntryPage))
 getEntry catName slug = do
@@ -65,15 +61,15 @@ getEntry catName slug = do
   -- TODO: cacheHTTPDate -- don't forget responses' dates! -- 204 will be thrown before rendering!
   otherSlugs ← listDocumentKeys catName
   selfLink ← genLink "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy EntryRoute) catName slug
-  addLinks [selfLink] $ view $ EntryPage catName (map readSlug $ sort otherSlugs) (slug, entry)
+  addLinks [selfLink] $ mkView $ EntryPage catName (map readSlug $ sort otherSlugs) (slug, entry)
 
 sweetrollServerT ∷ SweetrollCtx → ServerT SweetrollAPI Sweetroll
 sweetrollServerT ctx = getIndieConfig :<|> getDefaultCss
-                  :<|> postLogin :<|> AuthProtected key getAuth
-                  :<|> AuthProtected key postMicropub :<|> AuthProtected key getMicropub
+                  :<|> postLogin :<|> AuthProtected secKey getAuth
+                  :<|> AuthProtected secKey postMicropub :<|> AuthProtected secKey getMicropub
                   :<|> receiveWebmention
                   :<|> getEntry :<|> getCat :<|> getIndex
-    where key = secretKey $ _ctxSecs ctx
+    where secKey = secretKey $ _ctxSecs ctx
 
 sweetrollApp ∷ SweetrollCtx → Application
 sweetrollApp ctx = simpleCors

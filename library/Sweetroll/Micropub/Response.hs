@@ -2,8 +2,7 @@
 
 module Sweetroll.Micropub.Response where
 
-import           ClassyPrelude
-import           Data.Aeson
+import           Sweetroll.Prelude
 import qualified Data.Map as M
 import           Servant
 

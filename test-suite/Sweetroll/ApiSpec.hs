@@ -3,8 +3,7 @@
 
 module Sweetroll.ApiSpec (spec) where
 
-import           ClassyPrelude
-import           Control.Lens hiding (Index, re, parts, (.=), contains)
+import           Sweetroll.Prelude hiding (Index, re, parts, contains)
 import           Control.Monad.Trans.Writer
 import           Control.Concurrent
 import           Test.Hspec
@@ -12,9 +11,6 @@ import           System.Directory
 import           Data.Conduit.Shell (run, proc, conduit, ($|))
 import           Data.Conduit.Combinators (sinkNull)
 import           Data.Maybe (fromJust)
-import           Data.Aeson.Lens
-import           Data.Default
-import           Data.Aeson
 import qualified Network.Wai as Wai
 import           Network.Wai.Test
 import qualified Network.Wai.Handler.Warp as Warp

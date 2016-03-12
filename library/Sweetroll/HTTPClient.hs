@@ -3,37 +3,27 @@
 -- | All the things related to making HTTP requests and parsing them.
 module Sweetroll.HTTPClient (
   module Sweetroll.HTTPClient
-, module Network.URI
 , module Network.HTTP.Types
 , Response
 , Document
 , responseStatus
 , responseHeaders
 , responseBody
-, hush
 ) where
 
-import           ClassyPrelude
-import           Control.Monad.Trans.Control
-import           Control.Monad.Trans.Either
-import           Control.Error.Util (hush)
-import           Data.String.Conversions
-import           Data.Default
+import           Sweetroll.Prelude
 import           Data.Conduit
 import qualified Data.Conduit.Combinators as C
 import           Data.HashMap.Strict (adjust)
-import           Data.Aeson.Types
 import           Data.Microformats2.Parser
 import           Data.IndieWeb.MicroformatsUtil
 import           Data.IndieWeb.Authorship
 import           Text.XML (Document)
-import           Network.URI
 import           Network.HTTP.Types
 import           Network.HTTP.Conduit as HC
 import           Network.HTTP.Client.Conduit as HCC
 import           Network.HTTP.Client.Internal (setUri) -- The fuck?
 import           Sweetroll.Conf (mf2Options)
-import           Sweetroll.Util
 
 type MonadHTTP ψ μ = (HasHttpManager ψ, MonadReader ψ μ, MonadIO μ, MonadBaseControl IO μ)
 

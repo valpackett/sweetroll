@@ -13,7 +13,6 @@ import           Text.Highlighting.Kate.Styles (tango)
 import           Data.String.Conversions
 import           Data.Setters
 import           Data.Default
-import           Data.Foldable (asum)
 import qualified Data.HashMap.Strict as HMS
 import           Data.Aeson
 import           Data.Aeson.TH

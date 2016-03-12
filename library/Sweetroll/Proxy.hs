@@ -44,7 +44,7 @@ requestProxy ctx req respond =
                                      , HCC.decompress = const False }
       flip runReaderT ctx $ withResponse upstreamReq $ \upstreamRsp → lift $ do
         case readMay =<< (asString . cs <$> lookup "Content-Length" (HCC.responseHeaders upstreamRsp)) of
-          Just l | l < 4*1024*1024 → do
+          Just l | l < (4*1024*1024 ∷ Int) → do
             let src = mapOutput (Chunk . fromByteString) $ HCC.responseBody upstreamRsp
                 headers = filter allowedRespHeader $ HCC.responseHeaders upstreamRsp
             respond $ responseSource (HCC.responseStatus upstreamRsp) headers src

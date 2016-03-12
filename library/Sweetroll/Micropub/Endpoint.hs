@@ -14,7 +14,6 @@ import           Data.Aeson
 import           Data.Aeson.Lens
 import           Data.String.Conversions
 import qualified Data.Vector as V
-import           Data.Foldable (asum)
 import           Text.Pandoc hiding (Link, Null)
 import           Text.Blaze.Html.Renderer.Text (renderHtml)
 import           Web.JWT hiding (header, decode)

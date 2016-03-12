@@ -14,7 +14,6 @@ import           Control.Monad.Except (throwError)
 import           Control.Error.Util (note)
 import           Data.Aeson
 import           Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
-import           Data.Foldable (asum)
 import           Data.String.Conversions (cs)
 import qualified Data.List as L
 import qualified Data.Map as M
@@ -64,7 +63,7 @@ signAccessToken ∷ Text → Text → Text → UTCTime → Text → Text → Tex
 signAccessToken sec domain me now scope clientId = encodeSigned HS256 (secret sec) t
   where t = def { iss = stringOrURI domain
                 , sub = stringOrURI me
-                , iat = intDate $ utcTimeToPOSIXSeconds now
+                , iat = numericDate $ utcTimeToPOSIXSeconds now
                 , unregisteredClaims = M.fromList [ ("scope", String scope)
                                                   , ("client_id", String clientId) ] }
 

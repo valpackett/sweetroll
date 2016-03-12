@@ -17,7 +17,7 @@ import           Network.Wai
 import           Network.Wai.UrlMap
 import           Network.Wai.Middleware.Autohead
 import           Network.Wai.Middleware.Cors
-import           Network.Wai.Middleware.Static hiding ((<|>))
+import           Network.Wai.Application.Static
 import           Servant
 import           Gitson
 import           Gitson.Util (maybeReadIntString)
@@ -78,8 +78,8 @@ sweetrollServerT ctx = getIndieConfig :<|> getDefaultCss
 sweetrollApp ∷ SweetrollCtx → Application
 sweetrollApp ctx = simpleCors
                  $ autohead
-                 $ (staticPolicy $ noDots >-> isNotAbsolute >-> addBase "static")
-                 $ mapUrls $ mount "bower" (serveStaticFromLookup bowerComponents)
+                 $ mapUrls $ mount "bower" (staticApp $ embeddedSettings bowerComponents)
+                         <|> mount "static" (staticApp $ defaultWebAppSettings "static")
                          <|> mount "proxy" (requestProxy ctx)
                          <|> mountRoot (serve sweetrollAPI $ sweetrollServer ctx)
   where sweetrollServer c = enter (sweetrollToEither c) $ sweetrollServerT c

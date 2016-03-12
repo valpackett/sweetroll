@@ -64,7 +64,7 @@ library
       , indieweb-algorithms
       , wai
       , wai-extra
-      , wai-middleware-static
+      , wai-app-static
       , wai-cors
       , wai-conduit
       , servant

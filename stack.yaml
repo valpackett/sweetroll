@@ -23,10 +23,6 @@ packages:
     subdirs:
       - wai-app-static
   - location:
-      git: https://github.com/myfreeweb/wai-middleware-static.git
-      commit: b01d98e47fdfd0b5c28cb6789efe280aeb76a231
-    extra-dep: true
-  - location:
       git: https://github.com/chrisdone/shell-conduit.git
       commit: 81088e2af9c72cf2806b3e8e9825282774a76e73
     extra-dep: true

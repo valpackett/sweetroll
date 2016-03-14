@@ -57,5 +57,5 @@ requestProxy ctx req respond =
 
 proxyImages ∷ SweetrollSecrets → XElement → XElement
 proxyImages secs e = e & entire . named "img" . attribute "src" %~ makeProxied
-  where makeProxied (Just s) = Just $ "/proxy?" ++ writeForm [(asText "url", s), ("sig", signUrlForProxy secs s)]
+  where makeProxied (Just s) | not ("/" `isPrefixOf` s) = Just $ "/proxy?" ++ writeForm [(asText "url", s), ("sig", signUrlForProxy secs s)]
         makeProxied x = x

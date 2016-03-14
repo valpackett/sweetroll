@@ -28,6 +28,7 @@ import           Control.Monad.Except (MonadError, throwError)
 import           Control.Monad.Trans.Control
 import           Control.Monad.Trans.Either
 import           Control.Lens hiding (Index, index, cons, snoc, uncons, unsnoc, (<.>), (.=), (|>))
+import           Text.XML (Document, Element)
 import           Data.Default
 import           Data.Text (replace, strip)
 import           Data.List (nub)
@@ -43,6 +44,9 @@ import           Network.HTTP.Types
 import qualified Text.Pandoc as P
 import qualified Text.Pandoc.Error as PE
 import           Servant -- (mimeRender, mimeUnrender, FormUrlEncoded)
+
+type XDocument = Text.XML.Document
+type XElement = Text.XML.Element
 
 type CategoryName = String
 type EntrySlug = String

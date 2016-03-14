@@ -40,7 +40,7 @@ linksFromHeader r = fromMaybe [] (lookup "Link" (responseHeaders r) >>= parseLin
 discoverWebmentionEndpoints ∷ Value → [Link] → [EndpointURI]
 discoverWebmentionEndpoints = discoverEndpoints [ "webmention", "http://webmention.org/" ]
 
-getWebmentionEndpoint ∷ Response Document → Maybe EndpointURI
+getWebmentionEndpoint ∷ Response XDocument → Maybe EndpointURI
 getWebmentionEndpoint r = listToMaybe $ discoverWebmentionEndpoints mf2Root (linksFromHeader r)
     where mf2Root = parseMf2 mf2Options $ documentRoot $ responseBody r
 

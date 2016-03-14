@@ -14,7 +14,6 @@ import           Data.Maybe (fromJust)
 import qualified Network.Wai as Wai
 import           Network.Wai.Test
 import qualified Network.Wai.Handler.Warp as Warp
-import           Network.HTTP.Types
 import           Sweetroll.Conf
 import           Sweetroll.Api (initSweetrollApp)
 import           Gitson

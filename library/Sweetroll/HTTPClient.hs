@@ -18,7 +18,7 @@ import           Data.HashMap.Strict (adjust)
 import           Data.Microformats2.Parser
 import           Data.IndieWeb.MicroformatsUtil
 import           Data.IndieWeb.Authorship
-import           Text.XML (Document)
+import           Text.XML.Lens
 import           Network.HTTP.Types
 import           Network.HTTP.Conduit as HC
 import           Network.HTTP.Client.Conduit as HCC
@@ -58,10 +58,10 @@ performWithVoid = performWithFn (const $ return ())
 performWithBytes ∷ (MonadHTTP ψ μ) ⇒ Request → EitherT Text μ (Response LByteString)
 performWithBytes = performWithFn ($$ C.sinkLazy)
 
-performWithHtml ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ Request → EitherT Text μ (Response Document)
+performWithHtml ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ Request → EitherT Text μ (Response XDocument)
 performWithHtml = performWithFn ($$ sinkDoc) . (\req → req { requestHeaders = [ (hAccept, "text/html; charset=utf-8") ] })
 
-fetchEntryWithAuthors ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ URI → Response Document → μ (Maybe Value, [Value], Value)
+fetchEntryWithAuthors ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ URI → Response XDocument → μ (Maybe Value, [Value], Value)
 fetchEntryWithAuthors uri res = do
   let mf2Options' = mf2Options { baseUri = Just uri }
       mfRoot = parseMf2 mf2Options' $ documentRoot $ responseBody res
@@ -78,3 +78,11 @@ fetchEntryWithAuthors uri res = do
   return $ case he of
              Just (mfE, mfPs) → (Just mfE, mfPs, mfRoot)
              _ → (Nothing, [], mfRoot)
+
+modifyDocResponse ∷ (XElement → XElement) → Response XDocument → Response XDocument
+modifyDocResponse f r = r { responseBody = responseBody r & root %~ f }
+
+linksNofollow ∷ XElement → XElement
+linksNofollow e = e & entire . named "a" . attribute "rel" %~ makeNofollow
+  where makeNofollow (Just r) = Just $ r ++ " nofollow"
+        makeNofollow Nothing  = Just "nofollow"

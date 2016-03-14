@@ -22,6 +22,7 @@ import           Sweetroll.Micropub.Request
 import           Sweetroll.Micropub.Response
 import           Sweetroll.Webmention.Send
 import           Sweetroll.HTTPClient
+import           Sweetroll.Proxy (proxyImages)
 
 getMicropub ∷ JWT VerifiedJWT → Maybe Text → [Text] → Maybe Text → Sweetroll MicropubResponse
 getMicropub _ (Just "syndicate-to") _ _ = do
@@ -97,7 +98,8 @@ fetchReplyContexts k props = do
               case resp0 of
                 Left _ → return $ String u
                 Right resp → do
-                  (entry0, _, mfRoot) ← fetchEntryWithAuthors uri resp
+                  secs ← getSecs
+                  (entry0, _, mfRoot) ← fetchEntryWithAuthors uri $ modifyDocResponse (linksNofollow . proxyImages secs) resp
                   case entry0 of
                     Just (Object entry) →
                       return $ Object $ insertMap "webmention-endpoint" (toJSON $ map tshow $ discoverWebmentionEndpoints mfRoot (linksFromHeader resp))

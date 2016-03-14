@@ -13,6 +13,7 @@ import           Gitson
 import           Sweetroll.Conf
 import           Sweetroll.Monads
 import           Sweetroll.HTTPClient hiding (Header)
+import           Sweetroll.Proxy (proxyImages)
 
 receiveWebmention ∷ [(Text, Text)] → Sweetroll ()
 receiveWebmention allParams = do
@@ -43,7 +44,8 @@ processWebmention category slug source target = do
                 let updatedEntry = upsertMention (entry ∷ Value) tombstone
                 saveDocumentByName category slug updatedEntry
         200 → do
-          (mention0, _, _) ← fetchEntryWithAuthors source resp
+          secs ← getSecs
+          (mention0, _, _) ← fetchEntryWithAuthors source $ modifyDocResponse (linksNofollow . proxyImages secs) resp
           case mention0 of
             Just mention@(Object _) | verifyMention target mention → withEntry $ \entry → do
               putStrLn $ "Received correct webmention for " ++ tshow target ++ " from " ++ tshow source

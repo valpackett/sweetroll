@@ -5,16 +5,17 @@
 module Sweetroll.Proxy (
   signUrlForProxy
 , requestProxy
+, proxyImages
 ) where
 
-import           ClassyPrelude
+import           Sweetroll.Prelude
 import           Crypto.Hash
 import           Crypto.MAC.HMAC
 import           Control.Error.Util (hush)
 import           Blaze.ByteString.Builder.ByteString (fromByteString)
 import           Data.ByteArray.Encoding
 import           Data.Conduit
-import           Data.String.Conversions
+import           Text.XML.Lens
 import           Network.Wai.Conduit as W
 import           Network.HTTP.Conduit
 import           Network.HTTP.Client.Conduit as HCC
@@ -53,3 +54,8 @@ requestProxy ctx req respond =
       respond $ responseLBS badRequest400 [("Content-Type", "text/plain")] "url and sig params must be present"
   where allowedReqHeader (h, _) = h `elem` [ "Accept-Encoding", "Accept" ]
         allowedRespHeader (h, _) = h `elem` [ "Content-Encoding", "Content-Length", "Content-Range", "Content-Type", "Date", "ETag", "Last-Modified", "Expires", "Transfer-Encoding", "Vary", "X-Content-Duration", "X-Content-Type-Options" ]
+
+proxyImages ∷ SweetrollSecrets → XElement → XElement
+proxyImages secs e = e & entire . named "img" . attribute "src" %~ makeProxied
+  where makeProxied (Just s) = Just $ "/proxy?" ++ writeForm [(asText "url", s), ("sig", signUrlForProxy secs s)]
+        makeProxied x = x

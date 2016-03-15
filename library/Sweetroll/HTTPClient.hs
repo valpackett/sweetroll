@@ -67,13 +67,13 @@ fetchEntryWithAuthors uri res = do
       mfRoot = parseMf2 mf2Options' $ documentRoot $ responseBody res
   he ← case headMay =<< allMicroformatsOfType "h-entry" mfRoot of
     Just mfEntry@(mfE, mfPs) → do
-      let fetch uri' = liftM (\x → responseBody <$> hush x) $ runHTTP $ reqU uri' >>= performWithHtml
+      let fetch uri' = fmap (\x → responseBody <$> hush x) $ runHTTP $ reqU uri' >>= performWithHtml
       authors ← entryAuthors mf2Options' fetch uri mfRoot mfEntry
       let addAuthors (Object o) = Object $ adjust addAuthors' "properties" o
           addAuthors x = x
           addAuthors' (Object o) = Object $ insertMap "author" (Array $ fromList $ fromMaybe [] authors) o
           addAuthors' x = x
-      return $ Just $ (addAuthors mfE, mfPs)
+      return $ Just (addAuthors mfE, mfPs)
     _ → return Nothing
   return $ case he of
              Just (mfE, mfPs) → (Just mfE, mfPs, mfRoot)

@@ -13,10 +13,6 @@ packages:
   - location: '../gitson'
     extra-dep: true
   - location:
-      git: https://bitbucket.org/myfreeweb/haskell-jwt.git
-      commit: 40387dd17c1b8fb116d27c0a0b65f76b6d4203ce
-    extra-dep: true
-  - location:
       git: https://github.com/myfreeweb/wai.git
       commit: a2327adcd68ff58b32c5d0be4d3cebfc21765b6d
     extra-dep: true
@@ -31,4 +27,5 @@ extra-deps:
   - setters-0.1
   - git-embed-0.1.0
   - highlighting-kate-0.6.1
+  - jwt-0.7.0
 resolver: lts-5.6

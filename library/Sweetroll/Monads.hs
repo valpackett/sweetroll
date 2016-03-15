@@ -72,7 +72,7 @@ initCtx conf secs = do
 
 createTemplateCtx ∷ IO DuktapeCtx
 createTemplateCtx = do
-  duk ← liftM fromJust $ createDuktapeCtx
+  duk ← fromJust <$> createDuktapeCtx
   void $ evalDuktape duk $ fromJust $ lookup "lodash/dist/lodash.min.js" bowerComponents
   void $ evalDuktape duk $ fromJust $ lookup "moment/min/moment-with-locales.min.js" bowerComponents
   void $ evalDuktape duk [r|
@@ -105,7 +105,7 @@ getSecs ∷ MonadSweetroll μ ⇒ μ SweetrollSecrets
 getSecs = asks _ctxSecs
 
 getRenderer ∷ MonadSweetroll μ ⇒ μ (ByteString → Value → Text)
-getRenderer = liftM renderer $ asks _ctxTplPool
+getRenderer = renderer <$> asks _ctxTplPool
   where renderer p x y = txtVal $ unsafePerformIO $ withResource p $ \duk → callDuktape duk (Just "SweetrollTemplates") x [y]
         {-# NOINLINE renderer #-}
         txtVal (Right (Just (String t))) = t

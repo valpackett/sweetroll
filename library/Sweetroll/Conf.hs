@@ -62,8 +62,8 @@ instance Default SweetrollConf where
       , httpsWorks               = Just False
       , domainName               = Just "localhost"
       , itemsPerPage             = Just 20
-      , categoriesInLanding      = Just $ [ "articles+notes" ]
-      , categoriesInNav          = Just $ [ "articles+notes", "articles", "replies+likes" ]
+      , categoriesInLanding      = Just [ "articles+notes" ]
+      , categoriesInNav          = Just [ "articles+notes", "articles", "replies+likes" ]
       , categoryTitles           = Just $ HMS.fromList [ ("articles+notes", "Notes and articles")
                                                        , ("articles", "Articles")
                                                        , ("replies+likes", "Responses") ]
@@ -89,7 +89,7 @@ instance Default SweetrollSecrets where
       , proxySigningKey          = "SECRET" }
 
 baseURI ∷ SweetrollConf → Maybe URI
-baseURI conf = asum [ parseURI $ (if fromMaybe False (httpsWorks conf) then "https://" else "http://") ++ (unpack $ fromMaybe "" $ domainName conf) -- need to parse because we need the :PORT parsed correctly for dev
+baseURI conf = asum [ parseURI $ (if fromMaybe False (httpsWorks conf) then "https://" else "http://") ++ unpack (fromMaybe "" $ domainName conf) -- need to parse because we need the :PORT parsed correctly for dev
                     , parseURI $ unpack $ fromMaybe "" $ domainName conf -- in case someone puts "https://" in the field which is clearly called DOMAIN NAME
                     , Just $ URI (if fromMaybe False (httpsWorks conf) then "https:" else "http:") (Just $ URIAuth "" (cs $ fromMaybe "" $ domainName conf) "") "" "" "" ]
 

@@ -51,7 +51,7 @@ getCat ∷ String → Maybe Int → Maybe Int → Sweetroll (WithLink (View Inde
 getCat catName before after = do
   ipp ← getConfOpt itemsPerPage
   (slice : slices, entries) ← readCategory ipp before after HMS.empty catName
-  guardBoolM (renderError err404 "404") (length (sliceItems slice) > 0)
+  guardBoolM (renderError err404 "404") (not $ null $ sliceItems slice)
   selfLink ← genLink "self" $ catLink slice
   addLinks [selfLink] $ mkView $ IndexedPage [catName] (slice : slices) entries
 
@@ -81,7 +81,7 @@ sweetrollApp ctx = simpleCors
   where sweetrollServer c = enter (sweetrollToEither c) $ sweetrollServerT c
 
 initSweetrollApp ∷ SweetrollConf → SweetrollSecrets → IO Application
-initSweetrollApp conf secs = liftM sweetrollApp $ initCtx conf secs
+initSweetrollApp conf secs = fmap sweetrollApp $ initCtx conf secs
 
 
 genLink ∷ MonadSweetroll μ ⇒ Text → URI → μ L.Link
@@ -120,7 +120,7 @@ readCategory perPage before after initialEntries catsName =
                             [] → [newSlice]
           newEntries ← foldM (\entries u →
                                if u `member` entries then return entries else do
-                                 entry ← liftM snd (parseEntryURIRelative $ fromJust $ parseURIReference u) >>= readEntry catName -- XXX: eliminate URI
+                                 entry ← fmap snd (parseEntryURIRelative $ fromJust $ parseURIReference u) >>= readEntry catName -- XXX: eliminate URI
                                  return $ case entry of
                                             Just (_, v) → insertMap u v entries
                                             Nothing → entries)

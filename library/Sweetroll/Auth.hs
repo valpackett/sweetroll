@@ -48,7 +48,7 @@ fromHeader "" = Nothing
 fromHeader au = return $ drop 7 au -- 7 chars in "Bearer "
 
 getAuth ∷ JWT VerifiedJWT → Sweetroll [(Text, Text)]
-getAuth token = return $ [ ("me", maybe "" tshow $ sub $ claims token) ] ++ unreg
+getAuth token = return $ ("me", maybe "" tshow $ sub $ claims token) : unreg
   where unreg = mapMaybe unValue $ M.toList $ unregisteredClaims $ claims token
         unValue (k, String s) = Just (k, s)
         unValue _ = Nothing
@@ -83,7 +83,7 @@ postLogin params = do
          Right (indieAuthRespParams ∷ [(Text, Text)]) → do
            domain ← getConfOpt domainName
            let me = orEmptyMaybe $ lookup "me" indieAuthRespParams
-           guardBool err401 $ Just domain == (fmap (cs . uriRegName) $ uriAuthority $ fromMaybe nullURI $ parseURI $ cs me)
+           guardBool err401 $ Just domain == fmap (cs . uriRegName) (uriAuthority $ fromMaybe nullURI $ parseURI $ cs me)
            putStrLn $ cs $ "Authenticated a client: " ++ fromMaybe "unknown" (lookup "client_id" params)
            makeAccessToken me
                            (fromMaybe "post" $ lookup "scope" indieAuthRespParams)

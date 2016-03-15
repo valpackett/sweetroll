@@ -1,46 +1,30 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE GADTs, RankNTypes, FlexibleContexts, QuasiQuotes #-}
+{-# LANGUAGE GADTs, RankNTypes, FlexibleContexts #-}
 
 -- | The Sweetroll prelude == ClassyPrelude + more stuff.
 module Sweetroll.Prelude (
-  module ClassyPrelude
-, module Control.Error.Util
-, module Control.Monad.Except
-, module Control.Monad.Trans.Control
-, module Control.Monad.Trans.Either
-, module Control.Lens
-, module Data.Aeson
-, module Data.Aeson.Lens
-, module Data.Default
-, module Data.List
-, module Data.Char
-, module Data.String.Conversions
-, module Data.String.Conversions.Monomorphic
-, module Data.Proxy
-, module Network.URI
-, module Network.HTTP.Types
+  module X
 , module Sweetroll.Prelude
 ) where
 
-import           ClassyPrelude hiding (fromString)
-import           Control.Error.Util (hush, note)
-import           Control.Monad.Except (MonadError, throwError)
-import           Control.Monad.Trans.Control
-import           Control.Monad.Trans.Either
-import           Control.Lens hiding (Index, index, cons, snoc, uncons, unsnoc, (<.>), (.=), (|>))
+import           ClassyPrelude as X hiding (fromString)
+import           Control.Error.Util as X (hush, note)
+import           Control.Monad.Except as X (MonadError, throwError)
+import           Control.Monad.Trans.Control as X
+import           Control.Monad.Trans.Either as X
+import           Control.Lens as X hiding (Index, index, cons, snoc, uncons, unsnoc, (<.>), (.=), (|>))
 import           Text.XML (Document, Element)
-import           Data.Default
-import           Data.Text (replace, strip)
-import           Data.List (nub)
-import           Data.Char (isSpace)
-import           Data.String.Conversions hiding ((<>))
-import           Data.String.Conversions.Monomorphic
-import           Data.Proxy
-import           Data.Aeson
-import           Data.Aeson.Lens
-import           Data.Text (splitOn)
-import           Network.URI
-import           Network.HTTP.Types
+import           Data.Default as X
+import           Data.Text (replace, strip, splitOn)
+import           Data.List as X (nub)
+import           Data.Char as X (isSpace)
+import           Data.String.Conversions as X hiding ((<>))
+import           Data.String.Conversions.Monomorphic as X
+import           Data.Proxy as X
+import           Data.Aeson as X
+import           Data.Aeson.Lens as X
+import           Network.URI as X
+import           Network.HTTP.Types as X
 import qualified Text.Pandoc as P
 import qualified Text.Pandoc.Error as PE
 import           Servant -- (mimeRender, mimeUnrender, FormUrlEncoded)

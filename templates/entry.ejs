@@ -58,9 +58,7 @@
 				<% if (!isUntitled) { %>
 					<fragmention-target exact>
 				<% } %>
-				<% _.forEach(properties.content, function (content) { %>
-					<%= content.html || content.value || content %>
-				<% }) %>
+				<%= templates.showContent({ properties: properties, long: true }) %>
 				<% if (!isUntitled) { %>
 					</fragmention-target>
 				<% } %>

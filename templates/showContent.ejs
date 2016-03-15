@@ -1,0 +1,8 @@
+<%
+	var properties = scope.properties
+	var content = _.head(scope.long
+		? _(properties.content || []).concat(properties.summary || [], properties.name || []).value()
+		: _(properties.name || []).concat(properties.summary || [], properties.content || []).value())
+	content = _.isObject(content) ? (content.html || content.value) : content
+	content = _.isString(content) ? content : null
+%><%= content || '' %>

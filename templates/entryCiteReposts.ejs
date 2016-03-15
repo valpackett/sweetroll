@@ -16,6 +16,8 @@
 				something weird
 			<% } %>
 		</div>
-		<%= templates.citeContent({ long: true, properties: repost.properties }) %>
+		<blockquote class="e-content">
+			<%= templates.showContent({ long: true, properties: repost.properties }) %>
+		</blockquote>
 	</div>
 <% }) %>

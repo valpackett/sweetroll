@@ -12,7 +12,9 @@
 						by <%= templates.citeAuthors({ authors: like.properties.author }) %>
 					<% } %>
 
-					<%= templates.citeContent({ long: false, properties: like.properties }) %>
+					<blockquote class="e-content">
+						<%= templates.showContent({ long: false, properties: like.properties }) %>
+					</blockquote>
 				<% } else if (_.isString(like)) { %>
 					<a class="u-url" ${ scope.showRel ? 'rel="like-of"' : '' } href="${ like }">
 						<%- like %>

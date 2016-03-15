@@ -12,9 +12,7 @@
 	<% if (isUntitled) { %>
 		<% if (!_.isEmpty(properties.content)) { %>
 			<div class="e-content p-name">
-				<% _.forEach(properties.content, function (content) { %>
-					<%= content.html || content.value || content %>
-				<% }) %>
+				<%= templates.showContent({ properties: properties, long: true }) %>
 			</div>
 		<% } %>
 	<% } else { %>

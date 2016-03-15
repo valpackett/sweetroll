@@ -11,7 +11,6 @@ module Sweetroll.Proxy (
 import           Sweetroll.Prelude
 import           Crypto.Hash
 import           Crypto.MAC.HMAC
-import           Control.Error.Util (hush)
 import           Blaze.ByteString.Builder.ByteString (fromByteString)
 import           Data.ByteArray.Encoding
 import           Data.Conduit
@@ -19,7 +18,6 @@ import           Text.XML.Lens
 import           Network.Wai.Conduit as W
 import           Network.HTTP.Conduit
 import           Network.HTTP.Client.Conduit as HCC
-import           Network.HTTP.Types.Status
 import           Sweetroll.Conf
 import           Sweetroll.Monads
 

@@ -180,7 +180,7 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
   - [x] respond to `?q=syndicate-to` with JSON
   - [x] respond to `?q=source`
   - [ ] support posting [photos](https://indiewebcamp.com/photos)
-- [ ] indieweb-algorithms: [mf2-shim](https://github.com/indieweb/php-mf2-shim) style functionality!
+- [x] indieweb-algorithms: [mf2-shim](https://github.com/indieweb/php-mf2-shim) style functionality!
 - [ ] indieweb-algorithms?: ensure the person you're replying to *never* gets picked up you when you're replying (caught in test without own h-card)
 - [ ] something about [search](https://indiewebcamp.com/search) ([full-text-search](https://hackage.haskell.org/package/full-text-search) i guess)
 - [ ] tags? (hmm could just rely on search instead of keeping exact indexes)

@@ -17,6 +17,7 @@ import qualified Data.Conduit.Combinators as C
 import           Data.HashMap.Strict (adjust)
 import           Data.Microformats2.Parser
 import           Data.IndieWeb.MicroformatsUtil
+import           Data.IndieWeb.SiloToMicroformats
 import           Data.IndieWeb.Authorship
 import           Text.XML.Lens
 import           Network.HTTP.Types
@@ -61,23 +62,23 @@ performWithBytes = performWithFn ($$ C.sinkLazy)
 performWithHtml ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ Request → EitherT Text μ (Response XDocument)
 performWithHtml = performWithFn ($$ sinkDoc) . (\req → req { requestHeaders = [ (hAccept, "text/html; charset=utf-8") ] })
 
-fetchEntryWithAuthors ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ URI → Response XDocument → μ (Maybe Value, [Value], Value)
+fetchEntryWithAuthors ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ URI → Response XDocument → μ (Maybe Value, Value)
 fetchEntryWithAuthors uri res = do
   let mf2Options' = mf2Options { baseUri = Just uri }
       mfRoot = parseMf2 mf2Options' $ documentRoot $ responseBody res
   he ← case headMay =<< allMicroformatsOfType "h-entry" mfRoot of
-    Just mfEntry@(mfE, mfPs) → do
+    Just mfEntry@(mfE, _) → do
       let fetch uri' = fmap (\x → responseBody <$> hush x) $ runHTTP $ reqU uri' >>= performWithHtml
       authors ← entryAuthors mf2Options' fetch uri mfRoot mfEntry
       let addAuthors (Object o) = Object $ adjust addAuthors' "properties" o
           addAuthors x = x
           addAuthors' (Object o) = Object $ insertMap "author" (Array $ fromList $ fromMaybe [] authors) o
           addAuthors' x = x
-      return $ Just (addAuthors mfE, mfPs)
-    _ → return Nothing
+      return $ Just $ addAuthors mfE
+    _ → return $ parseTwitter mf2Options' $ documentRoot $ responseBody res
   return $ case he of
-             Just (mfE, mfPs) → (Just mfE, mfPs, mfRoot)
-             _ → (Nothing, [], mfRoot)
+             Just mfE → (Just mfE, mfRoot)
+             _ → (Nothing, mfRoot)
 
 modifyDocResponse ∷ (XElement → XElement) → Response XDocument → Response XDocument
 modifyDocResponse f r = r { responseBody = responseBody r & root %~ f }

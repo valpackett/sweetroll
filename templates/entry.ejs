@@ -1,4 +1,4 @@
-<%= templates.header(scope) %>
+<%= templates.header(_.set(scope, 'meta.pageClass', 'h-entry')) %>
 <% var data = scope.data %>
 <% var entry = data.entry %>
 <% var properties = entry.properties %>
@@ -11,8 +11,8 @@
 	var matches = x.match(/^https?\:\/\/([^\/?#]+)/)
 	return (matches && matches[1]) || x
 } %>
-<main class="site-main entry-main ${ isUntitled ? 'note' : 'article' }-main">
-	<article class="entry h-entry ${ isUntitled ? 'note' : 'article' }-entry">
+<main class="site-main ${ isUntitled ? 'note' : 'article' }-main">
+	<article class="entry ${ isUntitled ? 'note' : 'article' }-entry">
 		<header class="entry-header">
 
 			posted on
@@ -37,24 +37,26 @@
 				</time>
 			<% } %>
 
-			<% if (!isUntitled) { %>
+		</header>
+
+		<%= templates.entryCiteReplies({ entry: entry, showRel: true, showContent: true }) %>
+
+		<%= templates.entryCiteReposts({ entry: entry, showRel: true }) %>
+
+		<%= templates.entryCiteLikes({ entry: entry, showRel: true, addClass: 'entry-main' }) %>
+
+		<% if (!isUntitled) { %>
+			<div class="entry-main">
 				<h1 class="p-name">
 					<a href="${ data.permalink }" class="u-url u-uid" rel="bookmark" tabindex="-1">
 						<%- properties.name %>
 					</a>
 				</h1>
-			<% } %>
-
-			<%= templates.entryCiteReplies({ entry: entry, showRel: true, showContent: true }) %>
-
-			<%= templates.entryCiteReposts({ entry: entry, showRel: true }) %>
-
-		</header>
-
-		<%= templates.entryCiteLikes({ entry: entry, showRel: true, addClass: 'entry-content' }) %>
+			</div>
+		<% } %>
 
 		<% if (!_.isEmpty(properties.content)) { %>
-			<div class="entry-content e-content ${ isUntitled ? 'p-name' : '' }">
+			<div class="entry-main e-content ${ isUntitled ? 'p-name' : '' }">
 				<% if (!isUntitled) { %>
 					<fragmention-target exact>
 				<% } %>

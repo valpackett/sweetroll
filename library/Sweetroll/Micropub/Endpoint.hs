@@ -126,7 +126,7 @@ setUrl url = insertMap "url" $ toJSON  [ tshow url ]
 
 setContent ∷ Maybe Pandoc → LText → ObjProperties → ObjProperties
 setContent content syndLinks = insertMap "content" $ toJSON [ object [ "html" .= h ] ]
-  where h = (fromMaybe "" $ (renderHtml . writeHtml pandocWriterOptions) `liftM` content) ++ cs syndLinks
+  where h = cs syndLinks ++ (fromMaybe "" $ (renderHtml . writeHtml pandocWriterOptions) `liftM` content)
 
 wrapWithType ∷ ObjType → ObjProperties → Value
 wrapWithType htype props =

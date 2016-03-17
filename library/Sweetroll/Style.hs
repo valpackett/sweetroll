@@ -160,35 +160,30 @@ sweetrollStyle = do
   ".entry-in-list" ? do
     listStyleType none
     display block
-    sym padding $ em 0.6
     sym2 margin (em 1.4) nil
     ".entry-footer" ? do
+      paddingTop nil
+      marginTop nil
       textAlign . alignSide $ sideRight
     ".entry-footer" <> ".entry-footer a" ? grayedOut
 
-  ".article-in-list" ? do
-    ".p-name" ? fontSize (em 1.35)
-
   ".note-main" ? do
-    paddingTop $ em 1
+    sym padding $ em 1
 
   ".entry-header" <> ".entry-header a" ? grayedOut
 
+  entryParts ? do
+    sym padding $ em 0.8
+    sym padding $ rem 0.8
+
   ".note-entry" ? do
-    paddingTop $ em 0.2
-    paddingBottom $ em 0.2
-    entryParts ? sym margin (em 1)
-    ".entry-header" ? do
-      fontSize $ pct 90
-      paddingTop $ em 0.4
-    ".entry-content" ? fontSize (pct 110)
-    ".entry-footer" ? do
-      marginTop $ em 1.4
-      paddingTop $ em 1.28
+    ".entry-header" ? fontSize (pct 90)
+    ".entry-main" ? fontSize (pct 105)
     ".entry-footer" <> ".entry-responses" ? do
       borderTop solid (px 1) $ rgb 57 204 204
       borderColor $ rgba 57 204 204 82
 
+  ".entry-responses" ? paddingTop (em 1.5)
   ".entry-response" ? do
     sym2 padding (em 0.8) (em 0.4)
     nthChild "even" & do
@@ -207,20 +202,21 @@ sweetrollStyle = do
     sym margin $ em 0.6
     marginLeft $ em 1.4
 
-  ".article-entry" ? do
-    ".entry-header a" ? color "#222"
-    entryParts ? sym2 margin (em 1) nil
+  ".article-in-list" ** ".p-name" ? do
+    fontSize $ em 1.15
+
+  ".article-entry" ** h1 ** "a" ? color "#222"
 
   ".entry-footer" ? do
-    paddingTop $ em 0.5
+    marginTop $ em 1
     color "#999"
     "line-height" -: "2.2"
     "a" ? do
       sym2 padding (em 1) (em 0.6)
     "indie-action" # firstChild ** a ? marginLeft nil
 
-  ".entry-main" ? do
-    ".entry-header" ? marginTop (em 0)
+  ".article-main" ? do
+    ".entry-header" <> ".entry-main" ? paddingTop (em 0)
 
   ".entry-footer" ** h2 ? do
     fontSize $ pct 100
@@ -229,8 +225,7 @@ sweetrollStyle = do
   ".entry-syndication" ** (ul <> li) ? display inline
 
   ".reference-context" ? do
-    sym padding $ em 0.4
-    sym margin $ em 0.4
+    sym padding $ em 0.6
     backgroundColor "#efefef"
     color "#606060"
     "a" ? color "#0064cf"
@@ -282,8 +277,6 @@ sweetrollStyle = do
       display block
     ".index-category" ? do
       sym2 padding nil $ em 1
-    ".entry-main" ? do
-      sym padding $ em 1
     ".entry-footer" ? do
       fontSize $ pct 95
     ".note-in-list" ** ".permalink" ? do
@@ -301,7 +294,7 @@ sweetrollStyle = do
 
 pageParts, entryParts ∷ Selector
 pageParts = ".site-header" <> ".site-content" <> ".site-footer"
-entryParts = ".entry-header" <> ".entry-content" <> ".entry-footer" <> ".entry-responses"
+entryParts = ".entry-header" <> ".entry-main" <> ".entry-footer" <> ".entry-responses"
 
 grayedOut ∷ Css
 grayedOut = color "#aaa"

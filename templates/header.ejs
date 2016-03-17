@@ -20,7 +20,7 @@
 		<link rel="import" href="/bower/indieweb-components/indie-action.html">
 		<link rel="import" href="/bower/indieweb-components/fragmention-target.html">
 	</head>
-	<body>
+	<body class="${ scope.meta.pageClass }">
 		<header class="site-header">
 			<h1><a href="/"><%- scope.meta.siteName %></a></h1>
 			<a href="#author" id="author-link" onclick="var a=document.getElementById('author');a.setAttribute('tabindex','-1');a.focus()">

@@ -11,12 +11,14 @@
 
 	<% if (isUntitled) { %>
 		<% if (!_.isEmpty(properties.content)) { %>
-			<div class="e-content p-name">
+			<div class="e-content p-name entry-main">
 				<%= templates.showContent({ properties: properties, long: true }) %>
 			</div>
 		<% } %>
 	<% } else { %>
-		<a class="u-url p-name" href="${ permalink }"><%- properties.name %></a>
+		<div class="entry-main">
+			<a class="u-url p-name" href="${ permalink }"><%- properties.name %></a>
+		</div>
 	<% } %>
 
 	<footer class="entry-footer">

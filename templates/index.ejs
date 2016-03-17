@@ -1,16 +1,20 @@
-<%= templates.header(scope) %>
+<%= templates.header(_.set(scope, 'meta.pageClass', 'h-feed')) %>
 <% var slices = scope.data.slices, entries = scope.data.entries %>
 <main class="site-main index-main">
 	<% var landingCatName = _.head(scope.meta.categoriesInLanding) %>
 	<% var currentCatName = _.head(scope.data.categoriesRequested) /* This template only shows one category */ %>
 	<nav class="main-nav">
 		<% scope.meta.categoriesInNav.forEach(function (name) { %>
-			<% if (name != currentCatName) { %><a href="/${name != landingCatName ? name : ''}"><% } else { %><span><% } %>
+			<% if (name != currentCatName) { %>
+				<a href="/${name != landingCatName ? name : ''}">
+			<% } else { %>
+				<span class="p-name">
+			<% } %>
 			<%- scope.meta.categoryTitles[name] || _.capitalize(name)  %><% if (name != currentCatName) { %></a><% } else { %></span><% } %>
 		<% }) %>
 	</nav>
 	<% var slice = slices[currentCatName] %>
-	<section class="index-category" id="index-category-${ _.snakeCase(slice.name) }">
+	<section class="index-category">
 		<ul>
 			<% _.forEach(slice.entryUrls, function (entryUrl) { %>
 				<%= templates.entryInList({ entry: entries[entryUrl], permalink: entryUrl }) %>

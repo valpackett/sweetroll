@@ -18,6 +18,7 @@ import           Sweetroll.Slice
 
 data HTML
 data CSS
+data Atom
 
 type WithLink α               = (Headers '[Header "Link" [L.Link]] α)
 
@@ -32,10 +33,10 @@ type GetMicropubRoute         = "micropub" :> AuthProtect :> QueryParam "q" Text
 type PostWebmentionRoute      = "webmention" :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] ()
 
 type EntryRoute               = Capture "catName" String :> Capture "slug" String :> Get '[HTML] (WithLink (View EntryPage))
-type CatRoute                 = Capture "catName" String :> QueryParam "before" Int :> QueryParam "after" Int :> Get '[HTML] (WithLink (View IndexedPage))
-type CatRouteE                = Capture "catName" String :> Get '[HTML] (WithLink (View IndexedPage))
-type CatRouteB                = Capture "catName" String :> QueryParam "before" Int :> Get '[HTML] (WithLink (View IndexedPage))
-type CatRouteA                = Capture "catName" String :> QueryParam "after" Int :> Get '[HTML] (WithLink (View IndexedPage))
+type CatRoute                 = Capture "catName" String :> QueryParam "before" Int :> QueryParam "after" Int :> Get '[HTML, Atom] (WithLink (View IndexedPage))
+type CatRouteE                = Capture "catName" String :> Get '[HTML, Atom] (WithLink (View IndexedPage))
+type CatRouteB                = Capture "catName" String :> QueryParam "before" Int :> Get '[HTML, Atom] (WithLink (View IndexedPage))
+type CatRouteA                = Capture "catName" String :> QueryParam "after" Int :> Get '[HTML, Atom] (WithLink (View IndexedPage))
 type IndexRoute               = Get '[HTML] (WithLink (View IndexedPage))
 
 type SweetrollAPI             = IndieConfigRoute :<|> DefaultCssRoute

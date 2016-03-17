@@ -12,6 +12,7 @@ import qualified Data.HashMap.Strict as HMS
 import qualified Network.HTTP.Link as L
 import           Network.Wai
 import           Network.Wai.UrlMap
+import           Network.Wai.Middleware.AcceptOverride
 import           Network.Wai.Middleware.Autohead
 import           Network.Wai.Middleware.Cors
 import           Network.Wai.Application.Static
@@ -74,6 +75,7 @@ sweetrollServerT ctx = getIndieConfig :<|> getDefaultCss
 sweetrollApp ∷ SweetrollCtx → Application
 sweetrollApp ctx = simpleCors
                  $ autohead
+                 $ acceptOverride
                  $ mapUrls $ mount "bower" (staticApp $ embeddedSettings bowerComponents)
                          <|> mount "static" (staticApp $ defaultWebAppSettings "static")
                          <|> mount "proxy" (requestProxy ctx)

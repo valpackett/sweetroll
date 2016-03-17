@@ -8,6 +8,12 @@ module Sweetroll.Rendering where
 import           Sweetroll.Prelude hiding (fromString)
 import           Network.HTTP.Media.MediaType
 import           Data.List (elemIndex)
+import           Data.Microformats2.Parser
+import           Data.IndieWeb.MicroformatsToAtom
+import           Text.XML.Writer as W
+import qualified Text.HTML.DOM as HTML
+import           Text.XML.Lens (entire, named, text)
+import           Text.XML as XML
 import           Safe (atMay)
 import           Servant
 import           Sweetroll.Pages
@@ -15,6 +21,26 @@ import           Sweetroll.Slice
 import           Sweetroll.Routes
 import           Sweetroll.Conf
 import           Sweetroll.Monads
+
+instance Accept Atom where
+  contentType _ = "application" // "atom+xml" /: ("charset", "utf-8")
+
+instance MimeRender Atom Document where
+  mimeRender _ = XML.renderLBS def { rsPretty = False, XML.rsNamespaces = [("atom", "http://www.w3.org/2005/Atom"), ("activity", "http://activitystrea.ms/spec/1.0/")] }
+
+instance MimeRender Atom (View IndexedPage) where
+  mimeRender p v@(View conf _ (IndexedPage catNames _ _)) = mimeRender p $ feedToAtom addMetaStuff $ parseMf2 mfSettings root
+    where root = documentRoot $ HTML.parseLBS $ mimeRender (Proxy ∷ Proxy HTML) v
+          mfSettings = def { baseUri = Just rootUri }
+          rootUri = fromMaybe nullURI $ baseURI conf
+          altUri = fromMaybe nullURI (parseURIReference $ intercalate "+" catNames) `relativeTo` rootUri
+          el x = W.element (Name x (Just "http://www.w3.org/2005/Atom") Nothing)
+          elA x = W.elementA (Name x (Just "http://www.w3.org/2005/Atom") Nothing)
+          addMetaStuff = do
+            el "title" $ content $ fromMaybe "" $ root ^? entire . named "title" . text
+            elA "link" [("rel", "alternate"), ("type", "text/html"), ("href", tshow altUri)] W.empty
+            elA "link" [("rel", "self"), ("type", "application/atom+xml"), ("href", tshow $ atomizeUri altUri)] W.empty
+            fromMaybe W.empty $ (\x → elA "link" [("rel", "hub"), ("href", cs x)] W.empty) <$> pushHub conf
 
 instance Accept HTML where
   contentType _ = "text" // "html" /: ("charset", "utf-8")
@@ -47,10 +73,10 @@ instance ConvertibleStrings α LByteString ⇒ MimeRender CSS α where
   mimeRender _ = cs
 
 mkView ∷ α → Sweetroll (View α)
-mkView content = do
+mkView cont = do
   conf ← getConf
   renderer ← getRenderer
-  return $ View conf renderer content
+  return $ View conf renderer cont
 
 class Templatable α where
   templateName ∷ View α → ByteString

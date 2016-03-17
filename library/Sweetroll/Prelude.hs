@@ -81,6 +81,9 @@ parseEntryURIRelative uri =
     [ category, slug ] → return (category, slug)
     _ → throwError errWrongPath
 
+atomizeUri ∷ URI → URI
+atomizeUri u = u { uriQuery = let q = uriQuery u in q ++ (if "?" `isPrefixOf` q then "&" else "?") ++ "_accept=application/atom%2Bxml" }
+
 errWrongDomain ∷ ServantErr
 errWrongDomain = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]
                         , errBody    = "The target URI is not on this domain." }

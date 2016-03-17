@@ -85,6 +85,7 @@ library
       , mime-types
       , html-conduit
       , xml-conduit
+      , xml-conduit-writer
       , xml-lens
       , async
       , highlighting-kate

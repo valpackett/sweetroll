@@ -72,6 +72,12 @@ postMicropub token (Create htype props synds) = do
         Just obj' → do
           notifyPuSH $ permalink (Proxy ∷ Proxy IndexRoute)
           notifyPuSH $ permalink (Proxy ∷ Proxy CatRouteE) category
+          notifyPuSH $ atomizeUri $ permalink (Proxy ∷ Proxy CatRouteE) category
+          -- XXX: should send to unnamed combinations too
+          catsToNotify ← liftM (filter (cs category `isInfixOf`) . keys) $ getConfOpt categoryTitles
+          forM_ catsToNotify $ \c → do
+            notifyPuSH $ permalink (Proxy ∷ Proxy CatRouteE) $ cs c
+            notifyPuSH $ atomizeUri $ permalink (Proxy ∷ Proxy CatRouteE) $ cs c
           saveDocumentByName category slug =<< syndicate obj' absUrl (cs syndLinks)
           contMs ← contentWebmentions content
           void $ sendWebmentions absUrl $ contMs ++ replyContextWebmentions obj'

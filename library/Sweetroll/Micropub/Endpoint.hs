@@ -82,11 +82,13 @@ postMicropub token (Create htype props synds) = do
           contMs ← contentWebmentions content
           void $ sendWebmentions absUrl $ contMs ++ replyContextWebmentions obj'
   return $ addHeader (tshow absUrl) Posted
+
 postMicropub _ (Delete url) = do
   (category, slug) ← parseEntryURI =<< guardJustP errWrongPath (parseURI $ cs url)
   k ← guardJust errWrongPath $ documentFullKey category (findByName slug)
   transaction "./" $ liftIO $ removeFile $ category </> k <.> "json"
   throwError respDeleted
+
 
 respDeleted ∷ ServantErr -- XXX: Only way to return custom HTTP response codes
 respDeleted = ServantErr { errHTTPCode = 204
@@ -116,7 +118,8 @@ fetchReplyContexts k props = do
                 Left _ → return $ String u
                 Right resp → do
                   secs ← getSecs
-                  (entry0, mfRoot) ← fetchEntryWithAuthors uri $ modifyDocResponse (linksNofollow . proxyImages secs) resp
+                  conf ← getConf
+                  (entry0, mfRoot) ← fetchEntryWithAuthors uri $ modifyDocResponse (linksNofollow . proxyImages secs conf) $ traceShowId $ resp
                   case entry0 of
                     Just (Object entry) →
                       return $ Object $ insertMap "webmention-endpoint" (toJSON $ map tshow $ discoverWebmentionEndpoints mfRoot (linksFromHeader resp))

@@ -9,6 +9,9 @@ import           Data.Maybe (fromJust)
 import           Data.Conduit.Shell (run, proc, conduit, ProcessException, ($|), (=$=))
 import qualified Data.Conduit.Combinators as CL
 import qualified Data.HashMap.Strict as HMS
+import qualified Text.HTML.DOM as HTML
+import           Text.XML (documentRoot, Element(..), Node(..))
+import           Data.Microformats2.Parser.HtmlUtil (getInnerHtml)
 import qualified Network.HTTP.Link as L
 import           Network.Wai
 import           Network.Wai.UrlMap
@@ -41,28 +44,46 @@ getIndex ∷ Sweetroll (WithLink (View IndexedPage))
 getIndex = do
   ipp ← getConfOpt itemsPerPage
   catNames ← getConfOpt categoriesInLanding
-  (slices, entries) ← foldM (\(slices, entries) catName →
-                              readCategory ipp Nothing Nothing entries catName >>= \(slices', entries') → return (slices ++ slices', entries'))
-                            ([], HMS.empty)
-                            catNames
+  (slices, entries0) ← foldM (\(slices, entries) catName →
+                               readCategory ipp Nothing Nothing entries catName >>= \(slices', entries') → return (slices ++ slices', entries'))
+                             ([], HMS.empty)
+                             catNames
+  entries ← postprocessEntries entries0
   selfLink ← genLink "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy IndexRoute)
   addLinks [selfLink] $ mkView $ IndexedPage catNames slices entries
 
 getCat ∷ String → Maybe Int → Maybe Int → Sweetroll (WithLink (View IndexedPage))
 getCat catName before after = do
   ipp ← getConfOpt itemsPerPage
-  (slice : slices, entries) ← readCategory ipp before after HMS.empty catName
+  (slice : slices, entries0) ← readCategory ipp before after HMS.empty catName
+  entries ← postprocessEntries entries0
   guardBoolM (renderError err404 "404") (not $ null $ sliceItems slice)
   selfLink ← genLink "self" $ catLink slice
   addLinks [selfLink] $ mkView $ IndexedPage [catName] (slice : slices) entries
 
 getEntry ∷ String → String → Sweetroll (WithLink (View EntryPage))
 getEntry catName slug = do
-  entry ← guardJustM (notFoundOrGone catName slug) $ readDocumentByName catName slug
+  entry ← postprocessEntry =<< (guardJustM (notFoundOrGone catName slug) $ readDocumentByName catName slug)
   -- TODO: cacheHTTPDate -- don't forget responses' dates! -- 204 will be thrown before rendering!
   otherSlugs ← listDocumentKeys catName
   selfLink ← genLink "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy EntryRoute) catName slug
   addLinks [selfLink] $ mkView $ EntryPage catName (map readSlug $ sort otherSlugs) (slug, entry)
+
+postprocessEntries ∷ HashMap α Value → Sweetroll (HashMap α Value)
+postprocessEntries = mapM postprocessEntry
+
+postprocessEntry ∷ Value → Sweetroll Value
+postprocessEntry entry = do
+  secs ← getSecs
+  conf ← getConf
+  let proxifyLink s = fromMaybe s $ tshow <$> proxiedUri secs s
+      proxifyHtml s = fromMaybe s $ getInnerHtml Nothing $ wrapRoot $
+                        (linksNofollow . proxyImages secs conf) $ documentRoot $ HTML.parseSTChunks [s]
+      wrapRoot x = if elementName x == "html" then x else Element "html" mempty [NodeElement x]
+      ppr e = foldr ($) e [ (& key "properties" . key "photo" . values . _String %~ proxifyLink)
+                          , (& key "properties" . key "content" . values . key "html" . _String %~ proxifyHtml) ]
+  return $ transform (\x → if isJust (x ^? key "type") then ppr x else x) entry
+
 
 sweetrollServerT ∷ SweetrollCtx → ServerT SweetrollAPI Sweetroll
 sweetrollServerT ctx = getIndieConfig :<|> getDefaultCss

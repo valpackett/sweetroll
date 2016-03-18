@@ -136,7 +136,7 @@ spec = around_ inDir $ around_ withServer $ do
     it "saves, updates and deletes correct replies" $ do
       resp ← app >>= postAuthed formRequest "/webmention" "source=http://localhost:8998/replies/reply-to-target&target=http://localhost:8998/notes/reply-target"
       simpleStatus resp `shouldBe` accepted202
-      expectTargetToHaveOneMentionWithText " Yo "
+      expectTargetToHaveOneMentionWithText "\n\t\t\t\t\n\t\t\t\t\n\nYo\n\n\t\t\t\t\n\t\t\t"
       transaction' $ saveDocumentByName "replies" "reply-to-target" $ mf2o [ "content" .= [ asText "HELLO" ], "in-reply-to" .= [ asText "http://localhost:8998/notes/reply-target" ] ]
       void $ app >>= postAuthed formRequest "/webmention" "source=http://localhost:8998/replies/reply-to-target&target=http://localhost:8998/notes/reply-target"
       expectTargetToHaveOneMentionWithText " HELLO "

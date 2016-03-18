@@ -5,7 +5,6 @@ module Sweetroll.HTTPClient (
   module Sweetroll.HTTPClient
 , module Network.HTTP.Types
 , Response
-, Document
 , responseStatus
 , responseHeaders
 , responseBody
@@ -19,7 +18,6 @@ import           Data.Microformats2.Parser
 import           Data.IndieWeb.MicroformatsUtil
 import           Data.IndieWeb.SiloToMicroformats
 import           Data.IndieWeb.Authorship
-import           Text.XML.Lens
 import           Network.HTTP.Types
 import           Network.HTTP.Conduit as HC
 import           Network.HTTP.Client.Conduit as HCC
@@ -79,11 +77,3 @@ fetchEntryWithAuthors uri res = do
   return $ case he of
              Just mfE → (Just mfE, mfRoot)
              _ → (Nothing, mfRoot)
-
-modifyDocResponse ∷ (XElement → XElement) → Response XDocument → Response XDocument
-modifyDocResponse f r = r { responseBody = responseBody r & root %~ f }
-
-linksNofollow ∷ XElement → XElement
-linksNofollow e = e & entire . named "a" . attribute "rel" %~ makeNofollow
-  where makeNofollow (Just r) = Just $ r ++ " nofollow"
-        makeNofollow Nothing  = Just "nofollow"

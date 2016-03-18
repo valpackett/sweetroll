@@ -147,7 +147,7 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
   - [ ] custom non-entry html pages
   - [ ] archive pages, ie. unpaginated pages (basically `?after=0&before=9223372036854775807` but... "archive" design?)
   - [x] proxying for reply/repost/responses/etc images (to avoid mixed content and possible tracking)
-  - [ ] proxy when rendering, not fetching
+  - [x] proxy when rendering, not fetching
   - [ ] indieweb-components: a component for a Medium-style popup on selection that offers a fragmention link and (?) indie-config repost-quote-something (look how [selection-sharer](https://github.com/xdamman/selection-sharer) works on mobile!! but probably should look the same just at the opposite direction than iOS's popup)
   - [x] a pool of hs-duktape instances for template rendering!
   - [ ] built-in TLS server, since we depend on `tls` already because of the client

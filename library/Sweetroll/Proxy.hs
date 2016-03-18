@@ -5,6 +5,7 @@
 module Sweetroll.Proxy (
   signUrlForProxy
 , requestProxy
+, proxiedUri
 , proxyImages
 ) where
 
@@ -54,8 +55,10 @@ requestProxy ctx req respond =
   where allowedReqHeader (h, _) = h `elem` [ "Accept-Encoding", "Accept" ]
         allowedRespHeader (h, _) = h `elem` [ "Content-Encoding", "Content-Length", "Content-Range", "Content-Type", "Date", "ETag", "Last-Modified", "Expires", "Transfer-Encoding", "Vary", "X-Content-Duration", "X-Content-Type-Options" ]
 
+proxiedUri ∷ SweetrollSecrets → Text → Maybe URI
+proxiedUri secs s = parseURIReference $ "/proxy?" ++ writeForm [(asText "url", s), ("sig", signUrlForProxy secs s)]
+
 proxyImages ∷ SweetrollSecrets → SweetrollConf → XElement → XElement
 proxyImages secs conf e = e & entire . named "img" . attribute "src" %~ makeProxied
-  where makeProxied (Just s) | not ("/" `isPrefixOf` s) = tshow <$> (`relativeTo` fromJust (baseURI conf)) <$> proxiedUri s
+  where makeProxied (Just s) | not ("/" `isPrefixOf` s) = tshow <$> (`relativeTo` fromJust (baseURI conf)) <$> proxiedUri secs s
         makeProxied x = x
-        proxiedUri s = parseURIReference $ "/proxy?" ++ writeForm [(asText "url", s), ("sig", signUrlForProxy secs s)]

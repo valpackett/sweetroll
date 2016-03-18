@@ -14,6 +14,7 @@ import           Control.Monad.Trans.Control as X
 import           Control.Monad.Trans.Either as X
 import           Control.Lens as X hiding (Index, index, cons, snoc, uncons, unsnoc, (<.>), (.=), (|>))
 import           Text.XML (Document, Element)
+import           Text.XML.Lens
 import           Data.Default as X
 import           Data.Text (replace, strip, splitOn)
 import           Data.List as X (nub)
@@ -83,6 +84,11 @@ parseEntryURIRelative uri =
 
 atomizeUri ∷ URI → URI
 atomizeUri u = u { uriQuery = let q = uriQuery u in q ++ (if "?" `isPrefixOf` q then "&" else "?") ++ "_accept=application/atom%2Bxml" }
+
+linksNofollow ∷ XElement → XElement
+linksNofollow e = e & entire . named "a" . attribute "rel" %~ makeNofollow
+  where makeNofollow (Just r) = Just $ r ++ " nofollow"
+        makeNofollow Nothing  = Just "nofollow"
 
 errWrongDomain ∷ ServantErr
 errWrongDomain = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]

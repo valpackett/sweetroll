@@ -13,6 +13,7 @@ import           Text.Pandoc hiding (Link, Null)
 import           Text.Blaze.Html.Renderer.Text (renderHtml)
 import           Web.JWT hiding (header, decode)
 import           Servant
+import           System.Directory (removeFile)
 import           Gitson
 import           Sweetroll.Conf
 import           Sweetroll.Auth
@@ -81,6 +82,17 @@ postMicropub token (Create htype props synds) = do
           contMs ← contentWebmentions content
           void $ sendWebmentions absUrl $ contMs ++ replyContextWebmentions obj'
   return $ addHeader (tshow absUrl) Posted
+postMicropub _ (Delete url) = do
+  (category, slug) ← parseEntryURI =<< guardJustP errWrongPath (parseURI $ cs url)
+  k ← guardJust errWrongPath $ documentFullKey category (findByName slug)
+  transaction "./" $ liftIO $ removeFile $ category </> k <.> "json"
+  throwError respDeleted
+
+respDeleted ∷ ServantErr -- XXX: Only way to return custom HTTP response codes
+respDeleted = ServantErr { errHTTPCode = 204
+                         , errReasonPhrase = "No Content"
+                         , errHeaders = [ ]
+                         , errBody    = "" }
 
 getSyndLinks ∷ [ObjSyndication] → Value → LText
 getSyndLinks synds syndConf =

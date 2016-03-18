@@ -172,7 +172,7 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
   - [ ] deduplicate threaded replies like [there](https://unrelenting.technology/replies/2015-09-06-20-29-54) (that one is formatted as a reply both to my post and to the reply)
 - micropub ([YAY W3C DRAFT](http://micropub.net/draft/)!)
   - [ ] handle update requests
-  - [ ] handle delete requests
+  - [x] handle delete requests
   - [ ] handle undelete requests
   - [ ] editing interface: when logged in, display a (Polymer-based) Web Component *on the site* that shows a top panel, overlays edit/remove buttons on top of microformats entries (including replies!), submits edits/deletes over micropub, (actually make that extensible, micropub+microformats as just one supported thing)
     - [ ] microadmin/microsettings/what's-a-good-name: extension to micropub for site settings. `?q=settings-schema` to get [JSON Schema](http://json-schema.org) of settings, display the form, `{mp-action: settings}` to update

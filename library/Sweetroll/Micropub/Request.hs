@@ -16,12 +16,17 @@ import           Servant
 type ObjType = Text
 type ObjProperties = Object
 type ObjSyndication = Text
+type ObjUrl = Text
 
 data MicropubRequest = Create ObjType ObjProperties [ObjSyndication]
+                     | Delete ObjUrl
 
 instance FromJSON MicropubRequest where
   parseJSON v@(Object _) =
     case v ^? key "mp-action" . _String of
+      Just "delete" → case Delete <$> (v ^? key "url" . _String) of
+                          Just x → return x
+                          Nothing → fail "Delete with no url"
       Nothing → return $ Create (fromMaybe "h-entry" $ firstStr v $ key "type")
                                 (fromMaybe (object [] ^. _Object) $ v ^? key "properties" . _Object)
                                 (v ^.. key "mp-syndicate-to" . values . _String)
@@ -31,6 +36,9 @@ instance FromJSON MicropubRequest where
 instance FromFormUrlEncoded MicropubRequest where
   fromFormUrlEncoded f =
     case lookup "mp-action" f of
+      Just "delete" → case Delete <$> lookup "url" f of
+                          Just x → return x
+                          Nothing → fail "Delete with no url"
       Nothing → let v@(Object o') = formToObject f
                     o = deleteMap "h" o'
                     h = "h-" ++ fromMaybe "entry" (lookup "h" f)

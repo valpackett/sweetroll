@@ -247,6 +247,8 @@ sweetrollStyle = do
     "span" ? color transparent
     focus & "span" ? color inherit
 
+  ".tweet-text" ? whiteSpace preWrap
+
   query M.screen [M.minWidth $ em 32] $ do
     html ? ("line-height" -: "1.4")
     pageParts ? width (pct 75)

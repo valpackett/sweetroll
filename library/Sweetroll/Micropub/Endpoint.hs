@@ -60,7 +60,6 @@ postMicropub token (Create htype props synds) = do
         |>  setUrl absUrl
         |>  setContent content syndLinks
         |>  wrapWithType htype
-        -- TODO: copy content for reposts
   transaction "./" $ saveDocument category (formatTime defaultTimeLocale "%s-" now ++ slug) obj
   unless isTest $ void $ fork $ do
     threadDelay =<< (*1000000) `liftM` getConfOpt pushDelay

@@ -72,12 +72,6 @@ instance Accept CSS where
 instance ConvertibleStrings α LByteString ⇒ MimeRender CSS α where
   mimeRender _ = cs
 
-mkView ∷ α → Sweetroll (View α)
-mkView cont = do
-  conf ← getConf
-  renderer ← getRenderer
-  return $ View conf renderer cont
-
 class Templatable α where
   templateName ∷ View α → ByteString
   context ∷ View α → Value

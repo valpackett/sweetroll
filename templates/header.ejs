@@ -3,12 +3,15 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<% var landingCatName = _.head(scope.meta.categoriesInLanding) %>
-		<% var currentCatName = _.head(scope.data.categoriesRequested) %>
-		<% var titleParts = _(scope.data.categoriesRequested)
-			.filter(function (x) { return x != landingCatName })
-			.map(function (x) { return scope.meta.categoryTitles[x] || _.capitalize(x) }) %>
-		<title><%- _(titleParts).concat(scope.meta.siteName).value().join(' / ') %></title>
+		<%
+			var landingCatName = _.head(scope.meta.categoriesInLanding)
+			var currentCatName = _.head(scope.data.categoriesRequested)
+			var catTitleParts = _(scope.data.categoriesRequested)
+				.filter(function (x) { return x != landingCatName })
+				.map(function (x) { return scope.meta.categoryTitles[x] || _.capitalize(x) })
+			var entryTitleParts = _.get(scope, 'data.entry.properties.name', [])
+		%>
+		<title><%- _(entryTitleParts).concat(catTitleParts).concat(scope.meta.siteName).filter(function (p) { return _.trim(p) != '' }).value().join(' / ') %></title>
 		<link rel="openid.delegate" href="${ scope.meta.baseUri }">
 		<link rel="openid.server" href="https://indieauth.com/openid">
 		<link rel="stylesheet" href="/bower/fontawesome/css/font-awesome.min.css">

@@ -5,14 +5,18 @@
 
 	<%= templates.entryCiteReplies({ entry: entry, showRel: false, showContent: false }) %>
 
-	<%= templates.entryCiteReposts({ entry: entry, showRel: false }) %>
 
 	<%= templates.entryCiteLikes({ entry: entry, showRel: false, addClass: '' }) %>
 
 	<% if (isUntitled) { %>
-		<% if (!_.isEmpty(properties.content)) { %>
-			<div class="e-content p-name entry-main">
-				<%= templates.showContent({ properties: properties, long: true }) %>
+		<% if (!_.isEmpty(properties.content) || !_.isEmpty(properties['repost-of'])) { %>
+			<div class="e-content p-name">
+				<%= templates.entryCiteReposts({ entry: entry, showRel: false }) %>
+				<% if (!_.isEmpty(properties.content)) { %>
+					<div class="entry-main">
+						<%= templates.showContent({ properties: properties, long: true }) %>
+					</div>
+				<% } %>
 			</div>
 		<% } %>
 	<% } else { %>

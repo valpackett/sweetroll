@@ -41,8 +41,6 @@
 
 		<%= templates.entryCiteReplies({ entry: entry, showRel: true, showContent: true }) %>
 
-		<%= templates.entryCiteReposts({ entry: entry, showRel: true }) %>
-
 		<%= templates.entryCiteLikes({ entry: entry, showRel: true, addClass: 'entry-main' }) %>
 
 		<% if (!isUntitled) { %>
@@ -55,12 +53,17 @@
 			</div>
 		<% } %>
 
-		<% if (!_.isEmpty(properties.content)) { %>
-			<div class="entry-main e-content ${ isUntitled ? 'p-name' : '' }">
+		<% if (!_.isEmpty(properties.content) || !_.isEmpty(properties['repost-of'])) { %>
+			<div class="e-content ${ isUntitled ? 'p-name' : '' }">
 				<% if (!isUntitled) { %>
 					<fragmention-target exact>
 				<% } %>
-				<%= templates.showContent({ properties: properties, long: true }) %>
+				<%= templates.entryCiteReposts({ entry: entry, showRel: true }) %>
+				<% if (!_.isEmpty(properties.content)) { %>
+					<div class="entry-main">
+						<%= templates.showContent({ properties: properties, long: true }) %>
+					</div>
+				<% } %>
 				<% if (!isUntitled) { %>
 					</fragmention-target>
 				<% } %>

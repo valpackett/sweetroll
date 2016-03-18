@@ -5,4 +5,8 @@
 		: _(properties.summary || []).concat(properties.content || [], properties.name || []).value())
 	content = _.isObject(content) ? (content.html || content.value) : content
 	content = _.isString(content) ? content : null
-%><%= content || '' %>
+%>
+<% _.forEach(properties.photo || [], function (photo) { %>
+	<img src="${photo}" alt="" class="u-photo entry-photo">
+<% }) %>
+<%= content || '' %>

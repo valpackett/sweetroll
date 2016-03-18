@@ -119,7 +119,7 @@ fetchReplyContexts k props = do
                 Right resp → do
                   secs ← getSecs
                   conf ← getConf
-                  (entry0, mfRoot) ← fetchEntryWithAuthors uri $ modifyDocResponse (linksNofollow . proxyImages secs conf) $ traceShowId $ resp
+                  (entry0, mfRoot) ← fetchEntryWithAuthors uri $ modifyDocResponse (linksNofollow . proxyImages secs conf) $ resp
                   case entry0 of
                     Just (Object entry) →
                       return $ Object $ insertMap "webmention-endpoint" (toJSON $ map tshow $ discoverWebmentionEndpoints mfRoot (linksFromHeader resp))

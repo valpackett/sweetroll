@@ -183,6 +183,8 @@ sweetrollStyle = do
       borderTop solid (px 1) $ rgb 57 204 204
       borderColor $ rgba 57 204 204 82
 
+  ".entry-photo" ? display block
+
   ".entry-responses" ? paddingTop (em 1.5)
   ".entry-response" ? do
     sym2 padding (em 0.8) (em 0.4)
@@ -265,6 +267,7 @@ sweetrollStyle = do
       transition "opacity" (sec 0.3) easeInOut (sec 0)
       opacity 0
       focus & opacity 1
+    ".entry-photo" ? maxWidth (pct 70)
     ".site-content" ? do
       "-webkit-flex-direction" -: "row"
       "flex-direction" -: "row"

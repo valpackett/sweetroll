@@ -12,6 +12,7 @@ import           Servant
 import           Gitson
 import           Sweetroll.Conf
 import           Sweetroll.Monads
+import           Sweetroll.Events
 import           Sweetroll.HTTPClient hiding (Header)
 
 receiveWebmention ∷ [(Text, Text)] → Sweetroll ()
@@ -48,7 +49,7 @@ processWebmention category slug source target = do
             Just mention@(Object _) | verifyMention target mention → withEntry $ \entry → do
               putStrLn $ "Received correct webmention for " ++ tshow target ++ " from " ++ tshow source
               let updatedEntry = upsertMention (entry ∷ Value) $ ensurePresentUrl source mention
-              saveDocumentByName category slug updatedEntry
+              saveDocumentByName category slug =<< onPostUpdated category slug target updatedEntry
             Just mention@(Object _) → putStrLn $ "Received unverified webmention " ++ forfrom ++ ": " ++ tshow mention
             Just mention → putStrLn $ "Received incorrect webmention " ++ forfrom ++ ": " ++ tshow mention
             Nothing → putStrLn $ "Received unreadable webmention " ++ forfrom

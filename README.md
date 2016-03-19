@@ -115,7 +115,7 @@ $ (mkdir /tmp/sroll && cd /tmp/sroll && git init)
 $ stack ghci
 :serve
 
-$ http -f post localhost:3000/login | sed -Ee 's/.*access_token=([^&]+).*/\1/' > token
+$ http -f post localhost:3000/login x=x | sed -Ee 's/.*access_token=([^&]+).*/\1/' > token
 
 $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=entry content=HelloWorld
 ```
@@ -151,8 +151,8 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
   - [ ] indieweb-components: a component for a Medium-style popup on selection that offers a fragmention link and (?) indie-config repost-quote-something (look how [selection-sharer](https://github.com/xdamman/selection-sharer) works on mobile!! but probably should look the same just at the opposite direction than iOS's popup)
   - [x] a pool of hs-duktape instances for template rendering!
   - [ ] built-in TLS server, since we depend on `tls` already because of the client
-- [ ] event system: hooks on micropub posting and webmention processing
-  - [ ] pubsubhubbub (move here)
+- [x] event system: hooks on micropub posting and webmention processing
+  - [x] pubsubhubbub (move here)
   - [ ] cleaning a cache (which is not there yet... should be an in-process cache with fast expiration -- protection against DDoS or Hacker News effect)
   - [ ] real-time page updates with Server-Sent Events (make a Web Component for HTML-based updating)
   - [ ] JS hooks as plugins (API: a Sweetroll object which is an EventEmitter and also has config/secrets getters; should be possible to make HTTP requests to e.g. send webmention notifications)
@@ -161,7 +161,7 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
     - [ ] IPFS support! (see/improve [hs-ipfs-api](https://github.com/davidar/hs-ipfs-api)) publishing there in the event handler too. Oh, and [IPFS supports custom services](https://ipfs.io/ipfs/QmTkzDwWqPbnAh5YiV5VwcTLnGdwSNsNTn2aDxdXBFca7D/example#/ipfs/QmQwAP9vFjbCtKvD8RkJdCvPHqLQjZfW7Mqbbqx18zd8j7/api/service/readme.md)! IPFS-Webmention, because why not.
     - [ ] S3 support & running on AWS Lambda... or good old CGI, which is actually kinda similar to Lambda
 - webmention ([YAY W3C DRAFT](http://webmention.net/draft/)!)
-  - [ ] stop using pandoc walk for finding urls
+  - [x] stop using pandoc walk for finding urls
   - [ ] hashcash
     - [ ] throttle non-hashcashed requests to avoid [DDoS](https://indiewebcamp.com/DDOS)
   - [ ] moderation tools
@@ -169,7 +169,7 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
     - [ ] [blocking](https://indiewebcamp.com/block) domains
       - [ ] sharing block lists
   - [ ] reverify/refetch to update user profiles and stuff
-  - [ ] send [salmentions](https://indiewebcamp.com/Salmention)
+  - [x] send [salmentions](https://indiewebcamp.com/Salmention)
   - [ ] deduplicate threaded replies like [there](https://unrelenting.technology/replies/2015-09-06-20-29-54) (that one is formatted as a reply both to my post and to the reply)
 - micropub ([YAY W3C DRAFT](http://micropub.net/draft/)!)
   - [ ] handle update requests

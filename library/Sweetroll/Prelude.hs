@@ -21,6 +21,7 @@ import           Data.List as X (nub)
 import           Data.Char as X (isSpace)
 import           Data.String.Conversions as X hiding ((<>))
 import           Data.String.Conversions.Monomorphic as X
+import qualified Data.HashMap.Strict as HMS
 import           Data.Proxy as X
 import           Data.Aeson as X
 import           Data.Aeson.Lens as X
@@ -89,6 +90,11 @@ linksNofollow ∷ XElement → XElement
 linksNofollow e = e & entire . named "a" . attribute "rel" %~ makeNofollow
   where makeNofollow (Just r) = Just $ r ++ " nofollow"
         makeNofollow Nothing  = Just "nofollow"
+
+ensureArrayProp ∷ Text → Value → Value
+ensureArrayProp key (Object o) | HMS.member key o = Object o
+ensureArrayProp key (Object o) = Object $ HMS.insert key (Array empty) o
+ensureArrayProp _ v = v
 
 errWrongDomain ∷ ServantErr
 errWrongDomain = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]

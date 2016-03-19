@@ -21,7 +21,7 @@ import           Sweetroll.Monads
 import           Sweetroll.Routes
 import           Sweetroll.Micropub.Request
 import           Sweetroll.Micropub.Response
-import           Sweetroll.Webmention.Send
+import           Sweetroll.Events
 import           Sweetroll.HTTPClient
 
 getMicropub ∷ JWT VerifiedJWT → Maybe Text → [Text] → Maybe Text → Sweetroll MicropubResponse
@@ -46,9 +46,7 @@ postMicropub token (Create htype props synds) = do
   isTest ← getConfOpt testMode
   (MkSyndicationConfig syndConf) ← getConfOpt syndicationConfig
 
-  let syndLinks = getSyndLinks synds syndConf
-      content = readContent =<< lookup "content" props
-      category = decideCategory props
+  let category = decideCategory props
       slug = decideSlug props now
       absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base
   obj ← return props
@@ -58,7 +56,7 @@ postMicropub token (Create htype props synds) = do
         |>  setDates now
         |>  setClientId token
         |>  setUrl absUrl
-        |>  setContent content syndLinks
+        |>  setContent (readContent =<< lookup "content" props) (getSyndLinks synds syndConf)
         |>  wrapWithType htype
   transaction "./" $ saveDocument category (formatTime defaultTimeLocale "%s-" now ++ slug) obj
   unless isTest $ void $ fork $ do
@@ -68,24 +66,15 @@ postMicropub token (Create htype props synds) = do
       obj'm ← readDocumentByName category slug
       case obj'm of
         Nothing → return ()
-        Just obj' → do
-          notifyPuSH $ permalink (Proxy ∷ Proxy IndexRoute)
-          notifyPuSH $ permalink (Proxy ∷ Proxy CatRouteE) category
-          notifyPuSH $ atomizeUri $ permalink (Proxy ∷ Proxy CatRouteE) category
-          -- XXX: should send to unnamed combinations too
-          catsToNotify ← liftM (filter (cs category `isInfixOf`) . keys) $ getConfOpt categoryTitles
-          forM_ catsToNotify $ \c → do
-            notifyPuSH $ permalink (Proxy ∷ Proxy CatRouteE) $ cs c
-            notifyPuSH $ atomizeUri $ permalink (Proxy ∷ Proxy CatRouteE) $ cs c
-          saveDocumentByName category slug =<< syndicate obj' absUrl (cs syndLinks)
-          contMs ← contentWebmentions content
-          void $ sendWebmentions absUrl $ contMs ++ replyContextWebmentions obj'
+        Just obj' → saveDocumentByName category slug =<< onPostCreated category slug absUrl obj'
   return $ addHeader (tshow absUrl) Posted
 
 postMicropub _ (Delete url) = do
   (category, slug) ← parseEntryURI =<< guardJustP errWrongPath (parseURI $ cs url)
   k ← guardJust errWrongPath $ documentFullKey category (findByName slug)
   transaction "./" $ liftIO $ removeFile $ category </> k <.> "json"
+  isTest ← getConfOpt testMode
+  unless isTest $ void $ fork $ onPostDeleted category slug
   throwError respDeleted
 
 
@@ -118,19 +107,9 @@ fetchReplyContexts k props = do
                 Right resp → do
                   (entry0, mfRoot) ← fetchEntryWithAuthors uri resp
                   case entry0 of
-                    Just (Object entry) →
-                      return $ Object $ insertMap "webmention-endpoint" (toJSON $ map tshow $ discoverWebmentionEndpoints mfRoot (linksFromHeader resp))
-                                      $ insertMap "fetched-url" (toJSON u) entry
+                    Just (Object entry) → return $ Object $ insertMap "fetched-url" (toJSON u) entry
                     _ → return $ String u
         fetch x = return x
-
--- XXX: not tested yet
-replyContextWebmentions ∷ Value → [(TargetURI, EndpointURI)]
-replyContextWebmentions obj =
-  [ (tgt, endp) | k    ← [ "in-reply-to", "like-of", "repost-of" ]
-                , ctx  ← obj ^.. key "properties" . key k . values
-                , endp ← mapMaybe (parseURI . cs) $ ctx ^.. key "webmention-endpoint" . values . _String
-                , tgt  ← maybeToList $ (parseURI . cs) =<< ctx ^? key "fetched-url" . _String ]
 
 setDates ∷ UTCTime → ObjProperties → ObjProperties
 setDates now = insertMap "updated" (toJSON [ now ]) . insertWith (\_ x → x) "published" (toJSON [ now ])
@@ -175,31 +154,3 @@ readContent c = asum [ readWith readHtml       $ key "html"
                      , readWith readCommonMark $ key "value"
                      , readWith readCommonMark id ]
   where readWith rdr l = pandocRead rdr . cs <$> firstStr c l
-
-notifyPuSH ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
-             URI → μ ()
-notifyPuSH l = do
-  hub ← getConfOpt pushHub
-  case parseURI hub of
-    Nothing → return ()
-    Just hubURI → do
-      base ← getConfOpt baseURI
-      let pingURI = l `relativeTo` base
-      resp ← runHTTP $ reqU hubURI >>= anyStatus
-                       >>= postForm [ ("hub.mode", "publish"), ("hub.url", tshow pingURI) ]
-                       >>= performWithVoid
-      let status = case resp of
-                     Right _ → "successfully"
-                     Left e → "unsuccessfully (" ++ e ++ ")"
-      putStrLn $ "PubSubHubbub notified " ++ status ++ " for " ++ tshow pingURI ++ " to hub " ++ tshow hubURI
-      return ()
-
-syndicate ∷ (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ) ⇒
-            Value → URI → LText → μ Value
-syndicate entry absUrl syndLinks = do
-  syndMs ← contentWebmentions $ Just $ pandocRead readHtml $ cs syndLinks
-  syndResults ← catMaybes `liftM` sendWebmentions absUrl syndMs
-  let processSynd resp = do
-        guard $ responseStatus resp `elem` [ ok200, created201 ]
-        decodeUtf8 `liftM` lookup "Location" (responseHeaders resp)
-  return $ set (key "properties" . key "syndication") (Array $ V.fromList $ map String $ mapMaybe processSynd syndResults) entry

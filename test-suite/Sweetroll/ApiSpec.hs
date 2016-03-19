@@ -118,7 +118,7 @@ spec = around_ inDir $ around_ withServer $ do
           let comments x = (fromJust target) ^? key "properties" . key "comment" . x
           length <$> comments _Array `shouldBe` Just 1
           comments (nth 0 . key "properties" . key "url" . nth 0 . _String) `shouldBe` Just "http://localhost:8998/replies/reply-to-target"
-          comments (nth 0 . key "properties" . key "content" . nth 0 . key "html" . _String) `shouldBe` Just t
+          comments (nth 0 . key "properties" . key "content" . nth 0 . key "html" . _String) `shouldSatisfy` ((t `isInfixOf`) . fromMaybe "")
         expectTargetToHaveNoMentions = do
           target ← readDocumentByName "notes" "reply-target" ∷ IO (Maybe Value)
           let comments x = (fromJust target) ^? key "properties" . key "comment" . x
@@ -128,21 +128,21 @@ spec = around_ inDir $ around_ withServer $ do
           let comments x = (fromJust target) ^? key "properties" . key "comment" . x
           length <$> comments _Array `shouldBe` Just 2
           comments (nth 0 . key "properties" . key "url" . nth 0 . _String) `shouldBe` Just "http://localhost:8998/replies/reply-to-target"
-          comments (nth 0 . key "properties" . key "content" . nth 0 . key "html" . _String) `shouldBe` Just t
-          comments (nth 1 . key "properties" . key "content" . nth 0 . key "html" . _String) `shouldBe` Just "This entry has been deleted."
+          comments (nth 0 . key "properties" . key "content" . nth 0 . key "html" . _String) `shouldSatisfy` ((t `isInfixOf`) . fromMaybe "")
+          comments (nth 1 . key "properties" . key "content" . nth 0 . key "html" . _String) `shouldSatisfy` (("has been deleted" `isInfixOf`) . fromMaybe "")
 
 
 
     it "saves, updates and deletes correct replies" $ do
       resp ← app >>= postAuthed formRequest "/webmention" "source=http://localhost:8998/replies/reply-to-target&target=http://localhost:8998/notes/reply-target"
       simpleStatus resp `shouldBe` accepted202
-      expectTargetToHaveOneMentionWithText "\n\t\t\t\t\n\t\t\t\t\n\nYo\n\n\t\t\t\t\n\t\t\t"
+      expectTargetToHaveOneMentionWithText "Yo"
       transaction' $ saveDocumentByName "replies" "reply-to-target" $ mf2o [ "content" .= [ asText "HELLO" ], "in-reply-to" .= [ asText "http://localhost:8998/notes/reply-target" ] ]
       void $ app >>= postAuthed formRequest "/webmention" "source=http://localhost:8998/replies/reply-to-target&target=http://localhost:8998/notes/reply-target"
-      expectTargetToHaveOneMentionWithText " HELLO "
+      expectTargetToHaveOneMentionWithText "HELLO"
       transaction' $ tell [ void $ run (proc "git" [ "rm", "replies/000001-reply-to-target.json" ] $| conduit sinkNull) ]
       void $ app >>= postAuthed formRequest "/webmention" "source=http://localhost:8998/replies/reply-to-target&target=http://localhost:8998/notes/reply-target"
-      expectTargetToHaveOneMentionAndTombstone " HELLO "
+      expectTargetToHaveOneMentionAndTombstone "HELLO"
 
     it "rejects replies to other things" $ do
       resp ← app >>= postAuthed formRequest "/webmention" "source=http://localhost:8998/replies/reply-to-nonexistent&target=http://localhost:8998/notes/reply-target"

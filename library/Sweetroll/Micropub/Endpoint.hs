@@ -97,18 +97,13 @@ fetchReplyContexts k props = do
     return $ insertMap k newCtxs props
   where updateCtxs (Just (Array v)) = Array `liftM` mapM fetch v
         updateCtxs _ = return $ Array V.empty
-        fetch (String u) = do -- XXX: use a guard-ish thing
-          case parseURI $ cs u of
-            Nothing → return $ String u
-            Just uri → do
-              resp0 ← runHTTP $ reqU uri >>= performWithHtml
-              case resp0 of
-                Left _ → return $ String u
-                Right resp → do
-                  (entry0, mfRoot) ← fetchEntryWithAuthors uri resp
-                  case entry0 of
-                    Just (Object entry) → return $ Object $ insertMap "fetched-url" (toJSON u) entry
-                    _ → return $ String u
+        fetch (String u) = maybeT (return $ String u) return $ do
+          uri ← hoistMaybe $ parseURI $ cs u
+          resp ← hoistMaybe =<< (liftM hush $ runHTTP $ reqU uri >>= performWithHtml)
+          ewa ← fetchEntryWithAuthors uri resp
+          hoistMaybe $ case ewa of
+            (Just (Object entry), _) → Just $ Object $ insertMap "fetched-url" (toJSON u) entry
+            _ → Nothing
         fetch x = return x
 
 setDates ∷ UTCTime → ObjProperties → ObjProperties

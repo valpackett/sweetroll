@@ -8,10 +8,11 @@ module Sweetroll.Prelude (
 ) where
 
 import           ClassyPrelude as X hiding (fromString)
-import           Control.Error.Util as X (hush, note)
+import           Control.Error.Util as X hiding (hoistEither, (??), tryIO)
 import           Control.Monad.Except as X (MonadError, throwError)
 import           Control.Monad.Trans.Control as X
 import           Control.Monad.Trans.Either as X
+import           Control.Monad.Trans.Maybe as X
 import           Control.Lens as X hiding (Index, index, cons, snoc, uncons, unsnoc, (<.>), (.=), (|>))
 import           Text.XML (Document, Element)
 import           Text.XML.Lens
@@ -92,8 +93,8 @@ linksNofollow e = e & entire . named "a" . attribute "rel" %~ makeNofollow
         makeNofollow Nothing  = Just "nofollow"
 
 ensureArrayProp ∷ Text → Value → Value
-ensureArrayProp key (Object o) | HMS.member key o = Object o
-ensureArrayProp key (Object o) = Object $ HMS.insert key (Array empty) o
+ensureArrayProp k (Object o) | HMS.member k o = Object o
+ensureArrayProp k (Object o) = Object $ HMS.insert k (Array empty) o
 ensureArrayProp _ v = v
 
 errWrongDomain ∷ ServantErr

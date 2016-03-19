@@ -23,7 +23,7 @@ import           TestUtil
 {-# ANN module ("HLint: ignore Redundant do" :: String) #-}
 
 app ∷ IO Wai.Application
-app = initSweetrollApp (def { testMode = Just True, domainName = Just "localhost:8998" }) def
+app = initSweetrollApp (def { testMode = Just True, domainName = Just "localhost:8998", pushHub = Just "http://localhost:8998" }) def
 
 spec ∷ Spec
 spec = around_ inDir $ around_ withServer $ do

@@ -78,7 +78,7 @@ postprocessEntry entry = do
   conf ← getConf
   let proxifyLink s = fromMaybe s $ tshow <$> proxiedUri secs s
       proxifyHtml s = fromMaybe s $ getInnerHtml Nothing $ wrapRoot $
-                        (linksNofollow . proxyImages secs conf) $ documentRoot $ HTML.parseSTChunks [s]
+                        (linksNofollow . proxyImages secs conf . detwitterizeEmoji) $ documentRoot $ HTML.parseSTChunks [s]
       wrapRoot x = if elementName x == "html" then x else Element "html" mempty [NodeElement x]
       ppr e = foldr ($) e [ (& key "properties" . key "photo" . values . _String %~ proxifyLink)
                           , (& key "properties" . key "content" . values . key "html" . _String %~ proxifyHtml) ]

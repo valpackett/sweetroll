@@ -5,7 +5,7 @@ A website engine for [the indie web] with curved swords. *Curved! Swords!*
 - uses [Git]+[JSON] for storage
 - supports [Micropub] for posting
 - allows posting in [CommonMark Markdown] and other markup languages (powered by [Pandoc])
-- sends and receives [Webmentions]
+- sends and receives [Webmentions], including [Salmentions]
 - supports the webmention-to-[syndication] / Syndicate by Reference process ([Bridgy Publish])
 - sends [PubSubHubbub] notifications on new posts (for [readers])
 - supports [indie-config]
@@ -26,6 +26,7 @@ I'm running it on [my website](https://unrelenting.technology).
 
 [Micropub]: https://indiewebcamp.com/micropub
 [Webmentions]: https://indiewebcamp.com/webmention
+[Salmentions]: https://indiewebcamp.com/Salmention
 [syndication]: https://indiewebcamp.com/POSSE
 [Bridgy Publish]: https://brid.gy/about#publishing
 [PubSubHubbub]: https://indiewebcamp.com/PubSubHubbub
@@ -135,42 +136,34 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
 ## TODO
 
 - html/frontend/templating
-  - [x] flexible index/category pages
-  - [x] merging category slices
-  - [x] new index page layout: like switching between filters on Twitter profiles
-  - [ ] ?? prev/next navigation + combined categories == kinda weird...
-  - [x] Atom feed (should be followable from [GNU Social](https://indiewebcamp.com/GNU_social) i.e. should be PubSubHubbub'd, should be based on HTML as the source of truth)
-  - [ ] support [WebFinger](https://webfinger.net) with HTML as the source of truth as well (but also additional links from config e.g. for [remoteStorage](https://remotestorage.io))
-  - [x] better note like display ("Liked a note by User Name" then gray smaller quote, like in Twitter notifications)
-  - [x] more consistency / abstraction with cite contexts, etc.
+  - [ ] remove prev/next navigation
+  - [x] de-twitterize emoji in twitter reposts
+  - [ ] show [recursive reply contexts](https://indiewebcamp.com/recursive_reply-contexts) (some redesigning required)
+  - [ ] support [WebFinger](https://webfinger.net) with HTML as the source of truth + additional links from config e.g. for [remoteStorage](https://remotestorage.io)
   - [ ] figure out URL/canonical/etc. handling for alternative networks & mirrors like .onion & IPFS -- including webmentions!
   - [ ] custom non-entry html pages
   - [ ] archive pages, ie. unpaginated pages (basically `?after=0&before=9223372036854775807` but... "archive" design?)
-  - [x] proxying for reply/repost/responses/etc images (to avoid mixed content and possible tracking)
-  - [x] proxy when rendering, not fetching
   - [ ] indieweb-components: a component for a Medium-style popup on selection that offers a fragmention link and (?) indie-config repost-quote-something (look how [selection-sharer](https://github.com/xdamman/selection-sharer) works on mobile!! but probably should look the same just at the opposite direction than iOS's popup)
-  - [x] a pool of hs-duktape instances for template rendering!
   - [ ] built-in TLS server, since we depend on `tls` already because of the client
-- [x] event system: hooks on micropub posting and webmention processing
-  - [x] pubsubhubbub (move here)
+- event system: hooks on micropub posting and webmention processing
   - [ ] cleaning a cache (which is not there yet... should be an in-process cache with fast expiration -- protection against DDoS or Hacker News effect)
   - [ ] real-time page updates with Server-Sent Events (make a Web Component for HTML-based updating)
   - [ ] JS hooks as plugins (API: a Sweetroll object which is an EventEmitter and also has config/secrets getters; should be possible to make HTTP requests to e.g. send webmention notifications)
     - [ ] Telegram bot (posting, webmention notifications, webmention deletion, etc.) as JS plugin (so, API also needs to allow handling HTTP requests)
-  - [ ] static mode: on these events, regenerate website pages into static HTML files
+  - [ ] static mode: on these events, regenerate website pages into static HTML files (and serve them for better performance)
     - [ ] IPFS support! (see/improve [hs-ipfs-api](https://github.com/davidar/hs-ipfs-api)) publishing there in the event handler too. Oh, and [IPFS supports custom services](https://ipfs.io/ipfs/QmTkzDwWqPbnAh5YiV5VwcTLnGdwSNsNTn2aDxdXBFca7D/example#/ipfs/QmQwAP9vFjbCtKvD8RkJdCvPHqLQjZfW7Mqbbqx18zd8j7/api/service/readme.md)! IPFS-Webmention, because why not.
     - [ ] S3 support & running on AWS Lambda... or good old CGI, which is actually kinda similar to Lambda
 - webmention ([YAY W3C DRAFT](http://webmention.net/draft/)!)
-  - [x] stop using pandoc walk for finding urls
-  - [ ] hashcash
+  - [ ] hashcash send
+  - [ ] hashcash verify
     - [ ] throttle non-hashcashed requests to avoid [DDoS](https://indiewebcamp.com/DDOS)
   - [ ] moderation tools
     - [ ] different modes in config: allow all (except blocked), allow known good domains (e.g. domains replied to), premoderate all, turn off webmention
     - [ ] [blocking](https://indiewebcamp.com/block) domains
       - [ ] sharing block lists
   - [ ] reverify/refetch to update user profiles and stuff
-  - [x] send [salmentions](https://indiewebcamp.com/Salmention)
-  - [ ] deduplicate threaded replies like [there](https://unrelenting.technology/replies/2015-09-06-20-29-54) (that one is formatted as a reply both to my post and to the reply)
+  - [ ] deduplicate threaded replies like [there](https://unrelenting.technology/replies/2015-09-06-20-29-54) (a reply to both my post and another reply) -- maybe that's already happening? need to test
+  - [ ] deduplicate syndicated replies
 - micropub ([YAY W3C DRAFT](http://micropub.net/draft/)!)
   - [ ] handle update requests
   - [x] handle delete requests
@@ -178,14 +171,10 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
   - [ ] editing interface: when logged in, display a (Polymer-based) Web Component *on the site* that shows a top panel, overlays edit/remove buttons on top of microformats entries (including replies!), submits edits/deletes over micropub, (actually make that extensible, micropub+microformats as just one supported thing)
     - [ ] microadmin/microsettings/what's-a-good-name: extension to micropub for site settings. `?q=settings-schema` to get [JSON Schema](http://json-schema.org) of settings, display the form, `{mp-action: settings}` to update
     - [ ] markup formats support (`rel=alternate` for getting the source, field like `content[markdown]` for submitting) and `?q=markup-formats`
-  - [x] respond to `?q=syndicate-to` with JSON
-  - [x] respond to `?q=source`
   - [ ] support posting [photos](https://indiewebcamp.com/photos)
-- [x] indieweb-algorithms: [mf2-shim](https://github.com/indieweb/php-mf2-shim) style functionality!
 - [ ] indieweb-algorithms?: ensure the person you're replying to *never* gets picked up you when you're replying (caught in test without own h-card)
-- [ ] something about [search](https://indiewebcamp.com/search) ([full-text-search](https://hackage.haskell.org/package/full-text-search) i guess)
-- [ ] tags? (hmm could just rely on search instead of keeping exact indexes)
-- [ ] extract `formToObject` from `Sweetroll.Micropub.Request` into a separate library
+- [ ] tags? (kill the difference between categories and tags? // use symlinks to add to multiple categories/tags)
+- [ ] extract a `WebPrelude` package: `Sweetroll.Prelude`, `Sweetroll.HTTPClient`, `formToObject`, more stuff
 
 ## License
 

@@ -76,8 +76,9 @@ entryWebmentions v = do
     concat $ v ^.. key "properties" . key "content" . values . key "html" . _String
   ctxMs ← sequence $ do -- List monad
     ctxName ← [ "in-reply-to", "like-of", "repost-of", "quotation-of" ]
-    url ← mapMaybe parseURI $ map cs $
+    url ← mapMaybe parseURI $ map cs $ nub $
             (v ^.. key "properties" . key ctxName . values . key "properties" . key "url" . values . _String) ++
+            (v ^.. key "properties" . key ctxName . values . key "fetched-url" . _String) ++
             (v ^.. key "properties" . key ctxName . values . _String)
     return $ linkWebmention Normal url
   return $ contMs ++ catMaybes ctxMs

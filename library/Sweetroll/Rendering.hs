@@ -83,14 +83,7 @@ instance Templatable EntryPage where
               "entry"            .= e
             , "permalink"        .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack slug)
             , "categoryName"     .= catName
-            , "categoryHref"     .= showLink (permalink (Proxy ∷ Proxy CatRouteE) catName)
-            , "hasPrev"          .= isJust prev
-            , "prevHref"         .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack $ orEmptyMaybe prev)
-            , "hasNext"          .= isJust next
-            , "nextHref"         .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack $ orEmptyMaybe next) ]
-          slugIdx = fromMaybe (-1) $ elemIndex slug otherSlugs
-          prev = atMay otherSlugs $ slugIdx - 1
-          next = atMay otherSlugs $ slugIdx + 1
+            , "categoryHref"     .= showLink (permalink (Proxy ∷ Proxy CatRouteE) catName) ]
 
 instance Templatable IndexedPage where
   templateName _ = "index"

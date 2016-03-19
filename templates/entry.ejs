@@ -87,18 +87,6 @@
 				</div>
 			<% } %>
 
-			<nav class="entry-nav">
-				<h2>Navigation</h2>
-				<% if (data.hasPrev) { %>
-					<a href="${ data.prevHref }" rel="prev"><i class="fa fa-l fa-arrow-left"></i>previous</a>
-				<% } %>
-				<a rel="up category" class="p-category" href="${ data.categoryHref }">${ data.categoryName }</a>
-				<% if (data.hasNext) { %>
-					<a href="${ data.nextHref }" rel="next">next<i class="fa fa-r fa-arrow-right"></i></a>
-				<% } %>
-			</nav>
-		</footer>
-
 		<% if (!_.isEmpty(properties.comment)) { %>
 			<section class="entry-responses">
 				<%= templates.entryComments({ entry: entry }) %>

@@ -1,14 +1,16 @@
-<% var onlyHttpUrl = function (x) {
-	if (_.startsWith(x, 'http://') || _.startsWith(x, 'https://') || _.startsWith(x, '//')) return x
-	return 'javascript:void(0)'
-} %>
-<% var isValidRef = function (x) {
-	return _.some(x, function (v) {
-		return _.some(scope.entry.properties.url, function (u) {
-			return _.startsWith(v, u) || _.startsWith(v.value, u)
+<%
+	var onlyHttpUrl = function (x) {
+		if (_.startsWith(x, '/') || _.startsWith(x, 'http://') || _.startsWith(x, 'https://') || _.startsWith(x, '//')) return x
+		return 'javascript:void(0)'
+	}
+	var isValidRef = function (x) {
+		return _.some(x, function (v) {
+			return _.some(scope.entry.properties.url, function (u) {
+				return _.startsWith(v, u) || _.startsWith(v.value, u)
+			})
 		})
-	})
-} %>
+	}
+%>
 <% _.forEach(scope.entry.properties.comment, function (comment) { %>
 	<% if (comment.properties) { %>
 		<div class="entry-response p-comment h-cite ${ isValidRef(comment.properties['like-of']) ? 'p-like' : '' }">

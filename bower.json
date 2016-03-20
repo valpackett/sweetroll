@@ -11,7 +11,6 @@
   "dependencies": {
     "webcomponentsjs": "~0.7.7",
     "indieweb-components": "~0.1.2",
-    "lazyload-image": "~1.0.0",
     "lodash": "~4.6.1",
     "moment": "~2.10.6",
     "sanitize-css": "^3.3.0",

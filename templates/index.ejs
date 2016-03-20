@@ -15,17 +15,17 @@
 	</nav>
 	<% var slice = slices[currentCatName] %>
 	<section class="index-category">
-		<ul>
-			<% _.forEach(slice.entryUrls, function (entryUrl) { %>
-				<%= templates.entryInList({ entry: entries[entryUrl], permalink: entryUrl }) %>
-			<% }) %>
-		</ul>
+		<% _.forEach(slice.entryUrls, function (entryUrl) { %>
+			<article class="h-entry entry">
+				<%= templates.showEntry({ entry: entries[entryUrl], permalink: entryUrl, compactView: true }) %>
+			</article>
+		<% }) %>
 		<nav class="category-nav">
 			<% if (slice.hasAfter) { %>
-				<a href="${ slice.afterHref }" rel="next"><i class="fa fa-l fa-arrow-up"></i>newer</a>
+				<a href="${ slice.afterHref }" rel="next"><svg role="img" class="icon"><use xlink:href="/default-icons.svg#arrow-up"/></svg>newer</a>
 			<% } %>
 			<% if (slice.hasBefore) { %>
-				<a href="${ slice.beforeHref }" rel="prev"><i class="fa fa-l fa-arrow-down"></i>older</a>
+				<a href="${ slice.beforeHref }" rel="prev"><svg role="img" class="icon"><use xlink:href="/default-icons.svg#arrow-down"/></svg>older</a>
 			<% } %>
 		</nav>
 	</section>

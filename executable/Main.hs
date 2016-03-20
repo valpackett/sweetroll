@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# LANGUAGE UnicodeSyntax, TemplateHaskell, FlexibleContexts #-}
 
-module Main (main) where
+module Main where
 
 import           Prelude
 import           GHC.Conc (getNumCapabilities)

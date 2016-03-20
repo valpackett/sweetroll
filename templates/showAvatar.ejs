@@ -1,0 +1,4 @@
+<%= _.get(scope.authors, '[0].properties.photo[0]',
+	'https://secure.gravatar.com/avatar/' +
+	SparkMD5.hash(_.get(scope.authors, '[0].properties.email[0]', '').replace('mailto:', '')) +
+	'?d=identicon&s=256') %>

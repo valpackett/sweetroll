@@ -1,34 +1,24 @@
+:set -fobject-code
 :set -itest-suite/
 :set -package hspec -package Glob -package doctest -package directory -package case-insensitive
-
-:{
-:def app const $ return $ unlines
-     [ ":load test-suite/TestUtil.hs library/Sweetroll/Api.hs"
-     , ":m + Data.Default Sweetroll.Api Sweetroll.Conf TestUtil"
-     , "app <- initSweetrollApp (def {testMode = Just True}) (def {secretKey = \"TESTKEY\"})" ]
-:}
+:set -XNoImplicitPrelude
 
 :{
 :def serve \port -> return $ unlines
-     [ ":m + System.Directory Network.Wai.Handler.Warp Network.Wai.Middleware.RequestLogger"
-     , ":app"
-     , "setCurrentDirectory \"/tmp/sroll\""
-     , "runSettings (setPort " ++ (if port == "" then "3000" else port) ++ " defaultSettings) (logStdoutDev app)" ]
+     [ ":l executable/DevMain.hs"
+     , ":m + Sweetroll.Prelude DevMain Sweetroll.Api Sweetroll.Conf"
+     , "update " ++ (if port == "" then "3000" else port) ]
 :}
 
-:def test const $ return $ unlines [ ":load test-suite/Spec.hs", ":reload", ":main --color", ":ctags" ]
+:def test const $ return $ unlines [ ":load test-suite/Spec.hs", ":main --color", ":ctags" ]
 
 :load executable/Main.hs
-
+:m Prelude Main
 let putCmd x y = putStr "   " >> green x >> setReset >> putStr " ~~~ " >> putStrLn y
-
 putSweetroll
 putStrLn "\n Available commands:"
-putCmd ":app       " "load the Sweetroll WAI Application into 'app'"
-putCmd ":serve     " "load :app and serve it on localhost:3000 with /tmp/sroll as the repo"
-putCmd ":serve 1234" "(or on any port really)"
+putCmd ":serve     " "(re)load the app and serve it on localhost:3000 with /tmp/sroll as the repo"
+putCmd ":serve 1234" "(or on any port really) // BTW, serve doesn't lock up the REPL!"
 putCmd ":test      " "run hspec tests (and :ctags while we're at it)"
 putStrLn ""
-
-:set -XNoImplicitPrelude
-:m ClassyPrelude
+:m Sweetroll.Prelude

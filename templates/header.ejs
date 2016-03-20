@@ -14,7 +14,7 @@
 		<title><%- _(entryTitleParts).concat(catTitleParts).concat(scope.meta.siteName).filter(function (p) { return _.trim(p) != '' }).value().join(' / ') %></title>
 		<link rel="openid.delegate" href="${ scope.meta.baseUri }">
 		<link rel="openid.server" href="https://indieauth.com/openid">
-		<link rel="stylesheet" href="/bower/fontawesome/css/font-awesome.min.css">
+		<link rel="stylesheet" href="/base-style.css">
 		<link rel="stylesheet" href="/default-style.css">
 		<% scope.meta.categoriesInNav.forEach(function (name) { if (name == currentCatName || name == landingCatName) { %>
 		<link rel="alternate${ name == landingCatName && name != currentCatName ? ' home' : '' }" href="/${name}?_accept=application/atom%2Bxml" type="application/atom+xml" title="${scope.meta.categoryTitles[name] || _.capitalize(name)}">
@@ -32,7 +32,7 @@
 		<header class="site-header">
 			<h1><a href="/"><%- scope.meta.siteName %></a></h1>
 			<a href="#author" id="author-link" onclick="var a=document.getElementById('author');a.setAttribute('tabindex','-1');a.focus()">
-				<i class="fa fa-l fa-info-circle"></i><span>Skip to author info</span>
+				<svg role="img" class="icon"><use xlink:href="/default-icons.svg#info-circle"/></svg><span>Skip to author info</span>
 			</a>
 		</header>
 		<div class="site-content">

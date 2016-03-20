@@ -9,11 +9,15 @@
   "license": "Unlicense",
   "private": true,
   "dependencies": {
-    "fontawesome": "~4.4.0",
     "webcomponentsjs": "~0.7.7",
     "indieweb-components": "~0.1.2",
     "lazyload-image": "~1.0.0",
     "lodash": "~4.6.1",
-    "moment": "~2.10.6"
+    "moment": "~2.10.6",
+    "sanitize-css": "^3.3.0",
+    "normalize-opentype.css": "^0.2.4",
+    "svgxuse": "^1.1.15",
+    "Font-Awesome-SVG-PNG": "font-awesome-svg-png#^1.1.5",
+    "SparkMD5": "^2.0.2"
   }
 }

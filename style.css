@@ -1,0 +1,87 @@
+:root {
+  -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;
+  -webkit-hyphens: auto; -ms-hyphens: auto; hyphens: auto;
+  background: #ecf0f1; color: #34495e;
+  font-size: calc(14px + 4 * ((100vw - 600px) / 800)); /* https://github.com/seaneking/postcss-responsive-type */
+}
+body { word-wrap: break-word; }
+pre { white-space: pre; }
+pre code { white-space: -moz-pre-wrap; white-space: pre-wrap; }
+code { word-wrap: normal; white-space: pre; font-family: monospace; }
+input, abbr, acronym, blockquote, code, kbd, q, samp, var { -webkit-hyphens: none; -ms-hyphens: none; hyphens: none; }
+img { max-width: 100%; }
+.icon { height: 1em; width: 1em; margin: 0 0.1em 0 0.01em; vertical-align: -0.16em; }
+indie-action .icon { margin-right: 0.3em; }
+ul, ol { list-style: inside; }
+ul { list-style-type: square; }
+small { font-size: 70%; }
+abbr { -webkit-font-variant: small-caps; -moz-font-variant: small-caps; -ms-font-variant: small-caps; font-variant: small-caps; font-weight: 600; text-transform: lowercase; color: gray; }
+abbr[title]:hover { cursor: help; border-bottom: dashed 1px; }
+sub, sup { font-size: 70%; line-height: 0; position: relative; vertical-align: baseline; }
+sup { top: -0.5em; }
+sub { bottom: -0.25em; }
+table { border-collapse: collapse; }
+h1, h2, h3, h4, h5, h6 { color: #333; }
+[fragmention] { background: rgba(246, 242, 195, 153); }
+fragmention-exact { background: #FFF8A7; }
+blockquote { border-left: blueviolet 3px solid; padding: 0.2em 0 0.2em 0.5em; }
+blockquote p:last-of-type { margin-bottom: 0; }
+a, body .ref-context-meta a { color: #504aaa; transition: ease 0.3s color; }
+a:hover, a:focus, a:active, body .ref-context-meta a:hover, body .ref-context-meta a:focus, body .ref-context-meta a:active { color: #706aca; text-decoration: underline; }
+.e-content a, .e-note a { color: #408acc; }
+.e-content a:hover, .e-content a:focus, .e-content a:active, .e-note a:hover, .e-note a:focus, .e-note a:active { color: #60aaec; }
+
+.site-header, .site-content, .site-footer { margin: 1rem auto; width: 96%; }
+
+/* # Header */
+.site-header h1 { font-size: 1.2em; margin-top: 2rem; }
+#author-link { opacity: 0; }
+#author-link:focus { opacity: 1; }
+
+
+/* # Content */
+.site-main, .site-author { margin: 1rem auto; }
+
+/* ## Main */
+.entry { background: #fefefe; border: #e3e3e3 1px solid; border-radius: 5px; margin-bottom: 1rem; }
+.entry-core, .entry-footer { padding: 1rem; }
+.entry-core :last-child { margin-bottom: 0; }
+.entry-core { margin-bottom: -1rem; }
+.entry-core h1 { font-size: 1.3em; }
+.entry-core h2 { font-size: 1.15em; }
+.entry-core h3 { font-size: 1.05em; }
+p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .entry-core pre { margin: auto auto 1em; }
+.entry-footer { font-size: 0.8em; color: #777; }
+.entry-footer a { color: #77a; }
+.entry-footer a:hover, .entry-footer a:focus, .entry-footer a:active { color: #99c; }
+.entry-actions indie-action { margin-right: 1rem; }
+.entry-actions indie-action a { padding: 0.3rem 0; display: inline-block; }
+.entry-actions indie-action:last-child { margin-right: 0; }
+.entry-photo { display: block; }
+.entry-facepile { margin: 0.5rem 0.5rem 0.5rem 0; display: inline-block; }
+.entry-facepile a { text-decoration: none; }
+.facepile-avatar { display: inline-block; margin-right: 0.1rem; width: 32px; height: 32px; border-radius: 5px; }
+.ref-context { background: #f0f0f0; border-bottom: #e3e3e3 1px solid; }
+.ref-context-reason { padding: 0.6rem 0 0.6rem 2rem; font-size: 0.8em; color: #777; }
+.ref-context-core { display: flex; align-items: flex-start; padding: 0.6rem; margin-top: -0.6rem; }
+.ref-context-avatar { display: block; margin-right: 0.6rem; width: 32px; height: 32px; border-radius: 5px; }
+.ref-context-meta { margin: -0.3rem 0 0; }
+.ref-context-authors { font-weight: 500; }
+.ref-context-date { font-size: 0.85em; }
+.ref-context-authors::after { content: ' \2022 '; color: #777; }
+.ref-context-content { border-left: none; padding-left: 0; }
+
+
+@media screen and (min-width: 400px) {
+  .ref-context-avatar { width: 48px; height: 48px; }
+}
+@media screen and (max-width: 600px) {
+  :root { font-size: 14px; }
+}
+@media screen and (min-width: 600px) {
+  .site-header, .site-content, .site-footer { width: 90%; }
+  .index-main .entry-photo { max-height: 60vh; }
+}
+@media screen and (min-width: 1400px) {
+  :root { font-size: 18px; }
+}

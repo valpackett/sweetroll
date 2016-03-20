@@ -69,7 +69,6 @@ library
       , wai-conduit
       , servant
       , servant-server
-      , clay
       , network-uri
       , network
       , conduit
@@ -111,7 +110,6 @@ library
         Sweetroll.Proxy
         Sweetroll.Rendering
         Sweetroll.Routes
-        Sweetroll.Style
         Sweetroll.Slice
         Sweetroll.Webmention.Send
         Sweetroll.Webmention.Receive
@@ -134,6 +132,7 @@ executable sweetroll
       , memory
       , text
       , bytestring
+      , foreign-store
       , gitson
       , sweetroll
     default-language: Haskell2010

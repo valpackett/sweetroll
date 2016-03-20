@@ -18,12 +18,15 @@ import           Sweetroll.Slice
 
 data HTML
 data CSS
+data SVG
 data Atom
 
 type WithLink α               = (Headers '[Header "Link" [L.Link]] α)
 
 type IndieConfigRoute         = "indie-config" :> Get '[HTML] IndieConfig
+type BaseCssRoute             = "base-style.css" :> Get '[CSS] LByteString
 type DefaultCssRoute          = "default-style.css" :> Get '[CSS] LByteString
+type DefaultIconsRoute        = "default-icons.svg" :> Get '[SVG] LByteString
 
 type PostLoginRoute           = "login" :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] [(Text, Text)]
 type GetLoginRoute            = "login" :> AuthProtect :> Get '[FormUrlEncoded] [(Text, Text)]
@@ -39,7 +42,7 @@ type CatRouteB                = Capture "catName" String :> QueryParam "before" 
 type CatRouteA                = Capture "catName" String :> QueryParam "after" Int :> Get '[HTML, Atom] (WithLink (View IndexedPage))
 type IndexRoute               = Get '[HTML] (WithLink (View IndexedPage))
 
-type SweetrollAPI             = IndieConfigRoute :<|> DefaultCssRoute
+type SweetrollAPI             = IndieConfigRoute :<|> BaseCssRoute :<|> DefaultCssRoute :<|> DefaultIconsRoute
                            :<|> PostLoginRoute :<|> GetLoginRoute
                            :<|> PostMicropubRoute :<|> GetMicropubRoute
                            :<|> PostWebmentionRoute

@@ -7,14 +7,12 @@ module Sweetroll.Rendering where
 
 import           Sweetroll.Prelude hiding (fromString)
 import           Network.HTTP.Media.MediaType
-import           Data.List (elemIndex)
 import           Data.Microformats2.Parser
 import           Data.IndieWeb.MicroformatsToAtom
 import           Text.XML.Writer as W
 import qualified Text.HTML.DOM as HTML
 import           Text.XML.Lens (entire, named, text)
 import           Text.XML as XML
-import           Safe (atMay)
 import           Servant
 import           Sweetroll.Pages
 import           Sweetroll.Slice
@@ -72,13 +70,19 @@ instance Accept CSS where
 instance ConvertibleStrings α LByteString ⇒ MimeRender CSS α where
   mimeRender _ = cs
 
+instance Accept SVG where
+  contentType _ = "image" // "svg+xml"
+
+instance ConvertibleStrings α LByteString ⇒ MimeRender SVG α where
+  mimeRender _ = cs
+
 class Templatable α where
   templateName ∷ View α → ByteString
   context ∷ View α → Value
 
 instance Templatable EntryPage where
   templateName _ = "entry"
-  context (View _ _ (EntryPage catName otherSlugs (slug, e))) = ctx
+  context (View _ _ (EntryPage catName _ (slug, e))) = ctx
     where ctx = object [
               "entry"            .= e
             , "permalink"        .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack slug)

@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TemplateHaskell #-}
 {-# LANGUAGE TypeOperators, TypeFamilies, DataKinds, TupleSections #-}
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, MultiParamTypeClasses #-}
 
@@ -9,9 +9,12 @@ import           Data.Maybe (fromJust)
 import           Data.Conduit.Shell (run, proc, conduit, ProcessException, ($|), (=$=))
 import qualified Data.Conduit.Combinators as CL
 import qualified Data.HashMap.Strict as HMS
-import qualified Text.HTML.DOM as HTML
-import           Text.XML (documentRoot, Element(..), Node(..))
+import           Data.FileEmbed
 import           Data.Microformats2.Parser.HtmlUtil (getInnerHtml)
+import qualified Text.HTML.DOM as HTML
+import           Text.XML (documentRoot)
+import           Text.Pandoc
+import           Text.Highlighting.Kate.Format.HTML (styleToCss)
 import qualified Network.HTTP.Link as L
 import           Network.Wai
 import           Network.Wai.UrlMap
@@ -31,14 +34,22 @@ import           Sweetroll.Rendering
 import           Sweetroll.Auth
 import           Sweetroll.Micropub.Endpoint
 import           Sweetroll.Webmention.Receive
-import           Sweetroll.Style
 import           Sweetroll.Proxy
 
 getIndieConfig ∷ Sweetroll IndieConfig
 getIndieConfig = getConfOpt indieConfig
 
+getBaseCss ∷ Sweetroll LByteString
+getBaseCss = return $ pandocCss ++ sanitizeCss ++ opentypeCss
+  where pandocCss = cs . styleToCss . writerHighlightStyle $ pandocWriterOptions
+        sanitizeCss = cs $(embedFile "bower_components/sanitize-css/sanitize.css")
+        opentypeCss = cs $(embedFile "bower_components/normalize-opentype.css/normalize-opentype.css")
+
 getDefaultCss ∷ Sweetroll LByteString
-getDefaultCss = return allCss
+getDefaultCss = return $ cs $(embedFile "style.css")
+
+getDefaultIcons ∷ Sweetroll LByteString
+getDefaultIcons = return $ cs $(embedFile "icons.svg")
 
 getIndex ∷ Sweetroll (WithLink (View IndexedPage))
 getIndex = do
@@ -77,16 +88,15 @@ postprocessEntry entry = do
   secs ← getSecs
   conf ← getConf
   let proxifyLink s = fromMaybe s $ tshow <$> proxiedUri secs s
-      proxifyHtml s = fromMaybe s $ getInnerHtml Nothing $ wrapRoot $
-                        (linksNofollow . proxyImages secs conf . detwitterizeEmoji) $ documentRoot $ HTML.parseSTChunks [s]
-      wrapRoot x = if elementName x == "html" then x else Element "html" mempty [NodeElement x]
+      proxifyHtml s = fromMaybe s $ getInnerHtml Nothing $
+                        (proxyImages secs conf . detwitterizeEmoji) $ documentRoot $ HTML.parseSTChunks ["<div>", s, "</div>"]
       ppr e = foldr ($) e [ (& key "properties" . key "photo" . values . _String %~ proxifyLink)
                           , (& key "properties" . key "content" . values . key "html" . _String %~ proxifyHtml) ]
   return $ transform (\x → if isJust (x ^? key "type") then ppr x else x) entry
 
 
 sweetrollServerT ∷ SweetrollCtx → ServerT SweetrollAPI Sweetroll
-sweetrollServerT ctx = getIndieConfig :<|> getDefaultCss
+sweetrollServerT ctx = getIndieConfig :<|> getBaseCss :<|> getDefaultCss :<|> getDefaultIcons
                   :<|> postLogin :<|> AuthProtected secKey getAuth
                   :<|> AuthProtected secKey postMicropub :<|> AuthProtected secKey getMicropub
                   :<|> receiveWebmention

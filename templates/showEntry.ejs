@@ -1,0 +1,168 @@
+<%
+	var permalink = scope.permalink, entry = scope.entry, compactView = scope.compactView
+	var properties = entry.properties
+	var isUntitled = _.isEmpty(properties.name)
+	var syndicationName = function (x) {
+		if (_.includes(x, 'twitter.com')) return 'Twitter'
+		if (_.includes(x, 'facebook.com')) return 'Facebook'
+		if (_.includes(x, 'instagram.com')) return 'Instagram'
+		if (_.includes(x, 'app.net')) return 'App.net'
+		var matches = x.match(/^https?\:\/\/([^\/?#]+)/)
+		return (matches && matches[1]) || x
+	}
+	var isValidRef = function (x) {
+		return _.some(x, function (v) {
+			return _.some(entry.properties.url, function (u) {
+				return _.startsWith(v, u) || _.startsWith(v.value, u)
+			})
+		})
+	}
+	var replies = [], likes = [], reposts = []
+	_.forEach(properties.comment, function (comment) {
+		if (isValidRef(comment.properties['in-reply-to'])) {
+			replies.push(comment)
+		} else if (isValidRef(comment.properties['like-of'])) {
+			likes.push(comment)
+		} else if (isValidRef(comment.properties['repost-of'])) {
+			reposts.push(comment)
+		}
+	})
+%>
+
+<% _.forEach(properties['in-reply-to'], function (reply) { %>
+	<%= templates.showRefContext({ entry: reply, long: false, prop: 'u-in-entry-to', reason: 'in reply to', rel: !compactView ? 'rel="in-reply-to"' : '' }) %>
+<% }) %>
+
+<% _.forEach(properties['like-of'], function (like) { %>
+	<%= templates.showRefContext({ entry: like, long: false, prop: 'u-like-of', reason: 'liked', rel: !compactView ? 'rel="like-of"' : '' }) %>
+<% }) %>
+
+<% if (!isUntitled) { %>
+	<div class="entry-core">
+		<h1 class="p-name">
+			<a href="${ permalink }" class="u-url u-uid" rel="bookmark" tabindex="-1">
+				<%- properties.name %>
+			</a>
+		</h1>
+	</div>
+<% } %>
+
+<% if (!_.isEmpty(properties.content) || !_.isEmpty(properties['repost-of'])) { %>
+	<div class="e-content ${ isUntitled ? 'p-name' : '' }">
+		<% if (!isUntitled) { %>
+			<fragmention-target exact>
+		<% } %>
+		<% _.forEach(properties['repost-of'], function (repost) { %>
+			<%= templates.showRefContext({ entry: repost, long: true, prop: 'u-repost-of', reason: 'reposted', rel: !compactView ? 'rel="repost-of"' : '' }) %>
+		<% }) %>
+		<% var onlySummary = !isUntitled && compactView %>
+		<% if (!_.isEmpty(onlySummary ? properties.summary : properties.content)) { %>
+			<div class="entry-core">
+				<%= templates.showContent({ properties: properties, long: !compactView, onlySummary: onlySummary }) %>
+			</div>
+		<% } %>
+		<% if (!isUntitled) { %>
+			</fragmention-target>
+		<% } %>
+	</div>
+<% } %>
+
+<footer class="entry-footer">
+	<div class="entry-meta">
+		posted on
+		<time class="dt-published" datetime="${ _.head(properties.published) }">
+			<a href="${ permalink }" class="u-url u-uid note-permalink" rel="bookmark">
+				<%- moment.utc(_.head(properties.published)).format('dddd, MMMM Do YYYY, HH:mm') %>
+			</a>
+		</time>
+
+		<% if (!_.isEmpty(properties['client-id'])) { %>
+			using <a href="${ _.head(properties['client-id']) }" class="u-client-id">
+				<%- _.trimEnd(_.head(properties['client-id']).replace('http://', '').replace('https://', ''), '/') %>
+			</a>
+		<% } %>
+
+		<% if (!_.isEmpty(properties.updated) && (_.head(properties.updated) != _.head(properties.published))) { %>
+			and updated on
+			<time class="dt-updated" datetime="${ _.head(properties.updated) }">
+				<%- moment.utc(_.head(properties.updated)).format('dddd, MMMM Do YYYY, HH:mm') %>
+			</time>
+		<% } %>
+
+		<% if (!_.isEmpty(properties.syndication)) { %>
+			/ also on:
+			<% _.forEach(properties.syndication, function (repost) { %>
+				<a class="u-syndication" rel="syndication" href="${ repost }"><%- syndicationName(repost) %></a>
+			<% }) %>
+		<% } %>
+
+		<% if (compactView) { %>
+
+			<% if (!_.isEmpty(replies)) { %>
+				/
+				<svg role="img" class="icon" title="Replies count">
+					<use xlink:href="/default-icons.svg#reply"/>
+					<title>Replies count</title>
+				</svg>
+				<%- replies.length %>
+			<% } %>
+
+			<% if (!_.isEmpty(reposts)) { %>
+				/
+				<svg role="img" class="icon" title="Reposte count">
+					<use xlink:href="/default-icons.svg#retweet"/>
+					<title>Reposted count</title>
+				</svg>
+				<%- reposts.length %>
+			<% } %>
+
+			<% if (!_.isEmpty(likes)) { %>
+				/
+				<svg role="img" class="icon" title="Like count">
+					<use xlink:href="/default-icons.svg#star"/>
+					<title>Like count</title>
+				</svg>
+				<%- likes.length %>
+			<% } %>
+
+		<% } %>
+	</div>
+
+	<% if (!compactView && !_.isEmpty(reposts)) { %>
+		<section class="entry-facepile">
+			<svg role="img" class="icon" title="Reposted">
+				<use xlink:href="/default-icons.svg#retweet"/>
+				<title>Reposted</title>
+			</svg>
+			<% _.forEach(reposts, function (repost) { %>
+				<%= templates.showFacepileAvatar({ entry: repost, prop: 'u-repost' }) %>
+			<% }) %>
+		</section>
+	<% } %>
+
+	<% if (!compactView && !_.isEmpty(likes)) { %>
+		<section class="entry-facepile">
+			<svg role="img" class="icon" title="Liked">
+				<use xlink:href="/default-icons.svg#star"/>
+				<title>Liked</title>
+			</svg>
+			<% _.forEach(likes, function (like) { %>
+				<%= templates.showFacepileAvatar({ entry: like, prop: 'u-like' }) %>
+			<% }) %>
+		</section>
+	<% } %>
+
+	<% if (_.isEmpty(properties['like-of'])) { %>
+		<div class="entry-actions">
+			<%= templates.entryActions({ entry: entry, permalink: permalink }) %>
+		</div>
+	<% } %>
+</footer>
+
+<% if (!compactView && !_.isEmpty(replies)) { %>
+	<section class="entry-replies">
+		<% _.forEach(replies, function (reply) { %>
+			<%= templates.showRefContext({ entry: reply, long: false, prop: 'p-comment', reason: null, rel: '' }) %>
+		<% }) %>
+	</section>
+<% } %>

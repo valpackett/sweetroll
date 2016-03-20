@@ -1,0 +1,36 @@
+<%
+	var entry = scope.entry, prop = scope.prop, reason = scope.reason, rel = scope.rel, long = scope.long
+%>
+<div class="ref-context ${ prop } h-cite">
+	<header class="ref-context-reason">
+		${ reason }
+		<% if (_.isString(entry)) { %>
+			<a class="p-name u-url" href="${ onlyHttpUrl(entry) }"><%- entry %></a>
+		<% } else if (!_.isObject(entry)) { %>
+			something weird
+		<% } %>
+	</header>
+	<% if (_.isObject(entry)) { %>
+		<% var authors = _.get(entry, 'properties.author', []) %>
+		<div class="ref-context-core">
+			<a href="${ onlyHttpUrl(_.get(authors, '[0].properties.url[0]', '')) }">
+				<img alt="" src="<%- templates.showAvatar({ authors: authors }) %>" class="ref-context-avatar">
+			</a>
+			<div class="ref-context-content">
+				<div class="ref-context-meta">
+					<span class="ref-context-authors">
+						<% if (!_.isEmpty(authors)) { %>
+							<%= templates.showAuthors({ authors: authors }) %>
+						<% } %>
+					</span>
+					<a class="u-url ref-context-date" ${ rel } href="${ onlyHttpUrl(_.get(entry, 'properties.url', '')) }">
+						<%- moment.utc(_.get(entry, 'properties.published', '')).format('dddd, MMMM Do YYYY, HH:mm') %>
+					</a>
+				</div>
+				<blockquote class="ref-context-content e-content">
+					<%= templates.showContent({ long: long, properties: entry.properties }) %>
+				</blockquote>
+			</div>
+		</div>
+	<% } %>
+</div>

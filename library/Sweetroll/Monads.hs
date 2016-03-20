@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans -fno-warn-missing-methods #-}
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, QuasiQuotes #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, QuasiQuotes, TemplateHaskell #-}
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, UndecidableInstances #-}
 {-# LANGUAGE RankNTypes, TypeOperators, TypeFamilies, DataKinds #-}
 {-# LANGUAGE ConstraintKinds, FlexibleContexts #-}
@@ -23,6 +23,7 @@ import           GHC.Conc (getNumCapabilities)
 import           Network.HTTP.Client.Conduit
 import           Servant
 import           Gitson
+import           Data.FileEmbed
 import           Scripting.Duktape
 import           Sweetroll.Conf
 
@@ -73,9 +74,15 @@ initCtx conf secs = do
 createTemplateCtx ∷ IO DuktapeCtx
 createTemplateCtx = do
   duk ← fromJust <$> createDuktapeCtx
-  void $ evalDuktape duk $ fromJust $ lookup "lodash/dist/lodash.min.js" bowerComponents
-  void $ evalDuktape duk $ fromJust $ lookup "moment/min/moment-with-locales.min.js" bowerComponents
+  void $ evalDuktape duk "var window = this"
+  void $ evalDuktape duk $(embedFile "bower_components/lodash/dist/lodash.min.js")
+  void $ evalDuktape duk $(embedFile "bower_components/moment/min/moment-with-locales.min.js")
+  void $ evalDuktape duk $(embedFile "bower_components/SparkMD5/spark-md5.min.js")
   void $ evalDuktape duk [r|
+    onlyHttpUrl = function (x) {
+      if (_.startsWith(x, '/') || _.startsWith(x, 'http://') || _.startsWith(x, 'https://') || _.startsWith(x, '//')) return x
+      return 'javascript:void(0)'
+    }
     var SweetrollTemplates = {}
     setTemplate = function (name, html) {
       SweetrollTemplates[name] = _.template(html, {

@@ -41,12 +41,9 @@
 		<% }) %>
 		<% var onlySummary = !isUntitled && compactView %>
 		<% if (!_.isEmpty(onlySummary ? properties.summary : properties.content)) { %>
-			<% var rendered = templates.showContent({ properties: properties, long: !compactView, onlySummary: onlySummary }) %>
-			<% if (_.trim(rendered) != '') { %>
-				<div class="entry-core">
-					<%= rendered %>
-				</div>
-			<% } %>
+			<div class="entry-core">
+				<%= templates.showContent({ properties: properties, long: !compactView, onlySummary: onlySummary }) %>
+			</div>
 		<% } %>
 		<% if (!isUntitled) { %>
 			</fragmention-target>

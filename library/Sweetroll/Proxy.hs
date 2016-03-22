@@ -44,12 +44,12 @@ requestProxy ctx req respond =
       let upstreamReq = upstreamReq0 { HCC.requestHeaders = filter allowedReqHeader (W.requestHeaders req)
                                      , HCC.decompress = const False }
       flip runReaderT ctx $ withResponse upstreamReq $ \upstreamRsp → lift $ do
-        case readMay =<< (asString . cs <$> lookup "Content-Length" (HCC.responseHeaders upstreamRsp)) of
-          Just l | l < (4*1024*1024 ∷ Int) → do
-            let src = mapOutput (Chunk . fromByteString) $ HCC.responseBody upstreamRsp
+        case fromMaybe 0 $ readMay =<< (asString . cs <$> lookup "Content-Length" (HCC.responseHeaders upstreamRsp)) of
+          l | l > (4*1024*1024 ∷ Int) → respond $ responseLBS badRequest400 [("Content-Type", "text/plain")] "content-length too big"
+          _ → do
+            let src = mapOutput (Chunk . fromByteString) (HCC.responseBody upstreamRsp)
                 headers = filter allowedRespHeader $ HCC.responseHeaders upstreamRsp
             respond $ responseSource (HCC.responseStatus upstreamRsp) headers src
-          _ → respond $ responseLBS badRequest400 [("Content-Type", "text/plain")] "content-length too big or not present"
     _ →
       respond $ responseLBS badRequest400 [("Content-Type", "text/plain")] "url and sig params must be present"
   where allowedReqHeader (h, _) = h `elem` [ "Accept-Encoding", "Accept" ]

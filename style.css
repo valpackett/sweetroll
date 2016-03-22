@@ -51,9 +51,10 @@ a:hover, a:focus, a:active, body .ref-context-meta a:hover, body .ref-context-me
 .main-nav > * { padding: 0 0.4rem; }
 .main-nav > *:first-child { padding-left: 0; }
 .entry { background: #fefefe; border: #e3e3e3 1px solid; border-radius: 5px; margin-bottom: 1rem; }
-.entry-core, .entry-footer { padding: 1rem; }
+.entry-footer { padding: 1rem; }
+.entry-core { padding: 0 1rem; }
+.entry-core > :first-child, .entry-core > a + p:first-of-type /* skip bridgy links */ { margin-top: 1rem; }
 .entry-core :last-child { margin-bottom: 0; }
-.entry-core { margin-bottom: -1rem; }
 .entry-core h1 { font-size: 1.3em; }
 .entry-core h2 { font-size: 1.15em; }
 .entry-core h3 { font-size: 1.05em; }

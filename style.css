@@ -1,5 +1,4 @@
 :root {
-  -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;
   -webkit-hyphens: auto; -ms-hyphens: auto; hyphens: auto;
   background: #ecf0f1; color: #34495e;
   font-size: calc(14px + 4 * ((100vw - 600px) / 800)); /* https://github.com/seaneking/postcss-responsive-type */
@@ -16,7 +15,8 @@ ul, ol { list-style: inside; }
 ul { list-style-type: square; }
 small { font-size: 70%; }
 abbr { -webkit-font-variant: small-caps; -moz-font-variant: small-caps; -ms-font-variant: small-caps; font-variant: small-caps; font-weight: 600; text-transform: lowercase; color: gray; }
-abbr[title]:hover { cursor: help; border-bottom: dashed 1px; }
+abbr[title] { text-decoration: none; border-bottom: dashed 1px; }
+abbr[title]:hover { cursor: help; }
 sub, sup { font-size: 70%; line-height: 0; position: relative; vertical-align: baseline; }
 sup { top: -0.5em; }
 sub { bottom: -0.25em; }
@@ -24,7 +24,7 @@ table { border-collapse: collapse; }
 h1, h2, h3, h4, h5, h6 { color: #333; }
 [fragmention] { background: rgba(246, 242, 195, 153); }
 fragmention-exact { background: #FFF8A7; }
-blockquote { border-left: blueviolet 3px solid; padding: 0.2em 0 0.2em 0.5em; }
+blockquote { border-left: #77a 3px solid; padding: 0.2em 0 0.2em 0.5em; }
 blockquote p:last-of-type { margin-bottom: 0; }
 a, body .ref-context-meta a { display: inline-block; color: #504aaa; transition: ease 0.3s color; }
 a[data-synd], a[href*="brid.gy/publish"] { display: none; }
@@ -44,6 +44,9 @@ a:hover, a:focus, a:active, body .ref-context-meta a:hover, body .ref-context-me
 .site-main, .site-author { margin: 1rem auto; }
 
 /* ## Main */
+.main-nav { font-size: 1.1em; margin-bottom: 1rem; }
+.main-nav > * { padding: 0 0.4rem; }
+.main-nav > *:first-child { padding-left: 0; }
 .entry { background: #fefefe; border: #e3e3e3 1px solid; border-radius: 5px; margin-bottom: 1rem; }
 .entry-core, .entry-footer { padding: 1rem; }
 .entry-core :last-child { margin-bottom: 0; }
@@ -55,9 +58,8 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 .entry-footer { font-size: 0.8em; color: #777; }
 .entry-footer a { color: #77a; }
 .entry-footer a:hover, .entry-footer a:focus, .entry-footer a:active { color: #99c; }
-.entry-actions indie-action { margin-right: 1rem; }
-.entry-actions indie-action a { padding: 0.3rem 0; display: inline-block; }
-.entry-actions indie-action:last-child { margin-right: 0; }
+.entry-actions indie-action a { padding: 0.35rem 1rem 0.35rem 0; display: inline-block; }
+.entry-actions indie-action:last-child a { padding-right: 0; }
 .entry-photo { display: block; }
 .entry-facepile { margin: 0.5rem 0.5rem 0.5rem 0; display: inline-block; }
 .entry-facepile a { text-decoration: none; }
@@ -70,8 +72,11 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 .ref-context-authors { font-weight: 500; }
 .ref-context-date { font-size: 0.85em; }
 .ref-context-authors::after { content: ' \2022 '; color: #777; }
-.ref-context-content { border-left: none; padding-left: 0; }
+.ref-context-content { flex: 1 1 auto; min-width: 1px /* fixes img max-width: https://stackoverflow.com/a/27474971 */; }
+.ref-context-content blockquote { border-left: none; padding-left: 0; }
 
+/* # Footer */
+.site-footer { font-size: 0.95em; }
 
 @media screen and (min-width: 400px) {
   .ref-context-avatar { width: 48px; height: 48px; }
@@ -82,6 +87,15 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 @media screen and (min-width: 600px) {
   .site-header, .site-content, .site-footer { width: 90%; }
   .index-main .entry-photo { max-height: 60vh; }
+}
+@media screen and (max-width: 900px) {
+  .site-author, .site-footer { margin-top: 5rem; }
+  .main-nav > * { display: block; padding: 0.4rem 0; }
+}
+@media screen and (min-width: 900px) {
+  .site-content { display: flex; }
+  .site-main { order: 2; flex: 3; }
+  .site-author { flex: 1; margin-right: 2rem; }
 }
 @media screen and (min-width: 1400px) {
   :root { font-size: 18px; }

@@ -9,6 +9,6 @@
 	%>
 	<span class="p-author h-card">
 		<a class="u-url p-name" href="${ _.head(author.properties.url) }"><%- _.head(author.properties.name) %></a><% if (pronouns.length > 0) { %>
-			<sup class="pronouns" title="Use these pronouns to refer to this person!"><%= pronouns.join('/') %></sup><% } %>${ (i == lastI) ? '' : ', ' }
+			<span class="pronouns" title="Use these pronouns to refer to this person!">(<%= pronouns.join('/') %>)</span><% } %>${ (i == lastI) ? '' : ', ' }
 	</span>
 <% }) %>

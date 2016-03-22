@@ -83,6 +83,26 @@ createTemplateCtx = do
       if (_.startsWith(x, '/') || _.startsWith(x, 'http://') || _.startsWith(x, 'https://') || _.startsWith(x, '//')) return x
       return 'javascript:void(0)'
     }
+    isValidRef = function (url, x) {
+      return _.some(x, function (v) {
+        return _.some(url, function (u) {
+          return _.startsWith(v, u) || _.startsWith(v.value, u)
+        })
+      })
+    }
+    separateComments = function (url, comments) {
+      var replies = [], likes = [], reposts = []
+      _.forEach(comments, function (comment) {
+        if (isValidRef(url, comment.properties['in-reply-to'])) {
+          replies.push(comment)
+        } else if (isValidRef(url, comment.properties['like-of'])) {
+          likes.push(comment)
+        } else if (isValidRef(url, comment.properties['repost-of'])) {
+          reposts.push(comment)
+        }
+      })
+      return { replies: replies, likes: likes, reposts: reposts }
+    }
     var SweetrollTemplates = {}
     setTemplate = function (name, html) {
       SweetrollTemplates[name] = _.template(html, {

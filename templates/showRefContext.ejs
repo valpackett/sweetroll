@@ -1,7 +1,18 @@
 <%
-	var entry = scope.entry, prop = scope.prop, reason = scope.reason, rel = scope.rel, long = scope.long
+	var entry = scope.entry, prop = scope.prop, reason = scope.reason, rel = scope.rel, long = scope.long, showReplies = scope.showReplies, showContexts = scope.showContexts
+	var properties = entry.properties || {}
+	var comments = separateComments(properties.url, properties.comment)
+	var inReplyTo = _.get(entry, 'properties.in-reply-to', [])
 %>
 <div class="ref-context ${ prop } h-cite">
+	<% if (showContexts && !_.isEmpty(inReplyTo)) { %>
+		<div class="ref-context-thread-up">
+			<% _.forEach(inReplyTo, function (reply) { %>
+				<%= templates.showRefContext({ entry: reply, long: false, prop: 'u-in-reply-to', reason: '', rel: '', showReplies: showReplies, showContexts: false }) %>
+			<% }) %>
+		</div>
+	<% } %>
+
 	<header class="ref-context-reason">
 		${ reason }
 		<% if (_.isString(entry)) { %>
@@ -11,7 +22,7 @@
 		<% } %>
 	</header>
 	<% if (_.isObject(entry)) { %>
-		<% var authors = _.get(entry, 'properties.author', []) %>
+		<% var authors = properties.author %>
 		<div class="ref-context-core">
 			<a href="${ onlyHttpUrl(_.get(authors, '[0].properties.url[0]', '')) }">
 				<img alt="" src="<%- templates.showAvatar({ authors: authors }) %>" class="ref-context-avatar">
@@ -28,9 +39,17 @@
 					</a>
 				</div>
 				<blockquote class="ref-context-content e-content">
-					<%= templates.showContent({ long: long, properties: entry.properties }) %>
+					<%= templates.showContent({ long: long, properties: properties }) %>
 				</blockquote>
 			</div>
 		</div>
+
+		<% if (showReplies && !_.isEmpty(comments.replies)) { %>
+			<div class="ref-context-thread-down">
+				<% _.forEach(comments.replies, function (reply) { %>
+					<%= templates.showRefContext({ entry: reply, long: false, prop: 'p-comment', reason: '', rel: '', showReplies: true, showContexts: false }) %>
+				<% }) %>
+			</div>
+		<% } %>
 	<% } %>
 </div>

@@ -31,6 +31,7 @@ a[data-synd], a[href*="brid.gy/publish"] { display: none; }
 a:hover, a:focus, a:active, body .ref-context-meta a:hover, body .ref-context-meta a:focus, body .ref-context-meta a:active { color: #706aca; text-decoration: underline; }
 .e-content a, .e-note a { color: #408acc; }
 .e-content a:hover, .e-content a:focus, .e-content a:active, .e-note a:hover, .e-note a:focus, .e-note a:active { color: #60aaec; }
+.pronouns { font-size: 0.75em; font-weight: normal; }
 
 .site-header, .site-content, .site-footer { margin: 1rem auto; width: 96%; }
 
@@ -74,6 +75,7 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 .ref-context-authors::after { content: ' \2022 '; color: #777; }
 .ref-context-content { flex: 1 1 auto; min-width: 1px /* fixes img max-width: https://stackoverflow.com/a/27474971 */; }
 .ref-context-content blockquote { border-left: none; padding-left: 0; }
+.ref-context-thread-down { border-left: 0.5rem solid #cecece; }
 
 /* # Footer */
 .site-footer { font-size: 0.95em; }

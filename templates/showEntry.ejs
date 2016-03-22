@@ -1,6 +1,6 @@
 <%
 	var permalink = scope.permalink, entry = scope.entry, compactView = scope.compactView
-	var properties = entry.properties
+	var properties = entry.properties || {}
 	var isUntitled = _.isEmpty(properties.name)
 	var syndicationName = function (x) {
 		if (_.includes(x, 'twitter.com')) return 'Twitter'
@@ -10,31 +10,15 @@
 		var matches = x.match(/^https?\:\/\/([^\/?#]+)/)
 		return (matches && matches[1]) || x
 	}
-	var isValidRef = function (x) {
-		return _.some(x, function (v) {
-			return _.some(entry.properties.url, function (u) {
-				return _.startsWith(v, u) || _.startsWith(v.value, u)
-			})
-		})
-	}
-	var replies = [], likes = [], reposts = []
-	_.forEach(properties.comment, function (comment) {
-		if (isValidRef(comment.properties['in-reply-to'])) {
-			replies.push(comment)
-		} else if (isValidRef(comment.properties['like-of'])) {
-			likes.push(comment)
-		} else if (isValidRef(comment.properties['repost-of'])) {
-			reposts.push(comment)
-		}
-	})
+	var comments = separateComments(properties.url, properties.comment)
 %>
 
 <% _.forEach(properties['in-reply-to'], function (reply) { %>
-	<%= templates.showRefContext({ entry: reply, long: false, prop: 'u-in-entry-to', reason: 'in reply to', rel: !compactView ? 'rel="in-reply-to"' : '' }) %>
+	<%= templates.showRefContext({ entry: reply, long: false, prop: 'u-in-reply-to', reason: 'in reply to', rel: !compactView ? 'rel="in-reply-to"' : '', showReplies: true, showContexts: !compactView }) %>
 <% }) %>
 
 <% _.forEach(properties['like-of'], function (like) { %>
-	<%= templates.showRefContext({ entry: like, long: false, prop: 'u-like-of', reason: 'liked', rel: !compactView ? 'rel="like-of"' : '' }) %>
+	<%= templates.showRefContext({ entry: like, long: false, prop: 'u-like-of', reason: 'liked', rel: !compactView ? 'rel="like-of"' : '', showReplies: false, showContexts: !compactView }) %>
 <% }) %>
 
 <% if (!isUntitled) { %>
@@ -98,55 +82,55 @@
 
 		<% if (compactView) { %>
 
-			<% if (!_.isEmpty(replies)) { %>
+			<% if (!_.isEmpty(comments.replies)) { %>
 				/
 				<svg role="img" class="icon" title="Replies count">
 					<use xlink:href="/default-icons.svg#reply"/>
 					<title>Replies count</title>
 				</svg>
-				<%- replies.length %>
+				<%- comments.replies.length %>
 			<% } %>
 
-			<% if (!_.isEmpty(reposts)) { %>
+			<% if (!_.isEmpty(comments.reposts)) { %>
 				/
 				<svg role="img" class="icon" title="Reposte count">
 					<use xlink:href="/default-icons.svg#retweet"/>
 					<title>Reposted count</title>
 				</svg>
-				<%- reposts.length %>
+				<%- comments.reposts.length %>
 			<% } %>
 
-			<% if (!_.isEmpty(likes)) { %>
+			<% if (!_.isEmpty(comments.likes)) { %>
 				/
 				<svg role="img" class="icon" title="Like count">
 					<use xlink:href="/default-icons.svg#star"/>
 					<title>Like count</title>
 				</svg>
-				<%- likes.length %>
+				<%- comments.likes.length %>
 			<% } %>
 
 		<% } %>
 	</div>
 
-	<% if (!compactView && !_.isEmpty(reposts)) { %>
+	<% if (!compactView && !_.isEmpty(comments.reposts)) { %>
 		<section class="entry-facepile">
 			<svg role="img" class="icon" title="Reposted">
 				<use xlink:href="/default-icons.svg#retweet"/>
 				<title>Reposted</title>
 			</svg>
-			<% _.forEach(reposts, function (repost) { %>
+			<% _.forEach(comments.reposts, function (repost) { %>
 				<%= templates.showFacepileAvatar({ entry: repost, prop: 'u-repost' }) %>
 			<% }) %>
 		</section>
 	<% } %>
 
-	<% if (!compactView && !_.isEmpty(likes)) { %>
+	<% if (!compactView && !_.isEmpty(comments.likes)) { %>
 		<section class="entry-facepile">
 			<svg role="img" class="icon" title="Liked">
 				<use xlink:href="/default-icons.svg#star"/>
 				<title>Liked</title>
 			</svg>
-			<% _.forEach(likes, function (like) { %>
+			<% _.forEach(comments.likes, function (like) { %>
 				<%= templates.showFacepileAvatar({ entry: like, prop: 'u-like' }) %>
 			<% }) %>
 		</section>
@@ -159,10 +143,10 @@
 	<% } %>
 </footer>
 
-<% if (!compactView && !_.isEmpty(replies)) { %>
+<% if (!compactView && !_.isEmpty(comments.replies)) { %>
 	<section class="entry-replies">
-		<% _.forEach(replies, function (reply) { %>
-			<%= templates.showRefContext({ entry: reply, long: false, prop: 'p-comment', reason: null, rel: '' }) %>
+		<% _.forEach(comments.replies, function (reply) { %>
+			<%= templates.showRefContext({ entry: reply, long: false, prop: 'p-comment', reason: null, rel: '', showReplies: true, showContexts: false }) %>
 		<% }) %>
 	</section>
 <% } %>

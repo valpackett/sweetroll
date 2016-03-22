@@ -138,7 +138,7 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
 - html/frontend/templating
   - [x] remove prev/next navigation
   - [x] de-twitterize emoji in twitter reposts
-  - [ ] show [recursive reply contexts](https://indiewebcamp.com/recursive_reply-contexts)
+  - [x] show [recursive reply contexts](https://indiewebcamp.com/recursive_reply-contexts)
   - [ ] support emoji reactions like [here](https://ben.thatmustbe.me/note/2015/12/8/2/) ?
   - [ ] support [WebFinger](https://webfinger.net) with HTML as the source of truth + additional links from config e.g. for [remoteStorage](https://remotestorage.io)
   - [ ] figure out URL/canonical/etc. handling for alternative networks & mirrors like .onion & IPFS -- including webmentions!

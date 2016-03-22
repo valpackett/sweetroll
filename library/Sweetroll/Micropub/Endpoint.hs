@@ -50,9 +50,7 @@ postMicropub token (Create htype props synds) = do
       slug = decideSlug props now
       absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base
   obj ← return props
-        >>= fetchReplyContexts "in-reply-to"
-        >>= fetchReplyContexts "like-of"
-        >>= fetchReplyContexts "repost-of"
+        >>= fetchAllReplyContexts
         |>  setDates now
         |>  setClientId token
         |>  setUrl absUrl
@@ -90,23 +88,6 @@ getSyndLinks synds syndConf =
     Object o → cs $ concat $ mapMaybe (^? _String) $ mapMaybe (flip lookup o) $ filter inSyndicateTo $ keys o
     _ → ""
   where inSyndicateTo x = any (x `isInfixOf`) synds
-
-fetchReplyContexts ∷ Text → ObjProperties → Sweetroll ObjProperties
-fetchReplyContexts k props = do
-    newCtxs ← updateCtxs $ lookup k props
-    return $ insertMap k newCtxs props
-  where updateCtxs (Just (Array v)) = Array `liftM` mapM fetch v
-        updateCtxs _ = return $ Array V.empty
-        fetch v@(Object _) = maybe (return v) (fetch . String) (v ^? key "properties" . key "url" . nth 0 . _String)
-        fetch (String u) = maybeT (return $ String u) return $ do
-          uri ← hoistMaybe $ parseURI $ cs u
-          resp ← hoistMaybe =<< (liftM hush $ runHTTP $ reqU uri >>= performWithHtml)
-          ewa ← fetchEntryWithAuthors uri resp
-          hoistMaybe $ case ewa of
-            (Just (Object entry), _) → Just $ Object $ insertMap "fetched-url" (toJSON u) entry
-                         -- XXX: refetch recursively
-            _ → Nothing
-        fetch x = return x
 
 setDates ∷ UTCTime → ObjProperties → ObjProperties
 setDates now = insertMap "updated" (toJSON [ now ]) . insertWith (\_ x → x) "published" (toJSON [ now ])

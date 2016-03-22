@@ -13,6 +13,8 @@ module Sweetroll.HTTPClient (
 import           Sweetroll.Prelude
 import           Data.Conduit
 import qualified Data.Conduit.Combinators as C
+import qualified Data.Vector as V
+import qualified Data.HashMap.Strict as HMS
 import           Data.HashMap.Strict (adjust)
 import           Data.Microformats2.Parser
 import           Data.IndieWeb.MicroformatsUtil
@@ -77,3 +79,27 @@ fetchEntryWithAuthors uri res = do
   return $ case he of
              Just mfE → (Just mfE, mfRoot)
              _ → (Nothing, mfRoot)
+
+fetchReplyContexts ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ Text → Object → μ Object
+fetchReplyContexts k props = do
+    newCtxs ← updateCtxs $ lookup k props
+    return $ insertMap k newCtxs props
+  where updateCtxs (Just (Array v)) = Array `liftM` mapM fetch v
+        updateCtxs _ = return $ Array V.empty
+        fetch v@(Object _) = maybe (return v) (fetch . String) (v ^? key "properties" . key "url" . nth 0 . _String)
+        fetch (String u) = maybeT (return $ String u) return $ do
+          uri ← hoistMaybe $ parseURI $ cs u
+          resp ← hoistMaybe =<< (liftM hush $ runHTTP $ reqU uri >>= performWithHtml)
+          ewa ← fetchEntryWithAuthors uri resp
+          case ewa of
+            (Just (Object entry), _) → do
+              prs ← lift $ fetchAllReplyContexts $ fromMaybe (HMS.fromList []) $ (Object entry) ^? key "properties" . _Object
+              return $ Object $ insertMap "properties" (Object prs) $ insertMap "fetched-url" (toJSON u) entry
+            _ → mzero
+        fetch x = return x
+
+fetchAllReplyContexts ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ Object → μ Object
+fetchAllReplyContexts = fetchReplyContexts "in-reply-to"
+                    >=> fetchReplyContexts "like-of"
+                    >=> fetchReplyContexts "repost-of"
+                    >=> fetchReplyContexts "quotation-of"

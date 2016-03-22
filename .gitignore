@@ -6,4 +6,5 @@ tmp/
 *.tix
 .stack-work/
 bower_components/
+node_modules/
 /token

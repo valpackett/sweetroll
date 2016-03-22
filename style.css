@@ -3,7 +3,7 @@
   background: #ecf0f1; color: #34495e;
   font-size: calc(14px + 4 * ((100vw - 600px) / 800)); /* https://github.com/seaneking/postcss-responsive-type */
 }
-body { word-wrap: break-word; }
+body { word-wrap: break-word; min-height: 100vh; display: flex; flex-direction: column; }
 pre { white-space: pre; }
 pre code { white-space: -moz-pre-wrap; white-space: pre-wrap; }
 code { word-wrap: normal; white-space: pre; font-family: monospace; }
@@ -44,6 +44,7 @@ a:hover, a:focus, a:active, body .ref-context-meta a:hover, body .ref-context-me
 
 
 /* # Content */
+.site-content { flex: 1; }
 .site-main, .site-author { margin: 1rem auto; min-width: 0 /* https://bugzilla.mozilla.org/show_bug.cgi?id=1139931 */; }
 
 /* ## Main */
@@ -98,7 +99,7 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
   .main-nav > * { display: block; padding: 0.4rem 0; }
 }
 @media screen and (min-width: 900px) {
-  .site-content { display: flex; }
+  .site-content { display: flex; margin-top: -1rem; }
   .site-main { order: 2; flex: 3 1 auto; min-width: 0; }
   .site-author { margin-right: 2rem; min-width: 290px; width: 290px; }
 }

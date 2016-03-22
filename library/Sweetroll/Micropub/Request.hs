@@ -40,7 +40,7 @@ instance FromFormUrlEncoded MicropubRequest where
                           Just x → return x
                           Nothing → fail "Delete with no url"
       Nothing → let v@(Object o') = formToObject f
-                    o = deleteMap "h" o'
+                    o = deleteMap "access_token" $ deleteMap "syndicate-to" $ deleteMap "mp-syndicate-to" $ deleteMap "h" o'
                     h = "h-" ++ fromMaybe "entry" (lookup "h" f)
                     synd = (v ^.. key "mp-syndicate-to" . values . _String) ++
                            (v ^.. key "syndicate-to" . values . _String) in

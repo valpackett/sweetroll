@@ -32,6 +32,8 @@ a:hover, a:focus, a:active, body .ref-context-meta a:hover, body .ref-context-me
 .e-content a, .e-note a { color: #408acc; }
 .e-content a:hover, .e-content a:focus, .e-content a:active, .e-note a:hover, .e-note a:focus, .e-note a:active { color: #60aaec; }
 .pronouns { font-size: 0.75em; font-weight: normal; }
+.emoji { padding: 0 0.15em; }
+.emoji:first-child { padding-left: 0; }
 
 .site-header, .site-content, .site-footer { margin: 1rem auto; width: 96%; }
 
@@ -64,7 +66,7 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 .entry-photo { display: block; }
 .entry-facepile { margin: 0.5rem 0.5rem 0.5rem 0; display: inline-block; }
 .entry-facepile a { text-decoration: none; }
-.facepile-avatar { display: inline-block; margin-right: 0.1rem; width: 32px; height: 32px; min-width: 32px /* chrome */; border-radius: 5px; }
+.facepile-avatar { display: inline-block; margin-right: 0.1rem; width: 32px; height: 32px; min-width: 32px /* chrome */; border-radius: 5px; font-size: 0.7em /* for the alt */; }
 .ref-context { background: #f0f0f0; border-bottom: #e3e3e3 1px solid; }
 .ref-context-reason { padding: 0.6rem 0 0.6rem 2rem; font-size: 0.8em; color: #777; }
 .ref-context-core { display: flex; align-items: flex-start; padding: 0.6rem; margin-top: -0.6rem; }
@@ -96,8 +98,11 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 }
 @media screen and (min-width: 900px) {
   .site-content { display: flex; }
-  .site-main { order: 2; flex: 3 1 auto; min-width: 0;}
-  .site-author { flex: 1 3 auto; margin-right: 2rem; min-width: 290px; }
+  .site-main { order: 2; flex: 3 1 auto; min-width: 0; }
+  .site-author { margin-right: 2rem; min-width: 290px; width: 290px; }
+}
+@media screen and (min-width: 1100px) {
+  .site-header, .site-content, .site-footer { width: 85%; }
 }
 @media screen and (min-width: 1400px) {
   :root { font-size: 18px; }

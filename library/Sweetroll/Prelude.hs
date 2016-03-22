@@ -23,6 +23,7 @@ import           Data.Char as X (isSpace)
 import           Data.String.Conversions as X hiding ((<>))
 import           Data.String.Conversions.Monomorphic as X
 import qualified Data.HashMap.Strict as HMS
+import qualified Data.Map.Lazy as ML
 import           Data.Proxy as X
 import           Data.Aeson as X
 import           Data.Aeson.Lens as X
@@ -87,13 +88,15 @@ parseEntryURIRelative uri =
 atomizeUri ∷ URI → URI
 atomizeUri u = u { uriQuery = let q = uriQuery u in q ++ (if "?" `isPrefixOf` q then "&" else "?") ++ "_accept=application/atom%2Bxml" }
 
-linksNofollow ∷ XElement → XElement
-linksNofollow e = e & entire . el "a" . attribute "rel" %~ makeNofollow
-  where makeNofollow (Just r) = Just $ r ++ " nofollow"
-        makeNofollow Nothing  = Just "nofollow"
+-- linksNofollow ∷ XElement → XElement
+-- linksNofollow e = e & entire . el "a" . attribute "rel" %~ makeNofollow
+--   where makeNofollow (Just r) = Just $ r ++ " nofollow"
+--         makeNofollow Nothing  = Just "nofollow"
 
 detwitterizeEmoji ∷ XElement → XElement
-detwitterizeEmoji e = e & entire . el "img" . attributeSatisfies "class" ("Emoji" `isInfixOf`) . attr "src" .~ ""
+detwitterizeEmoji e = transform replaceWithAlt e
+  where replaceWithAlt (Element "img" as _) | "Emoji" `isInfixOf` (fromMaybe "" $ lookup "class" as) = Element "span" (ML.fromList [("class", "emoji")]) [ NodeContent $ fromMaybe "X" $ lookup "alt" as ]
+        replaceWithAlt x = x
 
 ensureArrayProp ∷ Text → Value → Value
 ensureArrayProp k (Object o) | HMS.member k o = Object o

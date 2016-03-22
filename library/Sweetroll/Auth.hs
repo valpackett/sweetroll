@@ -32,7 +32,9 @@ instance HasServer sublayout ⇒ HasServer (AuthProtect :> sublayout) where
 
   route Proxy (AuthProtected secKey subserver) req respond =
     case asum [ lookup hAuthorization (Wai.requestHeaders req) >>= fromHeader
-              , join $ lookup "access_token" $ Wai.queryString req ] of
+              , join $ lookup "access_token" $ Wai.queryString req
+              -- XXX: parse from form as req'd by micropub
+              ] of
       Nothing → respond . succeedWith $ Wai.responseLBS status401 [] "Authorization/access_token not found."
       Just tok →
         case decodeAndVerifySignature (secret secKey) (cs tok) of

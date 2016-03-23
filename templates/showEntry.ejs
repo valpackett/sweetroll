@@ -12,7 +12,7 @@
 	}
 	var dateFormat = compactView ? 'MMM Do YYYY, HH:mm' : 'dddd, MMMM Do YYYY, HH:mm'
 	var iconNames = { replies: 'reply', reposts: 'retweet', likes: 'star', bookmarks: 'bookmark', quotations: 'quote-left' }
-	var props = { replies: 'p-comment', reposts: 'p-repost', likes: 'p-like', bookmarks: 'p-bookmark', quotations: 'p-quotation' }
+	var props = { reposts: 'p-repost', likes: 'p-like', bookmarks: 'p-bookmark', quotations: 'p-quotation' }
 	var comments = separateComments(properties.url, properties.comment)
 %>
 
@@ -83,13 +83,13 @@
 			<% }) %>
 		<% } %>
 
-		<% if (compactView) { _.forEach(comments, function (reactions, name) { if (name != 'replies') { %>
+		<% if (compactView) { _.forEach(comments, function (reactions, name) { %>
 			<%= templates.showCount({ reactions: reactions, name: name, icon: iconNames[name] }) %>
-		<% } }) } %>
+		<% }) } %>
 	</div>
 
 	<% if (!compactView) { _.forEach(comments, function (reactions, name) { if (name != 'replies') { %>
-		<%= templates.showFacepile({ reactions: reactions, name: name, icon: iconNames[name], prop: props[name] }) %>
+		<%= templates.showFacepile({ reactions: reactions, name: name, icon: iconNames[name], prop: props[name] || 'p-comment' }) %>
 	<% } }) } %>
 
 	<% if (_.isEmpty(properties['like-of'])) { %>

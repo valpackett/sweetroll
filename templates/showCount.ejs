@@ -1,6 +1,10 @@
 <% if (_.isEmpty(scope.reactions)) { %><% } else { %>
-	/ <svg role="img" class="icon" title="${ scope.name } count">
-		<use xlink:href="/default-icons.svg#${ scope.icon }"/>
-		<title>${ scope.name } count</title>
-	</svg> <%- scope.reactions.length %>
+	/ <% if (scope.icon) { %>
+		<svg role="img" class="icon" title="${ scope.name } count">
+			<use xlink:href="/default-icons.svg#${ scope.icon }"/>
+			<title>${ scope.name } count</title>
+		</svg>
+	<% } else { %>
+		<%- scope.name %>
+	<% } %> <%- scope.reactions.length %>
 <% } %>

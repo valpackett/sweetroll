@@ -78,17 +78,17 @@ initCtx conf secs = do
 createTemplateCtx ∷ IO DuktapeCtx
 createTemplateCtx = do
   duk ← fromJust <$> createDuktapeCtx
-  void $ evalDuktape duk "var window = this"
-  void $ evalDuktape duk $(embedFile "bower_components/lodash/dist/lodash.min.js")
-  void $ evalDuktape duk $(embedFile "bower_components/moment/min/moment-with-locales.min.js")
-  void $ evalDuktape duk $(embedFile "bower_components/SparkMD5/spark-md5.min.js")
-  void $ evalDuktape duk $(embedFile "templates/prelude.js")
   let setTpl tname tcontent =
         void $ if takeExtension tname == ".js"
                  then evalDuktape duk tcontent
                  else callDuktape duk Nothing "setTemplate" [ String $ cs $ dropExtensions tname, String $ cs tcontent ]
       notJs = (/= ".js") . takeExtension -- Sort to evaluate JS first, important for prelude.js to define SweetrollTemplates
+  void $ evalDuktape duk "var window = this"
+  void $ evalDuktape duk $(embedFile "bower_components/lodash/dist/lodash.min.js")
+  void $ evalDuktape duk $(embedFile "bower_components/moment/min/moment-with-locales.min.js")
+  void $ evalDuktape duk $(embedFile "bower_components/SparkMD5/spark-md5.min.js")
   forM_ (sortOn (notJs . fst) $(embedDir "templates")) $ uncurry setTpl
+  void $ exposeFnDuktape duk Nothing "parseEmoji" $ (return . (\x → x & _String %~ parseEmoji) ∷ Value → IO Value)
   hasUserTpls ← doesDirectoryExist "templates"
   when hasUserTpls $ do
     userTpls ← getDirectoryContents "templates"

@@ -19,7 +19,7 @@ import           Text.XML.Lens
 import           Data.Default as X
 import           Data.Text (replace, strip, splitOn)
 import           Data.List as X (nub)
-import           Data.Char as X (isSpace)
+import           Data.Char as X (isSpace, generalCategory, GeneralCategory(..))
 import           Data.String.Conversions as X hiding ((<>))
 import           Data.String.Conversions.Monomorphic as X
 import qualified Data.HashMap.Strict as HMS
@@ -102,6 +102,10 @@ ensureArrayProp ∷ Text → Value → Value
 ensureArrayProp k (Object o) | HMS.member k o = Object o
 ensureArrayProp k (Object o) = Object $ HMS.insert k (Array empty) o
 ensureArrayProp _ v = v
+
+parseEmoji ∷ (IsSequence α, X.Element α ~ Char) ⇒ α → α
+parseEmoji = takeWhile isEmojiChar . dropWhile (not . isEmojiChar)
+  where isEmojiChar x = generalCategory x `elem` [ Format, OtherSymbol, NonSpacingMark ]
 
 errWrongDomain ∷ ServantErr
 errWrongDomain = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]

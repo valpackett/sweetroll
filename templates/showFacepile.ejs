@@ -1,9 +1,13 @@
 <% if (_.isEmpty(scope.reactions)) { %><% } else { %>
 	<section class="entry-facepile">
-		<svg role="img" class="icon" title="${ scope.name }">
-			<use xlink:href="/default-icons.svg#${ scope.icon }"/>
-			<title>${ scope.name }</title>
-		</svg>
+		<% if (scope.icon) { %>
+			<svg role="img" class="icon" title="${ scope.name }">
+				<use xlink:href="/default-icons.svg#${ scope.icon }"/>
+				<title>${ scope.name }</title>
+			</svg>
+		<% } else { %>
+			<%- scope.name %>
+		<% } %>
 		<% _.forEach(scope.reactions, function (entry) { %>
 			<a href="${ onlyHttpUrl(_.get(entry, 'properties.url[0]', '')) }" class="${ scope.prop } h-cite">
 				<%

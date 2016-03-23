@@ -8,7 +8,7 @@
 	<% if (showContexts && !_.isEmpty(inReplyTo)) { %>
 		<div class="ref-context-thread-up">
 			<% _.forEach(inReplyTo, function (reply) { %>
-				<%= templates.showRefContext({ entry: reply, long: false, prop: 'u-in-reply-to', reason: '', rel: '', showReplies: showReplies, showContexts: false }) %>
+				<%= templates.showRefContext({ entry: reply, long: false, prop: 'u-in-reply-to', reason: '', rel: '', showReplies: showReplies, showContexts: true }) %>
 			<% }) %>
 		</div>
 	<% } %>

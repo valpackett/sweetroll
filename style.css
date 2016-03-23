@@ -59,6 +59,8 @@ a:hover, a:focus, a:active, body .ref-context-meta a:hover, body .ref-context-me
 .entry-footer { padding: 1rem; }
 .entry-core { padding: 0 1rem; }
 .entry-core > :first-child, .entry-core > a + p:first-of-type /* skip bridgy links */ { margin-top: 1rem; }
+.ref-context .entry-core { padding: 0; }
+.ref-context .entry-core > :first-child, .ref-context .entry-core > a + p:first-of-type { margin-top: 0; }
 .entry-core :last-child { margin-bottom: 0; }
 .entry-core h1 { font-size: 1.3em; }
 .entry-core h2 { font-size: 1.15em; }

@@ -12,6 +12,8 @@ packages:
     extra-dep: true
   - location: '../gitson'
     extra-dep: true
+  - location: '../../vincenthz/hs-tls/core'
+    extra-dep: true
   - location:
       git: https://github.com/myfreeweb/wai.git
       commit: a2327adcd68ff58b32c5d0be4d3cebfc21765b6d

@@ -103,11 +103,10 @@ pandocWriterOptions = def { writerHtml5 = True
 mf2Options ∷ Mf2ParserSettings
 mf2Options = def
 
-bowerComponents, defaultTemplates ∷ [(FilePath, ByteString)]
+bowerComponents ∷ [(FilePath, ByteString)]
 bowerComponents = [ ("webcomponentsjs/webcomponents-lite.min.js", $(embedFile "bower_components/webcomponentsjs/webcomponents-lite.min.js"))
                   , ("lazyload-image/lazyload-image.html", $(embedFile "bower_components/lazyload-image/lazyload-image.html"))
                   , ("indieweb-components/indie-action.html", $(embedFile "bower_components/indieweb-components/indie-action.html"))
                   , ("indieweb-components/fragmention-target.html", $(embedFile "bower_components/indieweb-components/fragmention-target.html"))
                   , ("findAndReplaceDOMText/src/findAndReplaceDOMText.js", $(embedFile "bower_components/findAndReplaceDOMText/src/findAndReplaceDOMText.js"))
                   , ("svgxuse/svgxuse.js", $(embedFile "bower_components/svgxuse/svgxuse.js")) ]
-defaultTemplates = $(embedDir "templates")

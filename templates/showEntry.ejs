@@ -11,6 +11,8 @@
 		return (matches && matches[1]) || x
 	}
 	var dateFormat = compactView ? 'MMM Do YYYY, HH:mm' : 'dddd, MMMM Do YYYY, HH:mm'
+	var iconNames = { replies: 'reply', reposts: 'retweet', likes: 'star', bookmarks: 'bookmark', quotations: 'quote-left' }
+	var props = { replies: 'p-comment', reposts: 'p-repost', likes: 'p-like', bookmarks: 'p-bookmark', quotations: 'p-quotation' }
 	var comments = separateComments(properties.url, properties.comment)
 %>
 
@@ -81,61 +83,14 @@
 			<% }) %>
 		<% } %>
 
-		<% if (compactView) { %>
-
-			<% if (!_.isEmpty(comments.replies)) { %>
-				/
-				<svg role="img" class="icon" title="Replies count">
-					<use xlink:href="/default-icons.svg#reply"/>
-					<title>Replies count</title>
-				</svg>
-				<%- comments.replies.length %>
-			<% } %>
-
-			<% if (!_.isEmpty(comments.reposts)) { %>
-				/
-				<svg role="img" class="icon" title="Reposte count">
-					<use xlink:href="/default-icons.svg#retweet"/>
-					<title>Reposted count</title>
-				</svg>
-				<%- comments.reposts.length %>
-			<% } %>
-
-			<% if (!_.isEmpty(comments.likes)) { %>
-				/
-				<svg role="img" class="icon" title="Like count">
-					<use xlink:href="/default-icons.svg#star"/>
-					<title>Like count</title>
-				</svg>
-				<%- comments.likes.length %>
-			<% } %>
-
-		<% } %>
+		<% if (compactView) { _.forEach(comments, function (reactions, name) { if (name != 'replies') { %>
+			<%= templates.showCount({ reactions: reactions, name: name, icon: iconNames[name] }) %>
+		<% } }) } %>
 	</div>
 
-	<% if (!compactView && !_.isEmpty(comments.reposts)) { %>
-		<section class="entry-facepile">
-			<svg role="img" class="icon" title="Reposted">
-				<use xlink:href="/default-icons.svg#retweet"/>
-				<title>Reposted</title>
-			</svg>
-			<% _.forEach(comments.reposts, function (repost) { %>
-				<%= templates.showFacepileAvatar({ entry: repost, prop: 'u-repost' }) %>
-			<% }) %>
-		</section>
-	<% } %>
-
-	<% if (!compactView && !_.isEmpty(comments.likes)) { %>
-		<section class="entry-facepile">
-			<svg role="img" class="icon" title="Liked">
-				<use xlink:href="/default-icons.svg#star"/>
-				<title>Liked</title>
-			</svg>
-			<% _.forEach(comments.likes, function (like) { %>
-				<%= templates.showFacepileAvatar({ entry: like, prop: 'u-like' }) %>
-			<% }) %>
-		</section>
-	<% } %>
+	<% if (!compactView) { _.forEach(comments, function (reactions, name) { if (name != 'replies') { %>
+		<%= templates.showFacepile({ reactions: reactions, name: name, icon: iconNames[name], prop: props[name] }) %>
+	<% } }) } %>
 
 	<% if (_.isEmpty(properties['like-of'])) { %>
 		<div class="entry-actions">

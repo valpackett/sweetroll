@@ -1,7 +1,0 @@
-<%
-	var entry = scope.entry, prop = scope.prop
-	var authorName = _.get(entry, 'properties.author[0].properties.name[0]', 'Someone')
-%>
-<a href="${ onlyHttpUrl(_.get(entry, 'properties.url[0]', '')) }" title="${ authorName }" class="${ prop }">
-	<img alt="${ authorName }" src="<%- templates.showAvatar({ authors: _.get(entry, 'properties.author', []) }) %>" class="facepile-avatar">
-</a>

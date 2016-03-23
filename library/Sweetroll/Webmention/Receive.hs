@@ -56,10 +56,11 @@ processWebmention category slug source target = do
         x → putStrLn $ "Received status code " ++ tshow x ++ " when fetching webmention " ++ forfrom
 
 verifyMention ∷ URI → Value → Bool
-verifyMention t m | propIncludesURI t "in-reply-to" m = True
-verifyMention t m | propIncludesURI t "like-of"     m = True
-verifyMention t m | propIncludesURI t "repost-of"   m = True
-verifyMention t m | propIncludesURI t "quotation-of"   m = True
+verifyMention t m | propIncludesURI t "in-reply-to"   m = True
+verifyMention t m | propIncludesURI t "like-of"       m = True
+verifyMention t m | propIncludesURI t "bookmark-of"   m = True
+verifyMention t m | propIncludesURI t "repost-of"     m = True
+verifyMention t m | propIncludesURI t "quotation-of"  m = True
 -- TODO: check content (if we're going to support mentions that aren't replies, etc.)
 verifyMention _ _ = False
 

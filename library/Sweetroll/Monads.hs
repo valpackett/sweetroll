@@ -19,7 +19,6 @@ import           System.FilePath.Posix
 import           System.IO.Unsafe
 import           Data.Pool
 import           Data.Maybe
-import           Text.RawString.QQ
 import           GHC.Conc (getNumCapabilities)
 import           Network.HTTP.Client.Conduit
 import           Servant
@@ -83,44 +82,17 @@ createTemplateCtx = do
   void $ evalDuktape duk $(embedFile "bower_components/lodash/dist/lodash.min.js")
   void $ evalDuktape duk $(embedFile "bower_components/moment/min/moment-with-locales.min.js")
   void $ evalDuktape duk $(embedFile "bower_components/SparkMD5/spark-md5.min.js")
-  void $ evalDuktape duk [r|
-    onlyHttpUrl = function (x) {
-      if (_.startsWith(x, '/') || _.startsWith(x, 'http://') || _.startsWith(x, 'https://') || _.startsWith(x, '//')) return x
-      return 'javascript:void(0)'
-    }
-    isValidRef = function (url, x) {
-      return _.some(x, function (v) {
-        return _.some(url, function (u) {
-          return _.startsWith(v, u) || _.startsWith(v.value, u)
-        })
-      })
-    }
-    separateComments = function (url, comments) {
-      var replies = [], likes = [], reposts = []
-      _.forEach(comments, function (comment) {
-        if (isValidRef(url, comment.properties['in-reply-to'])) {
-          replies.push(comment)
-        } else if (isValidRef(url, comment.properties['like-of'])) {
-          likes.push(comment)
-        } else if (isValidRef(url, comment.properties['repost-of'])) {
-          reposts.push(comment)
-        }
-      })
-      return { replies: replies, likes: likes, reposts: reposts }
-    }
-    var SweetrollTemplates = {}
-    setTemplate = function (name, html) {
-      SweetrollTemplates[name] = _.template(html, {
-        'sourceURL': name, 'variable': 'scope',
-        'imports': { 'templates': SweetrollTemplates }
-      })
-    }|]
-  let setTpl tname thtml = void $ callDuktape duk Nothing "setTemplate" [ String $ cs $ dropExtensions tname, String $ cs thtml ]
-  forM_ defaultTemplates $ uncurry setTpl
+  void $ evalDuktape duk $(embedFile "templates/prelude.js")
+  let setTpl tname tcontent =
+        void $ if takeExtension tname == ".js"
+                 then evalDuktape duk tcontent
+                 else callDuktape duk Nothing "setTemplate" [ String $ cs $ dropExtensions tname, String $ cs tcontent ]
+      notJs = (/= ".js") . takeExtension -- Sort to evaluate JS first, important for prelude.js to define SweetrollTemplates
+  forM_ (sortOn (notJs . fst) $(embedDir "templates")) $ uncurry setTpl
   hasUserTpls ← doesDirectoryExist "templates"
   when hasUserTpls $ do
     userTpls ← getDirectoryContents "templates"
-    forM_ (filter (not . ("." `isPrefixOf`)) userTpls) $ \tname → do -- Avoid ., .., .DS_Store and all hidden files really
+    forM_ (sortOn notJs $ filter (not . ("." `isPrefixOf`)) userTpls) $ \tname → do -- Avoid ., .., .DS_Store and all hidden files really
       thtml ← (try $ readFile $ "templates" </> tname) ∷ IO (Either IOException ByteString)
       case thtml of
         Right h → setTpl tname h

@@ -9,8 +9,12 @@ pre code { white-space: -moz-pre-wrap; white-space: pre-wrap; }
 code { word-wrap: normal; white-space: pre; font-family: monospace; }
 input, abbr, acronym, blockquote, code, kbd, q, samp, var { -webkit-hyphens: none; -ms-hyphens: none; hyphens: none; }
 img { max-width: 100%; }
-.icon { height: 1em; width: 1em; margin: 0 0.1em 0 0.01em; vertical-align: -0.16em; }
+.icon { height: 1em; width: 1em; margin: 0 0.1em 0 0.01em; vertical-align: -0.16em; shape-rendering: geometricprecision; }
 indie-action .icon { margin-right: 0.3em; }
+.icon-ref-reason { padding: 0.1rem; border-radius: 2px; color: white; width: 1.25em; height: 1.25em; vertical-align: -0.25em; }
+.icon-ref-reply { background: rgb(151, 226, 246); }
+.icon-ref-repost { background: rgb(53, 237, 146); }
+.icon-ref-like { background: rgb(249, 93, 181); }
 ul, ol { list-style: inside; }
 ul { list-style-type: square; }
 small { font-size: 70%; }
@@ -108,4 +112,5 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 }
 @media screen and (min-width: 1400px) {
   :root { font-size: 18px; }
+  .site-header, .site-content, .site-footer { width: 75%; }
 }

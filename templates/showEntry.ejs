@@ -15,11 +15,11 @@
 %>
 
 <% _.forEach(properties['in-reply-to'], function (reply) { %>
-	<%= templates.showRefContext({ entry: reply, long: false, prop: 'u-in-reply-to', reason: 'in reply to', rel: !compactView ? 'rel="in-reply-to"' : '', showReplies: true, showContexts: !compactView }) %>
+	<%= templates.showRefContext({ entry: reply, long: false, prop: 'u-in-reply-to', reason: '<svg role="img" class="icon icon-ref-reason icon-ref-reply"><use xlink:href="/default-icons.svg#reply"/></svg> in reply to', rel: !compactView ? 'rel="in-reply-to"' : '', showReplies: true, showContexts: !compactView }) %>
 <% }) %>
 
 <% _.forEach(properties['like-of'], function (like) { %>
-	<%= templates.showRefContext({ entry: like, long: false, prop: 'u-like-of', reason: 'liked', rel: !compactView ? 'rel="like-of"' : '', showReplies: false, showContexts: !compactView }) %>
+	<%= templates.showRefContext({ entry: like, long: false, prop: 'u-like-of', reason: '<svg role="img" class="icon icon-ref-reason icon-ref-like"><use xlink:href="/default-icons.svg#star"/></svg> liked', rel: !compactView ? 'rel="like-of"' : '', showReplies: false, showContexts: !compactView }) %>
 <% }) %>
 
 <% if (!isUntitled) { %>
@@ -38,7 +38,7 @@
 			<fragmention-target exact>
 		<% } %>
 		<% _.forEach(properties['repost-of'], function (repost) { %>
-			<%= templates.showRefContext({ entry: repost, long: true, prop: 'u-repost-of', reason: 'reposted', rel: !compactView ? 'rel="repost-of"' : '' }) %>
+			<%= templates.showRefContext({ entry: repost, long: true, prop: 'u-repost-of', reason: '<svg role="img" class="icon icon-ref-reason icon-ref-repost"><use xlink:href="/default-icons.svg#retweet"/></svg> reposted', rel: !compactView ? 'rel="repost-of"' : '' }) %>
 		<% }) %>
 		<% var onlySummary = !isUntitled && compactView %>
 		<% if (!_.isEmpty(onlySummary ? properties.summary : properties.content)) { %>

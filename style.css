@@ -76,7 +76,7 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 .ref-context { background: #f0f0f0; border-bottom: #e3e3e3 1px solid; }
 .ref-context-reason { padding: 0.6rem 0 0.6rem 2rem; font-size: 0.8em; color: #777; }
 .ref-context-core { display: flex; align-items: flex-start; padding: 0.6rem; margin-top: -0.6rem; }
-.ref-context-avatar { display: block; margin-right: 0.6rem; width: 32px; height: 32px; border-radius: 5px; }
+.ref-context-avatar { display: block; margin-right: 0.6rem; width: 32px; height: 32px; border-radius: 5px; background: #ccc; }
 .ref-context-meta { margin: -0.3rem 0 0; }
 .ref-context-authors { font-weight: 500; }
 .ref-context-date { font-size: 0.85em; }

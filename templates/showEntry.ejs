@@ -10,6 +10,7 @@
 		var matches = x.match(/^https?\:\/\/([^\/?#]+)/)
 		return (matches && matches[1]) || x
 	}
+	var dateFormat = compactView ? 'MMM Do YYYY, HH:mm' : 'dddd, MMMM Do YYYY, HH:mm'
 	var comments = separateComments(properties.url, properties.comment)
 %>
 
@@ -56,7 +57,7 @@
 		posted on
 		<time class="dt-published" datetime="${ _.head(properties.published) }">
 			<a href="${ permalink }" class="u-url u-uid note-permalink" rel="bookmark">
-				<%- moment.utc(_.head(properties.published)).format('dddd, MMMM Do YYYY, HH:mm') %>
+				<%- moment.utc(_.head(properties.published)).format(dateFormat) %>
 			</a>
 		</time>
 
@@ -69,7 +70,7 @@
 		<% if (!_.isEmpty(properties.updated) && (_.head(properties.updated) != _.head(properties.published))) { %>
 			and updated on
 			<time class="dt-updated" datetime="${ _.head(properties.updated) }">
-				<%- moment.utc(_.head(properties.updated)).format('dddd, MMMM Do YYYY, HH:mm') %>
+				<%- moment.utc(_.head(properties.updated)).format(dateFormat) %>
 			</time>
 		<% } %>
 

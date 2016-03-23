@@ -35,7 +35,7 @@
 						<% } %>
 					</span>
 					<a class="u-url ref-context-date" ${ rel } href="${ onlyHttpUrl(_.get(properties, 'url[0]', '')) }">
-						<%- moment.utc(_.get(properties, 'published[0]', '')).format('dddd, MMMM Do YYYY, HH:mm') %>
+						<%- moment.utc(_.get(properties, 'published[0]', '')).format('MMM Do YYYY, HH:mm') %>
 					</a>
 				</div>
 				<blockquote class="ref-context-content e-content">

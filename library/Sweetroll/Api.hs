@@ -6,8 +6,6 @@ module Sweetroll.Api where
 
 import           Sweetroll.Prelude
 import           Data.Maybe (fromJust)
-import           Data.Conduit.Shell (run, proc, conduit, ProcessException, ($|), (=$=))
-import qualified Data.Conduit.Combinators as CL
 import qualified Data.HashMap.Strict as HMS
 import           Data.FileEmbed
 import           Data.Microformats2.Parser.HtmlUtil (getInnerHtml)
@@ -163,10 +161,7 @@ readCategory perPage before after initialEntries catsName =
 
 notFoundOrGone ∷ (MonadIO μ, MonadSweetroll μ) ⇒ CategoryName → EntrySlug → μ ServantErr
 notFoundOrGone catName slug = do
-  isGone ← liftIO (try $ run (proc "git" [ "log", "--all", "--diff-filter=D", "--find-renames", "--name-only", "--pretty=format:" ]
-                              $| conduit (CL.linesUnboundedAscii
-                                          =$= CL.any (\x → cs catName `isPrefixOf` x && (cs slug ++ ".json") `isSuffixOf` x)))
-                   ∷ IO (Either ProcessException Bool))
-  case isGone of
-    Right True → renderError err410 "410"
-    _ → renderError err404 "404"
+  deleted ← liftIO . readTVarIO =<< getDeleted
+  if any (\x → catName `isPrefixOf` x && (slug ++ ".json") `isSuffixOf` x) deleted
+    then renderError err410 "410"
+    else renderError err404 "404"

@@ -42,6 +42,7 @@ library
       , safe
       , cryptonite
       , memory
+      , process
       , errors
       , directory
       , data-default
@@ -73,7 +74,6 @@ library
       , network
       , conduit
       , conduit-combinators
-      , shell-conduit
       , http-types
       , http-media
       , http-client

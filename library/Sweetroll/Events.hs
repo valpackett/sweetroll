@@ -25,9 +25,12 @@ onPostUpdated category _ absUrl obj = do
       obj' = foldl' setSynd (obj & key "properties" %~ (ensureArrayProp "syndication")) mentionResults
   return $ obj' & key "properties" . key "syndication" . _Array %~ (fromList . nub . toList)
 
-onPostDeleted ∷ (MonadSweetrollEvent μ) ⇒ String → String → μ ()
-onPostDeleted category _ =
+onPostDeleted ∷ (MonadSweetrollEvent μ) ⇒ String → String → URI → Maybe Value → μ ()
+onPostDeleted category _ absUrl mobj = do
   notifyPuSHCategory category
+  case mobj of -- we send, they refetch and see 410
+    Just obj → void $ sendWebmentions absUrl =<< entryWebmentions obj
+    _ → return ()
 
 
 notifyPuSHCategory ∷ (MonadSweetrollEvent μ) ⇒ String → μ ()

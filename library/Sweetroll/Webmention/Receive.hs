@@ -37,28 +37,29 @@ processWebmention category slug source target = do
   resp0 ← runHTTP $ reqU source >>= anyStatus >>= performWithHtml
   case resp0 of
     Left e → putStrLn $ "Error fetching webmention " ++ forfrom ++ ": " ++ e
-    Right resp → 
+    Right resp → withEntry $ \entry → 
       case statusCode $ responseStatus resp of
-        410 → withEntry $ \entry → do
-                putStrLn $ "Received gone webmention " ++ forfrom ++ tshow source
-                let updatedEntry = upsertMention (entry ∷ Value) tombstone
-                saveDocumentByName category slug updatedEntry
+        410 → do
+          putStrLn $ "Received gone webmention " ++ forfrom ++ tshow source
+          let updatedEntry = upsertMention (entry ∷ Value) tombstone
+          saveDocumentByName category slug =<< onPostUpdated category slug target updatedEntry
         200 → do
           (mention0, _) ← fetchEntryWithAuthors source resp
           case mention0 of
-            Just mention@(Object _) | verifyMention target mention → withEntry $ \entry → do
+            Just mention@(Object _) | verifyMention target mention → do
               putStrLn $ "Received correct webmention for " ++ tshow target ++ " from " ++ tshow source
               let updatedEntry = upsertMention (entry ∷ Value) $ ensurePresentUrl source mention
               saveDocumentByName category slug =<< onPostUpdated category slug target updatedEntry
             Just mention@(Object _) → putStrLn $ "Received unverified webmention " ++ forfrom ++ ": " ++ tshow mention
-            Just mention → putStrLn $ "Received incorrect webmention " ++ forfrom ++ ": " ++ tshow mention
+            Just mention → putStrLn $ "Received incorrectly parsed webmention " ++ forfrom ++ ": " ++ tshow mention
             Nothing → putStrLn $ "Received unreadable webmention " ++ forfrom
-        _ → return ()
+        x → putStrLn $ "Received status code " ++ tshow x ++ " when fetching webmention " ++ forfrom
 
 verifyMention ∷ URI → Value → Bool
 verifyMention t m | propIncludesURI t "in-reply-to" m = True
 verifyMention t m | propIncludesURI t "like-of"     m = True
 verifyMention t m | propIncludesURI t "repost-of"   m = True
+verifyMention t m | propIncludesURI t "quotation-of"   m = True
 -- TODO: check content (if we're going to support mentions that aren't replies, etc.)
 verifyMention _ _ = False
 

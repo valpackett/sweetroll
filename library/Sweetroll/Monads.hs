@@ -14,6 +14,7 @@ import           Control.Monad.Base
 import           Control.Monad.Reader hiding (forM_)
 import           Control.Monad.Except hiding (forM_)
 import           System.Directory
+import           System.Process (readProcessWithExitCode)
 import           System.FilePath.Posix
 import           System.IO.Unsafe
 import           Data.Pool
@@ -30,6 +31,7 @@ import           Sweetroll.Conf
 data SweetrollCtx = SweetrollCtx
   { _ctxConf     ∷ SweetrollConf
   , _ctxSecs     ∷ SweetrollSecrets
+  , _ctxDeleted  ∷ TVar [String]
   , _ctxTplPool  ∷ Pool DuktapeCtx
   , _ctxLock     ∷ MVar ()
   , _ctxHttpMgr  ∷ Manager }
@@ -65,8 +67,11 @@ initCtx conf secs = do
   cpus ← getNumCapabilities
   --        static pool, basically: max Ncpus, don't expire
   tplPool ← createPool createTemplateCtx (\_ → return ()) 1 999999999999 cpus
+  (_, deleted', _) ← readProcessWithExitCode "git" [ "log", "--all", "--diff-filter=D", "--find-renames", "--name-only", "--pretty=format:" ] ""
+  deleted ← newTVarIO $ lines deleted'
   return SweetrollCtx { _ctxConf     = conf
                       , _ctxSecs     = secs
+                      , _ctxDeleted  = deleted
                       , _ctxTplPool  = tplPool
                       , _ctxLock     = lck
                       , _ctxHttpMgr  = hmg }
@@ -130,6 +135,9 @@ getConfOpt f = asks $ fromMaybe (fromJust $ f def) . f . _ctxConf
 
 getSecs ∷ MonadSweetroll μ ⇒ μ SweetrollSecrets
 getSecs = asks _ctxSecs
+
+getDeleted ∷ MonadSweetroll μ ⇒ μ (TVar [String])
+getDeleted = asks _ctxDeleted
 
 getRenderer ∷ MonadSweetroll μ ⇒ μ (ByteString → Value → Text)
 getRenderer = renderer <$> asks _ctxTplPool

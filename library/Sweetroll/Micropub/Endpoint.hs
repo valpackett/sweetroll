@@ -68,11 +68,18 @@ postMicropub token (Create htype props synds) = do
   return $ addHeader (tshow absUrl) Posted
 
 postMicropub _ (Delete url) = do
-  (category, slug) ← parseEntryURI =<< guardJustP errWrongPath (parseURI $ cs url)
-  k ← guardJust errWrongPath $ documentFullKey category (findByName slug)
-  transaction "./" $ liftIO $ removeFile $ category </> k <.> "json"
+  base ← getConfOpt baseURI
   isTest ← getConfOpt testMode
-  unless isTest $ void $ fork $ onPostDeleted category slug
+  deleted ← getDeleted
+  (category, slug) ← parseEntryURI =<< guardJustP errWrongPath (parseURI $ cs url)
+  transaction "./" $ do
+    k ← guardJust errWrongPath $ documentFullKey category (findByName slug)
+    mobj ← readDocumentByName category slug
+    let filePath = category </> k <.> "json"
+    liftIO $ removeFile filePath
+    atomically $ modifyTVar' deleted (cons filePath)
+    let absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base
+    unless isTest $ void $ fork $ onPostDeleted category slug absUrl mobj
   throwError respDeleted
 
 

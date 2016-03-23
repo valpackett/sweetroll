@@ -148,12 +148,18 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
   - [ ] built-in TLS server, since we depend on `tls` already because of the client
 - event system: hooks on micropub posting and webmention processing
   - [ ] cleaning a cache (which is not there yet... should be an in-process cache with fast expiration -- protection against DDoS or Hacker News effect)
-  - [ ] real-time page updates with Server-Sent Events (make a Web Component for HTML-based updating)
-  - [ ] JS hooks as plugins (API: a Sweetroll object which is an EventEmitter and also has config/secrets getters; should be possible to make HTTP requests to e.g. send webmention notifications)
-    - [ ] Telegram bot (posting, webmention notifications, webmention deletion, etc.) as JS plugin (so, API also needs to allow handling HTTP requests)
+  - [ ] real-time page updates with Server-Sent Events (make a Web Component that will show the update button)
   - [ ] static mode: on these events, regenerate website pages into static HTML files (and serve them for better performance)
     - [ ] IPFS support! (see/improve [hs-ipfs-api](https://github.com/davidar/hs-ipfs-api)) publishing there in the event handler too. Oh, and [IPFS supports custom services](https://ipfs.io/ipfs/QmTkzDwWqPbnAh5YiV5VwcTLnGdwSNsNTn2aDxdXBFca7D/example#/ipfs/QmQwAP9vFjbCtKvD8RkJdCvPHqLQjZfW7Mqbbqx18zd8j7/api/service/readme.md)! IPFS-Webmention, because why not.
     - [ ] S3 support & running on AWS Lambda... or good old CGI, which is actually kinda similar to Lambda
+- [x] JS hooks as plugins
+  - [ ] call from events
+  - [x] post category decisions
+  - [ ] config getting
+  - [ ] HTTP request sending
+  - [ ] HTTP request (webhook) handling
+  - [ ] example plugin: Pushover notifications
+  - [ ] example plugin: Telegram bot (posting, webmention notifications, responding to them, deleting them, etc.)
 - webmention ([YAY W3C DRAFT](http://webmention.net/draft/)!)
   - [ ] hashcash send
   - [ ] hashcash verify

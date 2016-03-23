@@ -13,7 +13,6 @@ import           Sweetroll.Prelude
 import           Control.Monad.Base
 import           Control.Monad.Reader hiding (forM_)
 import           Control.Monad.Except hiding (forM_)
-import           System.Directory
 import           System.Process (readProcessWithExitCode)
 import           System.FilePath.Posix
 import           System.IO.Unsafe
@@ -32,6 +31,7 @@ data SweetrollCtx = SweetrollCtx
   , _ctxSecs     ∷ SweetrollSecrets
   , _ctxDeleted  ∷ TVar [String]
   , _ctxTplPool  ∷ Pool DuktapeCtx
+  , _ctxPlugCtx  ∷ DuktapeCtx
   , _ctxLock     ∷ MVar ()
   , _ctxHttpMgr  ∷ Manager }
 
@@ -67,11 +67,13 @@ initCtx conf secs = do
   --        static pool, basically: max Ncpus, don't expire
   tplPool ← createPool createTemplateCtx (\_ → return ()) 1 999999999999 cpus
   (_, deleted', _) ← readProcessWithExitCode "git" [ "log", "--all", "--diff-filter=D", "--find-renames", "--name-only", "--pretty=format:" ] ""
+  plugCtx ← createPluginsCtx
   deleted ← newTVarIO $ lines deleted'
   return SweetrollCtx { _ctxConf     = conf
                       , _ctxSecs     = secs
                       , _ctxDeleted  = deleted
                       , _ctxTplPool  = tplPool
+                      , _ctxPlugCtx  = plugCtx
                       , _ctxLock     = lck
                       , _ctxHttpMgr  = hmg }
 
@@ -89,15 +91,19 @@ createTemplateCtx = do
   void $ evalDuktape duk $(embedFile "bower_components/SparkMD5/spark-md5.min.js")
   forM_ (sortOn (notJs . fst) $(embedDir "templates")) $ uncurry setTpl
   void $ exposeFnDuktape duk Nothing "parseEmoji" $ (return . (\x → x & _String %~ parseEmoji) ∷ Value → IO Value)
-  hasUserTpls ← doesDirectoryExist "templates"
-  when hasUserTpls $ do
-    userTpls ← getDirectoryContents "templates"
-    forM_ (sortOn notJs $ filter (not . ("." `isPrefixOf`)) userTpls) $ \tname → do -- Avoid ., .., .DS_Store and all hidden files really
-      thtml ← (try $ readFile $ "templates" </> tname) ∷ IO (Either IOException ByteString)
-      case thtml of
-        Right h → setTpl tname h
-        Left e → void $ putStrLn $ "Error when reading template " ++ cs tname ++ ": " ++ cs (show e)
+  forFileIn "templates" (sortOn notJs . filter (not . ("." `isPrefixOf`))) setTpl
   return duk
+
+createPluginsCtx ∷ IO DuktapeCtx
+createPluginsCtx = do
+  duk ← fromJust <$> createDuktapeCtx
+  void $ evalDuktape duk "var window = this"
+  void $ evalDuktape duk $(embedFile "bower_components/lodash/dist/lodash.min.js")
+  void $ evalDuktape duk $(embedFile "bower_components/moment/min/moment-with-locales.min.js")
+  void $ evalDuktape duk $(embedFile "library/Sweetroll/PluginApi.js")
+  forFileIn "plugins" (filter (not . ("." `isPrefixOf`))) (\_ x → void $ evalDuktape duk x)
+  return duk
+
 
 getConf ∷ MonadSweetroll μ ⇒ μ SweetrollConf
 getConf = asks _ctxConf
@@ -119,6 +125,13 @@ getRenderer = renderer <$> asks _ctxTplPool
         txtVal (Right (Just _)) = "TEMPLATE ERROR: returned something other than a string"
         txtVal (Right Nothing) = "TEMPLATE ERROR: returned nothing"
         txtVal (Left e) = "TEMPLATE ERROR: " ++ cs e
+
+runCategoryDeciders ∷ (MonadIO μ, MonadSweetroll μ) ⇒ Value → μ Text
+runCategoryDeciders v = do
+  duk ← asks _ctxPlugCtx
+  result ← callDuktape duk (Just "Sweetroll") "_runCategoryDeciders" [ v ]
+  putStrLn $ "Category decider result: " ++ tshow result
+  return $ fromMaybe "notes" $ (^? key "name" . _String) =<< join (hush result)
 
 parseEntryURI ∷ (MonadError ServantErr μ, MonadSweetroll μ) ⇒
                 URI → μ (String, String)

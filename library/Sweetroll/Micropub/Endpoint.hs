@@ -46,8 +46,8 @@ postMicropub token (Create htype props synds) = do
   isTest ← getConfOpt testMode
   (MkSyndicationConfig syndConf) ← getConfOpt syndicationConfig
 
-  let category = decideCategory props
-      slug = decideSlug props now
+  category ← cs <$> runCategoryDeciders (Object props)
+  let slug = decideSlug props now
       absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base
   obj ← return props
         >>= fetchAllReplyContexts
@@ -113,13 +113,6 @@ wrapWithType ∷ ObjType → ObjProperties → Value
 wrapWithType htype props =
   object [ "type"       .= [ htype ]
          , "properties" .= insertMap "syndication" (Array V.empty) props ]
-
-decideCategory ∷ ObjProperties → CategoryName
-decideCategory props | hasProp "name"          = "articles"
-                     | hasProp "in-reply-to"   = "replies"
-                     | hasProp "like-of"       = "likes"
-                     | otherwise               = "notes"
-  where hasProp = isJust . flip lookup props
 
 decideSlug ∷ ObjProperties → UTCTime → EntrySlug
 decideSlug props now = unpack . fromMaybe fallback $ getProp "slug"

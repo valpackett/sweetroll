@@ -1,5 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE GADTs, RankNTypes, FlexibleContexts #-}
+{-# LANGUAGE GADTs, RankNTypes, FlexibleContexts, ScopedTypeVariables #-}
 
 -- | The Sweetroll prelude == ClassyPrelude + more stuff.
 module Sweetroll.Prelude (
@@ -29,6 +29,7 @@ import           Data.Aeson as X
 import           Data.Aeson.Lens as X
 import           Network.URI as X
 import           Network.HTTP.Types as X
+import           System.Directory
 import qualified Text.Pandoc as P
 import qualified Text.Pandoc.Error as PE
 import           Servant -- (mimeRender, mimeUnrender, FormUrlEncoded)
@@ -106,6 +107,17 @@ ensureArrayProp _ v = v
 parseEmoji ∷ (IsSequence α, X.Element α ~ Char) ⇒ α → α
 parseEmoji = takeWhile isEmojiChar . dropWhile (not . isEmojiChar)
   where isEmojiChar x = generalCategory x `elem` [ Format, OtherSymbol, NonSpacingMark ]
+
+forFileIn ∷ (MonadIO μ, MonadBaseControl IO μ) ⇒ FilePath → ([FilePath] → [FilePath]) → (FilePath → ByteString → μ ()) → μ ()
+forFileIn dir fltr act = do
+  exists ← liftIO $ doesDirectoryExist dir
+  when exists $ do
+    files ← liftIO $ getDirectoryContents dir
+    forM_ (fltr files) $ \fname → do
+      fcontent ← liftIO $ try $ readFile $ dir </> fname
+      case fcontent of
+        Right c → act fname c
+        Left (e ∷ IOException) → putStrLn $ "Error when reading file " ++ cs (dir </> fname) ++ ": " ++ cs (show e)
 
 errWrongDomain ∷ ServantErr
 errWrongDomain = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]

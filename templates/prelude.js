@@ -15,7 +15,7 @@ this.separateComments = function (url, comments) {
 	var result = { replies: [], likes: [], reposts: [], bookmarks: [], quotations: [] }
 	_.forEach(comments, function (comment) {
 		if (isValidRef(url, comment.properties['in-reply-to'])) {
-			var text = _.trim(_.get(comment, 'properties.text[0].value', _.get(comment, 'properties.text[0]', _.get(comment, 'properties.name[0]', 'xxxxxxxxxx'))))
+			var text = _.trim(_.get(comment, 'properties.content[0].value', _.get(comment, 'properties.name[0]', 'xxxxxxxxxx')))
 			if (text.length < 10) {
 				var emoji = parseEmoji(text)
 				if (emoji && emoji.length >= 1) {

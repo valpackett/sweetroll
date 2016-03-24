@@ -80,8 +80,8 @@ fetchEntryWithAuthors uri res = do
              Just mfE → (Just mfE, mfRoot)
              _ → (Nothing, mfRoot)
 
-fetchReplyContexts ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ Text → Object → μ Object
-fetchReplyContexts k props = do
+fetchReferenceContexts ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ Text → Object → μ Object
+fetchReferenceContexts k props = do
     newCtxs ← updateCtxs $ lookup k props
     return $ insertMap k newCtxs props
   where updateCtxs (Just (Array v)) = Array `liftM` mapM fetch v
@@ -93,13 +93,13 @@ fetchReplyContexts k props = do
           ewa ← fetchEntryWithAuthors uri resp
           case ewa of
             (Just (Object entry), _) → do
-              prs ← lift $ fetchAllReplyContexts $ fromMaybe (HMS.fromList []) $ (Object entry) ^? key "properties" . _Object
+              prs ← lift $ fetchAllReferenceContexts $ fromMaybe (HMS.fromList []) $ (Object entry) ^? key "properties" . _Object
               return $ Object $ insertMap "properties" (Object prs) $ insertMap "fetched-url" (toJSON u) entry
             _ → mzero
         fetch x = return x
 
-fetchAllReplyContexts ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ Object → μ Object
-fetchAllReplyContexts = fetchReplyContexts "in-reply-to"
-                    >=> fetchReplyContexts "like-of"
-                    >=> fetchReplyContexts "repost-of"
-                    >=> fetchReplyContexts "quotation-of"
+fetchAllReferenceContexts ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ Object → μ Object
+fetchAllReferenceContexts = fetchReferenceContexts "in-reply-to"
+                        >=> fetchReferenceContexts "like-of"
+                        >=> fetchReferenceContexts "repost-of"
+                        >=> fetchReferenceContexts "quotation-of"

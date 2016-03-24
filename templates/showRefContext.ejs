@@ -16,7 +16,7 @@
 	<header class="ref-context-reason">
 		${ reason }
 		<% if (_.isString(entry)) { %>
-			<a class="p-name u-url" href="${ onlyHttpUrl(entry) }"><%- entry %></a>
+			<a class="p-name u-url" href="${ onlyHttpUrl(_.get(entry, 'url[0]')) }"><%- entry %></a>
 		<% } else if (!_.isObject(entry)) { %>
 			something weird
 		<% } %>

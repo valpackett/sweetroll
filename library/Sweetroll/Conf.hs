@@ -63,10 +63,11 @@ instance Default SweetrollConf where
       , domainName               = Just "localhost"
       , itemsPerPage             = Just 20
       , categoriesInLanding      = Just [ "articles+notes" ]
-      , categoriesInNav          = Just [ "articles+notes", "articles", "replies+likes" ]
+      , categoriesInNav          = Just [ "articles+notes", "articles", "replies+likes", "bookmarks" ]
       , categoryTitles           = Just $ HMS.fromList [ ("articles+notes", "Notes and articles")
                                                        , ("articles", "Articles")
-                                                       , ("replies+likes", "Responses") ]
+                                                       , ("replies+likes", "Responses")
+                                                       , ("bookmarks", "Bookmarks") ]
       , indieConfig              = Just $ MkIndieConfig $ object [
                                        "reply"    .= asText "https://quill.p3k.io/new?reply={url}"
                                      , "bookmark" .= asText "https://quill.p3k.io/bookmark?url={url}"

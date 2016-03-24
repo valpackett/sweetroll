@@ -13,8 +13,9 @@ img { max-width: 100%; }
 indie-action .icon { margin-right: 0.3em; }
 .icon-ref-reason { padding: 0.1rem; border-radius: 2px; color: white; width: 1.25em; height: 1.25em; vertical-align: -0.25em; }
 .icon-ref-reply { background: rgb(151, 226, 246); }
-.icon-ref-repost { background: rgb(53, 237, 146); }
+.icon-ref-repost, .icon-ref-quotation { background: rgb(53, 237, 146); }
 .icon-ref-like { background: rgb(249, 93, 181); }
+.icon-ref-bookmark { background: rgb(81, 93, 249); }
 ul, ol { list-style: inside; }
 ul { list-style-type: square; }
 small { font-size: 70%; }

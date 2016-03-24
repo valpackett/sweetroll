@@ -50,7 +50,7 @@ postMicropub token (Create htype props synds) = do
   let slug = decideSlug props now
       absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base
   obj ← return props
-        >>= fetchAllReplyContexts
+        >>= fetchAllReferenceContexts
         |>  setDates now
         |>  setClientId token
         |>  setUrl absUrl

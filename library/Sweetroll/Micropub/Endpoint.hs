@@ -106,7 +106,9 @@ setUrl ∷ URI → ObjProperties → ObjProperties
 setUrl url = insertMap "url" $ toJSON  [ tshow url ]
 
 setContent ∷ Maybe Pandoc → LText → ObjProperties → ObjProperties
-setContent content syndLinks = insertMap "content" $ toJSON [ object [ "html" .= h ] ]
+setContent content syndLinks x = if isNothing $ (Object x) ^? key "content" . nth 0 . key "html" . _String
+                                    then insertMap "content" (toJSON [ object [ "html" .= h ] ]) x
+                                    else x
   where h = cs syndLinks ++ (fromMaybe "" $ (renderHtml . writeHtml pandocWriterOptions) `liftM` content)
 
 wrapWithType ∷ ObjType → ObjProperties → Value
@@ -121,8 +123,7 @@ decideSlug props now = unpack . fromMaybe fallback $ getProp "slug"
         getProp k = firstStr (Object props) (key k)
 
 readContent ∷ Value → Maybe Pandoc
-readContent c = asum [ readWith readHtml       $ key "html"
-                     , readWith readTextile    $ key "textile"
+readContent c = asum [ readWith readTextile    $ key "textile"
                      , readWith readOrg        $ key "org"
                      , readWith readRST        $ key "rst"
                      , readWith readLaTeX      $ key "tex"

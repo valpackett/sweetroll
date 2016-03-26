@@ -155,7 +155,7 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
 - [x] JS hooks as plugins
   - [x] call from events
   - [x] post category decisions
-  - [ ] config getting
+  - [x] config getting
   - [ ] HTTP request sending
   - [ ] HTTP request (webhook) handling
   - [ ] example plugin: Pushover notifications

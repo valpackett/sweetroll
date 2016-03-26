@@ -66,7 +66,7 @@ initCtx conf secs = do
   --        static pool, basically: max Ncpus, don't expire
   tplPool ← createPool createTemplateCtx (\_ → return ()) 1 999999999999 cpus
   (_, deleted', _) ← readProcessWithExitCode "git" [ "log", "--all", "--diff-filter=D", "--find-renames", "--name-only", "--pretty=format:" ] ""
-  plugCtx ← createPluginsCtx
+  plugCtx ← createPluginsCtx conf
   deleted ← newTVarIO $ lines deleted'
   return SweetrollCtx { _ctxConf     = conf
                       , _ctxSecs     = secs
@@ -93,13 +93,14 @@ createTemplateCtx = do
   forFileIn "templates" (sortOn notJs . filter (not . ("." `isPrefixOf`))) setTpl
   return duk
 
-createPluginsCtx ∷ IO DuktapeCtx
-createPluginsCtx = do
+createPluginsCtx ∷ SweetrollConf → IO DuktapeCtx
+createPluginsCtx conf = do
   duk ← fromJust <$> createDuktapeCtx
   void $ evalDuktape duk "var window = this"
   void $ evalDuktape duk $(embedFile "bower_components/lodash/dist/lodash.min.js")
   void $ evalDuktape duk $(embedFile "bower_components/moment/min/moment-with-locales.min.js")
   void $ evalDuktape duk $(embedFile "library/Sweetroll/PluginApi.js")
+  void $ callDuktape duk (Just "Sweetroll") "_setConf" [ toJSON conf ]
   forFileIn "plugins" (filter (not . ("." `isPrefixOf`))) (\_ x → void $ evalDuktape duk x)
   return duk
 

@@ -1,4 +1,5 @@
 this.Sweetroll = {
+	conf: {},
 	_categoryDeciders: [
 		function (props) {
 			if (props['bookmark-of']) return { name: 'bookmarks', priority: 1 }
@@ -13,6 +14,10 @@ this.Sweetroll = {
 
 
 /* --- Private API. called by Sweetroll --- */
+
+Sweetroll._setConf = function (conf) {
+	Sweetroll.conf = conf
+}
 
 Sweetroll._runCategoryDeciders = function (props) {
 	return _(Sweetroll._categoryDeciders)

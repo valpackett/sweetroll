@@ -24,6 +24,6 @@ extra-deps:
   - lens-datetime-0.2.1
   - setters-0.1
   - git-embed-0.1.0
-  - highlighting-kate-0.6.1
+  - highlighting-kate-0.6.2
   - jwt-0.7.0
-resolver: lts-5.6
+resolver: nightly-2016-03-25

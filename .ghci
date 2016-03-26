@@ -1,6 +1,4 @@
 :set -fobject-code
-:set -itest-suite/
-:set -package hspec -package Glob -package doctest -package directory -package case-insensitive
 :set -XNoImplicitPrelude
 
 :{
@@ -10,7 +8,14 @@
      , "update " ++ (if port == "" then "3000" else port) ]
 :}
 
-:def test const $ return $ unlines [ ":load test-suite/Spec.hs", ":main --color", ":ctags" ]
+:{
+:def test const $ return $ unlines
+     [ ":set -itest-suite/"
+     , ":set -package sweetroll -package hspec -package directory -package case-insensitive"
+     , ":load test-suite/Spec.hs"
+     , ":main --color"
+     , ":ctags" ]
+:}
 
 :load executable/Main.hs
 :m Prelude Main

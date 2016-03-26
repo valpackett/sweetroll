@@ -57,6 +57,7 @@ a:hover, a:focus, a:active, body .ref-context-meta a:hover, body .ref-context-me
 .main-nav > * { padding: 0 0.4rem; }
 .main-nav > *:first-child { padding-left: 0; }
 .entry { background: #fefefe; border: #e3e3e3 1px solid; border-radius: 5px; margin-bottom: 1rem; }
+.entry * { max-width: 100%; } /* oh ffs flex */
 .entry-footer { padding: 1rem; }
 .entry-core { padding: 0 1rem; }
 .entry-core > :first-child, .entry-core > a + p:first-of-type /* skip bridgy links */ { margin-top: 1rem; }

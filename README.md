@@ -161,9 +161,6 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
   - [ ] example plugin: Pushover notifications
   - [ ] example plugin: Telegram bot (posting, webmention notifications, responding to them, deleting them, etc.)
 - webmention ([YAY W3C DRAFT](http://webmention.net/draft/)!)
-  - [ ] hashcash send
-  - [ ] hashcash verify
-    - [ ] throttle non-hashcashed requests to avoid [DDoS](https://indiewebcamp.com/DDOS)
   - [ ] moderation tools
     - [ ] different modes in config: allow all (except blocked), allow known good domains (e.g. domains replied to), premoderate all, turn off webmention
     - [ ] [blocking](https://indiewebcamp.com/block) domains
@@ -179,6 +176,7 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
     - [ ] microadmin/microsettings/what's-a-good-name: extension to micropub for site settings. `?q=settings-schema` to get [JSON Schema](http://json-schema.org) of settings, display the form, `{mp-action: settings}` to update
     - [ ] markup formats support (`rel=alternate` for getting the source, field like `content[markdown]` for submitting) and `?q=markup-formats`
   - [ ] support posting [photos](https://indiewebcamp.com/photos)
+  - [ ] download / locally store / rewrite url of photos given as urls
 - [ ] indieweb-algorithms?: ensure the person you're replying to *never* gets picked up you when you're replying (caught in test without own h-card)
 - [ ] tags? (kill the difference between categories and tags? // use symlinks to add to multiple categories/tags)
 - [ ] extract a `WebPrelude` package: `Sweetroll.Prelude`, `Sweetroll.HTTPClient`, `formToObject`, more stuff

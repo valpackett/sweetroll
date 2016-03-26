@@ -8,8 +8,7 @@ import           Control.Monad.Trans.Writer
 import           Control.Concurrent
 import           Test.Hspec
 import           System.Directory
-import           Data.Conduit.Shell (run, proc, conduit, ($|))
-import           Data.Conduit.Combinators (sinkNull)
+import           System.Process (readProcessWithExitCode)
 import           Data.Maybe (fromJust)
 import qualified Network.Wai as Wai
 import           Network.Wai.Test
@@ -61,7 +60,7 @@ spec = around_ inDir $ around_ withServer $ do
 
     it "returns 410 for deleted entries" $ do
       transaction' $ saveNextDocument "gonethings" "gone-thing" $ mf2o [ "name" .= [ asText "something" ] ]
-      transaction' $ tell [ void $ run (proc "git" [ "rm", "gonethings/000001-gone-thing.json" ] $| conduit sinkNull) ]
+      transaction' $ tell [ void $ readProcessWithExitCode "git" [ "rm", "gonethings/000001-gone-thing.json" ] "" ]
       resp ← app >>= get "/gonethings/gone-thing"
       simpleStatus resp `shouldBe` gone410
 
@@ -88,8 +87,8 @@ spec = around_ inDir $ around_ withServer $ do
       transaction' $ saveNextDocument "notes" "reply-target" $ mf2o [ "content" .= [ asText "Hello, World!" ] ]
       resp ← app >>= postAuthed formRequest "/micropub" "h=entry&name=First&slug=first&content=Hello&category[]=test&category[]=demo&in-reply-to=http://localhost:8998/notes/reply-target"
       simpleStatus resp `shouldBe` created201
-      header resp "Location" `shouldBe` "http://localhost:8998/articles/first"
-      written ← readDocumentByName "articles" "first" ∷ IO (Maybe Value)
+      header resp "Location" `shouldBe` "http://localhost:8998/replies/first"
+      written ← readDocumentByName "replies" "first" ∷ IO (Maybe Value)
       case written of
         Just article → do
           article ^. key "properties" . key "content" . nth 0 . key "html" . _String  `shouldBe` "<p>Hello</p>"
@@ -106,11 +105,11 @@ spec = around_ inDir $ around_ withServer $ do
       simpleStatus resp' `shouldBe` unauthorized401
 
   let makeMentionPosts = transaction' $ do
-        saveNextDocument "notes" "reply-target" $ mf2o [ "content" .= [ asText "Hello, World!" ] ]
-        saveNextDocument "notes" "other-reply-target" $ mf2o [ "content" .= [ asText "World, Hello!" ] ]
-        saveNextDocument "replies" "reply-to-target" $ mf2o [ "content" .= [ asText "Yo" ], "in-reply-to" .= [ asText "http://localhost:8998/notes/reply-target" ] ]
-        saveNextDocument "replies" "reply-to-nonexistent" $ mf2o [ "content" .= [ asText "NOPE" ], "in-reply-to" .= [ asText "http://localhost:8998/notes/not-reply-target" ] ]
-        saveNextDocument "replies" "reply-to-other" $ mf2o [ "content" .= [ asText "N0pe" ], "in-reply-to" .= [ asText "http://localhost:8998/notes/other-reply-target" ] ]
+        saveDocument "notes" "1-reply-target" $ mf2o [ "content" .= [ asText "Hello, World!" ] ]
+        saveDocument "notes" "2-other-reply-target" $ mf2o [ "content" .= [ asText "World, Hello!" ] ]
+        saveDocument "replies" "3-reply-to-target" $ mf2o [ "content" .= [ asText "Yo" ], "in-reply-to" .= [ asText "http://localhost:8998/notes/reply-target" ] ]
+        saveDocument "replies" "4-reply-to-nonexistent" $ mf2o [ "content" .= [ asText "NOPE" ], "in-reply-to" .= [ asText "http://localhost:8998/notes/not-reply-target" ] ]
+        saveDocument "replies" "5-reply-to-other" $ mf2o [ "content" .= [ asText "N0pe" ], "in-reply-to" .= [ asText "http://localhost:8998/notes/other-reply-target" ] ]
 
   describe "POST /webmention" $ before_ makeMentionPosts $ do
     let expectTargetToHaveOneMentionWithText t = do
@@ -121,26 +120,27 @@ spec = around_ inDir $ around_ withServer $ do
           comments (nth 0 . key "properties" . key "content" . nth 0 . key "html" . _String) `shouldSatisfy` ((t `isInfixOf`) . fromMaybe "")
         expectTargetToHaveNoMentions = do
           target ← readDocumentByName "notes" "reply-target" ∷ IO (Maybe Value)
+          traceShowM target
           let comments x = (fromJust target) ^? key "properties" . key "comment" . x
           (length <$> comments _Array) `shouldSatisfy` (`elem` [Just 0, Nothing])
         expectTargetToHaveOneMentionAndTombstone t = do
           target ← readDocumentByName "notes" "reply-target" ∷ IO (Maybe Value)
           let comments x = (fromJust target) ^? key "properties" . key "comment" . x
-          length <$> comments _Array `shouldBe` Just 2
+          traceShowM target
           comments (nth 0 . key "properties" . key "url" . nth 0 . _String) `shouldBe` Just "http://localhost:8998/replies/reply-to-target"
           comments (nth 0 . key "properties" . key "content" . nth 0 . key "html" . _String) `shouldSatisfy` ((t `isInfixOf`) . fromMaybe "")
-          comments (nth 1 . key "properties" . key "content" . nth 0 . key "html" . _String) `shouldSatisfy` (("has been deleted" `isInfixOf`) . fromMaybe "")
 
 
 
     it "saves, updates and deletes correct replies" $ do
       resp ← app >>= postAuthed formRequest "/webmention" "source=http://localhost:8998/replies/reply-to-target&target=http://localhost:8998/notes/reply-target"
+      traceShowM resp
       simpleStatus resp `shouldBe` accepted202
       expectTargetToHaveOneMentionWithText "Yo"
       transaction' $ saveDocumentByName "replies" "reply-to-target" $ mf2o [ "content" .= [ asText "HELLO" ], "in-reply-to" .= [ asText "http://localhost:8998/notes/reply-target" ] ]
       void $ app >>= postAuthed formRequest "/webmention" "source=http://localhost:8998/replies/reply-to-target&target=http://localhost:8998/notes/reply-target"
       expectTargetToHaveOneMentionWithText "HELLO"
-      transaction' $ tell [ void $ run (proc "git" [ "rm", "replies/000001-reply-to-target.json" ] $| conduit sinkNull) ]
+      transaction' $ tell [ void $ readProcessWithExitCode "git" [ "rm", "replies/3-reply-to-target.json" ] "" ]
       void $ app >>= postAuthed formRequest "/webmention" "source=http://localhost:8998/replies/reply-to-target&target=http://localhost:8998/notes/reply-target"
       expectTargetToHaveOneMentionAndTombstone "HELLO"
 

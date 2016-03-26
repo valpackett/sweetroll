@@ -9,7 +9,7 @@
 	content = _.isObject(content) ? (content.html || content.value) : content
 	content = _.isString(content) ? content : null
 %>
-<% _.forEach(properties.photo, function (photo) { %>
+<% _.forEach(properties.photo, function (photo) { if (!(_.includes(content, photo.replace('&', '&amp;')) || _.includes(content, photo))) {%>
 	<img src="${photo}" alt="" class="u-photo entry-photo">
-<% }) %>
+<% } }) %>
 <%= content || '' %>

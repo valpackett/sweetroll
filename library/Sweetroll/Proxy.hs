@@ -15,7 +15,6 @@ import           Crypto.MAC.HMAC
 import           Blaze.ByteString.Builder.ByteString (fromByteString)
 import           Data.ByteArray.Encoding
 import           Data.Conduit
-import           Data.Maybe (fromJust)
 import           Text.XML.Lens
 import           Network.Wai.Conduit as W
 import           Network.HTTP.Conduit
@@ -55,10 +54,10 @@ requestProxy ctx req respond =
   where allowedReqHeader (h, _) = h `elem` [ "Accept-Encoding", "Accept" ]
         allowedRespHeader (h, _) = h `elem` [ "Content-Encoding", "Content-Length", "Content-Range", "Content-Type", "Date", "ETag", "Last-Modified", "Expires", "Transfer-Encoding", "Vary", "X-Content-Duration", "X-Content-Type-Options" ]
 
-proxiedUri ∷ SweetrollSecrets → Text → Maybe URI
-proxiedUri secs s = parseURIReference $ "/proxy?" ++ writeForm [(asText "url", s), ("sig", signUrlForProxy secs s)]
+proxiedUri ∷ SweetrollSecrets → Text → Text
+proxiedUri secs s = "/proxy?" ++ writeForm [(asText "url", s), ("sig", signUrlForProxy secs s)]
 
 proxyImages ∷ SweetrollSecrets → SweetrollConf → XElement → XElement
-proxyImages secs conf e = e & entire . el "img" . attribute "src" %~ makeProxied
-  where makeProxied (Just s) | not ("/" `isPrefixOf` s) = tshow <$> (`relativeTo` fromJust (baseURI conf)) <$> proxiedUri secs s
+proxyImages secs _ e = e & entire . el "img" . attribute "src" %~ makeProxied
+  where makeProxied (Just s) | not ("/" `isPrefixOf` s) = Just $ proxiedUri secs s
         makeProxied x = x

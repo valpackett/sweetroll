@@ -86,7 +86,7 @@ postprocessEntry ∷ Value → Sweetroll Value
 postprocessEntry entry = do
   secs ← getSecs
   conf ← getConf
-  let proxifyLink s = fromMaybe s $ tshow <$> proxiedUri secs s
+  let proxifyLink s = proxiedUri secs s
       proxifyHtml s = fromMaybe s $ getInnerHtml Nothing $
                         (proxyImages secs conf . detwitterizeEmoji) $ documentRoot $ HTML.parseSTChunks ["<div>", s, "</div>"]
       ppr e = foldr ($) e [ (& key "properties" . key "photo" . values . _String %~ proxifyLink)

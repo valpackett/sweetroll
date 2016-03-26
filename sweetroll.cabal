@@ -67,6 +67,7 @@ library
       , wai-extra
       , wai-app-static
       , wai-cors
+      , wai-middleware-throttle
       , wai-conduit
       , servant
       , servant-server

@@ -19,6 +19,7 @@ import           Network.Wai.UrlMap
 import           Network.Wai.Middleware.AcceptOverride
 import           Network.Wai.Middleware.Autohead
 import           Network.Wai.Middleware.Cors
+import           Network.Wai.Middleware.Throttle
 import           Network.Wai.Application.Static
 import           Servant
 import           Gitson
@@ -101,18 +102,24 @@ sweetrollServerT ctx = getIndieConfig :<|> getBaseCss :<|> getDefaultCss :<|> ge
                   :<|> getEntry :<|> getCat :<|> getIndex
     where secKey = secretKey $ _ctxSecs ctx
 
-sweetrollApp ∷ SweetrollCtx → Application
-sweetrollApp ctx = simpleCors
-                 $ autohead
-                 $ acceptOverride
-                 $ mapUrls $ mount "bower" (staticApp $ embeddedSettings bowerComponents)
-                         <|> mount "static" (staticApp $ defaultWebAppSettings "static")
-                         <|> mount "proxy" (requestProxy ctx)
-                         <|> mountRoot (serve sweetrollAPI $ sweetrollServer ctx)
+sweetrollApp ∷ WaiThrottle → SweetrollCtx → Application
+sweetrollApp thr ctx =
+    simpleCors
+  $ throttle defThr { isThrottled = (\r → return $ requestMethod r /= "GET" && requestMethod r /= "HEAD")
+                    , throttleBurst = 5 } thr
+  $ autohead
+  $ acceptOverride
+  $ mapUrls $ mount "bower" (staticApp $ embeddedSettings bowerComponents)
+          <|> mount "static" (staticApp $ defaultWebAppSettings "static")
+          <|> mount "proxy" (requestProxy ctx)
+          <|> mountRoot (serve sweetrollAPI $ sweetrollServer ctx)
   where sweetrollServer c = enter (sweetrollToEither c) $ sweetrollServerT c
+        defThr = defaultThrottleSettings
 
 initSweetrollApp ∷ SweetrollConf → SweetrollSecrets → IO Application
-initSweetrollApp conf secs = fmap sweetrollApp $ initCtx conf secs
+initSweetrollApp conf secs = do
+  thr <- initThrottler
+  fmap (sweetrollApp thr) $ initCtx conf secs
 
 
 genLink ∷ MonadSweetroll μ ⇒ Text → URI → μ L.Link

@@ -153,7 +153,7 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
     - [ ] IPFS support! (see/improve [hs-ipfs-api](https://github.com/davidar/hs-ipfs-api)) publishing there in the event handler too. Oh, and [IPFS supports custom services](https://ipfs.io/ipfs/QmTkzDwWqPbnAh5YiV5VwcTLnGdwSNsNTn2aDxdXBFca7D/example#/ipfs/QmQwAP9vFjbCtKvD8RkJdCvPHqLQjZfW7Mqbbqx18zd8j7/api/service/readme.md)! IPFS-Webmention, because why not.
     - [ ] S3 support & running on AWS Lambda... or good old CGI, which is actually kinda similar to Lambda
 - [x] JS hooks as plugins
-  - [ ] call from events
+  - [x] call from events
   - [x] post category decisions
   - [ ] config getting
   - [ ] HTTP request sending

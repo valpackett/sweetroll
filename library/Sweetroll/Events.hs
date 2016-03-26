@@ -14,10 +14,19 @@ import           Sweetroll.HTTPClient
 type MonadSweetrollEvent μ = (MonadIO μ, MonadBaseControl IO μ, MonadThrow μ, MonadSweetroll μ)
 
 onPostCreated ∷ (MonadSweetrollEvent μ) ⇒ String → String → URI → Value → μ Value
-onPostCreated = onPostUpdated
+onPostCreated category slug absUrl obj = do
+  r ← onPostChanged category slug absUrl obj
+  notifyPlugins "create" $ object [ "category" .= category, "slug" .= slug, "url" .= tshow absUrl, "obj" .= obj ]
+  return r
 
-onPostUpdated ∷ (MonadSweetrollEvent μ) ⇒ String → String → URI → Value → μ Value
-onPostUpdated category _ absUrl obj = do
+onPostUpdated ∷ (MonadSweetrollEvent μ) ⇒ String → String → URI → Value → Value → μ Value
+onPostUpdated category slug absUrl oldObj obj = do
+  r ← onPostChanged category slug absUrl obj
+  notifyPlugins "update" $ object [ "category" .= category, "slug" .= slug, "url" .= tshow absUrl, "oldObj" .= oldObj, "obj" .= obj ]
+  return r
+
+onPostChanged ∷ (MonadSweetrollEvent μ) ⇒ String → String → URI → Value → μ Value
+onPostChanged category _ absUrl obj = do
   notifyPuSHCategory category
   mentionResults ← sendWebmentions absUrl =<< entryWebmentions obj
   let setSynd o (MentionSyndicated u) = o & key "properties" . key "syndication" . _Array %~ (cons (String u))
@@ -26,10 +35,12 @@ onPostUpdated category _ absUrl obj = do
   return $ obj' & key "properties" . key "syndication" . _Array %~ (fromList . nub . toList)
 
 onPostDeleted ∷ (MonadSweetrollEvent μ) ⇒ String → String → URI → Maybe Value → μ ()
-onPostDeleted category _ absUrl mobj = do
+onPostDeleted category slug absUrl mobj = do
   notifyPuSHCategory category
-  case mobj of -- we send, they refetch and see 410
-    Just obj → void $ sendWebmentions absUrl =<< entryWebmentions obj
+  case mobj of
+    Just obj → do
+      void $ sendWebmentions absUrl =<< entryWebmentions obj -- we send, they refetch and see 410
+      notifyPlugins "delete" $ object [ "category" .= category, "slug" .= slug, "url" .= tshow absUrl, "obj" .= mobj ]
     _ → return ()
 
 

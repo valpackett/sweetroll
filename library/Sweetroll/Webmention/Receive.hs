@@ -42,14 +42,14 @@ processWebmention category slug source target = do
         410 → do
           putStrLn $ "Received gone webmention " ++ forfrom ++ tshow source
           let updatedEntry = upsertMention (entry ∷ Value) tombstone
-          saveDocumentByName category slug =<< onPostUpdated category slug target updatedEntry
+          saveDocumentByName category slug =<< onPostUpdated category slug target entry updatedEntry
         200 → do
           (mention0, _) ← fetchEntryWithAuthors source resp
           case mention0 of
             Just mention@(Object _) | verifyMention target mention → do
               putStrLn $ "Received correct webmention for " ++ tshow target ++ " from " ++ tshow source
               let updatedEntry = upsertMention (entry ∷ Value) $ ensurePresentUrl source mention
-              saveDocumentByName category slug =<< onPostUpdated category slug target updatedEntry
+              saveDocumentByName category slug =<< onPostUpdated category slug target entry updatedEntry
             Just mention@(Object _) → putStrLn $ "Received unverified webmention " ++ forfrom ++ ": " ++ tshow mention
             Just mention → putStrLn $ "Received incorrectly parsed webmention " ++ forfrom ++ ": " ++ tshow mention
             Nothing → putStrLn $ "Received unreadable webmention " ++ forfrom

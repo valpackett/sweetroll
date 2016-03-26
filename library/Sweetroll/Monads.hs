@@ -132,6 +132,11 @@ runCategoryDeciders v = do
   putStrLn $ "Category decider result: " ++ tshow result
   return $ fromMaybe "notes" $ (^? key "name" . _String) =<< join (hush result)
 
+notifyPlugins ∷ (MonadIO μ, MonadSweetroll μ) ⇒ Text → Value → μ ()
+notifyPlugins ename edata = do
+  duk ← asks _ctxPlugCtx
+  void $ callDuktape duk (Just "Sweetroll") "_fireEvent" [ String ename, edata ]
+
 parseEntryURI ∷ (MonadError ServantErr μ, MonadSweetroll μ) ⇒
                 URI → μ (String, String)
 parseEntryURI uri = do

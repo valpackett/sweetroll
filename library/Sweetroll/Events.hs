@@ -36,13 +36,13 @@ onPostDeleted category _ absUrl mobj = do
 notifyPuSHCategory ∷ (MonadSweetrollEvent μ) ⇒ String → μ ()
 notifyPuSHCategory catName = do
   notifyPuSH $ permalink (Proxy ∷ Proxy IndexRoute)
-  notifyPuSH $ permalink (Proxy ∷ Proxy CatRouteE) catName
-  notifyPuSH $ atomizeUri $ permalink (Proxy ∷ Proxy CatRouteE) catName
+  notifyPuSH $ permalink (Proxy ∷ Proxy CatRoute) catName Nothing Nothing
+  notifyPuSH $ atomizeUri $ permalink (Proxy ∷ Proxy CatRoute) catName Nothing Nothing
   -- XXX: should send to unnamed combinations too
   catsToNotify ← liftM (filter (cs catName `isInfixOf`) . keys) $ getConfOpt categoryTitles
   forM_ catsToNotify $ \c → do
-    notifyPuSH $ permalink (Proxy ∷ Proxy CatRouteE) $ cs c
-    notifyPuSH $ atomizeUri $ permalink (Proxy ∷ Proxy CatRouteE) $ cs c
+    notifyPuSH $ permalink (Proxy ∷ Proxy CatRoute) (cs c) Nothing Nothing
+    notifyPuSH $ atomizeUri $ permalink (Proxy ∷ Proxy CatRoute) (cs c) Nothing Nothing
 
 notifyPuSH ∷ (MonadSweetrollEvent μ) ⇒ URI → μ ()
 notifyPuSH l = do

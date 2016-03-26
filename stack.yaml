@@ -26,4 +26,6 @@ extra-deps:
   - git-embed-0.1.0
   - highlighting-kate-0.6.2
   - jwt-0.7.0
+  - servant-0.5
+  - servant-server-0.5
 resolver: nightly-2016-03-25

@@ -15,7 +15,7 @@ import           Sweetroll.Monads
 import           Sweetroll.Events
 import           Sweetroll.HTTPClient hiding (Header)
 
-receiveWebmention ∷ [(Text, Text)] → Sweetroll ()
+receiveWebmention ∷ [(Text, Text)] → Sweetroll NoContent
 receiveWebmention allParams = do
   source ← guardJustP (errNoURIInField "source") $ parseURI =<< cs <$> lookup "source" allParams
   target ← guardJustP (errNoURIInField "target") $ parseURI =<< cs <$> lookup "target" allParams
@@ -23,7 +23,7 @@ receiveWebmention allParams = do
   void $ guardJust errWrongPath $ documentIdFromName category slug
   shouldBeSync ← getConfOpt testMode
   (if shouldBeSync then void else void . fork) $ processWebmention category slug source target
-  throwError respAccepted
+  return NoContent
 
 processWebmention ∷ String → String → URI → URI → Sweetroll ()
 processWebmention category slug source target = do

@@ -1,11 +1,14 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
 {-# LANGUAGE TypeOperators, TypeFamilies, FlexibleInstances, MultiParamTypeClasses #-}
-{-# LANGUAGE ScopedTypeVariables, UndecidableInstances #-}
+{-# LANGUAGE ScopedTypeVariables, UndecidableInstances, DataKinds #-}
 
 -- | The IndieAuth/rel-me-auth implementation, using JSON Web Tokens.
 module Sweetroll.Auth (
   JWT
 , VerifiedJWT
+, AuthProtect
+, AuthHandler
 , module Sweetroll.Auth
 ) where
 
@@ -14,36 +17,30 @@ import           Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import qualified Data.Map as M
 import           Web.JWT hiding (header)
 import qualified Network.Wai as Wai
-import           Servant
-import           Servant.Server.Internal (succeedWith)
-import           Servant.Server.Internal.Enter
+import           Servant.API
+import           Servant.Server.Experimental.Auth
 import           Sweetroll.Monads
 import           Sweetroll.Conf
 import           Sweetroll.HTTPClient hiding (Header)
 
-data AuthProtect
-data AuthProtected α = AuthProtected Text α
+type instance AuthServerData (AuthProtect "jwt") = JWT VerifiedJWT
 
-instance Enter α φ β ⇒ Enter (AuthProtected α) φ (AuthProtected β) where
-  enter f (AuthProtected k a) = AuthProtected k $ enter f a
-
-instance HasServer sublayout ⇒ HasServer (AuthProtect :> sublayout) where
-  type ServerT (AuthProtect :> sublayout) α = AuthProtected (JWT VerifiedJWT → ServerT sublayout α)
-
-  route Proxy (AuthProtected secKey subserver) req respond =
-    case asum [ lookup hAuthorization (Wai.requestHeaders req) >>= fromHeader
-              , join $ lookup "access_token" $ Wai.queryString req
-              -- XXX: parse from form as req'd by micropub
-              ] of
-      Nothing → respond . succeedWith $ Wai.responseLBS status401 [] "Authorization/access_token not found."
-      Just tok →
-        case decodeAndVerifySignature (secret secKey) (cs tok) of
-          Nothing → respond . succeedWith $ Wai.responseLBS status401 [] "Invalid auth token."
-          Just decodedToken → route (Proxy ∷ Proxy sublayout) (subserver decodedToken) req respond
-
-instance HasLink sub ⇒ HasLink (AuthProtect :> sub) where
-  type MkLink (AuthProtect :> sub) = MkLink sub
+instance HasLink sub ⇒ HasLink (AuthProtect "jwt" :> sub) where
+  type MkLink (AuthProtect "jwt" :> sub) = MkLink sub
   toLink _ = toLink (Proxy ∷ Proxy sub)
+
+authHandler ∷ Text → AuthHandler Wai.Request (JWT VerifiedJWT)
+authHandler secKey = mkAuthHandler h
+  where h req =
+          case asum [ lookup hAuthorization (Wai.requestHeaders req) >>= fromHeader
+                    , join $ lookup "access_token" $ Wai.queryString req
+                    -- XXX: parse from form as req'd by micropub
+                    ] of
+            Nothing → throwE errNoAuth
+            Just tok →
+              case decodeAndVerifySignature (secret secKey) (cs tok) of
+                Nothing → throwE errWrongAuth
+                Just decodedToken → return decodedToken
 
 fromHeader ∷ ByteString → Maybe ByteString
 fromHeader "" = Nothing
@@ -85,11 +82,11 @@ postLogin params = do
          Right (indieAuthRespParams ∷ [(Text, Text)]) → do
            domain ← getConfOpt domainName
            let me = orEmptyMaybe $ lookup "me" indieAuthRespParams
-           guardBool err401 $ Just domain == fmap (cs . uriRegName) (uriAuthority $ fromMaybe nullURI $ parseURI $ cs me)
+           guardBool errWrongAuth $ Just domain == fmap (cs . uriRegName) (uriAuthority $ fromMaybe nullURI $ parseURI $ cs me)
            putStrLn $ cs $ "Authenticated a client: " ++ fromMaybe "unknown" (lookup "client_id" params)
            makeAccessToken me
                            (fromMaybe "post" $ lookup "scope" indieAuthRespParams)
                            (fromMaybe "example.com" $ lookup "client_id" params)
          Left e → do
            putStrLn $ cs $ "Authentication error: " ++ e ++ " / params: " ++ tshow params
-           throwError err401
+           throwError errWrongAuth

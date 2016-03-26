@@ -12,7 +12,6 @@ module Sweetroll.Monads where
 import           Sweetroll.Prelude
 import           Control.Monad.Base
 import           Control.Monad.Reader hiding (forM_)
-import           Control.Monad.Except hiding (forM_)
 import           System.Process (readProcessWithExitCode)
 import           System.FilePath.Posix
 import           System.IO.Unsafe
@@ -53,11 +52,11 @@ instance MonadBaseControl IO Sweetroll where
   liftBaseWith f = Sweetroll $ liftBaseWith $ \x → f $ x . runSweetroll
   restoreM       = Sweetroll . restoreM
 
-runSweetrollEither ∷ SweetrollCtx → Sweetroll α → EitherT ServantErr IO α
-runSweetrollEither ctx sweet = EitherT $ liftIO $ runExceptT $ runReaderT (runSweetroll sweet) ctx
+runSweetrollExcept ∷ SweetrollCtx → Sweetroll α → ExceptT ServantErr IO α
+runSweetrollExcept ctx sweet = ExceptT $ liftIO $ runExceptT $ runReaderT (runSweetroll sweet) ctx
 
-sweetrollToEither ∷ SweetrollCtx → Sweetroll :~> EitherT ServantErr IO
-sweetrollToEither ctx = Nat $ runSweetrollEither ctx
+sweetrollToExcept ∷ SweetrollCtx → Sweetroll :~> ExceptT ServantErr IO
+sweetrollToExcept ctx = Nat $ runSweetrollExcept ctx
 
 initCtx ∷ SweetrollConf → SweetrollSecrets → IO SweetrollCtx
 initCtx conf secs = do

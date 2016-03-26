@@ -87,7 +87,7 @@ instance Templatable EntryPage where
               "entry"            .= e
             , "permalink"        .= showLink (permalink (Proxy ∷ Proxy EntryRoute) catName $ pack slug)
             , "categoryName"     .= catName
-            , "categoryHref"     .= showLink (permalink (Proxy ∷ Proxy CatRouteE) catName) ]
+            , "categoryHref"     .= showLink (permalink (Proxy ∷ Proxy CatRoute) catName Nothing Nothing) ]
 
 instance Templatable IndexedPage where
   templateName _ = "index"
@@ -100,9 +100,9 @@ instance Templatable IndexedPage where
             , "permalink"       .= showLink (catLink slice)
             , "entryUrls"       .= map snd (sliceItems slice)
             , "hasBefore"       .= isJust (sliceBefore slice)
-            , "beforeHref"      .= orEmptyMaybe (showLink . permalink (Proxy ∷ Proxy CatRouteB) (sliceCatName slice) <$> sliceBefore slice)
+            , "beforeHref"      .= orEmptyMaybe ((\b → showLink $ permalink (Proxy ∷ Proxy CatRoute) (sliceCatName slice) (Just b) Nothing) <$> sliceBefore slice)
             , "hasAfter"        .= isJust (sliceAfter slice)
-            , "afterHref"       .= orEmptyMaybe (showLink . permalink (Proxy ∷ Proxy CatRouteA) (sliceCatName slice) <$> sliceAfter slice) ]
+            , "afterHref"       .= orEmptyMaybe ((\a → showLink $ permalink (Proxy ∷ Proxy CatRoute) (sliceCatName slice) Nothing (Just a)) <$> sliceAfter slice) ]
 
 
 renderError ∷ MonadSweetroll μ ⇒ ServantErr → ByteString → μ ServantErr

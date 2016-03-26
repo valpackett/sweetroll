@@ -4,7 +4,7 @@
 
 module Sweetroll.Api where
 
-import           Sweetroll.Prelude
+import           Sweetroll.Prelude hiding (Context)
 import           Data.Maybe (fromJust)
 import qualified Data.HashMap.Strict as HMS
 import           Data.FileEmbed
@@ -59,7 +59,7 @@ getIndex = do
                              ([], HMS.empty)
                              catNames
   entries ← postprocessEntries entries0
-  selfLink ← genLink "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy IndexRoute)
+  selfLink ← genLink "self" $ permalink (Proxy ∷ Proxy IndexRoute)
   addLinks [selfLink] $ mkView $ IndexedPage catNames slices entries
 
 getCat ∷ String → Maybe Int → Maybe Int → Sweetroll (WithLink (View IndexedPage))
@@ -76,7 +76,7 @@ getEntry catName slug = do
   entry ← postprocessEntry =<< (guardJustM (notFoundOrGone catName slug) $ readDocumentByName catName slug)
   -- TODO: cacheHTTPDate -- don't forget responses' dates! -- 204 will be thrown before rendering!
   otherSlugs ← listDocumentKeys catName
-  selfLink ← genLink "self" $ safeLink sweetrollAPI (Proxy ∷ Proxy EntryRoute) catName slug
+  selfLink ← genLink "self" $ permalink (Proxy ∷ Proxy EntryRoute) catName slug
   addLinks [selfLink] $ mkView $ EntryPage catName (map readSlug $ sort otherSlugs) (slug, entry)
 
 postprocessEntries ∷ HashMap α Value → Sweetroll (HashMap α Value)
@@ -94,13 +94,12 @@ postprocessEntry entry = do
   return $ transform (\x → if isJust (x ^? key "type") then ppr x else x) entry
 
 
-sweetrollServerT ∷ SweetrollCtx → ServerT SweetrollAPI Sweetroll
-sweetrollServerT ctx = getIndieConfig :<|> getBaseCss :<|> getDefaultCss :<|> getDefaultIcons
-                  :<|> postLogin :<|> AuthProtected secKey getAuth
-                  :<|> AuthProtected secKey postMicropub :<|> AuthProtected secKey getMicropub
+sweetrollServerT ∷ ServerT SweetrollAPI Sweetroll
+sweetrollServerT = getIndieConfig :<|> getBaseCss :<|> getDefaultCss :<|> getDefaultIcons
+                  :<|> postLogin :<|> getAuth
+                  :<|> postMicropub :<|> getMicropub
                   :<|> receiveWebmention
                   :<|> getEntry :<|> getCat :<|> getIndex
-    where secKey = secretKey $ _ctxSecs ctx
 
 sweetrollApp ∷ WaiThrottle → SweetrollCtx → Application
 sweetrollApp thr ctx =
@@ -112,8 +111,9 @@ sweetrollApp thr ctx =
   $ mapUrls $ mount "bower" (staticApp $ embeddedSettings bowerComponents)
           <|> mount "static" (staticApp $ defaultWebAppSettings "static")
           <|> mount "proxy" (requestProxy ctx)
-          <|> mountRoot (serve sweetrollAPI $ sweetrollServer ctx)
-  where sweetrollServer c = enter (sweetrollToEither c) $ sweetrollServerT c
+          <|> mountRoot (serveWithContext sweetrollAPI sweetrollContext $ sweetrollServer ctx)
+  where sweetrollServer c = enter (sweetrollToExcept c) sweetrollServerT
+        sweetrollContext = authHandler (secretKey $ _ctxSecs ctx) :. EmptyContext
         defThr = defaultThrottleSettings
 
 initSweetrollApp ∷ SweetrollConf → SweetrollSecrets → IO Application
@@ -129,9 +129,9 @@ genLink rel u = do
 
 addLinks ∷ (MonadSweetroll μ, AddHeader "Link" [L.Link] α β) ⇒ [L.Link] → μ α → μ β
 addLinks ls a = do
-  webmention ← genLink "webmention" $ safeLink sweetrollAPI (Proxy ∷ Proxy PostWebmentionRoute)
-  micropub ← genLink "micropub" $ safeLink sweetrollAPI (Proxy ∷ Proxy PostMicropubRoute)
-  tokenEndpoint ← genLink "token_endpoint" $ safeLink sweetrollAPI (Proxy ∷ Proxy PostLoginRoute)
+  webmention ← genLink "webmention" $ permalink (Proxy ∷ Proxy PostWebmentionRoute)
+  micropub ← genLink "micropub" $ permalink (Proxy ∷ Proxy PostMicropubRoute)
+  tokenEndpoint ← genLink "token_endpoint" $ permalink (Proxy ∷ Proxy PostLoginRoute)
   authorizationEndpoint ← getConfOpt indieAuthRedirEndpoint >>= \x → return $ fromJust $ L.lnk x [(L.Rel, "authorization_endpoint")]
   hub ← getConfOpt pushHub >>= \x → return $ fromJust $ L.lnk x [(L.Rel, "hub")]
   return . addHeader (webmention : micropub : tokenEndpoint : authorizationEndpoint : hub : ls) =<< a

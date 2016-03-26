@@ -10,9 +10,10 @@ module Sweetroll.Prelude (
 import           ClassyPrelude as X hiding (fromString)
 import           Control.Error.Util as X hiding (hoistEither, (??), tryIO)
 import           Control.Monad.Except as X (MonadError, throwError)
+import           Control.Monad.Trans.Except as X
 import           Control.Monad.Trans.Control as X
 import           Control.Monad.Trans.Either as X
-import           Control.Monad.Trans.Maybe as X
+import           Control.Monad.Trans.Maybe as X hiding (liftListen, liftPass, liftCallCC)
 import           Control.Lens as X hiding (Index, index, cons, snoc, uncons, unsnoc, (<.>), (.=), (|>))
 import           Text.XML (Document, Element)
 import           Text.XML.Lens
@@ -118,6 +119,15 @@ forFileIn dir fltr act = do
       case fcontent of
         Right c → act fname c
         Left (e ∷ IOException) → putStrLn $ "Error when reading file " ++ cs (dir </> fname) ++ ": " ++ cs (show e)
+
+
+errNoAuth ∷ ServantErr
+errNoAuth = err401 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]
+                   , errBody    = "Authorization/access_token not found." }
+
+errWrongAuth ∷ ServantErr
+errWrongAuth = err401 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]
+                      , errBody    = "Invalid auth token." }
 
 errWrongDomain ∷ ServantErr
 errWrongDomain = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]

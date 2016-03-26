@@ -124,6 +124,7 @@ executable sweetroll
       , cabal-file-th
       , options
       , warp
+      , warp-tls
       , network
       , streaming-commons
       , wai-extra

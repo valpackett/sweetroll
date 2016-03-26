@@ -7,6 +7,7 @@ import           Prelude
 import           GHC.Conc (getNumCapabilities)
 import qualified Network.Wai.Handler.CGI as CGI
 import           Network.Wai.Handler.Warp
+import           Network.Wai.Handler.WarpTLS
 import           Network.Wai.Middleware.RequestLogger
 import qualified Network.Socket as S
 import           Control.Monad
@@ -33,6 +34,8 @@ data AppOptions = AppOptions
   { port                     ∷ Int
   , socket                   ∷ String
   , protocol                 ∷ String
+  , tlsKeyFile               ∷ String
+  , tlsCertFile              ∷ String
   , devlogging               ∷ Maybe Bool
   , domain                   ∷ Maybe String
   , secret                   ∷ String
@@ -41,9 +44,11 @@ data AppOptions = AppOptions
 
 instance Options AppOptions where
   defineOptions = pure AppOptions
-    <*> simpleOption "port"              3000                                  "The port the app should listen for connections on (for http protocol)"
+    <*> simpleOption "port"              3000                                  "The port the app should listen for connections on (for http and http+tls protocols)"
     <*> simpleOption "socket"            "/var/run/sweetroll/sweetroll.sock"   "The UNIX domain socket the app should listen for connections on (for unix protocol)"
-    <*> simpleOption "protocol"          "http"                                "The protocol for the server. One of: http, unix, cgi"
+    <*> simpleOption "protocol"          "http"                                "The protocol for the server. One of: http, http+tls, unix, unix+tls, cgi"
+    <*> simpleOption "tlskey"            ""                                    "Path to the TLS private key file for +tls protocols"
+    <*> simpleOption "tlscert"           ""                                    "Path to the TLS certificate bundle file for +tls protocols"
     <*> simpleOption "devlogging"        Nothing                               "Whether development logging should be enabled"
     <*> simpleOption "domain"            Nothing                               "The domain on which the server will run"
     <*> simpleOption "secret"            "RANDOM"                              "The JWT secret key for IndieAuth. Must be at least 40 characters, otherwise a random one will be used"
@@ -76,6 +81,7 @@ main = runCommand $ \opts _ → do
       version = $(packageVariable $ pkgVersion . package) ++ "/" ++ $(embedGitShortRevision)
       printListening = boldYellow " Sweetroll " >> red version >> reset " running on " >> blue (protocol opts) >> printProto >> reset " with " >> green (show cpus ++ " CPUs") >> putStrLn ""
       warpSettings = setBeforeMainLoop printListening $ setPort (port opts) defaultSettings
+      tlsSettings' = tlsSettings (tlsCertFile opts) (tlsKeyFile opts)
 
   origConf ← readDocument "conf" "sweetroll" ∷ IO (Maybe SweetrollConf)
   let o = optToConf opts
@@ -100,9 +106,8 @@ main = runCommand $ \opts _ → do
   app ← liftM addLogging $ initSweetrollApp conf secs
   case protocol opts of
     "http" → putSweetroll >> runSettings warpSettings app
-    "unix" → putSweetroll >>
-      bracket (bindPath $ socket opts)
-              S.close
-              (\sock → runSettingsSocket warpSettings sock app)
+    "http+tls" → putSweetroll >> runTLS tlsSettings' warpSettings app
+    "unix" → putSweetroll >> bracket (bindPath $ socket opts) S.close (\sock → runSettingsSocket warpSettings sock app)
+    "unix+tls" → putSweetroll >> bracket (bindPath $ socket opts) S.close (\sock → runTLSSocket tlsSettings' warpSettings sock app)
     "cgi" → CGI.run app
     _ → putStrLn $ "Unsupported protocol: " ++ protocol opts

@@ -22,24 +22,25 @@ data Mention = Mention { mentionTarget   ∷ URI
                        , mentionType     ∷ MentionType }
                        deriving (Eq, Show)
 
-data MentionResult = MentionFailed Text | MentionAccepted | MentionSyndicated Text
+data MentionResult = MentionFailed Mention Text | MentionAccepted Mention | MentionSyndicated Mention Text
+  deriving (Eq, Show)
 
 sendWebmention ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ SourceURI → Mention → μ MentionResult
-sendWebmention source Mention{..} = do
+sendWebmention source mention@Mention{..} = do
   resp ← runHTTP $ reqU mentionEndpoint >>= anyStatus
                  >>= postForm [ ("source", tshow source), ("target", tshow mentionTarget) ]
                  >>= performWithBytes
   return $ case resp of
     Left e →
-      MentionFailed e
+      MentionFailed mention e
     Right r | not (statusIsSuccessful $ responseStatus r) →
-      MentionFailed $ "Error code: " ++ tshow (responseStatus r)
+      MentionFailed mention $ "Error code: " ++ tshow (responseStatus r)
     Right r | mentionType == Syndicate →
-      maybe (MentionFailed "No Location header for syndication")
-            (MentionSyndicated . decodeUtf8)
+      maybe (MentionFailed mention "No Location header for syndication")
+            (MentionSyndicated mention . decodeUtf8)
             (lookup "Location" $ responseHeaders r)
     Right _ →
-      MentionAccepted
+      MentionAccepted mention
 
 sendWebmentions ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ SourceURI → [Mention] → μ [MentionResult]
 sendWebmentions from ms = mapM (sendWebmention from) $ nub ms

@@ -29,7 +29,8 @@ onPostChanged ∷ (MonadSweetrollEvent μ) ⇒ String → String → URI → Val
 onPostChanged category _ absUrl obj = do
   notifyPuSHCategory category
   mentionResults ← sendWebmentions absUrl =<< entryWebmentions obj
-  let setSynd o (MentionSyndicated u) = o & key "properties" . key "syndication" . _Array %~ (cons (String u))
+  forM_ mentionResults $ \m → putStrLn $ "Sent mention result: " ++ tshow m
+  let setSynd o (MentionSyndicated _ u) = o & key "properties" . key "syndication" . _Array %~ (cons (String u))
       setSynd o _ = o
       obj' = foldl' setSynd (obj & key "properties" %~ (ensureArrayProp "syndication")) mentionResults
   return $ obj' & key "properties" . key "syndication" . _Array %~ (fromList . nub . toList)

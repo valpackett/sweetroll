@@ -169,7 +169,7 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
   - [ ] deduplicate threaded replies like [there](https://unrelenting.technology/replies/2015-09-06-20-29-54) (a reply to both my post and another reply) -- maybe that's already happening? need to test
   - [ ] deduplicate syndicated replies
 - micropub ([YAY W3C DRAFT](http://micropub.net/draft/)!)
-  - [ ] handle update requests
+  - [x] handle update requests
   - [x] handle delete requests
   - [ ] handle undelete requests
   - [ ] editing interface: when logged in, display a (Polymer-based) Web Component *on the site* that shows a top panel, overlays edit/remove buttons on top of microformats entries (including replies!), submits edits/deletes over micropub, (actually make that extensible, micropub+microformats as just one supported thing)

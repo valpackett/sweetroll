@@ -9,6 +9,7 @@ module Sweetroll.Micropub.Endpoint (
 import           Sweetroll.Prelude
 import           Control.Concurrent.Lifted (fork, threadDelay)
 import qualified Data.Vector as V
+import qualified Data.HashMap.Strict as HMS
 import           Text.Pandoc hiding (Link, Null)
 import           Text.Blaze.Html.Renderer.Text (renderHtml)
 import           Web.JWT hiding (header, decode)
@@ -67,27 +68,40 @@ postMicropub token (Create htype props synds) = do
         Just obj' → saveDocumentByName category slug =<< onPostCreated category slug absUrl obj'
   return $ addHeader (tshow absUrl) Posted
 
+postMicropub _ (Update url upds) = do
+  base ← getConfOpt baseURI
+  isTest ← getConfOpt testMode
+  (category, slug) ← parseEntryURI =<< guardJustP errWrongPath (parseURI $ cs url)
+  let absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base -- Rebuild URL just in case
+  obj ← guardJust errWrongPath $ readDocumentByName category slug
+  let newObj = obj & key "properties" %~ (\o → foldl' applyUpdates o upds)
+  transaction "./" $ do
+    saveDocumentByName category slug newObj
+    unless isTest $ void $ fork $
+      saveDocumentByName category slug =<< onPostUpdated category slug absUrl obj newObj
+  throwError respNoContent
+
 postMicropub _ (Delete url) = do
   base ← getConfOpt baseURI
   isTest ← getConfOpt testMode
   deleted ← getDeleted
   (category, slug) ← parseEntryURI =<< guardJustP errWrongPath (parseURI $ cs url)
+  let absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base
   transaction "./" $ do
-    k ← guardJust errWrongPath $ documentFullKey category (findByName slug)
+    k ← guardJust errWrongPath $ documentFullKey category $ findByName slug
     mobj ← readDocumentByName category slug
     let filePath = category </> k <.> "json"
     liftIO $ removeFile filePath
     atomically $ modifyTVar' deleted (cons filePath)
-    let absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base
     unless isTest $ void $ fork $ onPostDeleted category slug absUrl mobj
-  throwError respDeleted
+  throwError respNoContent
 
 
-respDeleted ∷ ServantErr -- XXX: Only way to return custom HTTP response codes
-respDeleted = ServantErr { errHTTPCode = 204
-                         , errReasonPhrase = "No Content"
-                         , errHeaders = [ ]
-                         , errBody    = "" }
+respNoContent ∷ ServantErr -- XXX: Only way to return custom HTTP response codes
+respNoContent = ServantErr { errHTTPCode = 204
+                           , errReasonPhrase = "No Content"
+                           , errHeaders = [ ]
+                           , errBody    = "" }
 
 getSyndLinks ∷ [ObjSyndication] → Value → LText
 getSyndLinks synds syndConf =
@@ -133,3 +147,20 @@ readContent c = asum [ readWith readTextile    $ key "textile"
                      , readWith readCommonMark $ key "value"
                      , readWith readCommonMark id ]
   where readWith rdr l = pandocRead rdr . cs <$> firstStr c l
+
+applyUpdates ∷ Value → MicropubUpdate → Value
+applyUpdates (Object props) (ReplaceProps newProps) =
+  Object $ foldl' (\ps (k, v) → HMS.insert k v ps) props (HMS.toList newProps)
+applyUpdates (Object props) (AddToProps newProps) =
+  Object $ foldl' (\ps (k, v) → HMS.insertWith add k v ps) props (HMS.toList newProps)
+    where add (Array new) (Array old) = Array $ new ++ old
+          add new (Array old) = Array $ cons new old
+          add _ old = old
+applyUpdates (Object props) (DelFromProps newProps) =
+  Object $ foldl' (\ps (k, v) → HMS.insertWith del k v ps) props (HMS.toList newProps)
+    where del (Array new) (Array old) = Array $ filter (not . (flip elem new)) old
+          del new (Array old) = Array $ filter (/= new) old
+          del _ old = old
+applyUpdates (Object props) (DelProps newProps) =
+  Object $ foldl' (\ps k → HMS.delete k ps) props newProps
+applyUpdates x _ = x

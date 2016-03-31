@@ -1,16 +1,11 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, GADTs #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, GADTs, FlexibleInstances #-}
 
-module Sweetroll.Micropub.Request (
-  ObjType
-, ObjProperties
-, ObjSyndication
-, MicropubRequest (..)
-, formToObject
-) where
+module Sweetroll.Micropub.Request where
 
 import           Sweetroll.Prelude hiding (first)
 import           Control.Arrow (first)
 import           Data.Attoparsec.Text as AP
+import           Data.Aeson.Types (parseMaybe)
 import           Servant
 
 type ObjType = Text
@@ -18,33 +13,62 @@ type ObjProperties = Object
 type ObjSyndication = Text
 type ObjUrl = Text
 
+data MicropubUpdate = ReplaceProps ObjProperties
+                    | AddToProps ObjProperties
+                    | DelFromProps ObjProperties
+                    | DelProps [Text]
+                    deriving (Eq, Show)
+
+instance FromJSON [MicropubUpdate] where
+  parseJSON v@(Object _) =
+    let rplc = ReplaceProps <$> v ^? key "replace" . key "properties" . _Object
+        addp = AddToProps <$> v ^? key "add" . key "properties" . _Object
+        delf = DelFromProps <$> v ^? key "delete" . key "properties" . _Object
+        delp = DelProps <$> mapMaybe (^? _String) . toList <$> v ^? key "delete" . key "properties" . _Array
+     in return $ catMaybes [ rplc, addp, delf, delp ]
+  parseJSON _ = mzero
+
 data MicropubRequest = Create ObjType ObjProperties [ObjSyndication]
+                     | Update ObjUrl [MicropubUpdate]
                      | Delete ObjUrl
+                     deriving (Eq, Show)
 
 instance FromJSON MicropubRequest where
   parseJSON v@(Object _) =
     case v ^? key "mp-action" . _String of
-      Just "delete" → case Delete <$> (v ^? key "url" . _String) of
-                          Just x → return x
-                          Nothing → fail "Delete with no url"
-      Nothing → return $ Create (fromMaybe "h-entry" $ firstStr v $ key "type")
-                                (fromMaybe (object [] ^. _Object) $ v ^? key "properties" . _Object)
-                                (v ^.. key "mp-syndicate-to" . values . _String)
+      Just "delete" →
+        case v ^? key "url" . _String of
+          Nothing → fail "Delete with no url"
+          Just url → return $ Delete url
+      Just "update" →
+        case v ^? key "url" . _String of
+          Nothing → fail "Update with no url"
+          Just url → return $ Update url $ fromMaybe [] $ parseMaybe parseJSON v
+      Nothing → return $
+        Create (fromMaybe "h-entry" $ firstStr v $ key "type")
+               (fromMaybe (object [] ^. _Object) $ v ^? key "properties" . _Object)
+               (v ^.. key "mp-syndicate-to" . values . _String)
       _ → fail "Unknown action type"
   parseJSON _ = mzero
 
 instance FromFormUrlEncoded MicropubRequest where
   fromFormUrlEncoded f =
     case lookup "mp-action" f of
-      Just "delete" → case Delete <$> lookup "url" f of
-                          Just x → return x
-                          Nothing → fail "Delete with no url"
-      Nothing → let v@(Object o') = formToObject f
-                    o = deleteMap "access_token" $ deleteMap "syndicate-to" $ deleteMap "mp-syndicate-to" $ deleteMap "h" o'
-                    h = "h-" ++ fromMaybe "entry" (lookup "h" f)
-                    synd = (v ^.. key "mp-syndicate-to" . values . _String) ++
-                           (v ^.. key "syndicate-to" . values . _String) in
-                      Right $ Create h o synd
+      Just "delete" →
+        case lookup "url" f of
+          Nothing → fail "Delete with no url"
+          Just url → return $ Delete url
+      Just "update" →
+        case lookup "url" f of
+          Nothing → fail "Update with no url"
+          Just url → return $ Update url $ fromMaybe [] $ parseMaybe parseJSON $ formToObject f
+      Nothing →
+        let v@(Object o') = formToObject f
+            o = deleteMap "access_token" $ deleteMap "syndicate-to" $ deleteMap "mp-syndicate-to" $ deleteMap "h" o'
+            h = "h-" ++ fromMaybe "entry" (lookup "h" f)
+            synd = (v ^.. key "mp-syndicate-to" . values . _String) ++
+                   (v ^.. key "syndicate-to" . values . _String)
+         in Right $ Create h o synd
       _ → Left "Unknown action type"
 
 formToObject ∷ [(Text, Text)] → Value

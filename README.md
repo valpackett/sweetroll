@@ -3,7 +3,7 @@
 A website engine for [the indie web] with curved swords. *Curved! Swords!*
 
 - uses [Git]+[JSON] for storage
-- supports [Micropub] for posting
+- supports [Micropub] for posting, updating, deleting and undeleting
 - allows posting in [CommonMark Markdown] and other markup languages (powered by [Pandoc])
 - sends and receives [Webmentions], including [Salmentions]
 - supports the webmention-to-[syndication] / Syndicate by Reference process ([Bridgy Publish])
@@ -171,7 +171,7 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
 - micropub ([YAY W3C DRAFT](http://micropub.net/draft/)!)
   - [x] handle update requests
   - [x] handle delete requests
-  - [ ] handle undelete requests
+  - [x] handle undelete requests
   - [ ] editing interface: when logged in, display a (Polymer-based) Web Component *on the site* that shows a top panel, overlays edit/remove buttons on top of microformats entries (including replies!), submits edits/deletes over micropub, (actually make that extensible, micropub+microformats as just one supported thing)
     - [ ] microadmin/microsettings/what's-a-good-name: extension to micropub for site settings. `?q=settings-schema` to get [JSON Schema](http://json-schema.org) of settings, display the form, `{mp-action: settings}` to update
     - [ ] markup formats support (`rel=alternate` for getting the source, field like `content[markdown]` for submitting) and `?q=markup-formats`

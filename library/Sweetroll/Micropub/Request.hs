@@ -31,6 +31,7 @@ instance FromJSON [MicropubUpdate] where
 data MicropubRequest = Create ObjType ObjProperties [ObjSyndication]
                      | Update ObjUrl [MicropubUpdate]
                      | Delete ObjUrl
+                     | Undelete ObjUrl
                      deriving (Eq, Show)
 
 instance FromJSON MicropubRequest where
@@ -40,6 +41,10 @@ instance FromJSON MicropubRequest where
         case v ^? key "url" . _String of
           Nothing → fail "Delete with no url"
           Just url → return $ Delete url
+      Just "undelete" →
+        case v ^? key "url" . _String of
+          Nothing → fail "Unelete with no url"
+          Just url → return $ Undelete url
       Just "update" →
         case v ^? key "url" . _String of
           Nothing → fail "Update with no url"
@@ -58,6 +63,10 @@ instance FromFormUrlEncoded MicropubRequest where
         case lookup "url" f of
           Nothing → fail "Delete with no url"
           Just url → return $ Delete url
+      Just "undelete" →
+        case lookup "url" f of
+          Nothing → fail "Undelete with no url"
+          Just url → return $ Undelete url
       Just "update" →
         case lookup "url" f of
           Nothing → fail "Update with no url"

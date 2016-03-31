@@ -14,6 +14,7 @@ import           Text.Pandoc hiding (Link, Null)
 import           Text.Blaze.Html.Renderer.Text (renderHtml)
 import           Web.JWT hiding (header, decode)
 import           Servant
+import           System.Process (readProcessWithExitCode)
 import           System.Directory (removeFile)
 import           Gitson
 import           Sweetroll.Conf
@@ -94,6 +95,23 @@ postMicropub _ (Delete url) = do
     liftIO $ removeFile filePath
     atomically $ modifyTVar' deleted (cons filePath)
     unless isTest $ void $ fork $ onPostDeleted category slug absUrl mobj
+  throwError respNoContent
+
+postMicropub _ (Undelete url) = do
+  base ← getConfOpt baseURI
+  isTest ← getConfOpt testMode
+  deleted ← getDeleted
+  (category, slug) ← parseEntryURI =<< guardJustP errWrongPath (parseURI $ cs url)
+  filePath ← guardJust errWrongPath $ (find (\e → category `isPrefixOf` e && slug `isInfixOf` e)) `liftM` atomically (readTVar deleted)
+  let absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base
+  transaction "./" $ do
+    _ ← liftIO $ readProcessWithExitCode "git" [ "checkout", filePath ] ""
+    atomically $ modifyTVar' deleted (filter (/= filePath))
+    mobj ← readDocumentByName category slug
+    case mobj of
+      Just obj → unless isTest $ void $ fork $
+        saveDocumentByName category slug =<< onPostUndeleted category slug absUrl obj
+      Nothing → return ()
   throwError respNoContent
 
 

@@ -44,6 +44,12 @@ onPostDeleted category slug absUrl mobj = do
       notifyPlugins "delete" $ object [ "category" .= category, "slug" .= slug, "url" .= tshow absUrl, "obj" .= mobj ]
     _ → return ()
 
+onPostUndeleted ∷ (MonadSweetrollEvent μ) ⇒ String → String → URI → Value → μ Value
+onPostUndeleted category slug absUrl obj = do
+  r ← onPostChanged category slug absUrl obj
+  notifyPlugins "undelete" $ object [ "category" .= category, "slug" .= slug, "url" .= tshow absUrl, "obj" .= obj ]
+  return r
+
 
 notifyPuSHCategory ∷ (MonadSweetrollEvent μ) ⇒ String → μ ()
 notifyPuSHCategory catName = do

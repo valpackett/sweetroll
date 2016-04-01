@@ -76,7 +76,9 @@ main = runCommand $ \opts _ → do
   cpus ← getNumCapabilities
   let printProto = case protocol opts of
                      "http" → reset " port "   >> boldMagenta (show $ port opts)
+                     "http+tls" → reset " (TLS) port "   >> boldMagenta (show $ port opts)
                      "unix" → reset " socket " >> boldMagenta (show $ socket opts)
+                     "unix+tls" → reset " (TLS) socket " >> boldMagenta (show $ socket opts)
                      _      → setReset
       version = $(packageVariable $ pkgVersion . package) ++ "/" ++ $(embedGitShortRevision)
       printListening = boldYellow " Sweetroll " >> red version >> reset " running on " >> blue (protocol opts) >> printProto >> reset " with " >> green (show cpus ++ " CPUs") >> putStrLn ""

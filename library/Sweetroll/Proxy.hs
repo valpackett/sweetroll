@@ -17,7 +17,7 @@ import           Data.ByteArray.Encoding
 import           Data.Conduit
 import           Text.XML.Lens
 import           Network.Wai.Conduit as W
-import           Network.HTTP.Conduit
+import           Network.HTTP.Conduit as HC
 import           Network.HTTP.Client.Conduit as HCC
 import           Sweetroll.Conf
 import           Sweetroll.Monads
@@ -45,9 +45,10 @@ requestProxy ctx req respond =
       flip runReaderT ctx $ withResponse upstreamReq $ \upstreamRsp → lift $ do
         case fromMaybe 0 $ readMay =<< (asString . cs <$> lookup "Content-Length" (HCC.responseHeaders upstreamRsp)) of
           l | l > (4*1024*1024 ∷ Int) → respond $ responseLBS badRequest400 [("Content-Type", "text/plain")] "content-length too big"
-          _ → do
+          l → do
             let src = mapOutput (Chunk . fromByteString) (HCC.responseBody upstreamRsp)
                 headers = filter allowedRespHeader $ HCC.responseHeaders upstreamRsp
+            putStrLn $ "RESPOND " ++ tshow l
             respond $ responseSource (HCC.responseStatus upstreamRsp) headers src
     _ →
       respond $ responseLBS badRequest400 [("Content-Type", "text/plain")] "url and sig params must be present"

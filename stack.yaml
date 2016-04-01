@@ -15,8 +15,8 @@ packages:
   - location: '../../vincenthz/hs-tls/core'
     extra-dep: true
   - location:
-      git: https://github.com/myfreeweb/wai.git
-      commit: a2327adcd68ff58b32c5d0be4d3cebfc21765b6d
+      git: https://github.com/yesodweb/wai.git
+      commit: 966979c8913031a4dcb2895dcd19b7d0ed61e7ce
     extra-dep: true
     subdirs:
       - wai-app-static
@@ -25,7 +25,6 @@ extra-deps:
   - setters-0.1
   - git-embed-0.1.0
   - highlighting-kate-0.6.2
-  - jwt-0.7.0
   - servant-0.5
   - servant-server-0.5
-resolver: nightly-2016-03-25
+resolver: nightly-2016-04-01

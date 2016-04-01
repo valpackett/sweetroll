@@ -30,7 +30,7 @@ type DefaultIconsRoute        = "default-icons.svg" :> Get '[SVG] LByteString
 type PostLoginRoute           = "login" :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] [(Text, Text)]
 type GetLoginRoute            = "login" :> AuthProtect "jwt" :> Get '[FormUrlEncoded] [(Text, Text)]
 type PostMicropubRoute        = "micropub" :> AuthProtect "jwt" :> ReqBody '[FormUrlEncoded, JSON] MicropubRequest :> PostCreated '[FormUrlEncoded, JSON] (Headers '[Header "Location" Text] MicropubResponse)
-type GetMicropubRoute         = "micropub" :> AuthProtect "jwt" :> QueryParam "q" Text :> QueryParams "properties" Text :> QueryParam "url" Text :> Get '[FormUrlEncoded, JSON] MicropubResponse
+type GetMicropubRoute         = "micropub" :> AuthProtect "jwt" :> QueryParam "q" Text :> QueryParams "properties" Text :> QueryParam "url" Text :> Get '[JSON, FormUrlEncoded] MicropubResponse
 
 type PostWebmentionRoute      = "webmention" :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> PostAccepted '[JSON] NoContent
 

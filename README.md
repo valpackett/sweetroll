@@ -10,6 +10,7 @@ A website engine for [the indie web] with curved swords. *Curved! Swords!*
 - sends [PubSubHubbub] notifications on new posts (for [readers])
 - supports [indie-config]
 - has a [JSON Web Tokens]-based [token-endpoint]
+- extensible with JavaScript plugins
 - written in [Haskell]
 
 I'm running it on [my website](https://unrelenting.technology).
@@ -172,9 +173,6 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
   - [x] handle update requests
   - [x] handle delete requests
   - [x] handle undelete requests
-  - [ ] editing interface: when logged in, display a (Polymer-based) Web Component *on the site* that shows a top panel, overlays edit/remove buttons on top of microformats entries (including replies!), submits edits/deletes over micropub, (actually make that extensible, micropub+microformats as just one supported thing)
-    - [ ] microadmin/microsettings/what's-a-good-name: extension to micropub for site settings. `?q=settings-schema` to get [JSON Schema](http://json-schema.org) of settings, display the form, `{mp-action: settings}` to update
-    - [ ] markup formats support (`rel=alternate` for getting the source, field like `content[markdown]` for submitting) and `?q=markup-formats`
   - [ ] support posting [photos](https://indiewebcamp.com/photos)
   - [ ] download / locally store / rewrite url of photos given as urls
 - [ ] indieweb-algorithms?: ensure the person you're replying to *never* gets picked up you when you're replying (caught in test without own h-card)

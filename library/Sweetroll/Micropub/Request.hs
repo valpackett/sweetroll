@@ -21,10 +21,10 @@ data MicropubUpdate = ReplaceProps ObjProperties
 
 instance FromJSON [MicropubUpdate] where
   parseJSON v@(Object _) =
-    let rplc = ReplaceProps <$> v ^? key "replace" . key "properties" . _Object
-        addp = AddToProps <$> v ^? key "add" . key "properties" . _Object
-        delf = DelFromProps <$> v ^? key "delete" . key "properties" . _Object
-        delp = DelProps <$> mapMaybe (^? _String) . toList <$> v ^? key "delete" . key "properties" . _Array
+    let rplc = ReplaceProps <$> v ^? key "replace" . _Object
+        addp = AddToProps <$> v ^? key "add" . _Object
+        delf = DelFromProps <$> v ^? key "delete" . _Object
+        delp = DelProps <$> mapMaybe (^? _String) . toList <$> v ^? key "delete" . _Array
      in return $ catMaybes [ rplc, addp, delf, delp ]
   parseJSON _ = mzero
 

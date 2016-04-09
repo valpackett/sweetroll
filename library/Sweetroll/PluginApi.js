@@ -2,10 +2,10 @@ this.Sweetroll = {
 	conf: {},
 	_categoryDeciders: [
 		function (props) {
-			if (props['bookmark-of']) return { name: 'bookmarks', priority: 1 }
-			if (props['like-of']) return { name: 'likes', priority: 1 }
-			if (props['in-reply-to']) return { name: 'replies', priority: 1 }
-			if (props.name) return { name: 'articles', priority: 1 }
+			if (!_.isEmpty(props['bookmark-of'])) return { name: 'bookmarks', priority: 1 }
+			if (!_.isEmpty(props['like-of'])) return { name: 'likes', priority: 1 }
+			if (!_.isEmpty(props['in-reply-to'])) return { name: 'replies', priority: 1 }
+			if (!_.isEmpty(props.name)) return { name: 'articles', priority: 1 }
 			return { name: 'notes', priority: 1 }
 		}
 	],

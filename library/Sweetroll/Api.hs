@@ -21,6 +21,7 @@ import           Network.Wai.Middleware.Autohead
 import           Network.Wai.Middleware.Cors
 import           Network.Wai.Middleware.Throttle
 import           Network.Wai.Application.Static
+import           WaiAppStatic.Types
 import           Servant
 import           Gitson
 import           Gitson.Util (maybeReadIntString)
@@ -109,7 +110,7 @@ sweetrollApp thr ctx =
   $ autohead
   $ acceptOverride
   $ mapUrls $ mount "bower" (staticApp $ embeddedSettings bowerComponents)
-          <|> mount "static" (staticApp $ defaultWebAppSettings "static")
+          <|> mount "static" (staticApp $ (defaultWebAppSettings "static") { ssMaxAge = NoMaxAge })
           <|> mount "proxy" (requestProxy ctx)
           <|> mountRoot (serveWithContext sweetrollAPI sweetrollContext $ sweetrollServer ctx)
   where sweetrollServer c = enter (sweetrollToExcept c) sweetrollServerT

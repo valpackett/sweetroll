@@ -30,7 +30,8 @@ getMicropub ∷ JWT VerifiedJWT → Maybe Text → [Text] → Maybe Text → Swe
 getMicropub _ (Just "syndicate-to") _ _ = do
   (MkSyndicationConfig syndConf) ← getConfOpt syndicationConfig
   return $ SyndicateTo $ case syndConf of
-             Object o → keys o
+             Object o → map (\(k, v) → object [ "uid" .= v, "name" .= k ]) $ HMS.toList o
+             Array a → toList a
              _ → []
 getMicropub _ (Just "source") props (Just url) = do
   -- TODO: props filtering
@@ -46,7 +47,6 @@ postMicropub token (Create htype props synds) = do
   now ← liftIO getCurrentTime
   base ← getConfOpt baseURI
   isTest ← getConfOpt testMode
-  (MkSyndicationConfig syndConf) ← getConfOpt syndicationConfig
 
   category ← cs <$> runCategoryDeciders (Object props)
   let slug = decideSlug props now
@@ -56,7 +56,7 @@ postMicropub token (Create htype props synds) = do
         |>  setDates now
         |>  setClientId token
         |>  setUrl absUrl
-        |>  setContent (readContent =<< lookup "content" props) (getSyndLinks synds syndConf)
+        |>  setContent (readContent =<< lookup "content" props) (intercalate " " synds)
         |>  wrapWithType htype
   transaction "./" $ saveDocument category (formatTime defaultTimeLocale "%s-" now ++ slug) obj
   unless isTest $ void $ fork $ do
@@ -121,13 +121,6 @@ respNoContent = ServantErr { errHTTPCode = 204
                            , errHeaders = [ ]
                            , errBody    = "" }
 
-getSyndLinks ∷ [ObjSyndication] → Value → LText
-getSyndLinks synds syndConf =
-  case syndConf of
-    Object o → cs $ concat $ mapMaybe (^? _String) $ mapMaybe (flip lookup o) $ filter inSyndicateTo $ keys o
-    _ → ""
-  where inSyndicateTo x = any (x `isInfixOf`) synds
-
 setDates ∷ UTCTime → ObjProperties → ObjProperties
 setDates now = insertMap "updated" (toJSON [ now ]) . insertWith (\_ x → x) "published" (toJSON [ now ])
 
@@ -137,7 +130,7 @@ setClientId token = insertMap "client-id" $ toJSON $ filter (/= "example.com") $
 setUrl ∷ URI → ObjProperties → ObjProperties
 setUrl url = insertMap "url" $ toJSON  [ tshow url ]
 
-setContent ∷ Maybe Pandoc → LText → ObjProperties → ObjProperties
+setContent ∷ Maybe Pandoc → Text → ObjProperties → ObjProperties
 setContent content syndLinks x = if isNothing $ (Object x) ^? key "content" . nth 0 . key "html" . _String
                                     then insertMap "content" (toJSON [ object [ "html" .= h ] ]) x
                                     else x

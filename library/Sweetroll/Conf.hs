@@ -73,11 +73,12 @@ instance Default SweetrollConf where
                                      , "bookmark" .= asText "https://quill.p3k.io/bookmark?url={url}"
                                      , "like"     .= asText "https://quill.p3k.io/favorite?url={url}"
                                      , "repost"   .= asText "https://quill.p3k.io/repost?url={url}" ]
-      , syndicationConfig        = Just $ MkSyndicationConfig $ object [
-                                       "twitter.com"   .= asText "<a href=\"https://brid.gy/publish/twitter\" data-synd></a>"
-                                     , "facebook.com"  .= asText "<a href=\"https://brid.gy/publish/facebook\" data-synd></a>"
-                                     -- , "test"          .= asText "<a href=\"http://localhost:9247/post?type=link&amp;syndication=yep\" data-synd></a>"
-                                     , "instagram.com" .= asText "<a href=\"https://brid.gy/publish/instagram\" data-synd></a>" ]
+      , syndicationConfig        = Just $ MkSyndicationConfig $ toJSON [
+                                       object [ "name" .= asText "twitter.com",   "uid" .= asText "<a href=\"https://brid.gy/publish/twitter\" data-synd></a>" ]
+                                     , object [ "name" .= asText "facebook.com",  "uid" .= asText "<a href=\"https://brid.gy/publish/facebook\" data-synd></a>" ]
+                                     -- , object [ "name" .= asText "test",          "uid" .= asText "<a href=\"http://localhost:9247/post?type=link&amp;syndication=yep\" data-synd></a>" ]
+                                     , object [ "name" .= asText "instagram.com", "uid" .= asText "<a href=\"https://brid.gy/publish/instagram\" data-synd></a>" ]
+                                     ]
       , indieAuthCheckEndpoint   = Just "https://indieauth.com/auth"
       , indieAuthRedirEndpoint   = Just "https://indieauth.com/auth"
       , pushHub                  = Just "https://switchboard.p3k.io"

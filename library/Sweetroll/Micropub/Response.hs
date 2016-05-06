@@ -7,7 +7,7 @@ import qualified Data.Map as M
 import           Servant
 
 data MicropubResponse = Posted
-                      | SyndicateTo [Text]
+                      | SyndicateTo [Value]
                       | AuthInfo [(Text, Text)]
                       | Source Value
 
@@ -19,6 +19,6 @@ instance ToJSON MicropubResponse where
 
 instance ToFormUrlEncoded MicropubResponse where
   toFormUrlEncoded Posted = []
-  toFormUrlEncoded (SyndicateTo urls) = map ("syndicate-to[]", ) urls
+  toFormUrlEncoded (SyndicateTo urls) = map (("syndicate-to[]", ) . fromMaybe "" . (^? key "uid" . _String)) urls
   toFormUrlEncoded (AuthInfo params) = params
-  toFormUrlEncoded (Source val) = [] -- XXX: should just ignore Accept for source? make it a separate route?
+  toFormUrlEncoded (Source val) = []

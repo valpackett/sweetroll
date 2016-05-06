@@ -75,8 +75,9 @@ instance FromFormUrlEncoded MicropubRequest where
         let v@(Object o') = formToObject f
             o = deleteMap "access_token" $ deleteMap "syndicate-to" $ deleteMap "mp-syndicate-to" $ deleteMap "h" o'
             h = "h-" ++ fromMaybe "entry" (lookup "h" f)
-            synd = (v ^.. key "mp-syndicate-to" . values . _String) ++
-                   (v ^.. key "syndicate-to" . values . _String)
+            synd = nub $ (v ^.. key "mp-syndicate-to" . values . _String) ++
+                         (v ^.. key "syndicate-to" . values . _String)
+                         -- no syndicate-to[], the [] is handled in formToObject
          in Right $ Create h o synd
       _ → Left "Unknown action type"
 

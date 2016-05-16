@@ -21,6 +21,7 @@ import           Network.HTTP.Client.Conduit
 import           Servant
 import           Gitson
 import           Data.FileEmbed
+import           Crypto.Hash
 import           Scripting.Duktape
 import           Sweetroll.Conf
 
@@ -83,7 +84,12 @@ createTemplateCtx = do
                  then evalDuktape duk tcontent
                  else callDuktape duk Nothing "setTemplate" [ String $ cs $ dropExtensions tname, String $ cs tcontent ]
       notJs = (/= ".js") . takeExtension -- Sort to evaluate JS first, important for prelude.js to define SweetrollTemplates
+      hashify (k, v) = (cs k) .= (take 10 $ show $ hashWith SHA3_224 v)
   void $ evalDuktape duk "var window = this"
+  void $ evalDuktape duk $ "this.bowerHashes = " ++ cs (encode $ object $ map hashify bowerComponents)
+  void $ evalDuktape duk $ "this.defaultHashes = " ++ cs (encode $ object $ map hashify [ (asString "base-style.css", asByteString $ cs baseCss)
+                                                                                        , ("default-style.css", cs defaultCss)
+                                                                                        , ("default-icons.svg", cs defaultIcons) ])
   void $ evalDuktape duk $(embedFile "bower_components/lodash/dist/lodash.min.js")
   void $ evalDuktape duk $(embedFile "bower_components/moment/min/moment-with-locales.min.js")
   void $ evalDuktape duk $(embedFile "bower_components/SparkMD5/spark-md5.min.js")

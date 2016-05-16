@@ -7,18 +7,16 @@ module Sweetroll.Api where
 import           Sweetroll.Prelude hiding (Context)
 import           Data.Maybe (fromJust)
 import qualified Data.HashMap.Strict as HMS
-import           Data.FileEmbed
 import           Data.Microformats2.Parser.HtmlUtil (getInnerHtml)
 import qualified Text.HTML.DOM as HTML
 import           Text.XML (documentRoot)
-import           Text.Pandoc
-import           Text.Highlighting.Kate.Format.HTML (styleToCss)
 import qualified Network.HTTP.Link as L
 import           Network.Wai
 import           Network.Wai.UrlMap
 import           Network.Wai.Middleware.AcceptOverride
 import           Network.Wai.Middleware.Autohead
 import           Network.Wai.Middleware.Cors
+import           Network.Wai.Middleware.Gzip
 import           Network.Wai.Middleware.Throttle
 import           Network.Wai.Application.Static
 import           WaiAppStatic.Types
@@ -40,16 +38,13 @@ getIndieConfig ∷ Sweetroll IndieConfig
 getIndieConfig = getConfOpt indieConfig
 
 getBaseCss ∷ Sweetroll LByteString
-getBaseCss = return $ pandocCss ++ sanitizeCss ++ opentypeCss
-  where pandocCss = cs . styleToCss . writerHighlightStyle $ pandocWriterOptions
-        sanitizeCss = cs $(embedFile "bower_components/sanitize-css/sanitize.css")
-        opentypeCss = cs $(embedFile "bower_components/normalize-opentype.css/normalize-opentype.css")
+getBaseCss = return baseCss
 
 getDefaultCss ∷ Sweetroll LByteString
-getDefaultCss = return $ cs $(embedFile "style.css")
+getDefaultCss = return defaultCss
 
 getDefaultIcons ∷ Sweetroll LByteString
-getDefaultIcons = return $ cs $(embedFile "icons.svg")
+getDefaultIcons = return defaultIcons
 
 getIndex ∷ Sweetroll (WithLink (View IndexedPage))
 getIndex = do
@@ -108,18 +103,27 @@ sweetrollApp thr ctx =
   $ throttle defThr { isThrottled = (\r → return $ requestMethod r /= "GET" && requestMethod r /= "HEAD")
                     , throttleBurst = 5 } thr
   $ autohead
+  $ cacheControlAuto
   $ acceptOverride
-  $ mapUrls $ mount "bower" (staticApp $ embeddedSettings bowerComponents)
-          <|> mount "static" (staticApp $ (defaultWebAppSettings "static") { ssMaxAge = NoMaxAge })
+  $ gzip def
+  $ mapUrls $ mount "bower" (staticApp $ (embeddedSettings bowerComponents) { ssMaxAge = MaxAgeSeconds 30 })
+          <|> mount "static" (staticApp $ (defaultWebAppSettings "static") { ssMaxAge = MaxAgeSeconds 30 })
           <|> mount "proxy" (requestProxy ctx)
           <|> mountRoot (serveWithContext sweetrollAPI sweetrollContext $ sweetrollServer ctx)
   where sweetrollServer c = enter (sweetrollToExcept c) sweetrollServerT
         sweetrollContext = authHandler (secretKey $ _ctxSecs ctx) :. EmptyContext
         defThr = defaultThrottleSettings
 
+cacheControlAuto ∷ Middleware
+cacheControlAuto app req respond = app req $ respond . setCC
+  where ver = join $ lookup "_v" $ queryString req
+        setCC resp = if isJust ver
+                        then mapResponseHeaders (insertMap hCacheControl "public, max-age=31536000, immutable") resp
+                        else resp
+
 initSweetrollApp ∷ SweetrollConf → SweetrollSecrets → IO Application
 initSweetrollApp conf secs = do
-  thr <- initThrottler
+  thr ← initThrottler
   fmap (sweetrollApp thr) $ initCtx conf secs
 
 

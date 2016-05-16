@@ -11,11 +11,11 @@
 	}
 %>
 <indie-action do="reply" with="${ permalink }">
-	<a href="${ twitterLink('reply') }"><svg role="img" class="icon"><use xlink:href="/default-icons.svg#reply"/></svg>Reply</a>
+	<a href="${ twitterLink('reply') }"><svg role="img" class="icon"><use xlink:href="${ window.icons }#reply"/></svg>Reply</a>
 </indie-action>
 <indie-action do="repost" with="${ permalink }">
-	<a href="${ twitterLink('retweet') }"><svg role="img" class="icon"><use xlink:href="/default-icons.svg#retweet"/></svg>Repost</a>
+	<a href="${ twitterLink('retweet') }"><svg role="img" class="icon"><use xlink:href="${ window.icons }#retweet"/></svg>Repost</a>
 </indie-action>
 <indie-action do="like" with="${ permalink }">
-	<a href="${ twitterLink('favorite') }"><svg role="img" class="icon"><use xlink:href="/default-icons.svg#star"/></svg>Like</a>
+	<a href="${ twitterLink('favorite') }"><svg role="img" class="icon"><use xlink:href="${ window.icons }#star"/></svg>Like</a>
 </indie-action>

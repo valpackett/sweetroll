@@ -10,28 +10,29 @@
 				.filter(function (x) { return x != landingCatName })
 				.map(function (x) { return scope.meta.categoryTitles[x] || _.capitalize(x) })
 			var entryTitleParts = _.get(scope, 'data.entry.properties.name', [])
+			window.icons = '/default-icons.svg?_v=' + defaultHashes['default-icons.svg']
 		%>
 		<title><%- _(entryTitleParts).concat(catTitleParts).concat(scope.meta.siteName).filter(function (p) { return _.trim(p) != '' }).value().join(' / ') %></title>
 		<link rel="openid.delegate" href="${ scope.meta.baseUri }">
 		<link rel="openid.server" href="https://indieauth.com/openid">
-		<link rel="stylesheet" href="/base-style.css">
-		<link rel="stylesheet" href="/default-style.css">
+		<link rel="stylesheet" href="/base-style.css?_v=${ defaultHashes['base-style.css'] }">
+		<link rel="stylesheet" href="/default-style.css?_v=${ defaultHashes['default-style.css'] }">
 		<% scope.meta.categoriesInNav.forEach(function (name) { if (name == currentCatName || name == landingCatName) { %>
 		<link rel="alternate${ name == landingCatName && name != currentCatName ? ' home' : '' }" href="/${name}?_accept=application/atom%2Bxml" type="application/atom+xml" title="${scope.meta.categoryTitles[name] || _.capitalize(name)}">
 		<% } }) %>
 	
 		<script>
 			if (!('registerElement' in document && 'import' in document.createElement('link')))
-				document.write('<script src="/bower/webcomponentsjs/webcomponents-lite.min.js"></sc'+'ript>');
+				document.write('<script src="/bower/webcomponentsjs/webcomponents-lite.min.js?_v=${ bowerHashes['webcomponentsjs/webcomponents-lite.min.js'] }"></sc'+'ript>');
 		</script>
-		<link rel="import" href="/bower/indieweb-components/indie-action.html">
-		<link rel="import" href="/bower/indieweb-components/fragmention-target.html">
+		<link rel="import" href="/bower/indieweb-components/indie-action.html?_v=${ bowerHashes['indieweb-components/indie-action.html'] }">
+		<link rel="import" href="/bower/indieweb-components/fragmention-target.html?_v=${ bowerHashes['indieweb-components/fragmention-target.html'] }">
 	</head>
 	<body class="${ scope.meta.pageClass }">
 		<header class="site-header">
 			<h1><a href="/"><%- scope.meta.siteName %></a></h1>
 			<a href="#author" id="author-link" onclick="var a=document.getElementById('author');a.setAttribute('tabindex','-1');a.focus()">
-				<svg role="img" class="icon"><use xlink:href="/default-icons.svg#info-circle"/></svg><span>Skip to author info</span>
+				<svg role="img" class="icon"><use xlink:href="${ window.icons }#info-circle"/></svg><span>Skip to author info</span>
 			</a>
 		</header>
 		<div class="site-content">

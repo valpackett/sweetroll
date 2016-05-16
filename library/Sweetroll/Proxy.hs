@@ -47,12 +47,12 @@ requestProxy ctx req respond =
           l | l > (4*1024*1024 ∷ Int) → respond $ responseLBS badRequest400 [("Content-Type", "text/plain")] "content-length too big"
           _ → do
             let src = mapOutput (Chunk . fromByteString) (HCC.responseBody upstreamRsp)
-                headers = filter allowedRespHeader $ HCC.responseHeaders upstreamRsp
+                headers = insertMap hCacheControl "public, max-age=120" $ filter allowedRespHeader $ HCC.responseHeaders upstreamRsp
             respond $ responseSource (HCC.responseStatus upstreamRsp) headers src
     _ →
       respond $ responseLBS badRequest400 [("Content-Type", "text/plain")] "url and sig params must be present"
   where allowedReqHeader (h, _) = h `elem` [ "Accept-Encoding", "Accept" ]
-        allowedRespHeader (h, _) = h `elem` [ "Content-Encoding", "Content-Length", "Content-Range", "Content-Type", "Date", "ETag", "Last-Modified", "Expires", "Transfer-Encoding", "Vary", "X-Content-Duration", "X-Content-Type-Options" ]
+        allowedRespHeader (h, _) = h `elem` [ "Content-Encoding", "Content-Length", "Content-Range", "Content-Type", "Date", "Transfer-Encoding", "Vary", "X-Content-Duration", "X-Content-Type-Options" ]
 
 proxiedUri ∷ SweetrollSecrets → Text → Text
 proxiedUri secs s = "/proxy?" ++ writeForm [(asText "url", s), ("sig", signUrlForProxy secs s)]

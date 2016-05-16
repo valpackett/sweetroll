@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-} -- because Data.Setters
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell, FlexibleContexts #-}
 
 module Sweetroll.Conf (
   module Sweetroll.Conf
@@ -10,6 +10,7 @@ module Sweetroll.Conf (
 import           Sweetroll.Prelude
 import           Text.Pandoc.Options
 import           Text.Highlighting.Kate.Styles (tango)
+import           Text.Highlighting.Kate.Format.HTML (styleToCss)
 import           Data.Setters
 import qualified Data.HashMap.Strict as HMS
 import           Data.Aeson.TH
@@ -112,3 +113,15 @@ bowerComponents = [ ("webcomponentsjs/webcomponents-lite.min.js", $(embedFile "b
                   , ("indieweb-components/fragmention-target.html", $(embedFile "bower_components/indieweb-components/fragmention-target.html"))
                   , ("findAndReplaceDOMText/src/findAndReplaceDOMText.js", $(embedFile "bower_components/findAndReplaceDOMText/src/findAndReplaceDOMText.js"))
                   , ("svgxuse/svgxuse.js", $(embedFile "bower_components/svgxuse/svgxuse.js")) ]
+
+baseCss ∷ LByteString
+baseCss = pandocCss ++ sanitizeCss ++ opentypeCss
+  where pandocCss = cs . styleToCss . writerHighlightStyle $ pandocWriterOptions
+        sanitizeCss = cs $(embedFile "bower_components/sanitize-css/sanitize.css")
+        opentypeCss = cs $(embedFile "bower_components/normalize-opentype.css/normalize-opentype.css")
+
+defaultCss ∷ LByteString
+defaultCss = cs $(embedFile "style.css")
+
+defaultIcons ∷ LByteString
+defaultIcons = cs $(embedFile "icons.svg")

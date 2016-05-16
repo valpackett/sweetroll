@@ -2,7 +2,7 @@
 	<section class="entry-facepile">
 		<% if (scope.icon) { %>
 			<svg role="img" class="icon" title="${ scope.name }">
-				<use xlink:href="/default-icons.svg#${ scope.icon }"/>
+				<use xlink:href="${ window.icons }#${ scope.icon }"/>
 				<title>${ scope.name }</title>
 			</svg>
 		<% } else { %>

@@ -7,7 +7,6 @@ module Sweetroll.Micropub.Endpoint (
 ) where
 
 import           Sweetroll.Prelude
-import           Control.Concurrent.Lifted (fork, threadDelay)
 import qualified Data.Vector as V
 import qualified Data.HashMap.Strict as HMS
 import           Text.Pandoc hiding (Link, Null)

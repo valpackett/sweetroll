@@ -8,7 +8,7 @@ module Sweetroll.Prelude (
 ) where
 
 import           ClassyPrelude as X hiding (fromString)
-import           Control.Error.Util as X hiding (hoistEither, (??), tryIO)
+import           Control.Error.Util as X hiding (hoistEither, (??), tryIO, bool)
 import           Control.Monad.Except as X (MonadError, throwError)
 import           Control.Monad.Trans.Except as X
 import           Control.Monad.Trans.Control as X

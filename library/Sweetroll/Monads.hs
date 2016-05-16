@@ -17,7 +17,6 @@ import           System.FilePath.Posix
 import           System.IO.Unsafe
 import           Data.Pool
 import           Data.Maybe
-import           GHC.Conc (getNumCapabilities)
 import           Network.HTTP.Client.Conduit
 import           Servant
 import           Gitson

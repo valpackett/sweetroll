@@ -5,7 +5,6 @@ module Sweetroll.Webmention.Receive where
 
 import           Sweetroll.Prelude hiding (snoc)
 import           Control.Lens (snoc)
-import           Control.Concurrent.Lifted (fork)
 import qualified Data.HashMap.Strict as HMS
 import           Data.Aeson.QQ
 import           Servant

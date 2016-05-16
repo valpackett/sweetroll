@@ -12,19 +12,8 @@ packages:
     extra-dep: true
   - location: '../gitson'
     extra-dep: true
-  - location: '../../vincenthz/hs-tls/core'
-    extra-dep: true
-  - location:
-      git: https://github.com/yesodweb/wai.git
-      commit: 966979c8913031a4dcb2895dcd19b7d0ed61e7ce
-    extra-dep: true
-    subdirs:
-      - wai-app-static
 extra-deps:
-  - lens-datetime-0.2.1
   - setters-0.1
   - git-embed-0.1.0
   - highlighting-kate-0.6.2
-  - servant-0.5
-  - servant-server-0.5
-resolver: nightly-2016-04-01
+resolver: nightly-2016-05-16

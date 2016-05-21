@@ -5,7 +5,6 @@ module Sweetroll.ApiSpec (spec) where
 
 import           Sweetroll.Prelude hiding (Index, re, parts, contains)
 import           Control.Monad.Trans.Writer
-import           Control.Concurrent
 import           Test.Hspec
 import           System.Directory
 import           System.Process (readProcessWithExitCode)

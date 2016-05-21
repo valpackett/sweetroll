@@ -3,7 +3,7 @@
 
 :{
 :def serve \port -> return $ unlines
-     [ ":l executable/DevMain.hs"
+     [ ":load executable/DevMain.hs"
      , ":m + Sweetroll.Prelude DevMain Sweetroll.Api Sweetroll.Conf"
      , "update " ++ (if port == "" then "3000" else port) ]
 :}
@@ -14,7 +14,9 @@
      , ":set -package sweetroll -package hspec -package directory -package case-insensitive"
      , ":load test-suite/Spec.hs"
      , ":main --color"
-     , ":ctags" ]
+     , ":ctags"
+     , ":m + Sweetroll.Prelude"
+     , ":reload"]
 :}
 
 :load executable/Main.hs
@@ -27,3 +29,4 @@ putCmd ":serve 1234" "(or on any port really) // BTW, serve doesn't lock up the 
 putCmd ":test      " "run hspec tests (and :ctags while we're at it)"
 putStrLn ""
 :m Sweetroll.Prelude
+:reload

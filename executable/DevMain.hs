@@ -34,6 +34,8 @@ main port = do
   _ ← newStore ref
   return ()
 
+-- XXX: move to higher level library https://hackage.haskell.org/package/rapid
+
 update ∷ Int → IO ()
 update port = do
   m ← lookupStore 0

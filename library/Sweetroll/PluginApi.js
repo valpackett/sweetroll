@@ -35,14 +35,16 @@ Sweetroll._fireEvent = function (name, data) {
 }
 
 
-/* --- Public API. called by plugins --- */
+/* --- Public API. called by plugins ---
+ * Defined in Haskell:
+ * * Sweetroll.fetch -- HTTP request */
 
 Sweetroll.addCategoryDecider = function (d) {
 	if (_.isFunction(d))
 		Sweetroll._categoryDeciders.push(d)
 }
 
-Sweetroll.addEventListener = function(e, l) {
+Sweetroll.addEventListener = function (e, l) {
 	if (_.isFunction(l)) {
 		Sweetroll._eventListeners[e] = Sweetroll._eventListeners[e] || []
 		Sweetroll._eventListeners[e].push(l)

@@ -48,6 +48,7 @@ library
       , data-default
       , string-conversions
       , bytestring-conversion
+      , case-insensitive
       , text
       , bytestring
       , blaze-markup

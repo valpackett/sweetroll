@@ -16,6 +16,7 @@ import qualified Data.Conduit.Combinators as C
 import qualified Data.Vector as V
 import qualified Data.HashMap.Strict as HMS
 import           Data.HashMap.Strict (adjust)
+import qualified Data.CaseInsensitive as CI
 import           Data.Microformats2.Parser
 import           Data.IndieWeb.MicroformatsUtil
 import           Data.IndieWeb.SiloToMicroformats
@@ -103,3 +104,16 @@ fetchAllReferenceContexts = fetchReferenceContexts "in-reply-to"
                         >=> fetchReferenceContexts "like-of"
                         >=> fetchReferenceContexts "repost-of"
                         >=> fetchReferenceContexts "quotation-of"
+
+jsonFetch ∷ Manager → Value → Value → IO Value
+jsonFetch mgr (String uri) rdata = do
+  let setData req = return $ req { method = fromMaybe "GET" $ cs . toUpper <$> rdata ^? key "method" . _String
+                                 , requestHeaders = fromMaybe [] $ map (bimap (CI.mk . cs) (cs . fromMaybe "" . (^? _String))) . HMS.toList <$> rdata ^? key "headers" . _Object
+                                 , requestBody = RequestBodyBS $ fromMaybe "" $ cs <$> rdata ^? key "body" . _String }
+  r ← runReaderT (runHTTP $ reqS uri >>= anyStatus >>= setData >>= performWithBytes) mgr
+  return $ case r of
+                Left errmsg → object [ "error" .= errmsg ]
+                Right res → object [ "status" .= statusCode (responseStatus res)
+                                   , "headers" .= object (map (\(k, v) → (asText $ cs $ CI.foldedCase k) .= (String $ cs v)) $ responseHeaders res)
+                                   , "body" .= String (cs $ responseBody res) ]
+jsonFetch _ _ _ = return $ object [ "error" .= String "The URI must be a string" ]

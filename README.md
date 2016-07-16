@@ -173,8 +173,7 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
   - [x] handle update requests
   - [x] handle delete requests
   - [x] handle undelete requests
-  - [ ] support posting [photos](https://indiewebcamp.com/photos)
-  - [ ] download / locally store / rewrite url of photos given as urls
+  - [x] support posting [photos](https://indiewebcamp.com/photos)
 - [ ] indieweb-algorithms?: ensure the person you're replying to *never* gets picked up you when you're replying (caught in test without own h-card)
 - [ ] tags? (kill the difference between categories and tags? // use symlinks to add to multiple categories/tags)
 - [ ] extract a `WebPrelude` package: `Sweetroll.Prelude`, `Sweetroll.HTTPClient`, `formToObject`, more stuff

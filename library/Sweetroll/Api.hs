@@ -93,7 +93,7 @@ postprocessEntry entry = do
 sweetrollServerT ∷ ServerT SweetrollAPI Sweetroll
 sweetrollServerT = getIndieConfig :<|> getBaseCss :<|> getDefaultCss :<|> getDefaultIcons
                   :<|> postLogin :<|> getAuth
-                  :<|> postMicropub :<|> getMicropub
+                  :<|> postMedia :<|> postMicropub :<|> getMicropub
                   :<|> receiveWebmention
                   :<|> getEntry :<|> getCat :<|> getIndex
 

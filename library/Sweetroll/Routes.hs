@@ -29,6 +29,7 @@ type DefaultIconsRoute        = "default-icons.svg" :> Get '[SVG] LByteString
 
 type PostLoginRoute           = "login" :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] [(Text, Text)]
 type GetLoginRoute            = "login" :> AuthProtect "jwt" :> Get '[FormUrlEncoded] [(Text, Text)]
+type PostMediaRoute           = "micropub" :> "media" :> AuthProtect "jwt" :> Files Tmp :> PostCreated '[FormUrlEncoded, JSON] (Headers '[Header "Location" Text] MicropubResponse)
 type PostMicropubRoute        = "micropub" :> AuthProtect "jwt" :> ReqBody '[FormUrlEncoded, JSON] MicropubRequest :> PostCreated '[FormUrlEncoded, JSON] (Headers '[Header "Location" Text] MicropubResponse)
 type GetMicropubRoute         = "micropub" :> AuthProtect "jwt" :> QueryParam "q" Text :> QueryParams "properties" Text :> QueryParam "url" Text :> Get '[JSON, FormUrlEncoded] MicropubResponse
 
@@ -40,7 +41,7 @@ type IndexRoute               = Get '[HTML] (WithLink (View IndexedPage))
 
 type SweetrollAPI             = IndieConfigRoute :<|> BaseCssRoute :<|> DefaultCssRoute :<|> DefaultIconsRoute
                            :<|> PostLoginRoute :<|> GetLoginRoute
-                           :<|> PostMicropubRoute :<|> GetMicropubRoute
+                           :<|> PostMediaRoute :<|> PostMicropubRoute :<|> GetMicropubRoute
                            :<|> PostWebmentionRoute
                            :<|> EntryRoute :<|> CatRoute :<|> IndexRoute
 
@@ -55,3 +56,7 @@ showLink = ("/" ++) . cs . show
 
 catLink ∷ Slice α → URI
 catLink Slice{..} = permalink (Proxy ∷ Proxy CatRoute) sliceCatName Nothing Nothing
+
+-- XXX: From https://github.com/haskell-servant/servant/issues/133 -- delete when support lands in servant
+data Tmp
+data Files b

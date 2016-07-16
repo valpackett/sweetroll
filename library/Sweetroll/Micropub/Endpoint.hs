@@ -1,20 +1,29 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE FlexibleContexts, TypeFamilies, DataKinds #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances, ScopedTypeVariables, MultiParamTypeClasses, TypeFamilies, TypeOperators, DataKinds #-}
 
 module Sweetroll.Micropub.Endpoint (
   getMicropub
 , postMicropub
+, postMedia
 ) where
 
 import           Sweetroll.Prelude
 import qualified Data.Vector as V
+import qualified Data.Map.Strict as MS
 import qualified Data.HashMap.Strict as HMS
+import qualified Data.ByteString.Lazy as BL
+import           Data.ByteArray.Encoding
 import           Text.Pandoc hiding (Link, Null)
 import           Text.Blaze.Html.Renderer.Text (renderHtml)
 import           Web.JWT hiding (header, decode)
 import           Servant
 import           System.Process (readProcessWithExitCode)
-import           System.Directory (removeFile)
+import           System.Directory (removeFile, renameFile)
+import           Network.Wai.Parse
+import           Network.Mime
+import           Servant.Server.Internal
+import           Control.Monad.Trans.Resource (runResourceT, withInternalState)
+import           Crypto.Hash
 import           Gitson
 import           Sweetroll.Conf
 import           Sweetroll.Auth
@@ -46,6 +55,28 @@ getMicropub token (Just "config") props url =
   liftM MultiResponse $ mapM (\x → getMicropub token (Just x) props url)
                              [ "media-endpoint", "syndicate-to" ]
 getMicropub token _ _ _ = getAuth token |> AuthInfo
+
+
+extMap ∷ Map ByteString Text
+extMap = MS.foldlWithKey' (\a x y → MS.insert y x a) MS.empty defaultMimeMap
+
+postMedia ∷ JWT VerifiedJWT → MultiPartDataT Tmp → Sweetroll (Headers '[Servant.Header "Location" Text] MicropubResponse)
+postMedia _ multipart = do
+  nameRef ← newIORef ""
+  liftIO $ void $ multipart $ \(params, files) → do
+    forM_ files $ \(name, file) → when (name == "file") $ do
+      content ← BL.readFile $ fileContent file
+      let digest = cs $ asByteString $ convertToBase Base16 (hashlazy content ∷ Digest SHA256)
+      let ext = fromMaybe "" $ (("." ++) . cs) <$> lookup (fileContentType file) extMap
+      let fullname = "static/" ++ digest ++ ext
+      renameFile (fileContent file) fullname
+      writeIORef nameRef fullname
+    return (params, files)
+  base ← getConfOpt baseURI
+  name ← readIORef nameRef
+  let uri = tshow $ (fromMaybe nullURI $ parseURIReference name) `relativeTo` base
+  return $ addHeader uri Posted
+
 
 postMicropub ∷ JWT VerifiedJWT → MicropubRequest
              → Sweetroll (Headers '[Servant.Header "Location" Text] MicropubResponse)
@@ -181,3 +212,29 @@ applyUpdates (Object props) (DelFromProps newProps) =
 applyUpdates (Object props) (DelProps newProps) =
   Object $ foldl' (\ps k → HMS.delete k ps) props newProps
 applyUpdates x _ = x
+
+
+-- XXX: From https://github.com/haskell-servant/servant/issues/133 -- delete when support lands in servant
+
+class KnownBackend b where
+  type Storage b ∷ *
+  withBackend ∷ Proxy b → (BackEnd (Storage b) → IO r) → IO r
+
+instance KnownBackend Tmp where
+  type Storage Tmp = FilePath
+  withBackend Proxy f = runResourceT . withInternalState $ \s →
+    f (tempFileBackEnd s)
+
+
+type MultiPartData b = ([Param], [File (Storage b)])
+type MultiPartDataT b = ((MultiPartData b → IO (MultiPartData b)) → IO (MultiPartData b))
+
+instance (KnownBackend b, HasServer sublayout config) => HasServer (Files b :> sublayout) config where
+  type ServerT (Files b :> sublayout) m =
+    MultiPartDataT b → ServerT sublayout m
+
+  route Proxy config subserver = WithRequest $ \request →
+    route (Proxy ∷ Proxy sublayout) config (addBodyCheck subserver (bodyCheck request))
+    where
+      bodyCheck request = return $ Route (\f →
+        withBackend (Proxy ∷ Proxy b) $ \pb → parseRequestBody pb request >>= f)

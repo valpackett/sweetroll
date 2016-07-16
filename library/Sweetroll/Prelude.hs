@@ -50,6 +50,10 @@ firstStr v l = (v ^? l . _String) <|> (v ^? values . l . _String) <|> (v ^? l . 
 uriPathParts ∷ ConvertibleStrings Text α ⇒ URI → [α]
 uriPathParts = map cs . splitOn "/" . drop 1 . cs . uriPath
 
+mergeVal ∷ Value → Value → Value
+mergeVal (Object x) (Object y) = Object $ HMS.unionWith mergeVal x y
+mergeVal x _ = x
+
 -- | Prepares a text for inclusion in a URL.
 --
 -- >>> :set -XOverloadedStrings

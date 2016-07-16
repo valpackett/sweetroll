@@ -26,18 +26,25 @@ import           Sweetroll.Events
 import           Sweetroll.HTTPClient
 
 getMicropub ∷ JWT VerifiedJWT → Maybe Text → [Text] → Maybe Text → Sweetroll MicropubResponse
-getMicropub _ (Just "syndicate-to") _ _ = do
-  (MkSyndicationConfig syndConf) ← getConfOpt syndicationConfig
-  return $ SyndicateTo $ case syndConf of
-             Object o → map (\(k, v) → object [ "uid" .= v, "name" .= k ]) $ HMS.toList o
-             Array a → toList a
-             _ → []
 getMicropub _ (Just "source") props (Just url) = do
   -- TODO: props filtering
   target ← guardJustP (errNoURIInField "url") $ parseURI $ cs url
   (category, slug) ← parseEntryURI target
   entry ← guardJust errWrongPath $ readDocumentByName category slug
   return $ Source entry
+getMicropub _ (Just "syndicate-to") _ _ = do
+  (MkSyndicationConfig syndConf) ← getConfOpt syndicationConfig
+  return $ SyndicateTo $ case syndConf of
+             Object o → map (\(k, v) → object [ "uid" .= v, "name" .= k ]) $ HMS.toList o
+             Array a → toList a
+             _ → []
+getMicropub _ (Just "media-endpoint") _ _ = do
+  base ← getConfOpt baseURI
+  url ← fromMaybe nullURI . parseURIReference <$> getConfOpt mediaEndpoint
+  return $ MediaEndpoint $ tshow $ url `relativeTo` base
+getMicropub token (Just "config") props url =
+  liftM MultiResponse $ mapM (\x → getMicropub token (Just x) props url)
+                             [ "media-endpoint", "syndicate-to" ]
 getMicropub token _ _ _ = getAuth token |> AuthInfo
 
 postMicropub ∷ JWT VerifiedJWT → MicropubRequest

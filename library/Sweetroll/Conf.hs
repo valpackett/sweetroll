@@ -47,6 +47,7 @@ data SweetrollConf = SweetrollConf
   ,           categoryTitles ∷ Maybe (HashMap Text Text)
   ,              indieConfig ∷ Maybe IndieConfig
   ,        syndicationConfig ∷ Maybe SyndicationConfig
+  ,            mediaEndpoint ∷ Maybe String
   ,   indieAuthRedirEndpoint ∷ Maybe String
   ,   indieAuthCheckEndpoint ∷ Maybe String -- Separated for debugging
   ,                  pushHub ∷ Maybe String
@@ -80,6 +81,7 @@ instance Default SweetrollConf where
                                      -- , object [ "name" .= asText "test",          "uid" .= asText "<a href=\"http://localhost:9247/post?type=link&amp;syndication=yep\" data-synd></a>" ]
                                      , object [ "name" .= asText "instagram.com", "uid" .= asText "<a href=\"https://brid.gy/publish/instagram\" data-synd></a>" ]
                                      ]
+      , mediaEndpoint            = Just "/micropub/media"
       , indieAuthCheckEndpoint   = Just "https://indieauth.com/auth"
       , indieAuthRedirEndpoint   = Just "https://indieauth.com/auth"
       , pushHub                  = Just "https://switchboard.p3k.io"

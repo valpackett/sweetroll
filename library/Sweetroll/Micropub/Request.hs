@@ -36,7 +36,8 @@ data MicropubRequest = Create ObjType ObjProperties [ObjSyndication]
 
 instance FromJSON MicropubRequest where
   parseJSON v@(Object _) =
-    case v ^? key "mp-action" . _String of
+    -- TODO: remove mp-action, was removed from spec
+    case v ^? key "action" . _String <|> v ^? key "mp-action" . _String of
       Just "delete" →
         case v ^? key "url" . _String of
           Nothing → fail "Delete with no url"
@@ -56,9 +57,10 @@ instance FromJSON MicropubRequest where
       _ → fail "Unknown action type"
   parseJSON _ = mzero
 
+-- TODO: remove form-encoded update (non-create?) requests, was removed from spec
 instance FromFormUrlEncoded MicropubRequest where
   fromFormUrlEncoded f =
-    case lookup "mp-action" f of
+    case lookup "action" f <|> lookup "mp-action" f of
       Just "delete" →
         case lookup "url" f of
           Nothing → fail "Delete with no url"

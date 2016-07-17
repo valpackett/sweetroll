@@ -15,6 +15,7 @@ module Sweetroll.Auth (
 import           Sweetroll.Prelude hiding (iat, au)
 import           Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import qualified Data.Map as M
+import qualified Data.ByteString.Char8 as S8
 import           Web.JWT hiding (header)
 import qualified Network.Wai as Wai
 import           Servant.API
@@ -34,7 +35,6 @@ authHandler secKey = mkAuthHandler h
   where h req =
           case asum [ lookup hAuthorization (Wai.requestHeaders req) >>= fromHeader
                     , join $ lookup "access_token" $ Wai.queryString req
-                    -- XXX: parse from form as req'd by micropub
                     ] of
             Nothing → throwE errNoAuth
             Just tok →
@@ -90,3 +90,31 @@ postLogin params = do
          Left e → do
            putStrLn $ cs $ "Authentication error: " ++ e ++ " / params: " ++ tshow params
            throwError errWrongAuth
+
+
+supportFormAuth ∷ Wai.Middleware
+supportFormAuth app req respond = do
+  let headers = Wai.requestHeaders req
+  if "urlencoded" `isInfixOf` (fromMaybe "" $ lookup hContentType headers)
+     && not ("Bearer" `isInfixOf` (fromMaybe "" $ lookup hAuthorization headers))
+     then do
+       (req', body) ← getRequestBody req
+       let form = fromMaybe [] $ readForm $ S8.concat body ∷ [(ByteString, ByteString)]
+       let token = fromMaybe "" $ lookup "access_token" form
+       app req' { Wai.requestHeaders = (hAuthorization, "Bearer " ++ token) : headers } respond
+     else app req respond
+  where getRequestBody rq = do
+          -- https://hackage.haskell.org/package/wai-extra-3.0.16.1/docs/src/Network.Wai.Middleware.rquestLogger.html
+          let loop front = do
+                 bs ← Wai.requestBody rq
+                 if S8.null bs
+                     then return $ front []
+                     else loop $ front . (bs:)
+          body ← loop id
+          ichunks ← newIORef body
+          let rbody = atomicModifyIORef ichunks $ \chunks →
+                 case chunks of
+                     [] → ([], S8.empty)
+                     x:y → (y, x)
+          let rq' = rq { Wai.requestBody = rbody }
+          return (rq', body)

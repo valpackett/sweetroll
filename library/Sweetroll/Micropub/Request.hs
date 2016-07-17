@@ -57,7 +57,7 @@ instance FromJSON MicropubRequest where
       _ → fail "Unknown action type"
   parseJSON _ = mzero
 
--- TODO: remove form-encoded update (non-create?) requests, was removed from spec
+-- TODO: remove form-encoded update requests, was removed from spec
 instance FromFormUrlEncoded MicropubRequest where
   fromFormUrlEncoded f =
     case lookup "action" f <|> lookup "mp-action" f of
@@ -82,6 +82,7 @@ instance FromFormUrlEncoded MicropubRequest where
                          -- no syndicate-to[], the [] is handled in formToObject
          in Right $ Create h o synd
       _ → Left "Unknown action type"
+
 
 formToObject ∷ [(Text, Text)] → Value
 formToObject f = foldl' assignProp (object []) $ (map . first) parseKey f

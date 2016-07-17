@@ -106,6 +106,7 @@ sweetrollApp thr ctx =
   $ cacheControlAuto
   $ acceptOverride
   $ gzip def
+  $ supportFormAuth
   $ mapUrls $ mount "bower" (staticApp $ (embeddedSettings bowerComponents) { ssMaxAge = MaxAgeSeconds 30 })
           <|> mount "static" (staticApp $ (defaultWebAppSettings "static") { ssMaxAge = MaxAgeSeconds 30 })
           <|> mount "proxy" (requestProxy ctx)

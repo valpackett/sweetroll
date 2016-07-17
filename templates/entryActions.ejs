@@ -7,15 +7,15 @@
 		/* https://dev.twitter.com/web/intents */
 		return twitterId
 			? 'https://twitter.com/intent/' + act + '?' + (act == 'reply' ? 'in_reply_to' : 'tweet_id') + '=' + twitterId
-			: 'https://indiewebcamp.com/indie-config'
+			: 'javascript:void(0)// ' + (act == 'retweet' ? 'repost' : act) + ' using indie-config. do not open this in a new tab. see https://indieweb.org/indie-config for info.'
 	}
 %>
 <indie-action do="reply" with="${ permalink }">
-	<a href="${ twitterLink('reply') }"><svg role="img" class="icon"><use xlink:href="${ window.icons }#reply"/></svg>Reply</a>
+	<a href="${ twitterLink('reply') }"><svg role="img" aria-hidden="true" class="icon"><use xlink:href="${ window.icons }#reply"/></svg>Reply</a>
 </indie-action>
 <indie-action do="repost" with="${ permalink }">
-	<a href="${ twitterLink('retweet') }"><svg role="img" class="icon"><use xlink:href="${ window.icons }#retweet"/></svg>Repost</a>
+	<a href="${ twitterLink('retweet') }"><svg role="img" aria-hidden="true" class="icon"><use xlink:href="${ window.icons }#retweet"/></svg>Repost</a>
 </indie-action>
 <indie-action do="like" with="${ permalink }">
-	<a href="${ twitterLink('favorite') }"><svg role="img" class="icon"><use xlink:href="${ window.icons }#star"/></svg>Like</a>
+	<a href="${ twitterLink('favorite') }"><svg role="img" aria-hidden="true" class="icon"><use xlink:href="${ window.icons }#star"/></svg>Like</a>
 </indie-action>

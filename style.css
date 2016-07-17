@@ -1,7 +1,7 @@
 :root {
   -webkit-hyphens: auto; -ms-hyphens: auto; hyphens: auto;
   background: #ecf0f1; color: #34495e;
-  font-size: calc(14px + 4 * ((100vw - 600px) / 800)); /* https://github.com/seaneking/postcss-responsive-type */
+  font-size: calc(1rem + 2 * ((100vw - 600px) / 800)); /* https://github.com/seaneking/postcss-responsive-type */
 }
 body { word-wrap: break-word; min-height: 100vh; display: flex; flex-direction: column; }
 pre { white-space: pre; }
@@ -96,7 +96,7 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
   .ref-context-avatar { width: 48px; height: 48px; min-width: 48px /* chrome */; }
 }
 @media screen and (max-width: 600px) {
-  :root { font-size: 14px; }
+  :root { font-size: 1.02rem; }
 }
 @media screen and (min-width: 600px) {
   .site-header, .site-content, .site-footer { width: 90%; }
@@ -115,6 +115,5 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
   .site-header, .site-content, .site-footer { width: 85%; }
 }
 @media screen and (min-width: 1400px) {
-  :root { font-size: 18px; }
   .site-header, .site-content, .site-footer { width: 75%; }
 }

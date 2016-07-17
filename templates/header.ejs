@@ -32,7 +32,7 @@
 		<header class="site-header">
 			<h1><a href="/"><%- scope.meta.siteName %></a></h1>
 			<a href="#author" id="author-link" onclick="var a=document.getElementById('author');a.setAttribute('tabindex','-1');a.focus()">
-				<svg role="img" class="icon"><use xlink:href="${ window.icons }#info-circle"/></svg><span>Skip to author info</span>
+				<svg role="img" aria-hidden="true" class="icon"><use xlink:href="${ window.icons }#info-circle"/></svg><span>Skip to author info</span>
 			</a>
 		</header>
 		<div class="site-content">

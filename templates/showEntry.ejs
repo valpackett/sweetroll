@@ -14,24 +14,27 @@
 	var iconNames = { replies: 'reply', reposts: 'retweet', likes: 'star', bookmarks: 'bookmark', quotations: 'quote-left' }
 	var props = { reposts: 'p-repost', likes: 'p-like', bookmarks: 'p-bookmark', quotations: 'p-quotation' }
 	var comments = separateComments(properties.url, properties.comment)
+	var reasonIcon = function (name, icon) {
+		return '<svg role="img" aria-hidden="true" class="icon icon-ref-reason icon-ref-' + name + '"><use xlink:href="' + window.icons + '#' + icon + '"/></svg>'
+	}
 %>
 
 <% _.forEach(properties['in-reply-to'], function (reply) { %>
-	<%= templates.showRefContext({ entry: reply, long: false, prop: 'u-in-reply-to', reason: '<svg role="img" class="icon icon-ref-reason icon-ref-reply"><use xlink:href="' + window.icons + '#reply"/></svg> in reply to', rel: !compactView ? 'rel="in-reply-to"' : '', showReplies: true, showContexts: !compactView }) %>
+	<%= templates.showRefContext({ entry: reply, long: false, prop: 'u-in-reply-to', reason: reasonIcon('reply', 'reply') + ' in reply to', rel: !compactView ? 'rel="in-reply-to"' : '', showReplies: true, showContexts: !compactView }) %>
 <% }) %>
 
 <% _.forEach(properties['like-of'], function (like) { %>
-	<%= templates.showRefContext({ entry: like, long: false, prop: 'u-like-of', reason: '<svg role="img" class="icon icon-ref-reason icon-ref-like"><use xlink:href="' + window.icons + '#star"/></svg> liked', rel: !compactView ? 'rel="like-of"' : '', showReplies: false, showContexts: !compactView }) %>
+	<%= templates.showRefContext({ entry: like, long: false, prop: 'u-like-of', reason: reasonIcon('like', 'star') + ' liked', rel: !compactView ? 'rel="like-of"' : '', showReplies: false, showContexts: !compactView }) %>
 <% }) %>
 
 <% _.forEach(properties['quotation-of'], function (quotation) { %>
-	<%= templates.showRefContext({ entry: quotation, long: false, prop: 'u-quotation-of', reason: '<svg role="img" class="icon icon-ref-reason icon-ref-quotation"><use xlink:href="' + window.icons + '#quote-left"/></svg> quoted', rel: !compactView ? 'rel="quotation-of"' : '', showReplies: false, showContexts: !compactView }) %>
+	<%= templates.showRefContext({ entry: quotation, long: false, prop: 'u-quotation-of', reason: reasonIcon('quotation', 'quote-left') + ' quoted', rel: !compactView ? 'rel="quotation-of"' : '', showReplies: false, showContexts: !compactView }) %>
 <% }) %>
 
 <% _.forEach(properties['bookmark-of'], function (bookmark) { %>
 	<div class="ref-context u-bookmark-of h-cite">
 		<header class="ref-context-reason">
-			<svg role="img" class="icon icon-ref-reason icon-ref-bookmark"><use xlink:href="${ window.icons }#bookmark"/></svg>
+			<%= reasonIcon('bookmark', 'bookmark') %>
 			bookmarked
 			<% if (_.isString(bookmark)) { %>
 				<a class="p-name u-url" href="${ onlyHttpUrl(bookmark) }">
@@ -65,7 +68,7 @@
 			<fragmention-target exact>
 		<% } %>
 		<% _.forEach(properties['repost-of'], function (repost) { %>
-			<%= templates.showRefContext({ entry: repost, long: true, prop: 'u-repost-of', reason: '<svg role="img" class="icon icon-ref-reason icon-ref-repost"><use xlink:href="' + window.icons + '#retweet"/></svg> reposted', rel: !compactView ? 'rel="repost-of"' : '' }) %>
+			<%= templates.showRefContext({ entry: repost, long: true, prop: 'u-repost-of', reason: reasonIcon('repost', 'retweet') + ' reposted', rel: !compactView ? 'rel="repost-of"' : '' }) %>
 		<% }) %>
 		<% var onlySummary = !isUntitled && compactView %>
 		<% if (!_.isEmpty(onlySummary ? properties.summary : properties.content)) { %>

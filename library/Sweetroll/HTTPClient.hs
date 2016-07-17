@@ -85,7 +85,7 @@ fetchReferenceContexts ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ Text → Object 
 fetchReferenceContexts k props = do
     newCtxs ← updateCtxs $ lookup k props
     return $ insertMap k newCtxs props
-  where updateCtxs (Just (Array v)) = Array `liftM` mapM fetch v
+  where updateCtxs (Just (Array v)) = (Array . reverse) `liftM` mapM fetch v
         updateCtxs _ = return $ Array V.empty
         fetch v@(Object _) = maybe (return v) (fetch . String) (v ^? key "properties" . key "url" . nth 0 . _String)
         fetch (String u) = maybeT (return $ String u) return $ do

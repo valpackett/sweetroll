@@ -2,6 +2,7 @@ this.Sweetroll = {
 	conf: {},
 	_categoryDeciders: [
 		function (props) {
+			if (_.size(props['repost-of']) + _.size(props['quotation-of']) > 1) return { name: 'stories', priority: 1 }
 			if (!_.isEmpty(props['bookmark-of'])) return { name: 'bookmarks', priority: 1 }
 			if (!_.isEmpty(props['like-of'])) return { name: 'likes', priority: 1 }
 			if (!_.isEmpty(props['in-reply-to'])) return { name: 'replies', priority: 1 }

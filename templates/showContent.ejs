@@ -12,4 +12,12 @@
 <% _.forEach(properties.photo, function (photo) { if (!(_.includes(content, photo.replace('&', '&amp;')) || _.includes(content, photo))) {%>
 	<img src="${photo}" alt="" class="u-photo entry-photo">
 <% } }) %>
+<% _.forEach(properties.video, function (video) { if (!(_.includes(content, video.replace('&', '&amp;')) || _.includes(content, video))) {%>
+	<video class="entry-video" controls="controls">
+		<source src="${video}" class="u-video">
+	</video>
+<% } }) %>
+<% _.forEach(properties.audio, function (audio) { if (!(_.includes(content, audio.replace('&', '&amp;')) || _.includes(content, audio))) {%>
+	<audio src="${audio}" controls="controls" class="u-audio entry-audio"></audio>
+<% } }) %>
 <%= content || '' %>

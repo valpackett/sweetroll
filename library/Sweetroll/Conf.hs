@@ -64,9 +64,9 @@ instance Default SweetrollConf where
       , httpsWorks               = Just False
       , domainName               = Just "localhost"
       , itemsPerPage             = Just 20
-      , categoriesInLanding      = Just [ "articles+notes" ]
-      , categoriesInNav          = Just [ "articles+notes", "articles", "replies+likes", "bookmarks" ]
-      , categoryTitles           = Just $ HMS.fromList [ ("articles+notes", "Notes and articles")
+      , categoriesInLanding      = Just [ "articles+notes+stories" ]
+      , categoriesInNav          = Just [ "articles+notes+stories", "articles", "replies+likes", "bookmarks" ]
+      , categoryTitles           = Just $ HMS.fromList [ ("articles+notes+stories", "Notes and articles")
                                                        , ("articles", "Articles")
                                                        , ("replies+likes", "Responses")
                                                        , ("bookmarks", "Bookmarks") ]

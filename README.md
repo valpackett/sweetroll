@@ -159,6 +159,8 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
   - [x] config getting
   - [x] HTTP request sending
   - [x] example plugin: Pushover notifications
+  - [ ] cron-style scheduling
+  - [ ] post manipulation
   - [ ] HTTP request (webhook) handling
   - [ ] example plugin: Telegram bot (posting, webmention notifications, responding to them, deleting them, etc.)
 - webmention ([YAY W3C DRAFT](http://webmention.net/draft/)!)

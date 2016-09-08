@@ -9,13 +9,13 @@
   "license": "Unlicense",
   "private": true,
   "dependencies": {
-    "webcomponentsjs": "~0.7.7",
+    "webcomponentsjs": "~0.7.22",
     "indieweb-components": "~0.1.2",
-    "lodash": "~4.6.1",
-    "moment": "~2.12.0",
-    "sanitize-css": "^3.3.0",
+    "lodash": "~4.15.0",
+    "moment": "~2.14.1",
+    "sanitize-css": "^4.1.0",
     "normalize-opentype.css": "^0.2.4",
-    "svgxuse": "^1.1.15",
+    "svgxuse": "^1.1.21",
     "Font-Awesome-SVG-PNG": "font-awesome-svg-png#^1.1.5",
     "SparkMD5": "^2.0.2"
   }

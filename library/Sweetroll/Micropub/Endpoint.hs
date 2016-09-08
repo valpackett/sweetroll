@@ -19,6 +19,7 @@ import           Web.JWT hiding (header, decode)
 import           Servant
 import           System.Process (readProcessWithExitCode)
 import           System.Directory (removeFile, renameFile)
+import           System.FilePath.Posix (takeExtension)
 import           Network.Wai.Parse
 import           Network.Mime
 import           Servant.Server.Internal
@@ -26,7 +27,6 @@ import           Control.Monad.Trans.Resource (runResourceT, withInternalState)
 import           Crypto.Hash
 import           Gitson
 import           Sweetroll.Conf
-import           Sweetroll.Auth
 import           Sweetroll.Monads
 import           Sweetroll.Routes
 import           Sweetroll.Micropub.Request
@@ -68,7 +68,10 @@ postMedia _ multipart = do
     forM_ files $ \(name, file) → when (name == "file") $ do
       content ← BL.readFile $ fileContent file
       let digest = cs $ asByteString $ convertToBase Base16 (hashlazy content ∷ Digest SHA256)
-      let ext = fromMaybe "" $ (("." ++) . cs) <$> lookup (fileContentType file) extMap
+      let fileExt = takeExtension $ cs $ fileName file
+      let ext = if fileContentType file == "application/octet-stream"
+                   then fileExt
+                   else fromMaybe fileExt $ (("." ++) . cs) <$> lookup (fileContentType file) extMap
       let fullname = "static/" ++ digest ++ ext
       renameFile (fileContent file) fullname
       writeIORef nameRef fullname

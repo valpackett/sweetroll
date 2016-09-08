@@ -54,7 +54,8 @@ getMicropub _ (Just "media-endpoint") _ _ = do
 getMicropub token (Just "config") props url =
   liftM MultiResponse $ mapM (\x → getMicropub token (Just x) props url)
                              [ "media-endpoint", "syndicate-to" ]
-getMicropub token _ _ _ = getAuth token |> AuthInfo
+--getMicropub token _ _ _ = getAuth token |> AuthInfo
+getMicropub token _ props url = getMicropub token (Just "media-endpoint") props url -- because some clients aren't up to date with the spec >_<
 
 
 extMap ∷ Map ByteString Text

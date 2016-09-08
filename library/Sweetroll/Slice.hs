@@ -37,7 +37,7 @@ sliceCategory perPage before after catName unsortedKeys =
                         (Nothing, Just a)  → reverse . take perPage . reverse . filter (\(k, _) → k > a)
                         (Nothing, Nothing) → take perPage
 
-mergeSlices ∷ Eq α ⇒ Int → Bool → Slice α → Slice α → Slice α
+mergeSlices ∷ Int → Bool → Slice α → Slice α → Slice α
 mergeSlices perPage isAfter x y =
   Slice {
     sliceItems    = items

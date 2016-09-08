@@ -13,7 +13,6 @@ packages:
   - location: '../gitson'
     extra-dep: true
 extra-deps:
-  - setters-0.1
   - git-embed-0.1.0
-  - highlighting-kate-0.6.2
-resolver: nightly-2016-05-16
+  - highlighting-kate-0.6.2.1
+resolver: nightly-2016-09-04

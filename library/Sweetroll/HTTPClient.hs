@@ -46,7 +46,7 @@ postForm form req =
              , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
              , requestBody = RequestBodyBS $ writeForm form }
 
-performWithFn ∷ (MonadHTTP ψ μ) ⇒ (ConduitM ι ByteString μ () → μ ρ) → Request → EitherT Text μ (Response ρ)
+performWithFn ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ (ConduitM ι ByteString μ () → μ ρ) → Request → EitherT Text μ (Response ρ)
 performWithFn fn req = do
   res ← lift $ tryAny $ HCC.withResponse req $ \res → do
     putStrLn $ cs $ "Request status for <" ++ show (getUri req) ++ ">: " ++ (show . statusCode . responseStatus $ res)
@@ -54,16 +54,16 @@ performWithFn fn req = do
     return res { responseBody = body }
   hoistEither $ bimap tshow id res
 
-performWithVoid ∷ (MonadHTTP ψ μ) ⇒ Request → EitherT Text μ (Response ())
+performWithVoid ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ Request → EitherT Text μ (Response ())
 performWithVoid = performWithFn (const $ return ())
 
-performWithBytes ∷ (MonadHTTP ψ μ) ⇒ Request → EitherT Text μ (Response LByteString)
+performWithBytes ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ Request → EitherT Text μ (Response LByteString)
 performWithBytes = performWithFn ($$ C.sinkLazy)
 
-performWithHtml ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ Request → EitherT Text μ (Response XDocument)
+performWithHtml ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ Request → EitherT Text μ (Response XDocument)
 performWithHtml = performWithFn ($$ sinkDoc) . (\req → req { requestHeaders = [ (hAccept, "text/html; charset=utf-8") ] })
 
-fetchEntryWithAuthors ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ URI → Response XDocument → μ (Maybe Value, Value)
+fetchEntryWithAuthors ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ URI → Response XDocument → μ (Maybe Value, Value)
 fetchEntryWithAuthors uri res = do
   let mf2Options' = mf2Options { baseUri = Just uri }
       mfRoot = parseMf2 mf2Options' $ documentRoot $ responseBody res
@@ -81,7 +81,7 @@ fetchEntryWithAuthors uri res = do
              Just mfE → (Just mfE, mfRoot)
              _ → (Nothing, mfRoot)
 
-fetchReferenceContexts ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ Text → Object → μ Object
+fetchReferenceContexts ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ Text → Object → μ Object
 fetchReferenceContexts k props = do
     newCtxs ← updateCtxs $ lookup k props
     return $ insertMap k newCtxs props
@@ -99,7 +99,7 @@ fetchReferenceContexts k props = do
             _ → mzero
         fetch x = return x
 
-fetchAllReferenceContexts ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ Object → μ Object
+fetchAllReferenceContexts ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ Object → μ Object
 fetchAllReferenceContexts = fetchReferenceContexts "in-reply-to"
                         >=> fetchReferenceContexts "like-of"
                         >=> fetchReferenceContexts "repost-of"

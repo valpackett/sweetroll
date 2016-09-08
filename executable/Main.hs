@@ -65,11 +65,6 @@ reset x = setReset >> putStr x
 
 putSweetroll = putStrLn "" >> putStr "   -=@@@ " >> green "Let me guess, someone stole your " >> boldYellow "sweetroll" >> green "?" >> setReset >> putStrLn " @@@=-"
 
-optToConf ∷ AppOptions → (Maybe a → SweetrollConf → SweetrollConf) → (AppOptions → Maybe a) → SweetrollConf → SweetrollConf
-optToConf o s g c = case g o of
-  Just v → s (Just v) c
-  _ → c
-
 main ∷ IO ()
 main = runCommand $ \opts _ → do
   setCurrentDirectory $ repo opts
@@ -86,10 +81,7 @@ main = runCommand $ \opts _ → do
       tlsSettings' = tlsSettings (tlsCertFile opts) (tlsKeyFile opts)
 
   origConf ← readDocument "conf" "sweetroll" ∷ IO (Maybe SweetrollConf)
-  let o = optToConf opts
-      fieldMapping = [ o setDomainName                  (\x → T.pack <$> domain x)
-                     , o setHttpsWorks                  https ]
-      conf = foldr ($) (fromMaybe def origConf) fieldMapping
+  let conf = (fromMaybe def origConf) { httpsWorks = https opts , domainName = T.pack <$> domain opts }
   when (isNothing origConf) . transaction "." . saveDocument "conf" "sweetroll" $ conf
 
   secretVal ← case secret opts of

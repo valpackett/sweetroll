@@ -229,12 +229,12 @@ instance KnownBackend Tmp where
 type MultiPartData b = ([Param], [File (Storage b)])
 type MultiPartDataT b = ((MultiPartData b → IO (MultiPartData b)) → IO (MultiPartData b))
 
-instance (KnownBackend b, HasServer sublayout config) => HasServer (Files b :> sublayout) config where
+instance (KnownBackend b, HasServer sublayout context) => HasServer (Files b :> sublayout) context where
   type ServerT (Files b :> sublayout) m =
     MultiPartDataT b → ServerT sublayout m
 
-  route Proxy config subserver = WithRequest $ \request →
-    route (Proxy ∷ Proxy sublayout) config (addBodyCheck subserver (bodyCheck request))
+  route Proxy context subserver =
+    route (Proxy ∷ Proxy sublayout) context (addBodyCheck subserver bodyCheck)
     where
-      bodyCheck request = return $ Route (\f →
+      bodyCheck = withRequest $ \request → return (\f →
         withBackend (Proxy ∷ Proxy b) $ \pb → parseRequestBody pb request >>= f)

@@ -5,7 +5,7 @@ synopsis:        A micro+blogging (IndieWeb) engine with curved swords. Curved! 
 category:        Web
 homepage:        https://github.com/myfreeweb/sweetroll
 author:          Greg V
-copyright:       2014-2015 Greg V <greg@unrelenting.technology>
+copyright:       2014-2016 Greg V <greg@unrelenting.technology>
 maintainer:      greg@unrelenting.technology
 license:         PublicDomain
 license-file:    UNLICENSE
@@ -15,7 +15,7 @@ extra-source-files:
     README.md
     bower.json
 tested-with:
-    GHC == 7.10.2
+    GHC == 8.0.1
 
 source-repository head
     type: git
@@ -26,6 +26,7 @@ library
         base >= 4.8.0.0 && < 5
       , classy-prelude
       , mono-traversable
+      , split
       , transformers
       , transformers-base
       , mtl
@@ -38,7 +39,6 @@ library
       , vector
       , either
       , lens
-      , setters
       , safe
       , cryptonite
       , memory

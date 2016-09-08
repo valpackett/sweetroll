@@ -14,12 +14,14 @@ import           Control.Monad.Trans.Except as X
 import           Control.Monad.Trans.Control as X
 import           Control.Monad.Trans.Either as X
 import           Control.Monad.Trans.Maybe as X hiding (liftListen, liftPass, liftCallCC)
-import           Control.Lens as X hiding (Index, index, cons, snoc, uncons, unsnoc, (<.>), (.=), (|>))
+import           Control.Lens as X hiding (Index, index, cons, snoc, uncons, unsnoc, (<.>), (.=), (|>), (<|))
 import           Text.XML (Document, Element)
-import           Text.XML.Lens
+import           Text.XML.Lens hiding ((<|))
 import           Data.Default as X
-import           Data.Text (replace, strip, splitOn)
+import qualified Data.Text
+import           Data.Text (replace, strip)
 import           Data.List as X (nub)
+import           Data.List.Split as X (splitOn)
 import           Data.Char as X (isSpace, generalCategory, GeneralCategory(..))
 import           Data.String.Conversions as X hiding ((<>))
 import           Data.String.Conversions.Monomorphic as X
@@ -27,7 +29,7 @@ import qualified Data.HashMap.Strict as HMS
 import qualified Data.Map.Lazy as ML
 import           Data.Proxy as X
 import           Data.Aeson as X
-import           Data.Aeson.Lens as X
+import           Data.Aeson.Lens as X hiding (nonNull)
 import           Network.URI as X
 import           Network.HTTP.Types as X
 import           System.Directory
@@ -48,7 +50,7 @@ infixl 1 |>
 firstStr v l = (v ^? l . _String) <|> (v ^? values . l . _String) <|> (v ^? l . values . _String)
 
 uriPathParts ∷ ConvertibleStrings Text α ⇒ URI → [α]
-uriPathParts = map cs . splitOn "/" . drop 1 . cs . uriPath
+uriPathParts = map cs . Data.Text.splitOn "/" . drop 1 . cs . uriPath
 
 mergeVal ∷ Value → Value → Value
 mergeVal (Object x) (Object y) = Object $ HMS.unionWith mergeVal x y
@@ -113,7 +115,7 @@ parseEmoji ∷ (IsSequence α, X.Element α ~ Char) ⇒ α → α
 parseEmoji = takeWhile isEmojiChar . dropWhile (not . isEmojiChar)
   where isEmojiChar x = generalCategory x `elem` [ Format, OtherSymbol, NonSpacingMark ]
 
-forFileIn ∷ (MonadIO μ, MonadBaseControl IO μ) ⇒ FilePath → ([FilePath] → [FilePath]) → (FilePath → ByteString → μ ()) → μ ()
+forFileIn ∷ (MonadIO μ) ⇒ FilePath → ([FilePath] → [FilePath]) → (FilePath → ByteString → μ ()) → μ ()
 forFileIn dir fltr act = do
   exists ← liftIO $ doesDirectoryExist dir
   when exists $ do

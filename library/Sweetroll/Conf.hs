@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-missing-signatures #-} -- because Data.Setters
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
 {-# LANGUAGE TemplateHaskell, FlexibleContexts #-}
 
@@ -11,7 +10,6 @@ import           Sweetroll.Prelude
 import           Text.Pandoc.Options
 import           Text.Highlighting.Kate.Styles (tango)
 import           Text.Highlighting.Kate.Format.HTML (styleToCss)
-import           Data.Setters
 import qualified Data.HashMap.Strict as HMS
 import           Data.Aeson.TH
 import           Data.Microformats2.Parser
@@ -54,7 +52,6 @@ data SweetrollConf = SweetrollConf
   ,                pushDelay ∷ Maybe Int
   ,                 testMode ∷ Maybe Bool }
 
-$(declareSetters ''SweetrollConf)
 $(deriveJSON defaultOptions ''SweetrollConf)
 
 instance Default SweetrollConf where

@@ -11,7 +11,7 @@ import           Network.Wai.Test
 import           Sweetroll.Conf (secretKey)
 import           Sweetroll.Auth (signAccessToken)
 
-contains ∷ EqSequence α ⇒ α → α → Bool
+contains ∷ (Eq (Element α), IsSequence α) ⇒ α → α → Bool
 contains = flip isInfixOf
 
 get' ∷ Request → ByteString → Application → IO SResponse

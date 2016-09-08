@@ -25,7 +25,7 @@ data Mention = Mention { mentionTarget   ∷ URI
 data MentionResult = MentionFailed Mention Text | MentionAccepted Mention | MentionSyndicated Mention Text
   deriving (Eq, Show)
 
-sendWebmention ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ SourceURI → Mention → μ MentionResult
+sendWebmention ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ SourceURI → Mention → μ MentionResult
 sendWebmention source mention@Mention{..} = do
   resp ← runHTTP $ reqU mentionEndpoint >>= anyStatus
                  >>= postForm [ ("source", tshow source), ("target", tshow mentionTarget) ]
@@ -42,7 +42,7 @@ sendWebmention source mention@Mention{..} = do
     Right _ →
       MentionAccepted mention
 
-sendWebmentions ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ SourceURI → [Mention] → μ [MentionResult]
+sendWebmentions ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ SourceURI → [Mention] → μ [MentionResult]
 sendWebmentions from ms = mapM (sendWebmention from) $ nub ms
 
 
@@ -56,7 +56,7 @@ getWebmentionEndpoint ∷ Response XDocument → Maybe URI
 getWebmentionEndpoint r = listToMaybe $ discoverWebmentionEndpoints mf2Root (linksFromHeader r)
     where mf2Root = parseMf2 mf2Options $ documentRoot $ responseBody r
 
-linkWebmention ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ MentionType → URI → μ (Maybe Mention)
+linkWebmention ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ MentionType → URI → μ (Maybe Mention)
 linkWebmention typ uri = do
   resp ← runHTTP $ reqU uri >>= anyStatus >>= performWithHtml
   return $ (\endp → Mention { mentionTarget = uri
@@ -64,14 +64,14 @@ linkWebmention typ uri = do
                             , mentionType = typ })
            <$> (getWebmentionEndpoint =<< (hush resp))
 
-contentWebmentions ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ XElement → μ [Mention]
+contentWebmentions ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ XElement → μ [Mention]
 contentWebmentions e =
   liftM catMaybes $ forM (e ^.. entire . el "a") $ \a →
     case parseURI =<< cs <$> a ^? attr "href" of
       Nothing → return Nothing
       Just uri → linkWebmention (if isJust (a ^? attr "data-synd") then Syndicate else Normal) uri
 
-entryWebmentions ∷ (MonadHTTP ψ μ, MonadThrow μ) ⇒ Value → μ [Mention]
+entryWebmentions ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ Value → μ [Mention]
 entryWebmentions v = do
   contMs ← contentWebmentions $ documentRoot $ HTML.parseSTChunks $ singleton $
     concat $ v ^.. key "properties" . key "content" . values . key "html" . _String

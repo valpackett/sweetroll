@@ -155,7 +155,7 @@ readEntry category slug = liftIO $ do
 readCategory ∷ Int → Maybe Int → Maybe Int → HashMap String Value → CategoryName
              → Sweetroll ([Slice String], HashMap String Value)
 readCategory perPage before after initialEntries catsName =
-  foldM readCategory' ([], initialEntries) $ defaultSplitOn "+" catsName
+  foldM readCategory' ([], initialEntries) $ splitOn "+" catsName
   where readCategory' (prevSlices, prevEntries) catName = do
           ks ← listDocumentKeys catName
           let newSlice = sliceCategory perPage before after catName $ map (second $ drop 1) $ mapMaybe maybeReadIntString ks

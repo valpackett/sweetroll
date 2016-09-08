@@ -11,8 +11,6 @@ module Sweetroll.Monads where
 
 import           Sweetroll.Prelude
 import           Sweetroll.HTTPClient (jsonFetch)
-import           Control.Monad.Base
-import           Control.Monad.Reader hiding (forM_)
 import           System.Process (readProcessWithExitCode)
 import           System.FilePath.Posix
 import           System.IO.Unsafe
@@ -45,7 +43,7 @@ instance HasGitsonLock Sweetroll where
 
 newtype Sweetroll α = Sweetroll {
   runSweetroll ∷ ReaderT SweetrollCtx (ExceptT ServantErr IO) α
-} deriving (Functor, Applicative, Monad, MonadIO, MonadBase IO, MonadThrow, MonadError ServantErr,
+} deriving (Functor, Applicative, Monad, MonadIO, MonadBase IO, MonadThrow, MonadCatch, MonadError ServantErr,
             MonadSweetroll)
 
 instance MonadBaseControl IO Sweetroll where

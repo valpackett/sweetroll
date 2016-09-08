@@ -31,6 +31,7 @@ h1, h2, h3, h4, h5, h6 { color: #333; }
 fragmention-exact { background: #FFF8A7; }
 blockquote { border-left: #77a 3px solid; padding: 0.2em 0 0.2em 0.5em; }
 blockquote p:last-of-type { margin-bottom: 0; }
+a { text-decoration: none; }
 a, body .ref-context-meta a { display: inline-block; color: #504aaa; transition: ease 0.3s color; }
 a[data-synd], a[href*="brid.gy/publish"] { display: none; }
 a:hover, a:focus, a:active, body .ref-context-meta a:hover, body .ref-context-meta a:focus, body .ref-context-meta a:active { color: #706aca; text-decoration: underline; }

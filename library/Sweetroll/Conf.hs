@@ -7,9 +7,8 @@ module Sweetroll.Conf (
 ) where
 
 import           Sweetroll.Prelude
-import           Text.Pandoc.Options
-import           Text.Highlighting.Kate.Styles (tango)
-import           Text.Highlighting.Kate.Format.HTML (styleToCss)
+import           CMark
+import           CMark.Highlight
 import qualified Data.HashMap.Strict as HMS
 import           Data.Aeson.TH
 import           Data.Microformats2.Parser
@@ -95,15 +94,11 @@ baseURI conf = asum [ parseURI $ (if fromMaybe False (httpsWorks conf) then "htt
                     , parseURI $ unpack $ fromMaybe "" $ domainName conf -- in case someone puts "https://" in the field which is clearly called DOMAIN NAME
                     , Just $ URI (if fromMaybe False (httpsWorks conf) then "https:" else "http:") (Just $ URIAuth "" (cs $ fromMaybe "" $ domainName conf) "") "" "" "" ]
 
-pandocWriterOptions ∷ WriterOptions
-pandocWriterOptions = def { writerHtml5 = True
-                          , writerEmailObfuscation = NoObfuscation
-                          , writerHighlight = True
-                          , writerHighlightStyle = tango
-                          , writerIdentifierPrefix = "sr-" }
-
 mf2Options ∷ Mf2ParserSettings
 mf2Options = def
+
+cmarkOptions ∷ [CMarkOption]
+cmarkOptions = [ optNormalize, optSmart ]
 
 bowerComponents ∷ [(FilePath, ByteString)]
 bowerComponents = [ ("webcomponentsjs/webcomponents-lite.min.js", $(embedFile "bower_components/webcomponentsjs/webcomponents-lite.min.js"))
@@ -114,13 +109,12 @@ bowerComponents = [ ("webcomponentsjs/webcomponents-lite.min.js", $(embedFile "b
                   , ("svgxuse/svgxuse.js", $(embedFile "bower_components/svgxuse/svgxuse.js")) ]
 
 baseCss ∷ LByteString
-baseCss = pandocCss ++ sanitizeCss ++ opentypeCss
-  where pandocCss = cs . styleToCss . writerHighlightStyle $ pandocWriterOptions
-        sanitizeCss = cs $(embedFile "bower_components/sanitize-css/sanitize.css")
+baseCss = sanitizeCss ++ opentypeCss
+  where sanitizeCss = cs $(embedFile "bower_components/sanitize-css/sanitize.css")
         opentypeCss = cs $(embedFile "bower_components/normalize-opentype.css/normalize-opentype.css")
 
 defaultCss ∷ LByteString
-defaultCss = cs $(embedFile "style.css")
+defaultCss = cs (styleToCss tango) ++ cs $(embedFile "style.css")
 
 defaultIcons ∷ LByteString
 defaultIcons = cs $(embedFile "icons.svg")

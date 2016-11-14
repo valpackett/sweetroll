@@ -33,8 +33,6 @@ import           Data.Aeson.Lens as X hiding (nonNull)
 import           Network.URI as X
 import           Network.HTTP.Types as X
 import           System.Directory
-import qualified Text.Pandoc as P
-import qualified Text.Pandoc.Error as PE
 import           Servant -- (mimeRender, mimeUnrender, FormUrlEncoded)
 
 type XDocument = Text.XML.Document
@@ -79,13 +77,6 @@ readForm x = map (fromST *** fromST) <$> hush (mimeUnrender (Proxy ∷ Proxy For
 
 orEmptyMaybe ∷ IsString α ⇒ Maybe α → α
 orEmptyMaybe = fromMaybe ""
-
-pandocRead ∷ (P.ReaderOptions → String → Either PE.PandocError P.Pandoc) → String → P.Pandoc
-pandocRead x = PE.handleError . x pandocReaderOptions
-
-pandocReaderOptions ∷ P.ReaderOptions
-pandocReaderOptions = def { P.readerExtensions = P.githubMarkdownExtensions
-                          , P.readerSmart = True }
 
 parseEntryURIRelative ∷ (MonadError ServantErr μ) ⇒ URI → μ (String, String)
 parseEntryURIRelative uri =

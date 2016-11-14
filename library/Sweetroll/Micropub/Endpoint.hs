@@ -14,8 +14,8 @@ import qualified Data.Map.Strict as MS
 import qualified Data.HashMap.Strict as HMS
 import qualified Data.ByteString.Lazy as BL
 import           Data.ByteArray.Encoding
-import           Text.Pandoc hiding (Link, Null)
-import           Text.Blaze.Html.Renderer.Text (renderHtml)
+import qualified CMark as CM
+import qualified CMark.Highlight as CM
 import           Web.JWT hiding (header, decode)
 import           Servant
 import           System.Process (readProcessWithExitCode)
@@ -172,11 +172,13 @@ setClientId token = insertMap "client-id" $ toJSON $ filter (/= "example.com") $
 setUrl ∷ URI → ObjProperties → ObjProperties
 setUrl url = insertMap "url" $ toJSON  [ tshow url ]
 
-setContent ∷ Maybe Pandoc → Text → ObjProperties → ObjProperties
-setContent content syndLinks x = if isNothing $ (Object x) ^? key "content" . nth 0 . key "html" . _String
-                                    then insertMap "content" (toJSON [ object [ "html" .= h ] ]) x
-                                    else x
-  where h = cs syndLinks ++ (fromMaybe "" $ (renderHtml . writeHtml pandocWriterOptions) `liftM` content)
+setContent ∷ Maybe CM.Node → Text → ObjProperties → ObjProperties
+setContent content syndLinks x =
+  if isNothing $ (Object x) ^? key "content" . nth 0 . key "html" . _String
+     then insertMap "content" (toJSON [ object [ "html" .= h ] ]) x
+     else x -- XXX: add syndLinks here!!!
+  where h = cs syndLinks ++ (fromMaybe "" $ rndr `liftM` content)
+        rndr = CM.nodeToHtml cmarkOptions . CM.highlightNode
 
 wrapWithType ∷ ObjType → ObjProperties → Value
 wrapWithType htype props =
@@ -189,17 +191,11 @@ decideSlug props now = unpack . fromMaybe fallback $ getProp "slug"
         formatTimeSlug = pack . formatTime defaultTimeLocale "%Y-%m-%d-%H-%M-%S"
         getProp k = firstStr (Object props) (key k)
 
-readContent ∷ Value → Maybe Pandoc
-readContent c = asum [ readWith readTextile    $ key "textile"
-                     , readWith readOrg        $ key "org"
-                     , readWith readRST        $ key "rst"
-                     , readWith readLaTeX      $ key "tex"
-                     , readWith readLaTeX      $ key "latex"
-                     , readWith readMarkdown   $ key "markdown"
-                     , readWith readMarkdown   $ key "gfm"
-                     , readWith readCommonMark $ key "value"
-                     , readWith readCommonMark id ]
-  where readWith rdr l = pandocRead rdr . cs <$> firstStr c l
+readContent ∷ Value → Maybe CM.Node
+readContent c = CM.commonmarkToNode cmarkOptions <$>
+                  (    firstStr c (key "markdown")
+                   <|> firstStr c (key "value")
+                   <|> firstStr c id)
 
 applyUpdates ∷ Value → MicropubUpdate → Value
 applyUpdates (Object props) (ReplaceProps newProps) =

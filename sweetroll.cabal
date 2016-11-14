@@ -90,9 +90,9 @@ library
       , xml-conduit-writer
       , xml-lens
       , async
+      , cmark
+      , cmark-highlight
       , highlighting-kate
-      , pandoc
-      , pandoc-types
       , raw-strings-qq
       , file-embed
       , filepath
@@ -173,7 +173,6 @@ test-suite tests
       , gitson
       , bytestring
       , raw-strings-qq
-      , pandoc
       , lens
       , aeson
       , lens-aeson

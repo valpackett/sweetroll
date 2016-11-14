@@ -6,7 +6,7 @@ import           Sweetroll.Prelude hiding (first)
 import           Control.Arrow (first)
 import           Data.Attoparsec.Text as AP
 import           Data.Aeson.Types (parseMaybe)
-import           Servant
+import           Web.FormUrlEncoded hiding (parseMaybe)
 
 type ObjType = Text
 type ObjProperties = Object
@@ -19,7 +19,7 @@ data MicropubUpdate = ReplaceProps ObjProperties
                     | DelProps [Text]
                     deriving (Eq, Show)
 
-instance FromJSON [MicropubUpdate] where
+instance {-# OVERLAPPING #-} FromJSON [MicropubUpdate] where
   parseJSON v@(Object _) =
     let rplc = ReplaceProps <$> v ^? key "replace" . _Object
         addp = AddToProps <$> v ^? key "add" . _Object
@@ -58,8 +58,8 @@ instance FromJSON MicropubRequest where
   parseJSON _ = mzero
 
 -- TODO: remove form-encoded update requests, was removed from spec
-instance FromFormUrlEncoded MicropubRequest where
-  fromFormUrlEncoded f =
+instance FromForm MicropubRequest where
+  fromForm f' = let f = formList f' in
     case lookup "action" f <|> lookup "mp-action" f of
       Just "delete" →
         case lookup "url" f of
@@ -82,6 +82,10 @@ instance FromFormUrlEncoded MicropubRequest where
                          -- no syndicate-to[], the [] is handled in formToObject
          in Right $ Create h o synd
       _ → Left "Unknown action type"
+
+
+formList ∷ Form → [(Text, Text)]
+formList = fromMaybe [] . hush . fromForm
 
 
 formToObject ∷ [(Text, Text)] → Value

@@ -25,6 +25,7 @@ import           Network.HTTP.Types
 import           Network.HTTP.Conduit as HC
 import           Network.HTTP.Client.Conduit as HCC
 import           Network.HTTP.Client.Internal (setUri) -- The fuck?
+import           Network.HTTP.Client (setRequestIgnoreStatus)
 import           Sweetroll.Conf (mf2Options)
 
 type MonadHTTP ψ μ = (HasHttpManager ψ, MonadReader ψ μ, MonadIO μ, MonadBaseControl IO μ)
@@ -32,13 +33,13 @@ type MonadHTTP ψ μ = (HasHttpManager ψ, MonadReader ψ μ, MonadIO μ, MonadB
 runHTTP = runEitherT
 
 reqU ∷ (MonadHTTP ψ μ) ⇒ URI → EitherT Text μ Request
-reqU uri = hoistEither $ bimap tshow id $ setUri def uri
+reqU uri = hoistEither $ bimap tshow id $ setUri defaultRequest uri
 
 reqS ∷ (MonadHTTP ψ μ, ConvertibleStrings σ String) ⇒ σ → EitherT Text μ Request
-reqS uri = hoistEither $ bimap tshow id $ parseUrl $ cs uri
+reqS uri = hoistEither $ bimap tshow id $ parseUrlThrow $ cs uri
 
 anyStatus ∷ (MonadHTTP ψ μ) ⇒ Request → EitherT Text μ Request
-anyStatus req = return req { checkStatus = \_ _ _ → Nothing }
+anyStatus req = return $ setRequestIgnoreStatus req
 
 postForm ∷ (MonadHTTP ψ μ) ⇒ [(Text, Text)] → Request → EitherT Text μ Request
 postForm form req =

@@ -83,6 +83,7 @@ library
       , http-conduit
       , http-link-header
       , http-date
+      , http-api-data
       , mime-types
       , html-conduit
       , xml-conduit

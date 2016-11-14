@@ -4,7 +4,7 @@ module Sweetroll.Micropub.Response where
 
 import           Sweetroll.Prelude
 import qualified Data.Map as M
-import           Servant
+import           Web.FormUrlEncoded
 
 data MicropubResponse = Posted
                       | AuthInfo [(Text, Text)]
@@ -21,10 +21,10 @@ instance ToJSON MicropubResponse where
   toJSON (MediaEndpoint url) = toJSON $ object [ "media-endpoint" .= url ]
   toJSON (MultiResponse rs) = foldl' (\a x → mergeVal a $ toJSON x) (toJSON $ object [ ]) rs
 
-instance ToFormUrlEncoded MicropubResponse where
-  toFormUrlEncoded Posted = []
-  toFormUrlEncoded (AuthInfo params) = params
-  toFormUrlEncoded (Source val) = []
-  toFormUrlEncoded (SyndicateTo urls) = map (("syndicate-to[]", ) . fromMaybe "" . (^? key "uid" . _String)) urls
-  toFormUrlEncoded (MediaEndpoint url) = [("media-endpoint", url)]
-  toFormUrlEncoded (MultiResponse rs) = concatMap toFormUrlEncoded rs
+instance ToForm MicropubResponse where
+  toForm Posted = toForm ([] ∷ [(Text, Text)])
+  toForm (AuthInfo params) = toForm params
+  toForm (Source _) = toForm ([] ∷ [(Text, Text)])
+  toForm (SyndicateTo urls) = toForm $ map ((asText "syndicate-to[]", ) . fromMaybe "" . (^? key "uid" . _String)) urls
+  toForm (MediaEndpoint url) = toForm [(asText "media-endpoint", url)]
+  toForm (MultiResponse _) = toForm ([] ∷ [(Text, Text)]) -- Screw this.

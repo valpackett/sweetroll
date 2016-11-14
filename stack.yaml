@@ -12,7 +12,9 @@ packages:
     extra-dep: true
   - location: '../gitson'
     extra-dep: true
+  - location: '../http-link-header'
+    extra-dep: true
 extra-deps:
   - git-embed-0.1.0
-  - highlighting-kate-0.6.2.1
-resolver: nightly-2016-09-04
+  - highlighting-kate-0.6.3
+resolver: nightly-2016-11-12

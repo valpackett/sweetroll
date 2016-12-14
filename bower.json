@@ -17,6 +17,7 @@
     "normalize-opentype.css": "^0.2.4",
     "svgxuse": "^1.1.21",
     "Font-Awesome-SVG-PNG": "font-awesome-svg-png#^1.1.5",
-    "SparkMD5": "^2.0.2"
+    "SparkMD5": "^2.0.2",
+    "lazyload-image": "^2.1.0"
   }
 }

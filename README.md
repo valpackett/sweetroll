@@ -53,6 +53,8 @@ I haven't uploaded any yet, so you have to build from source.
 
 When it's done, it says where it put the binary (something like `.stack-work/install/your-platform/some/versions/.../bin`).
 
+(NOTE: to get a smaller resulting binary, [enable split-objs globally in stack](https://github.com/commercialhaskell/stack/issues/1284#issuecomment-196639511), remove snapshots once and rebuild. And by smaller I do mean SMALLER. About 22M instead of 56M.)
+
 ### Running on a server
 
 Copy the binary to the server (using `scp`, usually).

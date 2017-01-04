@@ -131,6 +131,8 @@ executable sweetroll
       , options
       , warp
       , socket-activation
+      , stm
+      , unix
       , network
       , streaming-commons
       , wai-extra

@@ -4,7 +4,7 @@
 module Main where
 
 import           Prelude
-import           GHC.Conc (getNumCapabilities)
+import           GHC.Conc (getNumCapabilities, forkIO)
 import qualified Network.Wai.Handler.CGI as CGI
 import           Network.Wai.Handler.Warp
 #ifdef SweetrollTLS
@@ -13,9 +13,11 @@ import           Network.Wai.Handler.WarpTLS
 import           Network.Wai.Middleware.RequestLogger
 import           Network.Socket.Activation
 import           System.Posix.Internals (setNonBlockingFD)
+import           System.Posix.Signals (installHandler, sigTERM, Handler(CatchOnce))
 import qualified Network.Socket as S
 import           Control.Monad
 import           Control.Exception
+import           Control.Concurrent.STM
 import           System.Console.ANSI
 import           System.Directory
 import           System.IO
@@ -73,14 +75,24 @@ reset x = setReset >> putStr x
 
 putSweetroll = putStrLn "" >> putStr "   -=@@@ " >> green "Let me guess, someone stole your " >> boldYellow "sweetroll" >> green "?" >> setReset >> putStrLn " @@@=-"
 
-runActivated cb = do
+runActivated runner warpSettings app = do
   ass ← getActivatedSockets
   case ass of
     Just ss → do
+      -- based on https://gist.github.com/NathanHowell/5435345
+      -- however, doesn't return 503, just shuts down when there's 0 connections
+      shutdown ← newEmptyTMVarIO
+      activeConnections ← newTVarIO (0 ∷ Int)
+      _ ← installHandler sigTERM (CatchOnce $ atomically $ putTMVar shutdown ()) Nothing
+      let set = setOnOpen  (\_ → atomically (modifyTVar' activeConnections (+1)) >> return True) $
+                setOnClose (\_ → atomically (modifyTVar' activeConnections (subtract 1)) >> return ()) warpSettings
       _ ← forM ss $ \sock → do
         setNonBlockingFD (S.fdSocket sock) True
-        cb sock
-      return ()
+        forkIO $ runner set sock app
+      atomically $ do
+        takeTMVar shutdown
+        conns ← readTVar activeConnections
+        when (conns /= 0) retry
     Nothing → putStrLn "No sockets to activate"
 
 main ∷ IO ()
@@ -123,11 +135,11 @@ main = runCommand $ \opts _ → do
   case protocol opts of
     "http" → putSweetroll >> runSettings warpSettings app
     "unix" → putSweetroll >> bracket (bindPath $ socket opts) S.close (\sock → runSettingsSocket warpSettings sock app)
-    "activate" → putSweetroll >> runActivated (\sock → runSettingsSocket warpSettings sock app)
+    "activate" → putSweetroll >> runActivated runSettingsSocket warpSettings app
 #ifdef SweetrollTLS
     "http+tls" → putSweetroll >> runTLS tlsSettings' warpSettings app
     "unix+tls" → putSweetroll >> bracket (bindPath $ socket opts) S.close (\sock → runTLSSocket tlsSettings' warpSettings sock app)
-    "activate+tls" → putSweetroll >> runActivated (\sock → runTLSSocket tlsSettings' warpSettings sock app)
+    "activate+tls" → putSweetroll >> runActivated (runTLSSocket tlsSettings') warpSettings app
 #endif
     "cgi" → CGI.run app
     _ → putStrLn $ "Unsupported protocol: " ++ protocol opts

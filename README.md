@@ -85,7 +85,8 @@ exec chpst -u sweetroll /home/sweetroll/.local/bin/sweetroll
 (Use something like `head -c 1024 < /dev/random | openssl dgst -sha512` to get the random value for the `secret`. No, not dynamically in the script. Copy and paste the value into the script. Otherwise you'll be logged out on every restart.)
 
 Putting a reverse proxy in front of Sweetroll is not *required*, but you might want to run other software at different URLs, etc.
-I wrote [443d](https://github.com/myfreeweb/443d) as a lightweight alternative to nginx.
+By the way, Sweetroll supports socket activation.
+I wrote [soad](https://github.com/myfreeweb/soad) to run Sweetroll and other services on demand and shut them down when not used for some time.
 
 After you start Sweetroll, open your new website.
 It should write the default configuration to `conf/sweetroll.json` in your site directory.

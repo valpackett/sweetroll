@@ -5,7 +5,7 @@ synopsis:        A micro+blogging (IndieWeb) engine with curved swords. Curved! 
 category:        Web
 homepage:        https://github.com/myfreeweb/sweetroll
 author:          Greg V
-copyright:       2014-2016 Greg V <greg@unrelenting.technology>
+copyright:       2014-2017 Greg V <greg@unrelenting.technology>
 maintainer:      greg@unrelenting.technology
 license:         PublicDomain
 license-file:    UNLICENSE
@@ -119,6 +119,10 @@ library
     ghc-options: -Wall
     hs-source-dirs: library
 
+flag tls
+    description: Include warp-tls
+    default: False
+
 executable sweetroll
     build-depends:
         base >= 4.8.0.0 && < 5
@@ -126,7 +130,7 @@ executable sweetroll
       , cabal-file-th
       , options
       , warp
-      , warp-tls
+      , socket-activation
       , network
       , streaming-commons
       , wai-extra
@@ -144,6 +148,9 @@ executable sweetroll
     ld-options: -pthread
     hs-source-dirs: executable
     main-is: Main.hs
+    if flag(tls)
+        build-depends: warp-tls
+        cpp-options: -DSweetrollTLS
 
 -- test-suite examples
 --     build-depends:

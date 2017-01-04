@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
-{-# LANGUAGE UnicodeSyntax, TemplateHaskell, FlexibleContexts #-}
+{-# LANGUAGE CPP, UnicodeSyntax, TemplateHaskell, FlexibleContexts #-}
 
 module Main where
 
@@ -7,8 +7,12 @@ import           Prelude
 import           GHC.Conc (getNumCapabilities)
 import qualified Network.Wai.Handler.CGI as CGI
 import           Network.Wai.Handler.Warp
+#ifdef SweetrollTLS
 import           Network.Wai.Handler.WarpTLS
+#endif
 import           Network.Wai.Middleware.RequestLogger
+import           Network.Socket.Activation
+import           System.Posix.Internals (setNonBlockingFD)
 import qualified Network.Socket as S
 import           Control.Monad
 import           Control.Exception
@@ -46,7 +50,11 @@ instance Options AppOptions where
   defineOptions = pure AppOptions
     <*> simpleOption "port"              3000                                  "The port the app should listen for connections on (for http and http+tls protocols)"
     <*> simpleOption "socket"            "/var/run/sweetroll/sweetroll.sock"   "The UNIX domain socket the app should listen for connections on (for unix protocol)"
-    <*> simpleOption "protocol"          "http"                                "The protocol for the server. One of: http, http+tls, unix, unix+tls, cgi"
+#ifdef SweetrollTLS
+    <*> simpleOption "protocol"          "http"                                "The protocol for the server. One of: http, http+tls, unix, unix+tls, activate, activate+tls, cgi"
+#else
+    <*> simpleOption "protocol"          "http"                                "The protocol for the server. One of: http, unix, activate, cgi"
+#endif
     <*> simpleOption "tlskey"            ""                                    "Path to the TLS private key file for +tls protocols"
     <*> simpleOption "tlscert"           ""                                    "Path to the TLS certificate bundle file for +tls protocols"
     <*> simpleOption "devlogging"        Nothing                               "Whether development logging should be enabled"
@@ -65,20 +73,34 @@ reset x = setReset >> putStr x
 
 putSweetroll = putStrLn "" >> putStr "   -=@@@ " >> green "Let me guess, someone stole your " >> boldYellow "sweetroll" >> green "?" >> setReset >> putStrLn " @@@=-"
 
+runActivated cb = do
+  ass ← getActivatedSockets
+  case ass of
+    Just ss → do
+      _ ← forM ss $ \sock → do
+        setNonBlockingFD (S.fdSocket sock) True
+        cb sock
+      return ()
+    Nothing → putStrLn "No sockets to activate"
+
 main ∷ IO ()
 main = runCommand $ \opts _ → do
   setCurrentDirectory $ repo opts
   cpus ← getNumCapabilities
   let printProto = case protocol opts of
                      "http" → reset " port "   >> boldMagenta (show $ port opts)
-                     "http+tls" → reset " (TLS) port "   >> boldMagenta (show $ port opts)
                      "unix" → reset " socket " >> boldMagenta (show $ socket opts)
+#ifdef SweetrollTLS
+                     "http+tls" → reset " (TLS) port "   >> boldMagenta (show $ port opts)
                      "unix+tls" → reset " (TLS) socket " >> boldMagenta (show $ socket opts)
+#endif
                      _      → setReset
       version = $(packageVariable $ pkgVersion . package) ++ "/" ++ $(embedGitShortRevision)
       printListening = boldYellow " Sweetroll " >> red version >> reset " running on " >> blue (protocol opts) >> printProto >> reset " with " >> green (show cpus ++ " CPUs") >> putStrLn ""
       warpSettings = setBeforeMainLoop printListening $ setPort (port opts) defaultSettings
+#ifdef SweetrollTLS
       tlsSettings' = tlsSettings (tlsCertFile opts) (tlsKeyFile opts)
+#endif
 
   origConf ← readDocument "conf" "sweetroll" ∷ IO (Maybe SweetrollConf)
   let conf = (fromMaybe def origConf) { httpsWorks = https opts , domainName = T.pack <$> domain opts }
@@ -100,8 +122,12 @@ main = runCommand $ \opts _ → do
   app ← liftM addLogging $ initSweetrollApp conf secs
   case protocol opts of
     "http" → putSweetroll >> runSettings warpSettings app
-    "http+tls" → putSweetroll >> runTLS tlsSettings' warpSettings app
     "unix" → putSweetroll >> bracket (bindPath $ socket opts) S.close (\sock → runSettingsSocket warpSettings sock app)
+    "activate" → putSweetroll >> runActivated (\sock → runSettingsSocket warpSettings sock app)
+#ifdef SweetrollTLS
+    "http+tls" → putSweetroll >> runTLS tlsSettings' warpSettings app
     "unix+tls" → putSweetroll >> bracket (bindPath $ socket opts) S.close (\sock → runTLSSocket tlsSettings' warpSettings sock app)
+    "activate+tls" → putSweetroll >> runActivated (\sock → runTLSSocket tlsSettings' warpSettings sock app)
+#endif
     "cgi" → CGI.run app
     _ → putStrLn $ "Unsupported protocol: " ++ protocol opts

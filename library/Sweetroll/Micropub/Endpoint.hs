@@ -56,7 +56,7 @@ getMicropub token (Just "config") props url =
   liftM MultiResponse $ mapM (\x → getMicropub token (Just x) props url)
                              [ "media-endpoint", "syndicate-to" ]
 --getMicropub token _ _ _ = getAuth token |> AuthInfo
-getMicropub token _ props url = getMicropub token (Just "media-endpoint") props url -- because some clients aren't up to date with the spec >_<
+getMicropub token _ props url = getMicropub token (Just "media-endpoint") props url
 
 
 extMap ∷ Map ByteString Text
@@ -186,8 +186,8 @@ wrapWithType htype props =
          , "properties" .= insertMap "syndication" (Array V.empty) props ]
 
 decideSlug ∷ ObjProperties → UTCTime → EntrySlug
-decideSlug props now = unpack . fromMaybe fallback $ getProp "slug"
-  where fallback = slugify . fromMaybe (formatTimeSlug now) $ getProp "name" <|> getProp "summary"
+decideSlug props now = unpack . fromMaybe fallback $ getProp "mp-slug"
+  where fallback = slugify . fromMaybe (formatTimeSlug now) $ getProp "name"
         formatTimeSlug = pack . formatTime defaultTimeLocale "%Y-%m-%d-%H-%M-%S"
         getProp k = firstStr (Object props) (key k)
 

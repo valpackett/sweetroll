@@ -143,14 +143,12 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
   - [ ] support [WebFinger](https://webfinger.net) with HTML as the source of truth + additional links from config e.g. for [remoteStorage](https://remotestorage.io)
   - [ ] figure out URL/canonical/etc. handling for alternative networks & mirrors like .onion & IPFS -- including webmentions!
   - [ ] custom non-entry html pages
-  - [ ] archive pages, ie. unpaginated pages (basically `?after=0&before=9223372036854775807` but... "archive" design?)
+  - [ ] [archive](https://indieweb.org/archive) pages by month. see footer of anildash.com
+  - [ ] sitemap.xml
   - [ ] indieweb-components: a component for a Medium-style popup on selection that offers a fragmention link and (?) indie-config repost-quote-something (look how [selection-sharer](https://github.com/xdamman/selection-sharer) works on mobile!! but probably should look the same just at the opposite direction than iOS's popup)
 - event system
-  - [ ] cleaning a cache (should be an in-process cache with fast expiration, based on [wai-better-cache](https://github.com/myfreeweb/wai-better-cache))
   - [ ] real-time page updates with Server-Sent Events (make a Web Component that will show the update button)
   - [ ] static mode: on these events, regenerate website pages into static HTML files (and serve them for better performance)
-    - [ ] IPFS support! (see/improve [hs-ipfs-api](https://github.com/davidar/hs-ipfs-api)) publishing there in the event handler too. Oh, and [IPFS supports custom services](https://ipfs.io/ipfs/QmTkzDwWqPbnAh5YiV5VwcTLnGdwSNsNTn2aDxdXBFca7D/example#/ipfs/QmQwAP9vFjbCtKvD8RkJdCvPHqLQjZfW7Mqbbqx18zd8j7/api/service/readme.md)! IPFS-Webmention, because why not.
-    - [ ] S3 support & running on AWS Lambda... or good old CGI, which is actually kinda similar to Lambda
 - plugin api
   - [ ] cron-style scheduling
   - [ ] post manipulation
@@ -164,7 +162,9 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
       - [ ] sharing block lists
   - [ ] deduplicate threaded replies like [there](https://unrelenting.technology/replies/2015-09-06-20-29-54) (a reply to both my post and another reply) -- maybe that's already happening? need to test
   - [ ] deduplicate syndicated replies
-- [ ] indieweb-algorithms?: ensure the person you're replying to *never* gets picked up you when you're replying (caught in test without own h-card)
+- micropub
+  - [ ] check auth scopes
+- [ ] indieweb-algorithms?: ensure the person you're replying to *never* gets picked up you when you're replying (caught in test without own h-card) (what?)
 - [ ] tags? (kill the difference between categories and tags? // use symlinks to add to multiple categories/tags)
 - [ ] extract a `WebPrelude` package: `Sweetroll.Prelude`, `Sweetroll.HTTPClient`, `formToObject`, more stuff
 

@@ -14,6 +14,9 @@
 		<link rel="openid.delegate" href="${ scope.meta.baseUri }">
 		<link rel="openid.server" href="https://indieauth.com/openid">
 		<%= templates.head_stylesheets(scope) %>
+		<% if (_.get(scope, 'data.entry.properties')) { %>
+		<link rel="alternate" href="${_.get(scope, 'data.permalink')}?_accept=application/atom%2Bxml" type="application/atom+xml">
+		<% } %>
 		<% scope.meta.categoriesInNav.forEach(function (name) { if (name == currentCatName || name == landingCatName) { %>
 		<link rel="alternate${ name == landingCatName && name != currentCatName ? ' home' : '' }" href="/${name}?_accept=application/atom%2Bxml" type="application/atom+xml" title="${scope.meta.categoryTitles[name] || _.capitalize(name)}">
 		<% } }) %>

@@ -35,7 +35,7 @@ type GetMicropubRoute         = "micropub" :> AuthProtect "jwt" :> QueryParam "q
 
 type PostWebmentionRoute      = "webmention" :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> PostAccepted '[JSON] NoContent
 
-type EntryRoute               = Capture "catName" String :> Capture "slug" String :> Get '[HTML] (WithLink (View EntryPage))
+type EntryRoute               = Capture "catName" String :> Capture "slug" String :> Get '[HTML, Atom] (WithLink (View EntryPage))
 type CatRoute                 = Capture "catName" String :> QueryParam "before" Int :> QueryParam "after" Int :> Get '[HTML, Atom] (WithLink (View IndexedPage))
 type IndexRoute               = Get '[HTML] (WithLink (View IndexedPage))
 

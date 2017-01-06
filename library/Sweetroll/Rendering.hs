@@ -9,6 +9,7 @@ import           Sweetroll.Prelude hiding (fromString)
 import           Network.HTTP.Media.MediaType
 import           Data.Microformats2.Parser
 import           Data.IndieWeb.MicroformatsToAtom
+import           Data.IndieWeb.MicroformatsUtil
 import           Text.XML.Writer as W
 import qualified Text.HTML.DOM as HTML
 import           Text.XML.Lens (entire, named, text)
@@ -35,13 +36,21 @@ instance MimeRender Atom (View IndexedPage) where
           mfSettings = def { baseUri = Just rootUri }
           rootUri = fromMaybe nullURI $ baseURI conf
           altUri = fromMaybe nullURI (parseURIReference $ intercalate "+" catNames) `relativeTo` rootUri
-          el x = W.element (Name x (Just "http://www.w3.org/2005/Atom") Nothing)
-          elA x = W.elementA (Name x (Just "http://www.w3.org/2005/Atom") Nothing)
           addMetaStuff = do
             el "title" $ content $ fromMaybe "" $ root ^? entire . named "title" . text
             elA "link" [("rel", "alternate"), ("type", "text/html"), ("href", tshow altUri)] W.empty
             elA "link" [("rel", "self"), ("type", "application/atom+xml"), ("href", tshow $ atomizeUri altUri)] W.empty
             fromMaybe W.empty $ (\x → elA "link" [("rel", "hub"), ("href", cs x)] W.empty) <$> pushHub conf
+
+instance MimeRender Atom (View EntryPage) where
+  mimeRender p v@(View conf _ (EntryPage catName _ _)) = mimeRender p $ entryToAtom $ parseMf2 mfSettings root
+    where root = documentRoot $ HTML.parseLBS $ mimeRender (Proxy ∷ Proxy HTML) v
+          mfSettings = def { baseUri = Just rootUri }
+          rootUri = fromMaybe nullURI $ baseURI conf
+          entryToAtom mfRoot = document (atom "entry") $ do
+            case headMay $ filter (\(_, path) → null path) $ fromMaybe [] $ allMicroformatsOfType "h-entry" mfRoot of
+              Just (e, []) → atomForEntry e
+              _ → W.empty
 
 instance Accept HTML where
   contentType _ = "text" // "html" /: ("charset", "utf-8")

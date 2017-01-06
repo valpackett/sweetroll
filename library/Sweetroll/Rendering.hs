@@ -24,7 +24,10 @@ instance Accept Atom where
   contentType _ = "application" // "atom+xml" /: ("charset", "utf-8")
 
 instance MimeRender Atom Document where
-  mimeRender _ = XML.renderLBS def { rsPretty = False, XML.rsNamespaces = [("atom", "http://www.w3.org/2005/Atom"), ("activity", "http://activitystrea.ms/spec/1.0/")] }
+  mimeRender _ = XML.renderLBS def { rsPretty = False
+                                   , XML.rsNamespaces = [ ("atom", "http://www.w3.org/2005/Atom")
+                                                        , ("activity", "http://activitystrea.ms/spec/1.0/")
+                                                        , ("thr", "http://purl.org/syndication/thread/1.0")] }
 
 instance MimeRender Atom (View IndexedPage) where
   mimeRender p v@(View conf _ (IndexedPage catNames _ _)) = mimeRender p $ feedToAtom addMetaStuff $ parseMf2 mfSettings root

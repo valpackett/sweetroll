@@ -117,7 +117,7 @@
 	</div>
 
 	<% if (!compactView) { _.forEach(comments, function (reactions, name) { if (name != 'replies') { %>
-		<%= templates.showFacepile({ reactions: reactions, name: name, icon: iconNames[name], prop: props[name] || 'p-comment' }) %>
+		<%= templates.showFacepile({ reactions: reactions, name: name, icon: iconNames[name], prop: props[name] || 'u-comment' }) %>
 	<% } }) } %>
 
 	<% if (_.isEmpty(properties['like-of']) && _.isEmpty(properties['bookmark-of'])) { %>
@@ -130,7 +130,7 @@
 <% if (!compactView && !_.isEmpty(comments.replies)) { %>
 	<section class="entry-replies">
 		<% _.forEach(comments.replies, function (reply) { %>
-			<%= templates.showRefContext({ entry: reply, long: false, prop: 'p-comment', reason: null, rel: '', showReplies: true, showContexts: false }) %>
+			<%= templates.showRefContext({ entry: reply, long: false, prop: 'u-comment', reason: null, rel: '', showReplies: true, showContexts: false }) %>
 		<% }) %>
 	</section>
 <% } %>

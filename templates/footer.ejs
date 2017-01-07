@@ -1,10 +1,12 @@
 			<aside class="site-author h-card p-author" id="author">
-				<%= templates.author(scope) %>
+				<div class="site-author-block">
+					<%= templates.author(scope) %>
+				</div>
+				<div class="site-meta">
+					<%= templates.siteMeta(scope) %>
+				</div>
 			</aside>
 		</div>
-		<footer class="site-footer">
-			Powered by <a href="https://github.com/myfreeweb/sweetroll">Sweetroll</a>, an <a href="http://indiewebcamp.com">#IndieWeb</a> engine.
-		</footer>
 		<script defer src="/bower/svgxuse/svgxuse.js?_v=${ bowerHashes['svgxuse/svgxuse.js'] }"></script>
 	</body>
 </html>

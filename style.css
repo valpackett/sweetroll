@@ -40,6 +40,13 @@ a:hover, a:focus, a:active, body .ref-context-meta a:hover, body .ref-context-me
 .pronouns { font-size: 0.75em; font-weight: normal; }
 .emoji { padding: 0 0.15em; }
 .emoji:first-child { padding-left: 0; }
+fieldset { display: flex; align-items: center; padding: 0; border-radius: 3px; }
+fieldset :first-child { border-top-left-radius: 3px; border-bottom-left-radius: 3px; }
+fieldset :last-child { border-top-right-radius: 3px; border-bottom-right-radius: 3px; }
+fieldset input { flex: 1; }
+fieldset button { border-left: 1px solid #666; background: #cacaca; }
+fieldset input:focus, fieldset button:hover, fieldset button:hover { background: #fefefe; }
+fieldset * { vertical-align: baseline; padding: 0.5em; }
 
 .site-header, .site-content { margin: 1rem auto; width: 96%; }
 
@@ -58,8 +65,10 @@ a:hover, a:focus, a:active, body .ref-context-meta a:hover, body .ref-context-me
 .main-nav { font-size: 1.1em; margin-bottom: 1rem; }
 .main-nav > * { padding: 0 0.4rem; }
 .main-nav > *:first-child { padding-left: 0; }
-.entry, .site-author-block { background: #fefefe; border: #e3e3e3 1px solid; border-radius: 5px; margin-bottom: 1rem; }
-.site-author-block { padding: 1rem; }
+.entry, .site-author-block, .entry-webmention-form { background: #fefefe; border: #e3e3e3 1px solid; border-radius: 5px; margin-bottom: 1rem; }
+.site-author-block, .entry-webmention-form { padding: 1rem; }
+.entry-webmention-form { background: #ebebe9; font-size: 0.85em; }
+.entry-webmention-form fieldset { margin: 1em 0; }
 .entry * { max-width: 100%; } /* oh ffs flex */
 .entry-footer { padding: 1rem; }
 .entry-core { padding: 0 1rem; }
@@ -89,7 +98,7 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 .ref-context-date { font-size: 0.85em; }
 .ref-context-authors::after { content: ' \2022 '; color: #777; }
 .ref-context-content { flex: 1 1 auto; min-width: 0 /* https://bugzilla.mozilla.org/show_bug.cgi?id=1139931 */; }
-.ref-context-content blockquote { border-left: none; padding-left: 0; }
+.ref-context-content blockquote { border-left: none; padding-left: 0; margin: 0; }
 .ref-context-thread-down { border-left: 0.5rem solid #cecece; }
 
 @media screen and (min-width: 400px) {

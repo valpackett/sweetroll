@@ -46,6 +46,7 @@ I haven't uploaded any yet, so you have to build from source.
 
 - get [stack] \(from your OS package manager or `cabal install stack`)
 - get [bower] \(get node/[npm](https://www.npmjs.com) from your OS package manager, `npm install -g bower`)
+- install the Duktape development files (details depend on OS; e.g. in Debian `apt install duktape-dev`)
 - `git clone` the repo
 - `cd` into it
 - `bower install`
@@ -112,6 +113,10 @@ The `:serve` command in ghci runs the server in test mode, which means you don't
 $ bower install
 
 $ stack build
+
+# (or, if using local development copies of the myfreeweb dependencies, use
+# the alternative stack-dev.yaml instead):
+# $ stack --stack-yaml stack-dev.yaml build
 
 $ stack test
 

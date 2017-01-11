@@ -2,17 +2,29 @@ flags:
   highlighting-kate: { pcre-light: true }
 packages:
   - '.'
-  - location: '../indieweb-algorithms'
+  - location:
+      git: https://github.com/myfreeweb/indieweb-algorithms.git
+      commit: 3a70a6bee81dcb4c1b65a3081ff0c250c64f0fc6
     extra-dep: true
-  - location: '../hs-duktape'
+  - location:
+      git: https://github.com/myfreeweb/hs-duktape.git
+      commit: 1ab03a588dd38eb7e3a33502b941733bf810ddeb
     extra-dep: true
-  - location: '../pcre-heavy'
+  - location:
+      git: https://github.com/myfreeweb/pcre-heavy.git
+      commit: 9873fb019873340b212780d12595c0f66ec88613
     extra-dep: true
-  - location: '../microformats2-parser'
+  - location:
+      git: https://github.com/myfreeweb/microformats2-parser.git
+      commit: cdd16012a6d367c4256ba4585737b2b94ac60c42
     extra-dep: true
-  - location: '../gitson'
+  - location:
+      git: https://github.com/myfreeweb/gitson.git
+      commit: 90c85dbf5fddd6fc4a84bcc1d491293e5e9414ec
     extra-dep: true
-  - location: '../http-link-header'
+  - location:
+      git: https://github.com/myfreeweb/http-link-header.git
+      commit: ab530b746f7c1daf648ffbfd700340de2c91e12e
     extra-dep: true
   - location:
       git: https://github.com/myfreeweb/haskell-socket-activation.git

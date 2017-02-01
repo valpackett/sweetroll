@@ -12,11 +12,6 @@ import           Data.String.Conversions
 import           Sweetroll.Micropub.Request
 import           Sweetroll.Micropub.Response
 
-data HTML
-data CSS
-data SVG
-data Atom
-
 type WithLink α               = (Headers '[Header "Link" [L.Link]] α)
 
 type PostLoginRoute           = "login" :> ReqBody '[FormUrlEncoded] [(Text, Text)] :> Post '[FormUrlEncoded] [(Text, Text)]

@@ -109,24 +109,15 @@ library
     ghc-options: -Wall
     hs-source-dirs: library
 
-flag tls
-    description: Include warp-tls
-    default: False
-
 executable sweetroll
     build-depends:
         base >= 4.8.0.0 && < 5
-      , git-embed
-      , cabal-file-th
       , options
-      , warp
-      , socket-activation
+      , wai-cli
       , stm
-      , unix
       , network
       , streaming-commons
       , wai-extra
-      , ansi-terminal
       , directory
       , cryptonite
       , memory
@@ -140,9 +131,6 @@ executable sweetroll
     ld-options: -pthread
     hs-source-dirs: executable
     main-is: Main.hs
-    if flag(tls)
-        build-depends: warp-tls
-        cpp-options: -DSweetrollTLS
 
 -- test-suite examples
 --     build-depends:

@@ -17,14 +17,12 @@ import           Network.HTTP.Client.Conduit
 import           Servant
 import           Gitson
 import           Data.FileEmbed
-import           Scripting.Duktape
 import           Sweetroll.Conf
 
 data SweetrollCtx = SweetrollCtx
   { _ctxConf     ∷ SweetrollConf
   , _ctxSecs     ∷ SweetrollSecrets
   , _ctxDeleted  ∷ TVar [String]
-  , _ctxPlugCtx  ∷ DuktapeCtx
   , _ctxLock     ∷ MVar ()
   , _ctxHttpMgr  ∷ Manager }
 
@@ -59,26 +57,12 @@ initCtx conf secs = do
   cpus ← getNumCapabilities
   --        static pool, basically: max Ncpus, don't expire
   (_, deleted', _) ← readProcessWithExitCode "git" [ "log", "--all", "--diff-filter=D", "--find-renames", "--name-only", "--pretty=format:" ] ""
-  plugCtx ← createPluginsCtx conf hmg
   deleted ← newTVarIO $ lines deleted'
   return SweetrollCtx { _ctxConf     = conf
                       , _ctxSecs     = secs
                       , _ctxDeleted  = deleted
-                      , _ctxPlugCtx  = plugCtx
                       , _ctxLock     = lck
                       , _ctxHttpMgr  = hmg }
-
-createPluginsCtx ∷ SweetrollConf → Manager → IO DuktapeCtx
-createPluginsCtx conf hmg = do
-  duk ← fromJust <$> createDuktapeCtx
-  void $ evalDuktape duk "var window = this"
-  void $ evalDuktape duk $(embedFile "bower_components/lodash/dist/lodash.min.js")
-  void $ evalDuktape duk $(embedFile "bower_components/moment/min/moment-with-locales.min.js")
-  void $ evalDuktape duk $(embedFile "library/Sweetroll/PluginApi.js")
-  void $ callDuktape duk (Just "Sweetroll") "_setConf" [ toJSON conf ]
-  void $ exposeFnDuktape duk (Just "Sweetroll") "fetch" $ jsonFetch hmg
-  forFileIn "plugins" (filter (not . ("." `isPrefixOf`))) (\_ x → void $ evalDuktape duk x)
-  return duk
 
 
 getConf ∷ MonadSweetroll μ ⇒ μ SweetrollConf
@@ -95,15 +79,7 @@ getDeleted = asks _ctxDeleted
 
 runCategoryDeciders ∷ (MonadIO μ, MonadSweetroll μ) ⇒ Value → μ Text
 runCategoryDeciders v = do
-  duk ← asks _ctxPlugCtx
-  result ← callDuktape duk (Just "Sweetroll") "_runCategoryDeciders" [ v ]
-  putStrLn $ "Category decider result: " ++ tshow result
-  return $ fromMaybe "notes" $ (^? key "name" . _String) =<< join (hush result)
-
-notifyPlugins ∷ (MonadIO μ, MonadSweetroll μ) ⇒ Text → Value → μ ()
-notifyPlugins ename edata = do
-  duk ← asks _ctxPlugCtx
-  void $ callDuktape duk (Just "Sweetroll") "_fireEvent" [ String ename, edata ]
+  return "notes" -- XXX
 
 parseEntryURI ∷ (MonadError ServantErr μ, MonadSweetroll μ) ⇒
                 URI → μ (String, String)

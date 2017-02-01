@@ -16,13 +16,11 @@ type MonadSweetrollEvent μ = (MonadIO μ, MonadBaseControl IO μ, MonadCatch μ
 onPostCreated ∷ (MonadSweetrollEvent μ) ⇒ String → String → URI → Value → μ Value
 onPostCreated category slug absUrl obj = do
   r ← onPostChanged category slug absUrl obj
-  notifyPlugins "create" $ object [ "category" .= category, "slug" .= slug, "url" .= tshow absUrl, "obj" .= obj ]
   return r
 
 onPostUpdated ∷ (MonadSweetrollEvent μ) ⇒ String → String → URI → Value → Value → μ Value
 onPostUpdated category slug absUrl oldObj obj = do
   r ← onPostChanged category slug absUrl obj
-  notifyPlugins "update" $ object [ "category" .= category, "slug" .= slug, "url" .= tshow absUrl, "oldObj" .= oldObj, "obj" .= obj ]
   return r
 
 onPostChanged ∷ (MonadSweetrollEvent μ) ⇒ String → String → URI → Value → μ Value
@@ -41,13 +39,11 @@ onPostDeleted category slug absUrl mobj = do
   case mobj of
     Just obj → do
       void $ sendWebmentions absUrl =<< entryWebmentions obj -- we send, they refetch and see 410
-      notifyPlugins "delete" $ object [ "category" .= category, "slug" .= slug, "url" .= tshow absUrl, "obj" .= mobj ]
     _ → return ()
 
 onPostUndeleted ∷ (MonadSweetrollEvent μ) ⇒ String → String → URI → Value → μ Value
 onPostUndeleted category slug absUrl obj = do
   r ← onPostChanged category slug absUrl obj
-  notifyPlugins "undelete" $ object [ "category" .= category, "slug" .= slug, "url" .= tshow absUrl, "obj" .= obj ]
   return r
 
 

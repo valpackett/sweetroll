@@ -12,7 +12,6 @@ A website engine for [the indie web] with curved swords. *Curved! Swords!*
 - sends [PubSubHubbub] notifications on new posts (for [readers])
 - supports [indie-config]
 - has a [JSON Web Tokens]-based [token-endpoint]
-- extensible with JavaScript plugins (included example: [Pushover] notifications)
 - written in [Haskell]
 
 I'm running it on [my website](https://unrelenting.technology).
@@ -137,10 +136,11 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
 - [http-link-header](https://github.com/myfreeweb/http-link-header), a parser for the Link header (RFC 5988)
 - [microformats2-parser](https://github.com/myfreeweb/microformats2-parser), a Microformats 2 parser
 - [indieweb-algorithms](https://github.com/myfreeweb/indieweb-algorithms), a collection of implementations of algorithms like [authorship](http://indieweb.org/authorship) and link discovery
-- [hs-duktape](https://github.com/myfreeweb/hs-duktape), Haskell bindings to [duktape](http://duktape.org), a lightweight ECMAScript (JavaScript) engine
+- [hs-duktape](https://github.com/myfreeweb/hs-duktape), Haskell bindings to [duktape](http://duktape.org), a lightweight ECMAScript (JavaScript) engine (NOT USED ANYMORE)
 
 ## TODO
 
+- [ ] do something about category decisions
 - webmention
   - [ ] reverify/refetch to update user profiles and stuff
   - [ ] moderation tools

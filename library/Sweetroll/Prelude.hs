@@ -19,6 +19,7 @@ import           Text.XML (Document, Element)
 import           Data.Default as X
 import qualified Data.Text
 import           Data.Text (replace, strip)
+import           Data.Has as X
 import           Data.List as X (nub)
 import           Data.List.Split as X (splitOn)
 import           Data.Char as X (isSpace, generalCategory, GeneralCategory(..))

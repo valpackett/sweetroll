@@ -32,7 +32,7 @@ sweetrollApp ctx =
   $ supportFormAuth
   $ (serveWithContext sweetrollAPI sweetrollContext $ sweetrollServer ctx)
   where sweetrollServer c = enter (sweetrollToExcept c) sweetrollServerT
-        sweetrollContext = authHandler (secretKey $ _ctxSecs ctx) :. EmptyContext
+        sweetrollContext = authHandler (secretKey $ getter ctx) :. EmptyContext
 
 initSweetrollApp ∷ SweetrollConf → SweetrollSecrets → IO Application
 initSweetrollApp conf secs = fmap sweetrollApp $ initCtx conf secs

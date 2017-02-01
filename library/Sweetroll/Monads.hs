@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans -fno-warn-missing-methods #-}
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, QuasiQuotes, TemplateHaskell #-}
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, UndecidableInstances, IncoherentInstances #-}
 {-# LANGUAGE RankNTypes, TypeOperators, TypeFamilies, DataKinds #-}
 {-# LANGUAGE ConstraintKinds, FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -17,25 +17,17 @@ import           Servant
 import           Gitson
 import           Sweetroll.Conf
 
-data SweetrollCtx = SweetrollCtx
-  { _ctxConf     ∷ SweetrollConf
-  , _ctxSecs     ∷ SweetrollSecrets
-  , _ctxDeleted  ∷ TVar [String]
-  , _ctxLock     ∷ MVar ()
-  , _ctxHttpMgr  ∷ Manager }
+type SweetrollCtx = (SweetrollConf, SweetrollSecrets, TVar [String], MVar (), Manager)
 
-type MonadSweetroll = MonadReader SweetrollCtx
+instance (Has Manager α) ⇒ HasHttpManager α where
+  getHttpManager = getter
 
-instance HasHttpManager SweetrollCtx where
-  getHttpManager = _ctxHttpMgr
-
-instance HasGitsonLock Sweetroll where
-  getGitsonLock = asks _ctxLock
+instance (Has (MVar ()) α, MonadReader α μ) ⇒ HasGitsonLock μ where
+  getGitsonLock = asks getter
 
 newtype Sweetroll α = Sweetroll {
   runSweetroll ∷ ReaderT SweetrollCtx (ExceptT ServantErr IO) α
-} deriving (Functor, Applicative, Monad, MonadIO, MonadBase IO, MonadThrow, MonadCatch, MonadError ServantErr,
-            MonadSweetroll)
+} deriving (Functor, Applicative, Monad, MonadIO, MonadBase IO, MonadThrow, MonadCatch, MonadError ServantErr, MonadReader SweetrollCtx)
 
 instance MonadBaseControl IO Sweetroll where
   type StM Sweetroll α = StM (ReaderT SweetrollCtx (ExceptT ServantErr IO)) α
@@ -54,33 +46,29 @@ initCtx conf secs = do
   lck ← newMVar ()
   (_, deleted', _) ← readProcessWithExitCode "git" [ "log", "--all", "--diff-filter=D", "--find-renames", "--name-only", "--pretty=format:" ] ""
   deleted ← newTVarIO $ lines deleted'
-  return SweetrollCtx { _ctxConf     = conf
-                      , _ctxSecs     = secs
-                      , _ctxDeleted  = deleted
-                      , _ctxLock     = lck
-                      , _ctxHttpMgr  = hmg }
+  return (conf, secs, deleted, lck, hmg)
 
 
-getConf ∷ MonadSweetroll μ ⇒ μ SweetrollConf
-getConf = asks _ctxConf
+getConf ∷ (Has SweetrollConf α, MonadReader α μ) ⇒ μ SweetrollConf
+getConf = asks getter
 
-getConfOpt ∷ MonadSweetroll μ ⇒ (SweetrollConf → α) → μ α
-getConfOpt f = asks $ f . _ctxConf
+getConfOpt ∷ (Has SweetrollConf α, MonadReader α μ) ⇒ (SweetrollConf → ψ) → μ ψ
+getConfOpt f = asks $ f . getter
 
-getBaseURI ∷ MonadSweetroll μ ⇒ μ URI
-getBaseURI = asks $ fromMaybe (fromJust $ baseURI def) . baseURI . _ctxConf
+getBaseURI ∷ (Has SweetrollConf α, MonadReader α μ) ⇒ μ URI
+getBaseURI = asks $ fromMaybe (fromJust $ baseURI def) . baseURI . getter
 
-getSecs ∷ MonadSweetroll μ ⇒ μ SweetrollSecrets
-getSecs = asks _ctxSecs
+getSecs ∷ (Has SweetrollSecrets α, MonadReader α μ) ⇒ μ SweetrollSecrets
+getSecs = asks getter
 
-getDeleted ∷ MonadSweetroll μ ⇒ μ (TVar [String])
-getDeleted = asks _ctxDeleted
+getDeleted ∷ (Has (TVar [String]) α, MonadReader α μ) ⇒ μ (TVar [String])
+getDeleted = asks getter
 
-runCategoryDeciders ∷ (MonadIO μ, MonadSweetroll μ) ⇒ Value → μ Text
+runCategoryDeciders ∷ MonadIO μ ⇒ Value → μ Text
 runCategoryDeciders v = do
   return "notes" -- XXX
 
-parseEntryURI ∷ (MonadError ServantErr μ, MonadSweetroll μ) ⇒
+parseEntryURI ∷ (MonadError ServantErr μ, Has SweetrollConf α, MonadReader α μ) ⇒
                 URI → μ (String, String)
 parseEntryURI uri = do
   base ← getBaseURI

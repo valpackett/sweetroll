@@ -11,7 +11,7 @@ import           Sweetroll.Webmention.Send
 import           Sweetroll.HTTPClient
 import           Data.Maybe (fromJust)
 
-type MonadSweetrollEvent μ = (MonadIO μ, MonadBaseControl IO μ, MonadCatch μ, MonadSweetroll μ)
+type MonadSweetrollEvent μ = (MonadIO μ, MonadBaseControl IO μ, MonadCatch μ, MonadReader SweetrollCtx μ)
 
 onPostCreated ∷ (MonadSweetrollEvent μ) ⇒ String → String → URI → Value → μ Value
 onPostCreated category slug absUrl obj = do

@@ -11,6 +11,7 @@ module Sweetroll.HTTPClient (
 ) where
 
 import           Sweetroll.Prelude
+import           Sweetroll.Monads ()
 import           Data.Conduit
 import qualified Data.Conduit.Combinators as C
 import qualified Data.Vector as V
@@ -28,7 +29,7 @@ import           Network.HTTP.Client.Internal (setUri) -- The fuck?
 import           Network.HTTP.Client (setRequestIgnoreStatus)
 import           Sweetroll.Conf (mf2Options)
 
-type MonadHTTP ψ μ = (HasHttpManager ψ, MonadReader ψ μ, MonadIO μ, MonadBaseControl IO μ)
+type MonadHTTP ψ μ = (Has Manager ψ, MonadReader ψ μ, MonadIO μ, MonadBaseControl IO μ)
 
 runHTTP = runEitherT
 

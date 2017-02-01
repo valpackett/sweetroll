@@ -8,17 +8,6 @@
      , "update " ++ (if port == "" then "3000" else port) ]
 :}
 
-:{
-:def test const $ return $ unlines
-     [ ":set -itest-suite/"
-     , ":set -package sweetroll -package hspec -package directory -package case-insensitive"
-     , ":load test-suite/Spec.hs"
-     , ":main --color"
-     , ":ctags"
-     , ":m + Sweetroll.Prelude"
-     , ":reload"]
-:}
-
 :load executable/Main.hs
 :m Prelude Main
 let putCmd x y = putStr "   " >> green x >> setReset >> putStr " ~~~ " >> putStrLn y
@@ -26,7 +15,6 @@ putSweetroll
 putStrLn "\n Available commands:"
 putCmd ":serve     " "(re)load the app and serve it on localhost:3000 with /tmp/sroll as the repo"
 putCmd ":serve 1234" "(or on any port really) // BTW, serve doesn't lock up the REPL!"
-putCmd ":test      " "run hspec tests (and :ctags while we're at it)"
 putStrLn ""
 :m Sweetroll.Prelude
 :reload

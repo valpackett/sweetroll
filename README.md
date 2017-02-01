@@ -105,7 +105,7 @@ Use Micropub clients like [Micropublish](https://micropublish.herokuapp.com) and
 ## Development
 
 Use [stack] to build (and [bower] to get front-end dependencies).  
-Use ghci to run tests and the server while developing (see the `.ghci` file).
+Use ghci to run the server while developing (see the `.ghci` file).
 
 The `:serve` command in ghci runs the server in test mode, which means you don't need to authenticate using IndieAuth.
 
@@ -113,8 +113,6 @@ The `:serve` command in ghci runs the server in test mode, which means you don't
 $ bower install
 
 $ stack build
-
-$ stack test
 
 $ (mkdir /tmp/sroll && cd /tmp/sroll && git init)
 

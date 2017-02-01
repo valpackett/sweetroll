@@ -64,8 +64,11 @@ initCtx conf secs = do
 getConf ∷ MonadSweetroll μ ⇒ μ SweetrollConf
 getConf = asks _ctxConf
 
-getConfOpt ∷ MonadSweetroll μ ⇒ (SweetrollConf → Maybe α) → μ α
-getConfOpt f = asks $ fromMaybe (fromJust $ f def) . f . _ctxConf
+getConfOpt ∷ MonadSweetroll μ ⇒ (SweetrollConf → α) → μ α
+getConfOpt f = asks $ f . _ctxConf
+
+getBaseURI ∷ MonadSweetroll μ ⇒ μ URI
+getBaseURI = asks $ fromMaybe (fromJust $ baseURI def) . baseURI . _ctxConf
 
 getSecs ∷ MonadSweetroll μ ⇒ μ SweetrollSecrets
 getSecs = asks _ctxSecs
@@ -80,6 +83,6 @@ runCategoryDeciders v = do
 parseEntryURI ∷ (MonadError ServantErr μ, MonadSweetroll μ) ⇒
                 URI → μ (String, String)
 parseEntryURI uri = do
-  base ← getConfOpt baseURI
+  base ← getBaseURI
   guardBool errWrongDomain $ (uriRegName <$> uriAuthority uri) == (uriRegName <$> uriAuthority base)
   parseEntryURIRelative uri

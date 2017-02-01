@@ -59,7 +59,7 @@ notifyPuSH l = do
   case parseURI hub of
     Nothing → return ()
     Just hubURI → do
-      base ← getConfOpt baseURI
+      base ← getBaseURI
       let pingURI = l `relativeTo` base
       resp ← runHTTP $ reqU hubURI >>= anyStatus
                        >>= postForm [ ("hub.mode", "publish"), ("hub.url", tshow pingURI) ]

@@ -1,9 +1,10 @@
-{-# LANGUAGE UnicodeSyntax #-}
+{-# LANGUAGE UnicodeSyntax, OverloadedStrings, LambdaCase #-}
 
 module Main where
 
-import           System.Environment
 import           System.IO
+import           System.Envy
+import           System.Environment
 import           Sweetroll.Conf
 import           Sweetroll.Api (initSweetrollApp)
 import qualified Data.Text as T
@@ -17,8 +18,9 @@ import           Network.Wai.Cli
 
 main ∷ IO ()
 main = do
-  -- TODO domain and other stuff from env
-  let conf = def
+  conf ← decodeEnv >>= \case
+                            Left e → hPutStrLn stderr ("Warning: error while reading env vars: " ++ e) >> return def
+                            Right c → return c
   envSecret ← lookupEnv "SWEETROLL_SECRET"
   secretVal ← case envSecret of
                   Just k | length k >= 40 → return $ hashWith SHA3_512 $ C8.pack k

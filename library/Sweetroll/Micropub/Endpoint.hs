@@ -44,13 +44,13 @@ getMicropub _ (Just "source") props (Just url) = do
   entry ← guardJust errWrongPath $ readDocumentByName category slug
   return $ Source entry
 getMicropub _ (Just "syndicate-to") _ _ = do
-  (MkSyndicationConfig syndConf) ← getConfOpt syndicationConfig
+  let (MkSyndicationConfig syndConf) = syndicationConfig
   return $ SyndicateTo $ case syndConf of
              Object o → map (\(k, v) → object [ "uid" .= v, "name" .= k ]) $ HMS.toList o
              Array a → toList a
              _ → []
 getMicropub _ (Just "media-endpoint") _ _ = do
-  base ← getConfOpt baseURI
+  base ← getBaseURI
   url ← fromMaybe nullURI . parseURIReference <$> getConfOpt mediaEndpoint
   return $ MediaEndpoint $ tshow $ url `relativeTo` base
 getMicropub token (Just "config") props url =
@@ -78,7 +78,7 @@ postMedia _ multipart = do
       renameFile (fileContent file) fullname
       writeIORef nameRef fullname
     return (params, files)
-  base ← getConfOpt baseURI
+  base ← getBaseURI
   name ← readIORef nameRef
   let uri = tshow $ (fromMaybe nullURI $ parseURIReference name) `relativeTo` base
   return $ addHeader uri Posted
@@ -88,7 +88,7 @@ postMicropub ∷ JWT VerifiedJWT → MicropubRequest
              → Sweetroll (Headers '[Servant.Header "Location" Text] MicropubResponse)
 postMicropub token (Create htype props synds) = do
   now ← liftIO getCurrentTime
-  base ← getConfOpt baseURI
+  base ← getBaseURI
   isTest ← getConfOpt testMode
 
   category ← cs <$> runCategoryDeciders (Object props)
@@ -113,7 +113,7 @@ postMicropub token (Create htype props synds) = do
   return $ addHeader (tshow absUrl) Posted
 
 postMicropub _ (Update url upds) = do
-  base ← getConfOpt baseURI
+  base ← getBaseURI
   isTest ← getConfOpt testMode
   (category, slug) ← parseEntryURI =<< guardJustP errWrongPath (parseURI $ cs url)
   -- Rebuild URL just in case
@@ -127,7 +127,7 @@ postMicropub _ (Update url upds) = do
   throwError respNoContent
 
 postMicropub _ (Delete url) = do
-  base ← getConfOpt baseURI
+  base ← getBaseURI
   isTest ← getConfOpt testMode
   deleted ← getDeleted
   (category, slug) ← parseEntryURI =<< guardJustP errWrongPath (parseURI $ cs url)
@@ -142,7 +142,7 @@ postMicropub _ (Delete url) = do
   throwError respNoContent
 
 postMicropub _ (Undelete url) = do
-  base ← getConfOpt baseURI
+  base ← getBaseURI
   isTest ← getConfOpt testMode
   deleted ← getDeleted
   (category, slug) ← parseEntryURI =<< guardJustP errWrongPath (parseURI $ cs url)

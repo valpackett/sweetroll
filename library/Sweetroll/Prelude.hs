@@ -16,7 +16,6 @@ import           Control.Monad.Trans.Either as X
 import           Control.Monad.Trans.Maybe as X hiding (liftListen, liftPass, liftCallCC)
 import           Control.Lens as X hiding (Index, index, cons, snoc, uncons, unsnoc, (<.>), (.=), (|>), (<|))
 import           Text.XML (Document, Element)
-import           Text.XML.Lens hiding ((<|))
 import           Data.Default as X
 import qualified Data.Text
 import           Data.Text (replace, strip)
@@ -26,13 +25,11 @@ import           Data.Char as X (isSpace, generalCategory, GeneralCategory(..))
 import           Data.String.Conversions as X hiding ((<>))
 import           Data.String.Conversions.Monomorphic as X
 import qualified Data.HashMap.Strict as HMS
-import qualified Data.Map.Lazy as ML
 import           Data.Proxy as X
 import           Data.Aeson as X
 import           Data.Aeson.Lens as X hiding (nonNull)
 import           Network.URI as X
 import           Network.HTTP.Types as X
-import           System.Directory
 import           Servant -- (mimeRender, mimeUnrender, FormUrlEncoded)
 
 type XDocument = Text.XML.Document
@@ -84,38 +81,10 @@ parseEntryURIRelative uri =
     [ category, slug ] → return (category, slug)
     _ → throwError errWrongPath
 
-atomizeUri ∷ URI → URI
-atomizeUri u = u { uriQuery = let q = uriQuery u in q ++ (if "?" `isPrefixOf` q then "&" else "?") ++ "_accept=application/atom%2Bxml" }
-
--- linksNofollow ∷ XElement → XElement
--- linksNofollow e = e & entire . el "a" . attribute "rel" %~ makeNofollow
---   where makeNofollow (Just r) = Just $ r ++ " nofollow"
---         makeNofollow Nothing  = Just "nofollow"
-
-detwitterizeEmoji ∷ XElement → XElement
-detwitterizeEmoji e = transform replaceWithAlt e
-  where replaceWithAlt (Element "img" as _) | "Emoji" `isInfixOf` (fromMaybe "" $ lookup "class" as) = Element "span" (ML.fromList [("class", "emoji")]) [ NodeContent $ fromMaybe "X" $ lookup "alt" as ]
-        replaceWithAlt x = x
-
 ensureArrayProp ∷ Text → Value → Value
 ensureArrayProp k (Object o) | HMS.member k o = Object o
 ensureArrayProp k (Object o) = Object $ HMS.insert k (Array empty) o
 ensureArrayProp _ v = v
-
-parseEmoji ∷ (IsSequence α, X.Element α ~ Char) ⇒ α → α
-parseEmoji = takeWhile isEmojiChar . dropWhile (not . isEmojiChar)
-  where isEmojiChar x = generalCategory x `elem` [ Format, OtherSymbol, NonSpacingMark ]
-
-forFileIn ∷ (MonadIO μ) ⇒ FilePath → ([FilePath] → [FilePath]) → (FilePath → ByteString → μ ()) → μ ()
-forFileIn dir fltr act = do
-  exists ← liftIO $ doesDirectoryExist dir
-  when exists $ do
-    files ← liftIO $ getDirectoryContents dir
-    forM_ (fltr files) $ \fname → do
-      fcontent ← liftIO $ try $ readFile $ dir </> fname
-      case fcontent of
-        Right c → act fname c
-        Left (e ∷ IOException) → putStrLn $ "Error when reading file " ++ cs (dir </> fname) ++ ": " ++ cs (show e)
 
 
 errNoAuth ∷ ServantErr

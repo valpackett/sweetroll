@@ -52,8 +52,6 @@ initCtx ∷ SweetrollConf → SweetrollSecrets → IO SweetrollCtx
 initCtx conf secs = do
   hmg ← newManager
   lck ← newMVar ()
-  cpus ← getNumCapabilities
-  --        static pool, basically: max Ncpus, don't expire
   (_, deleted', _) ← readProcessWithExitCode "git" [ "log", "--all", "--diff-filter=D", "--find-renames", "--name-only", "--pretty=format:" ] ""
   deleted ← newTVarIO $ lines deleted'
   return SweetrollCtx { _ctxConf     = conf

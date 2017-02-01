@@ -8,7 +8,6 @@ module Sweetroll.Conf (
 
 import           Sweetroll.Prelude
 import           CMark
-import qualified Data.HashMap.Strict as HMS
 import           Data.Aeson.TH
 import           Data.Microformats2.Parser
 
@@ -21,17 +20,12 @@ instance FromJSON SyndicationConfig where
   parseJSON v = return $ MkSyndicationConfig v
 
 data SweetrollSecrets = SweetrollSecrets
-  {                secretKey ∷ Text
-  ,          proxySigningKey ∷ ByteString }
+  {                secretKey ∷ Text }
 
 data SweetrollConf = SweetrollConf
   {                 siteName ∷ Maybe Text
   ,               domainName ∷ Maybe Text
   ,               httpsWorks ∷ Maybe Bool
-  ,             itemsPerPage ∷ Maybe Int
-  ,      categoriesInLanding ∷ Maybe [String]
-  ,          categoriesInNav ∷ Maybe [String]
-  ,           categoryTitles ∷ Maybe (HashMap Text Text)
   ,        syndicationConfig ∷ Maybe SyndicationConfig
   ,            mediaEndpoint ∷ Maybe String
   ,   indieAuthRedirEndpoint ∷ Maybe String
@@ -48,13 +42,6 @@ instance Default SweetrollConf where
         siteName                 = Just "A new Sweetroll website"
       , httpsWorks               = Just False
       , domainName               = Just "localhost"
-      , itemsPerPage             = Just 20
-      , categoriesInLanding      = Just [ "articles+notes+stories" ]
-      , categoriesInNav          = Just [ "articles+notes+stories", "articles", "replies+likes", "bookmarks" ]
-      , categoryTitles           = Just $ HMS.fromList [ ("articles+notes+stories", "Notes and articles")
-                                                       , ("articles", "Articles")
-                                                       , ("replies+likes", "Responses")
-                                                       , ("bookmarks", "Bookmarks") ]
       , syndicationConfig        = Just $ MkSyndicationConfig $ toJSON [
                                        object [ "name" .= asText "twitter.com",   "uid" .= asText "<a href=\"https://brid.gy/publish/twitter\" data-synd></a>" ]
                                      , object [ "name" .= asText "facebook.com",  "uid" .= asText "<a href=\"https://brid.gy/publish/facebook\" data-synd></a>" ]
@@ -70,8 +57,7 @@ instance Default SweetrollConf where
 
 instance Default SweetrollSecrets where
   def = SweetrollSecrets {
-        secretKey                = "SECRET" -- the executable sets to a secure random value by default
-      , proxySigningKey          = "SECRET" }
+        secretKey                = "SECRET" } -- the executable sets to a secure random value by default
 
 baseURI ∷ SweetrollConf → Maybe URI
 baseURI conf = asum [ parseURI $ (if fromMaybe False (httpsWorks conf) then "https://" else "http://") ++ unpack (fromMaybe "" $ domainName conf) -- need to parse because we need the :PORT parsed correctly for dev

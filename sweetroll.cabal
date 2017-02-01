@@ -64,9 +64,7 @@ library
       , indieweb-algorithms
       , wai
       , wai-extra
-      , wai-app-static
       , wai-cors
-      , wai-middleware-throttle
       , wai-conduit
       , servant
       , servant-server
@@ -92,7 +90,6 @@ library
       , cmark-highlight
       , highlighting-kate
       , raw-strings-qq
-      , file-embed
       , filepath
     default-language: Haskell2010
     exposed-modules:
@@ -106,7 +103,6 @@ library
         Sweetroll.Micropub.Response
         Sweetroll.Monads
         Sweetroll.Prelude
-        Sweetroll.Proxy
         Sweetroll.Routes
         Sweetroll.Webmention.Send
         Sweetroll.Webmention.Receive

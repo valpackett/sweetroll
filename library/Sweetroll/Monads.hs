@@ -10,13 +10,11 @@
 module Sweetroll.Monads where
 
 import           Sweetroll.Prelude
-import           Sweetroll.HTTPClient (jsonFetch)
 import           System.Process (readProcessWithExitCode)
 import           Data.Maybe
 import           Network.HTTP.Client.Conduit
 import           Servant
 import           Gitson
-import           Data.FileEmbed
 import           Sweetroll.Conf
 
 data SweetrollCtx = SweetrollCtx

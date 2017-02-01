@@ -74,33 +74,21 @@ Here's an example for [runit](http://smarden.org/runit/index.html):
 #!/bin/sh
 
 umask g+w
+export SWEETROLL_HTTPS_WORKS=1 # this means HTTPS is *working*! i.e. you have it set up on your reverse proxy!
+export SWEETROLL_DOMAIN=unrelenting.technology # your actual domain!
+export SWEETROLL_SECRET="GENERATE YOUR LONG PSEUDORANDOM VALUE!...2MGy9ZkKgzexRpd7vl8" 
 exec chpst -u sweetroll /home/sweetroll/.local/bin/sweetroll
-        --https \ # this means HTTPS is *working*! i.e. you have it set up on your reverse proxy!
         --protocol=unix \ # will run on /var/run/sweetroll/sweetroll.sock by default; you can override with --socket
   # or: --protocol=http --port=3030 \
-        --domain=unrelenting.technology \ # your actual domain!
-        --repo="/home/sweetroll/repo" \ # the site directory! don't forget to run `git init` inside of it first
-        --secret="GENERATE YOUR LONG PSEUDORANDOM VALUE!...2MGy9ZkKgzexRpd7vl8" 2>&1
+        2>&1
 ```
 
 (Use something like `head -c 1024 < /dev/random | openssl dgst -sha512` to get the random value for the `secret`. No, not dynamically in the script. Copy and paste the value into the script. Otherwise you'll be logged out on every restart.)
 
-Putting a reverse proxy in front of Sweetroll is not *required*, but you might want to run other software at different URLs, etc.
 By the way, Sweetroll supports socket activation.
 I wrote [soad](https://github.com/myfreeweb/soad) to run Sweetroll and other services on demand and shut them down when not used for some time.
 
-After you start Sweetroll, open your new website.
-It should write the default configuration to `conf/sweetroll.json` in your site directory.
-Edit that file, you probably want to change some options.
-
-Create a `templates` directory in your site directory.
-You can override the HTML templates you see in this repo's `templates` directory with your own using your `templates` directory.
-The templating engine is embedded JavaScript via [lodash](http://lodash.com)'s `_.template`.
-You need to put your h-card and rel-me markup into `templates/author.ejs`.
-
-Restart Sweetroll after any changes to the config file or the templates.
-
-Use Micropub clients like [Micropublish](https://micropublish.herokuapp.com) and [Quill](https://quill.p3k.io) to post.
+Use Micropub clients like [Micropublish](https://micropublish.net) and [Quill](https://quill.p3k.io) to post.
 
 ## Development
 

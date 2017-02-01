@@ -13,7 +13,6 @@ build-type:      Simple
 cabal-version:   >= 1.10
 extra-source-files:
     README.md
-    bower.json
 tested-with:
     GHC == 8.0.1
 
@@ -108,12 +107,9 @@ library
         Sweetroll.Micropub.Request
         Sweetroll.Micropub.Response
         Sweetroll.Monads
-        Sweetroll.Pages
         Sweetroll.Prelude
         Sweetroll.Proxy
-        Sweetroll.Rendering
         Sweetroll.Routes
-        Sweetroll.Slice
         Sweetroll.Webmention.Send
         Sweetroll.Webmention.Receive
     ghc-options: -Wall

@@ -21,4 +21,5 @@ packages:
 extra-deps:
   - git-embed-0.1.0
   - highlighting-kate-0.6.3
+  - wai-cli-0.1.0
 resolver: nightly-2016-12-16

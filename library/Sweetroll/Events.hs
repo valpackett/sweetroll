@@ -6,10 +6,10 @@ module Sweetroll.Events where
 
 import           Sweetroll.Prelude
 import           Sweetroll.Conf
-import           Sweetroll.Routes
 import           Sweetroll.Monads
 import           Sweetroll.Webmention.Send
 import           Sweetroll.HTTPClient
+import           Data.Maybe (fromJust)
 
 type MonadSweetrollEvent μ = (MonadIO μ, MonadBaseControl IO μ, MonadCatch μ, MonadSweetroll μ)
 
@@ -53,14 +53,9 @@ onPostUndeleted category slug absUrl obj = do
 
 notifyPuSHCategory ∷ (MonadSweetrollEvent μ) ⇒ String → μ ()
 notifyPuSHCategory catName = do
-  notifyPuSH $ permalink (Proxy ∷ Proxy IndexRoute)
-  notifyPuSH $ permalink (Proxy ∷ Proxy CatRoute) catName Nothing Nothing
-  notifyPuSH $ atomizeUri $ permalink (Proxy ∷ Proxy CatRoute) catName Nothing Nothing
-  -- XXX: should send to unnamed combinations too
-  catsToNotify ← liftM (filter (cs catName `isInfixOf`) . keys) $ getConfOpt categoryTitles
-  forM_ catsToNotify $ \c → do
-    notifyPuSH $ permalink (Proxy ∷ Proxy CatRoute) (cs c) Nothing Nothing
-    notifyPuSH $ atomizeUri $ permalink (Proxy ∷ Proxy CatRoute) (cs c) Nothing Nothing
+  notifyPuSH $ fromJust $ parseURI "/"
+  notifyPuSH $ fromJust $ parseURI $ "/" ++ catName
+  -- XXX
 
 notifyPuSH ∷ (MonadSweetrollEvent μ) ⇒ URI → μ ()
 notifyPuSH l = do

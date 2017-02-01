@@ -1,5 +1,7 @@
 # sweetroll [![unlicense](https://img.shields.io/badge/un-license-green.svg?style=flat)](http://unlicense.org)
 
+** Big changes in progress! **
+
 A website engine for [the indie web] with curved swords. *Curved! Swords!*
 
 - uses [Git]+[JSON] for storage
@@ -139,21 +141,6 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
 
 ## TODO
 
-- html/frontend/templating
-  - [ ] support [WebFinger](https://webfinger.net) with HTML as the source of truth + additional links from config e.g. for [remoteStorage](https://remotestorage.io)
-  - [ ] figure out URL/canonical/etc. handling for alternative networks & mirrors like .onion & IPFS -- including webmentions!
-  - [ ] custom non-entry html pages
-  - [ ] [archive](https://indieweb.org/archive) pages by month. see footer of anildash.com
-  - [ ] sitemap.xml
-  - [ ] indieweb-components: a component for a Medium-style popup on selection that offers a fragmention link and (?) indie-config repost-quote-something (look how [selection-sharer](https://github.com/xdamman/selection-sharer) works on mobile!! but probably should look the same just at the opposite direction than iOS's popup)
-- event system
-  - [ ] real-time page updates with Server-Sent Events (make a Web Component that will show the update button)
-  - [ ] static mode: on these events, regenerate website pages into static HTML files (and serve them for better performance)
-- plugin api
-  - [ ] cron-style scheduling
-  - [ ] post manipulation
-  - [ ] HTTP request (webhook) handling
-  - [ ] example plugin: Telegram bot (posting, webmention notifications, responding to them, deleting them, etc.)
 - webmention
   - [ ] reverify/refetch to update user profiles and stuff
   - [ ] moderation tools
@@ -165,7 +152,6 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
 - micropub
   - [ ] check auth scopes
 - [ ] indieweb-algorithms?: ensure the person you're replying to *never* gets picked up you when you're replying (caught in test without own h-card) (what?)
-- [ ] tags? (kill the difference between categories and tags? // use symlinks to add to multiple categories/tags)
 - [ ] extract a `WebPrelude` package: `Sweetroll.Prelude`, `Sweetroll.HTTPClient`, `formToObject`, more stuff
 
 ## License

@@ -8,19 +8,9 @@ module Sweetroll.Conf (
 
 import           Sweetroll.Prelude
 import           CMark
-import           CMark.Highlight
 import qualified Data.HashMap.Strict as HMS
 import           Data.Aeson.TH
 import           Data.Microformats2.Parser
-import           Data.FileEmbed
-
-newtype IndieConfig = MkIndieConfig Value
-
-instance ToJSON IndieConfig where
-  toJSON (MkIndieConfig v) = toJSON v
-
-instance FromJSON IndieConfig where
-  parseJSON v = return $ MkIndieConfig v
 
 newtype SyndicationConfig = MkSyndicationConfig Value
 
@@ -42,7 +32,6 @@ data SweetrollConf = SweetrollConf
   ,      categoriesInLanding ∷ Maybe [String]
   ,          categoriesInNav ∷ Maybe [String]
   ,           categoryTitles ∷ Maybe (HashMap Text Text)
-  ,              indieConfig ∷ Maybe IndieConfig
   ,        syndicationConfig ∷ Maybe SyndicationConfig
   ,            mediaEndpoint ∷ Maybe String
   ,   indieAuthRedirEndpoint ∷ Maybe String
@@ -66,11 +55,6 @@ instance Default SweetrollConf where
                                                        , ("articles", "Articles")
                                                        , ("replies+likes", "Responses")
                                                        , ("bookmarks", "Bookmarks") ]
-      , indieConfig              = Just $ MkIndieConfig $ object [
-                                       "reply"    .= asText "https://quill.p3k.io/new?reply={url}"
-                                     , "bookmark" .= asText "https://quill.p3k.io/bookmark?url={url}"
-                                     , "like"     .= asText "https://quill.p3k.io/favorite?url={url}"
-                                     , "repost"   .= asText "https://quill.p3k.io/repost?url={url}" ]
       , syndicationConfig        = Just $ MkSyndicationConfig $ toJSON [
                                        object [ "name" .= asText "twitter.com",   "uid" .= asText "<a href=\"https://brid.gy/publish/twitter\" data-synd></a>" ]
                                      , object [ "name" .= asText "facebook.com",  "uid" .= asText "<a href=\"https://brid.gy/publish/facebook\" data-synd></a>" ]
@@ -99,22 +83,3 @@ mf2Options = def
 
 cmarkOptions ∷ [CMarkOption]
 cmarkOptions = [ optNormalize, optSmart ]
-
-bowerComponents ∷ [(FilePath, ByteString)]
-bowerComponents = [ ("webcomponentsjs/webcomponents-lite.min.js", $(embedFile "bower_components/webcomponentsjs/webcomponents-lite.min.js"))
-                  , ("lazyload-image/lazyload-image.html", $(embedFile "bower_components/lazyload-image/lazyload-image.html"))
-                  , ("indieweb-components/indie-action.html", $(embedFile "bower_components/indieweb-components/indie-action.html"))
-                  , ("indieweb-components/fragmention-target.html", $(embedFile "bower_components/indieweb-components/fragmention-target.html"))
-                  , ("findAndReplaceDOMText/src/findAndReplaceDOMText.js", $(embedFile "bower_components/findAndReplaceDOMText/src/findAndReplaceDOMText.js"))
-                  , ("svgxuse/svgxuse.js", $(embedFile "bower_components/svgxuse/svgxuse.js")) ]
-
-baseCss ∷ LByteString
-baseCss = sanitizeCss ++ opentypeCss
-  where sanitizeCss = cs $(embedFile "bower_components/sanitize-css/sanitize.css")
-        opentypeCss = cs $(embedFile "bower_components/normalize-opentype.css/normalize-opentype.css")
-
-defaultCss ∷ LByteString
-defaultCss = cs (styleToCss tango) ++ cs $(embedFile "style.css")
-
-defaultIcons ∷ LByteString
-defaultIcons = cs $(embedFile "icons.svg")

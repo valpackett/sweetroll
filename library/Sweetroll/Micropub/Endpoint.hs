@@ -14,6 +14,7 @@ import qualified Data.Map.Strict as MS
 import qualified Data.HashMap.Strict as HMS
 import qualified Data.ByteString.Lazy as BL
 import           Data.ByteArray.Encoding
+import           Data.Maybe (fromJust)
 import qualified CMark as CM
 import qualified CMark.Highlight as CM
 import           Web.JWT hiding (header, decode)
@@ -92,7 +93,7 @@ postMicropub token (Create htype props synds) = do
 
   category ← cs <$> runCategoryDeciders (Object props)
   let slug = decideSlug props now
-      absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base
+      absUrl = (fromJust $ parseURI $ "/" ++ category ++ "/" ++ slug) `relativeTo` base -- XXX
   obj ← return props
         >>= fetchAllReferenceContexts
         |>  setDates now
@@ -115,7 +116,8 @@ postMicropub _ (Update url upds) = do
   base ← getConfOpt baseURI
   isTest ← getConfOpt testMode
   (category, slug) ← parseEntryURI =<< guardJustP errWrongPath (parseURI $ cs url)
-  let absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base -- Rebuild URL just in case
+  -- Rebuild URL just in case
+  let absUrl = (fromJust $ parseURI $ "/" ++ category ++ "/" ++ slug) `relativeTo` base -- XXX
   obj ← guardJust errWrongPath $ readDocumentByName category slug
   let newObj = obj & key "properties" %~ (\o → foldl' applyUpdates o upds)
   transaction "./" $ do
@@ -129,7 +131,7 @@ postMicropub _ (Delete url) = do
   isTest ← getConfOpt testMode
   deleted ← getDeleted
   (category, slug) ← parseEntryURI =<< guardJustP errWrongPath (parseURI $ cs url)
-  let absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base
+  let absUrl = (fromJust $ parseURI $ "/" ++ category ++ "/" ++ slug) `relativeTo` base -- XXX
   transaction "./" $ do
     k ← guardJust errWrongPath $ documentFullKey category $ findByName slug
     mobj ← readDocumentByName category slug
@@ -145,7 +147,7 @@ postMicropub _ (Undelete url) = do
   deleted ← getDeleted
   (category, slug) ← parseEntryURI =<< guardJustP errWrongPath (parseURI $ cs url)
   filePath ← guardJust errWrongPath $ (find (\e → category `isPrefixOf` e && slug `isInfixOf` e)) `liftM` atomically (readTVar deleted)
-  let absUrl = permalink (Proxy ∷ Proxy EntryRoute) category slug `relativeTo` base
+  let absUrl = (fromJust $ parseURI $ "/" ++ category ++ "/" ++ slug) `relativeTo` base -- XXX
   transaction "./" $ do
     _ ← liftIO $ readProcessWithExitCode "git" [ "checkout", filePath ] ""
     atomically $ modifyTVar' deleted (filter (/= filePath))

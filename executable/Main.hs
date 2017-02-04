@@ -14,8 +14,6 @@ import           Crypto.Random
 import           Crypto.Hash
 import           Network.Wai.Cli
 
--- TODO run https://github.com/stackbuilders/dotenv-hs
-
 main ∷ IO ()
 main = do
   conf ← decodeEnv >>= \case

@@ -15,9 +15,10 @@ import           Data.Maybe
 import           Network.HTTP.Client.Conduit
 import           Servant
 import           Gitson
+import qualified Hasql.Pool as HP
 import           Sweetroll.Conf
 
-type SweetrollCtx = (SweetrollConf, SweetrollSecrets, TVar [String], MVar (), Manager)
+type SweetrollCtx = (SweetrollConf, SweetrollSecrets, TVar [String], MVar (), Manager, HP.Pool)
 
 instance (Has Manager α) ⇒ HasHttpManager α where
   getHttpManager = getter
@@ -46,7 +47,8 @@ initCtx conf secs = do
   lck ← newMVar ()
   (_, deleted', _) ← readProcessWithExitCode "git" [ "log", "--all", "--diff-filter=D", "--find-renames", "--name-only", "--pretty=format:" ] ""
   deleted ← newTVarIO $ lines deleted'
-  return (conf, secs, deleted, lck, hmg)
+  dbp ← HP.acquire (4, 5, "postgres://localhost/sweetroll?sslmode=disable")
+  return (conf, secs, deleted, lck, hmg, dbp)
 
 
 getConf ∷ (Has SweetrollConf α, MonadReader α μ) ⇒ μ SweetrollConf

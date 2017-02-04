@@ -62,6 +62,8 @@ library
       , aeson-qq
       , jwt
       , gitson
+      , hasql
+      , hasql-pool
       , microformats2-parser
       , indieweb-algorithms
       , wai
@@ -106,6 +108,7 @@ library
         Sweetroll.Monads
         Sweetroll.Prelude
         Sweetroll.Routes
+        Sweetroll.Storage
         Sweetroll.Webmention.Send
         Sweetroll.Webmention.Receive
     ghc-options: -Wall

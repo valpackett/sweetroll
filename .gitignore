@@ -1,10 +1,1 @@
-.cabal-sandbox/
-.hpc/
-cabal.sandbox.config
-dist/
-tmp/
-*.tix
-.stack-work/
-bower_components/
-node_modules/
 /token

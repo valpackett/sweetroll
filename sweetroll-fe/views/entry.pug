@@ -1,0 +1,16 @@
+extends /layout.pug
+
+block append main
+	article.entry
+		+showEntry(obj, false)
+	form.entry-webmention-form(method="post" action="/webmention")
+		p
+			| Posted a <a href="https://indieweb.org/responses">response</a> on your own website?
+			| Send a <a href="https://webmention.net/">Webmention</a>:
+			input(type="hidden" name="target" value=requestUriStr)
+			fieldset
+				input(type="url" name="source" placeholder="https://...")
+				button Send
+			small.
+				(Even better - <a href="https://webmention.net/implementations/">implement</a> automatic Webmention sending on your website.
+				And set up <a href="https://indieweb.org/indie-config">indie-config</a> to make reply/repost/like buttons work.)

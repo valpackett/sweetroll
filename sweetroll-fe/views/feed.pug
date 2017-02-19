@@ -1,0 +1,46 @@
+extends /layout.pug
+
+block append main
+	//- Some pagination info: https://wiki.postgresql.org/images/3/35/Pagination_Done_the_PostgreSQL_Way.pdf
+	//- Also: some weirdness is related to the fact that entries can be marked deleted (tombstoned),
+	//- and yet we want to show the same number of visible entries per page.
+	//- This is why we fetch more entries than we'll show.
+	section.index-category
+		-
+			const qq = reqUriFull.search(true)
+			let i = 0
+			if (qq.after && !qq.before) i = obj.children.length - perPage
+			if (i < 0) i = 0
+			const firstI = i
+			console.log(firstI)
+			console.log(obj.children.slice(firstI).length)
+		each entry in obj.children.slice(firstI)
+			if i >= perPage + firstI
+			else if entry.deleted
+				article.h-entry(hidden)
+					.p-name Gone
+					data.dt-deleted(value="1970-01-01T00:00:00")
+			else
+				- i += 1
+				article.h-entry.entry
+					+showEntry(entry, true)
+	nav.category-nav
+		if i >= perPage
+			-
+				const href = reqUriFull.clone().search(q => {
+					q.before = _.get(obj.children[i - 1], 'properties.published[0]')
+					q.after = undefined
+				}).relativeTo(domainUri).toString()
+			a(href=href rel="prev")
+				+icon('arrow-down')
+				| older
+		= ' '
+		if (qq.before || (qq.after && firstI > 0)) && i > 0
+			-
+				const href = reqUriFull.clone().search(q => {
+					q.before = undefined
+					q.after = _.get(obj.children[firstI], 'properties.published[0]')
+				}).relativeTo(domainUri).toString()
+			a(href=href rel="next")
+				+icon('arrow-up')
+				| newer

@@ -1,0 +1,3 @@
+[submodule "mf2sql"]
+	path = mf2sql
+	url = https://github.com/myfreeweb/mf2sql.git

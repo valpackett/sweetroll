@@ -1,0 +1,8 @@
+dist/
+node_modules/
+templates/
+shrinkwrap.yaml
+npm-debug.log
+*.pid
+*.sock
+.env

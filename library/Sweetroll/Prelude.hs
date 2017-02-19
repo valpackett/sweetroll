@@ -87,26 +87,27 @@ ensureArrayProp k (Object o) | HMS.member k o = Object o
 ensureArrayProp k (Object o) = Object $ HMS.insert k (Array empty) o
 ensureArrayProp _ v = v
 
+errText ∷ ServantErr → LByteString → ServantErr
+errText e t = e { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]
+                , errBody    = t }
+
+throwErrText ∷ MonadError ServantErr μ ⇒ ServantErr → LByteString → μ α
+throwErrText e t = throwError $ errText e t
 
 errNoAuth ∷ ServantErr
-errNoAuth = err401 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]
-                   , errBody    = "Authorization/access_token not found." }
+errNoAuth = errText err401 "Authorization/access_token not found."
 
 errWrongAuth ∷ ServantErr
-errWrongAuth = err401 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]
-                      , errBody    = "Invalid auth token." }
+errWrongAuth = errText err401 "Invalid auth token."
 
 errWrongDomain ∷ ServantErr
-errWrongDomain = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]
-                        , errBody    = "The target URI is not on this domain." }
+errWrongDomain = errText err400 "The target URI is not on this domain."
 
 errWrongPath ∷ ServantErr
-errWrongPath = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]
-                      , errBody    = "The target URI is not a resource that exists on this domain." }
+errWrongPath = errText err400 "The target URI is not a resource that exists on this domain."
 
 errNoURIInField ∷ LByteString → ServantErr
-errNoURIInField f = err400 { errHeaders = [ (hContentType, "text/plain; charset=utf-8") ]
-                           , errBody    = "You didn't put a valid absolute URI in the '" ++ f ++ "' field of the www-form-urlencoded request body." }
+errNoURIInField f = errText err400 $ "You didn't put a valid absolute URI in the '" ++ f ++ "' field of the www-form-urlencoded request body."
 
 guardJustP ∷ MonadError ServantErr μ ⇒ ServantErr → Maybe α → μ α
 guardJustP _ (Just x) = return x

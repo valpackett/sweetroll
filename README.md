@@ -48,7 +48,7 @@ I haven't uploaded any yet, so you have to build from source.
 
 When it's done, it says where it put the binary (something like `.stack-work/install/your-platform/some/versions/.../bin`).
 
-(NOTE: to get a smaller resulting binary, [enable split-objs globally in stack](https://github.com/commercialhaskell/stack/issues/1284#issuecomment-196639511), remove snapshots once and rebuild. And by smaller I do mean SMALLER. Linking it will take more time though.)
+(NOTE: to get a smaller resulting binary, [enable split-objs globally in stack](https://github.com/commercialhaskell/stack/issues/1284#issuecomment-196639511), remove snapshots once and rebuild. And by smaller I do mean SMALLER. Linking it will take more time though. Unless you use lld, the LLVM linker, which is incredibly fast. Something like this: `stack build --fast --ghc-options "-pgml clang39 -optl -fuse-ld=lld"`)
 
 ### Running on a server
 
@@ -66,7 +66,7 @@ Here's an example for [runit](http://smarden.org/runit/index.html):
 #!/bin/sh
 
 umask g+w
-export SWEETROLL_HTTPS_WORKS=1 # this means HTTPS is *working*! i.e. you have it set up on your reverse proxy!
+export SWEETROLL_HTTPS_WORKS=True # this means HTTPS is *working*! i.e. you have it set up on your reverse proxy!
 export SWEETROLL_DOMAIN=unrelenting.technology # your actual domain!
 export SWEETROLL_SECRET="GENERATE YOUR LONG PSEUDORANDOM VALUE!...2MGy9ZkKgzexRpd7vl8" 
 exec chpst -u sweetroll /home/sweetroll/.local/bin/sweetroll

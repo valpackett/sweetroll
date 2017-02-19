@@ -35,14 +35,17 @@ import           Sweetroll.Micropub.Request
 import           Sweetroll.Micropub.Response
 import           Sweetroll.Events
 import           Sweetroll.HTTPClient
+import           Sweetroll.Database
 
 getMicropub ∷ JWT VerifiedJWT → Maybe Text → [Text] → Maybe Text → Sweetroll MicropubResponse
 getMicropub _ (Just "source") props (Just url) = do
   -- TODO: props filtering
-  target ← guardJustP (errNoURIInField "url") $ parseURI $ cs url
-  (category, slug) ← parseEntryURI target
-  entry ← guardJust errWrongPath $ readDocumentByName category slug
-  return $ Source entry
+  -- TODO: check domain against host header (in sql)
+  result ← queryDb url getObject
+  case result of
+    Right (Just obj) → return $ Source obj
+    Right Nothing → throwErrText err404 "Entry not found."
+    Left x  → throwErrText err500 $ "Database error: " ++ cs (show x)
 getMicropub _ (Just "syndicate-to") _ _ = do
   let (MkSyndicationConfig syndConf) = syndicationConfig
   return $ SyndicateTo $ case syndConf of

@@ -8,47 +8,40 @@ import           Control.Lens (snoc)
 import qualified Data.HashMap.Strict as HMS
 import           Data.Aeson.QQ
 import           Servant
-import           Gitson
 import           Sweetroll.Conf
+import           Sweetroll.Database
 import           Sweetroll.Monads
-import           Sweetroll.Events
 import           Sweetroll.HTTPClient hiding (Header)
 
 receiveWebmention ∷ [(Text, Text)] → Sweetroll NoContent
 receiveWebmention allParams = do
-  source ← guardJustP (errNoURIInField "source") $ parseURI =<< cs <$> lookup "source" allParams
-  target ← guardJustP (errNoURIInField "target") $ parseURI =<< cs <$> lookup "target" allParams
-  (category, slug) ← parseEntryURI target
-  void $ guardJust errWrongPath $ documentIdFromName category slug
+  source ← guardJustP (errNoURIInField "source") $ lookup "source" allParams
+  target ← guardJustP (errNoURIInField "target") $ lookup "target" allParams
   shouldBeSync ← getConfOpt testMode
-  (if shouldBeSync then void else void . fork) $ processWebmention category slug source target
+  (if shouldBeSync then void else void . fork) $ processWebmention source target
   return NoContent
 
-processWebmention ∷ String → String → URI → URI → Sweetroll ()
-processWebmention category slug source target = do
+processWebmention ∷ Text → Text → Sweetroll ()
+processWebmention source target = do
   let forfrom = "for " ++ tshow target ++ " from " ++ tshow source
-      withEntry x =
-        transaction "." $ do
-          entrym ← readDocumentByName category slug
-          case entrym of
-            Just entry → x entry
-            _ → putStrLn $ "Received webmention for nonexistent " ++ tshow target ++ " from " ++ tshow source
-  resp0 ← runHTTP $ reqU source >>= anyStatus >>= performWithHtml
+  resp0 ← runHTTP $ reqU (parseUri source) >>= anyStatus >>= performWithHtml
   case resp0 of
     Left e → putStrLn $ "Error fetching webmention " ++ forfrom ++ ": " ++ e
-    Right resp → withEntry $ \entry → 
+    Right resp → do
+      -- XXX: servant errors in a forked thread after the response...?!
+      entry ← guardEntryNotFound =<< guardDbError =<< queryDb target getObject
       case statusCode $ responseStatus resp of
         410 → do
           putStrLn $ "Received gone webmention " ++ forfrom ++ tshow source
           let updatedEntry = upsertMention (entry ∷ Value) tombstone
-          saveDocumentByName category slug =<< onPostUpdated category slug target entry updatedEntry
+          guardDbError =<< queryDb updatedEntry upsertObject
         200 → do
-          (mention0, _) ← fetchEntryWithAuthors source resp
+          (mention0, _) ← fetchEntryWithAuthors (parseUri source) resp
           case mention0 of
-            Just mention@(Object _) | verifyMention target mention → do
+            Just mention@(Object _) | verifyMention (parseUri target) mention → do
               putStrLn $ "Received correct webmention for " ++ tshow target ++ " from " ++ tshow source
-              let updatedEntry = upsertMention (entry ∷ Value) $ ensurePresentUrl source mention
-              saveDocumentByName category slug =<< onPostUpdated category slug target entry updatedEntry
+              let updatedEntry = upsertMention (entry ∷ Value) $ ensurePresentUrl (parseUri source) mention
+              guardDbError =<< queryDb updatedEntry upsertObject
             Just mention@(Object _) → putStrLn $ "Received unverified webmention " ++ forfrom ++ ": " ++ tshow mention
             Just mention → putStrLn $ "Received incorrectly parsed webmention " ++ forfrom ++ ": " ++ tshow mention
             Nothing → putStrLn $ "Received unreadable webmention " ++ forfrom

@@ -196,9 +196,10 @@ html(lang="en")
 			link(rel="stylesheet" href=assets.url('dist/style.css'))
 			if siteSettings
 				-
-					const name = _.includes(obj && obj.type, 'h-feed')
-						? helpers.insertParams(_.get(obj, 'properties.name[0]', 'Unnamed feed'), reqUriFull.search(true))
-						: (_.get(obj, 'properties.name[0]') || _.get(obj, 'properties.published[0]', 'Untitled page'))
+					const name = obj && obj.deleted ? 'Deleted'
+						: (_.includes(obj && obj.type, 'h-feed')
+							? helpers.insertParams(_.get(obj, 'properties.name[0]', 'Unnamed feed'), reqUriFull.search(true))
+							: (_.get(obj, 'properties.name[0]') || _.get(obj, 'properties.published[0]', 'Untitled page')))
 				title= `${name} / ${siteSettings['site-name']}`
 			if domainUri
 				link(rel="openid.delegate" href=domainUri.toString())

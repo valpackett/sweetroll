@@ -18,9 +18,9 @@ type Form = ReqBody '[FormUrlEncoded] [(Text, Text)]
 
 type PostLoginRoute           = "login" :> Host :> Form :> Post '[FormUrlEncoded] [(Text, Text)]
 type GetLoginRoute            = "login" :> Auth :> Get '[FormUrlEncoded] [(Text, Text)]
-type PostMediaRoute           = "micropub" :> "media" :> Auth :> Files Tmp :> PostCreated '[FormUrlEncoded, JSON] (Headers '[Header "Location" Text] MicropubResponse)
-type PostMicropubRoute        = "micropub" :> Auth :> ReqBody '[FormUrlEncoded, JSON] MicropubRequest :> PostCreated '[FormUrlEncoded, JSON] (Headers '[Header "Location" Text] MicropubResponse)
-type GetMicropubRoute         = "micropub" :> Auth :> QueryParam "q" Text :> QueryParams "properties" Text :> QueryParam "url" Text :> Get '[JSON, FormUrlEncoded] MicropubResponse
+type PostMediaRoute           = "micropub" :> "media" :> Auth :> Host :> Files Tmp :> PostCreated '[FormUrlEncoded, JSON] (Headers '[Header "Location" Text] MicropubResponse)
+type PostMicropubRoute        = "micropub" :> Auth :> Host :> ReqBody '[FormUrlEncoded, JSON] MicropubRequest :> PostCreated '[FormUrlEncoded, JSON] (Headers '[Header "Location" Text] MicropubResponse)
+type GetMicropubRoute         = "micropub" :> Auth :> Host :> QueryParam "q" Text :> QueryParams "properties" Text :> QueryParam "url" Text :> Get '[JSON, FormUrlEncoded] MicropubResponse
 type PostWebmentionRoute      = "webmention" :> Form :> PostAccepted '[JSON] NoContent
 
 type SweetrollAPI             = PostLoginRoute :<|> GetLoginRoute

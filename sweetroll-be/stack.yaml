@@ -4,8 +4,6 @@ packages:
   - '.'
   - location: '../indieweb-algorithms'
     extra-dep: true
-  - location: '../../gitson'
-    extra-dep: true
 extra-deps:
   - highlighting-kate-0.6.4 # for the flags
   - data-has-0.2.1.0

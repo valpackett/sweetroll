@@ -19,55 +19,50 @@ import qualified CMark as CM
 import qualified CMark.Highlight as CM
 import           Web.JWT hiding (header, decode)
 import           Servant
-import           System.Process (readProcessWithExitCode)
-import           System.Directory (removeFile, renameFile)
+import           System.Directory (renameFile)
 import           System.FilePath.Posix (takeExtension)
 import           Network.Wai.Parse
 import           Network.Mime
 import           Servant.Server.Internal
 import           Control.Monad.Trans.Resource (runResourceT, withInternalState)
 import           Crypto.Hash
-import           Gitson
 import           Sweetroll.Conf
 import           Sweetroll.Monads
 import           Sweetroll.Routes
 import           Sweetroll.Micropub.Request
 import           Sweetroll.Micropub.Response
-import           Sweetroll.Events
 import           Sweetroll.HTTPClient
 import           Sweetroll.Database
 
-getMicropub ∷ JWT VerifiedJWT → Maybe Text → [Text] → Maybe Text → Sweetroll MicropubResponse
-getMicropub _ (Just "source") props (Just url) = do
+
+getMicropub ∷ JWT VerifiedJWT → Maybe Text → Maybe Text → [Text] → Maybe Text → Sweetroll MicropubResponse
+getMicropub _ host (Just "source") props (Just url) = do
   -- TODO: props filtering
-  -- TODO: check domain against host header (in sql)
-  result ← queryDb url getObject
-  case result of
-    Right (Just obj) → return $ Source obj
-    Right Nothing → throwErrText err404 "Entry not found."
-    Left x  → throwErrText err500 $ "Database error: " ++ cs (show x)
-getMicropub _ (Just "syndicate-to") _ _ = do
+  ensureRightDomain (base host) $ parseUri url
+  obj ← guardEntryNotFound =<< guardDbError =<< queryDb url getObject
+  return $ Source obj
+getMicropub _ _ (Just "syndicate-to") _ _ = do
+  -- TODO: put that into the domain's config
   let (MkSyndicationConfig syndConf) = syndicationConfig
   return $ SyndicateTo $ case syndConf of
              Object o → map (\(k, v) → object [ "uid" .= v, "name" .= k ]) $ HMS.toList o
              Array a → toList a
              _ → []
-getMicropub _ (Just "media-endpoint") _ _ = do
-  base ← getBaseURI
+getMicropub _ host (Just "media-endpoint") _ _ = do
   url ← fromMaybe nullURI . parseURIReference <$> getConfOpt mediaEndpoint
-  return $ MediaEndpoint $ tshow $ url `relativeTo` base
-getMicropub token (Just "config") props url =
-  liftM MultiResponse $ mapM (\x → getMicropub token (Just x) props url)
+  return $ MediaEndpoint $ tshow $ url `relativeTo` base host
+getMicropub token host (Just "config") props url =
+  liftM MultiResponse $ mapM (\x → getMicropub token host (Just x) props url)
                              [ "media-endpoint", "syndicate-to" ]
---getMicropub token _ _ _ = getAuth token |> AuthInfo
-getMicropub token _ props url = getMicropub token (Just "media-endpoint") props url
+--getMicropub token _ _ _ _ = getAuth token |> AuthInfo
+getMicropub token host _ props url = getMicropub token host (Just "media-endpoint") props url
 
 
 extMap ∷ Map ByteString Text
 extMap = MS.foldlWithKey' (\a x y → MS.insert y x a) MS.empty defaultMimeMap
 
-postMedia ∷ JWT VerifiedJWT → MultiPartDataT Tmp → Sweetroll (Headers '[Servant.Header "Location" Text] MicropubResponse)
-postMedia _ multipart = do
+postMedia ∷ JWT VerifiedJWT → Maybe Text → MultiPartDataT Tmp → Sweetroll (Headers '[Servant.Header "Location" Text] MicropubResponse)
+postMedia _ host multipart = do
   nameRef ← newIORef ""
   liftIO $ void $ multipart $ \(params, files) → do
     forM_ files $ \(name, file) → when (name == "file") $ do
@@ -81,84 +76,44 @@ postMedia _ multipart = do
       renameFile (fileContent file) fullname
       writeIORef nameRef fullname
     return (params, files)
-  base ← getBaseURI
   name ← readIORef nameRef
-  let uri = tshow $ (fromMaybe nullURI $ parseURIReference name) `relativeTo` base
+  let uri = tshow $ (fromMaybe nullURI $ parseURIReference name) `relativeTo` base host
   return $ addHeader uri Posted
 
 
-postMicropub ∷ JWT VerifiedJWT → MicropubRequest
+postMicropub ∷ JWT VerifiedJWT → Maybe Text → MicropubRequest
              → Sweetroll (Headers '[Servant.Header "Location" Text] MicropubResponse)
-postMicropub token (Create htype props synds) = do
+postMicropub token host (Create htype props synds) = do
   now ← liftIO getCurrentTime
-  base ← getBaseURI
-  isTest ← getConfOpt testMode
-
   category ← cs <$> runCategoryDeciders (Object props)
   let slug = decideSlug props now
-      absUrl = (fromJust $ parseURI $ "/" ++ category ++ "/" ++ slug) `relativeTo` base -- XXX
+      absUrl = (fromJust $ parseURIReference $ "/" ++ category ++ "/" ++ slug) `relativeTo` base host
   obj ← return props
         >>= fetchAllReferenceContexts
         |>  setDates now
         |>  setClientId token
-        |>  setUrl absUrl
+        |>  setUrl absUrl -- TODO: allow any on the correct domain
         |>  setContent (readContent =<< lookup "content" props) (intercalate " " synds)
         |>  wrapWithType htype
-  transaction "./" $ saveDocument category (formatTime defaultTimeLocale "%s-" now ++ slug) obj
-  unless isTest $ void $ fork $ do
-    threadDelay =<< (*1000000) `liftM` getConfOpt pushDelay
-    transaction "./" $ do
-      -- check that it wasn't deleted after the delay
-      obj'm ← readDocumentByName category slug
-      case obj'm of
-        Nothing → return ()
-        Just obj' → saveDocumentByName category slug =<< onPostCreated category slug absUrl obj'
+  guardDbError =<< queryDb obj upsertObject
   return $ addHeader (tshow absUrl) Posted
 
-postMicropub _ (Update url upds) = do
-  base ← getBaseURI
-  isTest ← getConfOpt testMode
-  (category, slug) ← parseEntryURI =<< guardJustP errWrongPath (parseURI $ cs url)
-  -- Rebuild URL just in case
-  let absUrl = (fromJust $ parseURI $ "/" ++ category ++ "/" ++ slug) `relativeTo` base -- XXX
-  obj ← guardJust errWrongPath $ readDocumentByName category slug
+postMicropub _ host (Update url upds) = do
+  ensureRightDomain (base host) $ parseUri url
+  obj ← guardEntryNotFound =<< guardDbError =<< queryDb url getObject
   let newObj = obj & key "properties" %~ (\o → foldl' applyUpdates o upds)
-  transaction "./" $ do
-    saveDocumentByName category slug newObj
-    unless isTest $ void $ fork $
-      saveDocumentByName category slug =<< onPostUpdated category slug absUrl obj newObj
+  -- TODO ensure domain not modified
+  guardDbError =<< queryDb newObj upsertObject
   throwError respNoContent
 
-postMicropub _ (Delete url) = do
-  base ← getBaseURI
-  isTest ← getConfOpt testMode
-  deleted ← getDeleted
-  (category, slug) ← parseEntryURI =<< guardJustP errWrongPath (parseURI $ cs url)
-  let absUrl = (fromJust $ parseURI $ "/" ++ category ++ "/" ++ slug) `relativeTo` base -- XXX
-  transaction "./" $ do
-    k ← guardJust errWrongPath $ documentFullKey category $ findByName slug
-    mobj ← readDocumentByName category slug
-    let filePath = category </> k <.> "json"
-    liftIO $ removeFile filePath
-    atomically $ modifyTVar' deleted (cons filePath)
-    unless isTest $ void $ fork $ onPostDeleted category slug absUrl mobj
+postMicropub _ host (Delete url) = do
+  ensureRightDomain (base host) $ parseUri url
+  guardDbError =<< queryDb url deleteObject
   throwError respNoContent
 
-postMicropub _ (Undelete url) = do
-  base ← getBaseURI
-  isTest ← getConfOpt testMode
-  deleted ← getDeleted
-  (category, slug) ← parseEntryURI =<< guardJustP errWrongPath (parseURI $ cs url)
-  filePath ← guardJust errWrongPath $ (find (\e → category `isPrefixOf` e && slug `isInfixOf` e)) `liftM` atomically (readTVar deleted)
-  let absUrl = (fromJust $ parseURI $ "/" ++ category ++ "/" ++ slug) `relativeTo` base -- XXX
-  transaction "./" $ do
-    _ ← liftIO $ readProcessWithExitCode "git" [ "checkout", filePath ] ""
-    atomically $ modifyTVar' deleted (filter (/= filePath))
-    mobj ← readDocumentByName category slug
-    case mobj of
-      Just obj → unless isTest $ void $ fork $
-        saveDocumentByName category slug =<< onPostUndeleted category slug absUrl obj
-      Nothing → return ()
+postMicropub _ host (Undelete url) = do
+  ensureRightDomain (base host) $ parseUri url
+  guardDbError =<< queryDb url undeleteObject
   throwError respNoContent
 
 
@@ -168,6 +123,10 @@ respNoContent = ServantErr { errHTTPCode = 204
                            , errHeaders = [ ]
                            , errBody    = "" }
 
+runCategoryDeciders ∷ MonadIO μ ⇒ Value → μ Text
+runCategoryDeciders v = do
+  return "notes" -- XXX
+
 setDates ∷ UTCTime → ObjProperties → ObjProperties
 setDates now = insertMap "updated" (toJSON [ now ]) . insertWith (\_ x → x) "published" (toJSON [ now ])
 
@@ -175,7 +134,7 @@ setClientId ∷ JWT VerifiedJWT → ObjProperties → ObjProperties
 setClientId token = insertMap "client-id" $ toJSON $ filter (/= "example.com") $ catMaybes [ lookup "client_id" $ unregisteredClaims $ claims token ]
 
 setUrl ∷ URI → ObjProperties → ObjProperties
-setUrl url = insertMap "url" $ toJSON  [ tshow url ]
+setUrl url = insertMap "url" $ toJSON [ tshow url ]
 
 setContent ∷ Maybe CM.Node → Text → ObjProperties → ObjProperties
 setContent content syndLinks x =

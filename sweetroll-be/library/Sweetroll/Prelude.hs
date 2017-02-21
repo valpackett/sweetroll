@@ -19,6 +19,7 @@ import           Text.XML (Document, Element)
 import           Data.Default as X
 import qualified Data.Text
 import           Data.Text (replace, strip)
+import           Data.Maybe (fromJust)
 import           Data.Has as X
 import           Data.List as X (nub)
 import           Data.List.Split as X (splitOn)
@@ -76,12 +77,6 @@ readForm x = map (fromST *** fromST) <$> hush (mimeUnrender (Proxy ∷ Proxy For
 orEmptyMaybe ∷ IsString α ⇒ Maybe α → α
 orEmptyMaybe = fromMaybe ""
 
-parseEntryURIRelative ∷ (MonadError ServantErr μ) ⇒ URI → μ (String, String)
-parseEntryURIRelative uri =
-  case uriPathParts uri of
-    [ category, slug ] → return (category, slug)
-    _ → throwError errWrongPath
-
 ensureArrayProp ∷ Text → Value → Value
 ensureArrayProp k (Object o) | HMS.member k o = Object o
 ensureArrayProp k (Object o) = Object $ HMS.insert k (Array empty) o
@@ -127,3 +122,17 @@ guardBool e x = unless x $ throwError e
 guardBoolM ∷ MonadError ServantErr μ ⇒ μ ServantErr → Bool → μ ()
 guardBoolM ea False = throwError =<< ea
 guardBoolM _ True = return ()
+
+base ∷ ConvertibleStrings a String ⇒ Maybe a → URI
+base (Just x) = fromJust $ parseURI $ "https://" ++ cs x -- have to parse because it might have a port number
+base Nothing = URI "http:" (Just $ URIAuth "" "localhost" "") "" "" ""
+
+parseUri ∷ ConvertibleStrings α String ⇒ α → URI
+parseUri = fromJust . parseURI . cs
+
+ensureRightDomain ∷ MonadError ServantErr μ ⇒ URI → URI → μ ()
+ensureRightDomain x y = guardBool errWrongDomain $ (uriRegName <$> uriAuthority x) == (uriRegName <$> uriAuthority y)
+
+guardEntryNotFound ∷ MonadError ServantErr μ ⇒ Maybe α → μ α
+guardEntryNotFound (Just obj) = return obj
+guardEntryNotFound Nothing = throwErrText err404 "Entry not found."

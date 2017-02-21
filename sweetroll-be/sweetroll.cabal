@@ -58,7 +58,6 @@ library
       , lens-aeson
       , aeson-qq
       , jwt
-      , gitson
       , hasql
       , hasql-pool
       , microformats2-parser
@@ -98,7 +97,6 @@ library
         Sweetroll.Auth
         Sweetroll.Conf
         Sweetroll.Database
-        Sweetroll.Events
         Sweetroll.HTTPClient
         Sweetroll.Micropub.Endpoint
         Sweetroll.Micropub.Request
@@ -127,7 +125,6 @@ executable sweetroll
       , text
       , bytestring
       , rapid
-      , gitson
       , data-default
       , envy
       , sweetroll

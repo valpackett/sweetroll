@@ -14,6 +14,7 @@ module Sweetroll.Auth (
 
 import           Sweetroll.Prelude hiding (iat, au)
 import           Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
+import           Data.Maybe (fromJust)
 import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as S8
 import           Web.JWT hiding (header)
@@ -40,7 +41,11 @@ authHandler secKey = mkAuthHandler h
             Just tok →
               case decodeAndVerifySignature (secret secKey) (cs tok) of
                 Nothing → throwE errWrongAuth
-                Just decodedToken → return decodedToken
+                Just decodedToken → do
+                  -- !!! Only allow tokens issued by the current Host !!!
+                  if (fromMaybe "" $ lookup "Host" $ Wai.requestHeaders req) == (cs $ show $ fromJust $ iss $ claims decodedToken)
+                  then return decodedToken
+                  else throwE errWrongAuth
 
 fromHeader ∷ ByteString → Maybe ByteString
 fromHeader "" = Nothing

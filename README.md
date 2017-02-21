@@ -131,13 +131,13 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
 
 ## TODO
 
-- [ ] gitson → postgres
+- [x] gitson → postgres
+- [x] multi domain support (use host header everywhere)
 - [ ] do something about category decisions
-- [ ] multi domain support (use host header everywhere)
-  - JWT iss = domain, authorize posting/etc. based on that
-  - [ ] storing (per domain) configuration options in microformats pages
 - [ ] authorization based on JWT scopes for micropub etc.
 - webmention
+  - [ ] test receiving with the database
+  - [ ] bring back sending, now on postgres notifications
   - [ ] reverify/refetch to update user profiles and stuff
   - [ ] moderation tools
     - [ ] different modes in config: allow all (except blocked), allow known good domains (e.g. domains replied to), premoderate all, turn off webmention

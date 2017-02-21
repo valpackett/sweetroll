@@ -1,20 +1,14 @@
+-- NOTE: run with: stack ghci --no-load
 :set -fobject-code
+:set -XOverloadedStrings
 :set -XNoImplicitPrelude
+:load executable/DevelMain.hs
+:m Sweetroll.Prelude DevelMain
 
 :{
-:def serve \port -> return $ unlines
-     [ ":load executable/DevMain.hs"
-     , ":m + Sweetroll.Prelude DevMain Sweetroll.Api Sweetroll.Conf"
-     , "update " ++ (if port == "" then "3000" else port) ]
+:def serve \_ -> return $ unlines
+     [ ":reload"
+     , "update" ]
 :}
 
-:load executable/Main.hs
-:m Prelude Main
-let putCmd x y = putStr "   " >> green x >> setReset >> putStr " ~~~ " >> putStrLn y
-putSweetroll
-putStrLn "\n Available commands:"
-putCmd ":serve     " "(re)load the app and serve it on localhost:3000 with /tmp/sroll as the repo"
-putCmd ":serve 1234" "(or on any port really) // BTW, serve doesn't lock up the REPL!"
-putStrLn ""
-:m Sweetroll.Prelude
-:reload
+putStrLn "\n\nRun :serve to start the server"

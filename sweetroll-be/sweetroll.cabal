@@ -116,6 +116,7 @@ executable sweetroll
         base >= 4.8.0.0 && < 5
       , options
       , wai-cli
+      , warp
       , stm
       , network
       , streaming-commons
@@ -125,7 +126,7 @@ executable sweetroll
       , memory
       , text
       , bytestring
-      , foreign-store
+      , rapid
       , gitson
       , data-default
       , envy
@@ -134,6 +135,8 @@ executable sweetroll
     ghc-options: -Wall -O2 -threaded -rtsopts "-with-rtsopts=-N -qa -qm"
     ld-options: -pthread
     hs-source-dirs: executable
+    other-modules:
+        DevelMain
     main-is: Main.hs
 
 -- test-suite examples

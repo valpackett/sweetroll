@@ -2,6 +2,7 @@
 
 module Main where
 
+import           Prelude
 import           System.IO
 import           System.Envy
 import           System.Environment

@@ -60,9 +60,8 @@ signAccessToken sec domain me now scope clientId = encodeSigned HS256 (secret se
                 , unregisteredClaims = M.fromList [ ("scope", String scope)
                                                   , ("client_id", String clientId) ] }
 
-makeAccessToken ∷ Text → Text → Text → Sweetroll [(Text, Text)]
-makeAccessToken me scope clientId = do
-  domain ← getConfOpt domainName
+makeAccessToken ∷ Text → Text → Text → Text → Sweetroll [(Text, Text)]
+makeAccessToken domain me scope clientId = do
   secs ← getSecs
   now ← liftIO getCurrentTime
   return [ ("access_token", signAccessToken (secretKey secs) domain me now scope clientId)
@@ -70,21 +69,21 @@ makeAccessToken me scope clientId = do
          , ("client_id", clientId)
          , ("me", me) ]
 
-postLogin ∷ [(Text, Text)] → Sweetroll [(Text, Text)]
-postLogin params = do
+postLogin ∷ Maybe Text → [(Text, Text)] → Sweetroll [(Text, Text)]
+postLogin host params = do
+  let domain = fromMaybe "localhost" host
   isTestMode ← getConfOpt testMode
   if isTestMode
-     then makeAccessToken (fromMaybe "unknown" $ lookup "me" params) "post" "example.com"
+     then makeAccessToken domain (fromMaybe "unknown" $ lookup "me" params) "post" "example.com"
      else do
        checkURI ← getConfOpt indieAuthCheckEndpoint
        resp0 ← runHTTP $ reqS checkURI >>= postForm params >>= performWithBytes
        case (note "Could not read form" . readForm) =<< responseBody <$> resp0 of
          Right (indieAuthRespParams ∷ [(Text, Text)]) → do
-           domain ← getConfOpt domainName
            let me = orEmptyMaybe $ lookup "me" indieAuthRespParams
            guardBool errWrongAuth $ Just domain == fmap (cs . uriRegName) (uriAuthority $ fromMaybe nullURI $ parseURI $ cs me)
            putStrLn $ cs $ "Authenticated a client: " ++ fromMaybe "unknown" (lookup "client_id" params)
-           makeAccessToken me
+           makeAccessToken domain me
                            (fromMaybe "post" $ lookup "scope" indieAuthRespParams)
                            (fromMaybe "example.com" $ lookup "client_id" params)
          Left e → do

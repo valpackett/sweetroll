@@ -10,7 +10,7 @@
   "private": true,
   "dependencies": {
     "webcomponentsjs": "~0.7.22",
-    "indieweb-components": "~0.1.2",
+    "indieweb-components": "../indieweb-components",
     "sanitize-css": "^4.1.0",
     "normalize-opentype.css": "^0.2.4",
     "svgxuse": "^1.1.21",

@@ -4,17 +4,11 @@ packages:
   - '.'
   - location: '../indieweb-algorithms'
     extra-dep: true
-  - location: '../pcre-heavy'
-    extra-dep: true
-  - location: '../microformats2-parser'
-    extra-dep: true
-  - location: '../gitson'
-    extra-dep: true
-  - location: '../http-link-header'
+  - location: '../../gitson'
     extra-dep: true
 extra-deps:
-  - highlighting-kate-0.6.4
+  - highlighting-kate-0.6.4 # for the flags
   - data-has-0.2.1.0
   - hasql-pool-0.4.1
   - wai-cli-0.1.0
-resolver: nightly-2017-02-07
+resolver: lts-8.2

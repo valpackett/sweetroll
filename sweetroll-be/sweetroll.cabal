@@ -8,11 +8,8 @@ author:          Greg V
 copyright:       2014-2017 Greg V <greg@unrelenting.technology>
 maintainer:      greg@unrelenting.technology
 license:         PublicDomain
-license-file:    UNLICENSE
 build-type:      Simple
 cabal-version:   >= 1.10
-extra-source-files:
-    README.md
 tested-with:
     GHC == 8.0.1
 

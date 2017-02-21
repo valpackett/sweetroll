@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "description": "",
   "scripts": {
-    "deps": "bower update",
+    "deps": "mkdir -p bower_components; ln -s ../../indieweb-components bower_components/indieweb-components; bower update",
     "assets": "rm -rf dist.new; broccoli build dist.new && mkdir -p dist && rm -rf dist/* && mv dist.new/* dist/ && rmdir dist.new",
-    "lint": "eslint --ignore-path .gitignore .; stylelint assets/*.css; true",
+    "lint": "eslint --ignore-path .gitignore . && echo ESLint OK; stylelint assets/*.css && echo Stylelint OK; true",
     "fmt": "stylefmt assets/*.css",
     "devserve": "prok"
   },

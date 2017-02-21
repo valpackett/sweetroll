@@ -42,13 +42,25 @@ I haven't uploaded any yet, so you have to build from source.
 ### Buliding from source
 
 - get [stack] \(from your OS package manager or `cabal install stack`)
-- `git clone` the repo
-- `cd` into it
 - `stack build`
 
 When it's done, it says where it put the binary (something like `.stack-work/install/your-platform/some/versions/.../bin`).
 
-(NOTE: to get a smaller resulting binary, [enable split-objs globally in stack](https://github.com/commercialhaskell/stack/issues/1284#issuecomment-196639511), remove snapshots once and rebuild. And by smaller I do mean SMALLER. Linking it will take more time though. Unless you use lld, the LLVM linker, which is incredibly fast. Something like this: `stack build --fast --ghc-options "-pgml clang39 -optl -fuse-ld=lld"`)
+#### Making the binary smaller
+
+To get a smaller resulting binary, use the `split-objs` GHC option or the newer `split-sections`. Globally.
+And use the LLD linker to make linking much faster.
+
+Here's an example `~/.stack/config.yaml` (that also uses the LLVM backend):
+
+```yaml
+ghc-options:
+  "*": "-fllvm -split-sections -pgma clang37 -pgmlo opt37 -pgmlc llc37 -pgmc clang37 -pgml clang40 -optl -fuse-ld=lld"
+
+apply-ghc-options: everything
+```
+
+Do something like this, rebuild all your packages/snapshots and enjoy small binaries.
 
 ### Running on a server
 

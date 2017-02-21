@@ -1,3 +1,12 @@
 [submodule "mf2sql"]
 	path = mf2sql
 	url = https://github.com/myfreeweb/mf2sql.git
+[submodule "indieweb-algorithms"]
+	path = indieweb-algorithms
+	url = https://github.com/myfreeweb/indieweb-algorithms.git
+[submodule "micro-panel"]
+	path = micro-panel
+	url = https://github.com/myfreeweb/micro-panel.git
+[submodule "indieweb-components"]
+	path = indieweb-components
+	url = https://github.com/myfreeweb/indieweb-components.git

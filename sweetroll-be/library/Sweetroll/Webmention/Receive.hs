@@ -1,5 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TupleSections #-}
-{-# LANGUAGE GADTs, RankNTypes, FlexibleContexts, QuasiQuotes #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TupleSections, GADTs, RankNTypes, FlexibleContexts, QuasiQuotes #-}
 
 module Sweetroll.Webmention.Receive where
 
@@ -10,7 +9,7 @@ import           Data.Aeson.QQ
 import           Servant
 import           Sweetroll.Conf
 import           Sweetroll.Database
-import           Sweetroll.Monads
+import           Sweetroll.Context
 import           Sweetroll.HTTPClient hiding (Header)
 
 receiveWebmention ∷ [(Text, Text)] → Sweetroll NoContent
@@ -63,11 +62,12 @@ propIncludesURI t p m = elem t $ catMaybes $ map (parseURI <=< unCite) $ fromMay
         unCite _            = Nothing
 
 upsertMention ∷ Value → Value → Value
-upsertMention root mention = if replaced
-                                then root'
-                                else if isJust $ root' ^? key "properties" . key "comment"
-                                  then root' & key "properties" . key "comment" . _Array %~ (flip snoc mention)
-                                  else root' & key "properties" . _Object %~ (HMS.insert "comment" (Array $ singleton mention))
+upsertMention root mention
+  | replaced = root'
+  | isJust $ root' ^? key "properties" . key "comment" =
+    root' & key "properties" . key "comment" . _Array %~ (`snoc` mention)
+  | otherwise =
+    root' & key "properties" . _Object %~ HMS.insert "comment" (Array $ singleton mention)
   where (replaced, root') = dfReplace False root
         -- depth-first replacement, flag is True when replacement was already performed
         dfReplace flag x =
@@ -83,14 +83,14 @@ upsertMention root mention = if replaced
 
 intersectingUrls ∷ Vector Value → Value → Bool
 intersectingUrls us e = hasIntersection us (urls e)
-  where hasIntersection x = not . null . filter (`elem` x)
+  where hasIntersection x = any (`elem` x)
 
 urls ∷ Value → Vector Value
 urls x = fromMaybe empty $ x ^? key "properties" . key "url" . _Array
 
 ensurePresentUrl ∷ URI → Value → Value
 ensurePresentUrl source mention = mention & key "properties" . key "url" . _Array %~ ensure
-  where ensure v | length v > 0 = v
+  where ensure v | not (null v) = v
         ensure v = snoc v $ String $ tshow source
 
 respAccepted ∷ ServantErr -- XXX: Only way to return custom HTTP response codes

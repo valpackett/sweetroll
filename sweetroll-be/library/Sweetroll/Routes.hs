@@ -1,6 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE TypeOperators, TypeFamilies, DataKinds, RecordWildCards #-}
-{-# LANGUAGE FlexibleInstances, FlexibleContexts, MultiParamTypeClasses #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TypeOperators, DataKinds #-}
 
 -- | The HTTP routes
 module Sweetroll.Routes where

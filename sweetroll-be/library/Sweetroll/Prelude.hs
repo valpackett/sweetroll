@@ -1,5 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE GADTs, RankNTypes, FlexibleContexts, ScopedTypeVariables #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, FlexibleContexts #-}
 
 -- | The Sweetroll prelude == ClassyPrelude + more stuff.
 module Sweetroll.Prelude (
@@ -36,9 +35,6 @@ import           Servant -- (mimeRender, mimeUnrender, FormUrlEncoded)
 
 type XDocument = Text.XML.Document
 type XElement = Text.XML.Element
-
-type CategoryName = String
-type EntrySlug = String
 
 infixl 1 |>
 (|>) ∷ Monad μ ⇒ μ α → (α → β) → μ β

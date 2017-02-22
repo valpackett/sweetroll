@@ -1,13 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-orphans -fno-warn-missing-methods #-}
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, QuasiQuotes, TemplateHaskell #-}
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, UndecidableInstances, IncoherentInstances #-}
-{-# LANGUAGE RankNTypes, TypeOperators, TypeFamilies, DataKinds #-}
-{-# LANGUAGE ConstraintKinds, FlexibleContexts #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, MultiParamTypeClasses, FlexibleInstances, UndecidableInstances, IncoherentInstances, TypeOperators, TypeFamilies, FlexibleContexts, GeneralizedNewtypeDeriving #-}
 
--- | The Sweetroll monad that contains the application context + some
--- functions that use it, such as HTTP client requests.
-module Sweetroll.Monads where
+-- | The Sweetroll monad contains the application context.
+module Sweetroll.Context where
 
 import           Sweetroll.Prelude
 import           Network.HTTP.Client.Conduit

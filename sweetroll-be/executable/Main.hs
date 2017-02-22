@@ -7,7 +7,7 @@ import           System.IO
 import           System.Envy
 import           System.Environment
 import           Sweetroll.Conf
-import           Sweetroll.Api (initSweetrollApp)
+import           Sweetroll.App (initSweetrollApp)
 import qualified Data.Text as T
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as C8

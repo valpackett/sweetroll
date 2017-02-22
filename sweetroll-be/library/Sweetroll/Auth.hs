@@ -1,7 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE TypeOperators, TypeFamilies, FlexibleInstances, MultiParamTypeClasses #-}
-{-# LANGUAGE ScopedTypeVariables, UndecidableInstances, DataKinds #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TypeOperators, TypeFamilies, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, DataKinds #-}
 
 -- | The IndieAuth/rel-me-auth implementation, using JSON Web Tokens.
 module Sweetroll.Auth (
@@ -21,7 +19,7 @@ import           Web.JWT hiding (header)
 import qualified Network.Wai as Wai
 import           Servant.API
 import           Servant.Server.Experimental.Auth
-import           Sweetroll.Monads
+import           Sweetroll.Context
 import           Sweetroll.Conf
 import           Sweetroll.HTTPClient hiding (Header)
 

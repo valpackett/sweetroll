@@ -1,6 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE FlexibleContexts, FlexibleInstances, ScopedTypeVariables, MultiParamTypeClasses, TypeFamilies, TypeOperators, DataKinds #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, FlexibleInstances, ScopedTypeVariables, MultiParamTypeClasses, TypeFamilies, TypeOperators, DataKinds #-}
 
 module Sweetroll.Micropub.Endpoint (
   getMicropub
@@ -27,7 +26,7 @@ import           Servant.Server.Internal
 import           Control.Monad.Trans.Resource (runResourceT, withInternalState)
 import           Crypto.Hash
 import           Sweetroll.Conf
-import           Sweetroll.Monads
+import           Sweetroll.Context
 import           Sweetroll.Routes
 import           Sweetroll.Micropub.Request
 import           Sweetroll.Micropub.Response
@@ -52,8 +51,7 @@ getMicropub _ host (Just "media-endpoint") _ _ = do
   url ← fromMaybe nullURI . parseURIReference <$> getConfOpt mediaEndpoint
   return $ MediaEndpoint $ tshow $ url `relativeTo` base host
 getMicropub token host (Just "config") props url =
-  liftM MultiResponse $ mapM (\x → getMicropub token host (Just x) props url)
-                             [ "media-endpoint", "syndicate-to" ]
+  MultiResponse <$> mapM (\x → getMicropub token host (Just x) props url) [ "media-endpoint", "syndicate-to" ]
 --getMicropub token _ _ _ _ = getAuth token |> AuthInfo
 getMicropub token host _ props url = getMicropub token host (Just "media-endpoint") props url
 
@@ -93,7 +91,7 @@ postMicropub token host (Create htype props synds) = do
         |>  setDates now
         |>  setClientId token
         |>  setUrl absUrl -- TODO: allow any on the correct domain
-        |>  setContent (readContent =<< lookup "content" props) (intercalate " " synds)
+        |>  setContent (readContent =<< lookup "content" props) (unwords synds)
         |>  wrapWithType htype
   guardDbError =<< queryDb obj upsertObject
   return $ addHeader (tshow absUrl) Posted
@@ -138,7 +136,7 @@ setUrl url = insertMap "url" $ toJSON [ tshow url ]
 
 setContent ∷ Maybe CM.Node → Text → ObjProperties → ObjProperties
 setContent content syndLinks x =
-  if isNothing $ (Object x) ^? key "content" . nth 0 . key "html" . _String
+  if isNothing $ Object x ^? key "content" . nth 0 . key "html" . _String
      then insertMap "content" (toJSON [ object [ "html" .= h ] ]) x
      else x -- XXX: add syndLinks here!!!
   where h = cs syndLinks ++ (fromMaybe "" $ rndr `liftM` content)
@@ -149,7 +147,7 @@ wrapWithType htype props =
   object [ "type"       .= [ htype ]
          , "properties" .= insertMap "syndication" (Array V.empty) props ]
 
-decideSlug ∷ ObjProperties → UTCTime → EntrySlug
+decideSlug ∷ ObjProperties → UTCTime → String
 decideSlug props now = unpack . fromMaybe fallback $ getProp "mp-slug"
   where fallback = slugify . fromMaybe (formatTimeSlug now) $ getProp "name"
         formatTimeSlug = pack . formatTime defaultTimeLocale "%Y-%m-%d-%H-%M-%S"
@@ -171,11 +169,11 @@ applyUpdates (Object props) (AddToProps newProps) =
           add _ old = old
 applyUpdates (Object props) (DelFromProps newProps) =
   Object $ foldl' (\ps (k, v) → HMS.insertWith del k v ps) props (HMS.toList newProps)
-    where del (Array new) (Array old) = Array $ filter (not . (flip elem new)) old
+    where del (Array new) (Array old) = Array $ filter (not . (`elem` new)) old
           del new (Array old) = Array $ filter (/= new) old
           del _ old = old
 applyUpdates (Object props) (DelProps newProps) =
-  Object $ foldl' (\ps k → HMS.delete k ps) props newProps
+  Object $ foldl' (flip HMS.delete) props newProps
 applyUpdates x _ = x
 
 

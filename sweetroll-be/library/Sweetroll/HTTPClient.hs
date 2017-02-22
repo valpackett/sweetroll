@@ -11,7 +11,7 @@ module Sweetroll.HTTPClient (
 ) where
 
 import           Sweetroll.Prelude
-import           Sweetroll.Monads ()
+import           Sweetroll.Context ()
 import           Data.Conduit
 import qualified Data.Conduit.Combinators as C
 import qualified Data.Vector as V
@@ -96,7 +96,7 @@ fetchReferenceContexts k props = do
           ewa ← fetchEntryWithAuthors uri resp
           case ewa of
             (Just (Object entry), _) → do
-              prs ← lift $ fetchAllReferenceContexts $ fromMaybe (HMS.fromList []) $ (Object entry) ^? key "properties" . _Object
+              prs ← lift $ fetchAllReferenceContexts $ fromMaybe (HMS.fromList []) $ Object entry ^? key "properties" . _Object
               return $ Object $ insertMap "properties" (Object prs) $ insertMap "fetched-url" (toJSON u) entry
             _ → mzero
         fetch x = return x

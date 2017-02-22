@@ -1,5 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TupleSections #-}
-{-# LANGUAGE RankNTypes, FlexibleContexts, RecordWildCards #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TupleSections, RankNTypes, FlexibleContexts, RecordWildCards #-}
 
 module Sweetroll.Webmention.Send where
 
@@ -62,14 +61,14 @@ linkWebmention typ uri = do
   return $ (\endp → Mention { mentionTarget = uri
                             , mentionEndpoint = endp
                             , mentionType = typ })
-           <$> (getWebmentionEndpoint =<< (hush resp))
+           <$> (getWebmentionEndpoint =<< hush resp)
 
 contentWebmentions ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ XElement → μ [Mention]
 contentWebmentions e =
-  liftM catMaybes $ forM (e ^.. entire . el "a") $ \a →
+  catMaybes <$> (forM (e ^.. entire . el "a") $ \a →
     case parseURI =<< cs <$> a ^? attr "href" of
       Nothing → return Nothing
-      Just uri → linkWebmention (if isJust (a ^? attr "data-synd") then Syndicate else Normal) uri
+      Just uri → linkWebmention (if isJust (a ^? attr "data-synd") then Syndicate else Normal) uri)
 
 entryWebmentions ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ Value → μ [Mention]
 entryWebmentions v = do
@@ -77,7 +76,7 @@ entryWebmentions v = do
     concat $ v ^.. key "properties" . key "content" . values . key "html" . _String
   ctxMs ← sequence $ do -- List monad
     ctxName ← [ "in-reply-to", "like-of", "repost-of", "quotation-of" ]
-    url ← mapMaybe parseURI $ map cs $ nub $
+    url ← mapMaybe (parseURI . cs) $ nub $
             (v ^.. key "properties" . key ctxName . values . key "properties" . key "url" . values . _String) ++
             (v ^.. key "properties" . key ctxName . values . key "fetched-url" . _String) ++
             (v ^.. key "properties" . key ctxName . values . _String)

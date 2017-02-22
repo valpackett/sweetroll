@@ -1,18 +1,15 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TemplateHaskell #-}
-{-# LANGUAGE TypeOperators, TypeFamilies, DataKinds, TupleSections #-}
-{-# LANGUAGE FlexibleInstances, FlexibleContexts, MultiParamTypeClasses #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TypeOperators #-}
 
-module Sweetroll.Api where
+module Sweetroll.App where
 
 import           Sweetroll.Prelude hiding (Context)
 import           Network.Wai
 import           Network.Wai.Middleware.AcceptOverride
 import           Network.Wai.Middleware.Autohead
 import           Network.Wai.Middleware.Cors
-import           Network.Wai.Middleware.Gzip
 import           Servant
 import           Sweetroll.Conf
-import           Sweetroll.Monads
+import           Sweetroll.Context
 import           Sweetroll.Routes
 import           Sweetroll.Auth
 import           Sweetroll.Micropub.Endpoint
@@ -28,11 +25,10 @@ sweetrollApp ctx =
     simpleCors
   $ autohead
   $ acceptOverride
-  $ gzip def
   $ supportFormAuth
-  $ (serveWithContext sweetrollAPI sweetrollContext $ sweetrollServer ctx)
+  $ serveWithContext sweetrollAPI sweetrollContext $ sweetrollServer ctx
   where sweetrollServer c = enter (sweetrollToExcept c) sweetrollServerT
         sweetrollContext = authHandler (secretKey $ getter ctx) :. EmptyContext
 
 initSweetrollApp ∷ SweetrollConf → SweetrollSecrets → IO Application
-initSweetrollApp conf secs = fmap sweetrollApp $ initCtx conf secs
+initSweetrollApp conf secs = sweetrollApp <$> initCtx conf secs

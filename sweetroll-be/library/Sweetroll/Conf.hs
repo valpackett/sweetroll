@@ -1,5 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE TemplateHaskell, FlexibleContexts, DeriveGeneric #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, FlexibleContexts, DeriveGeneric #-}
 
 module Sweetroll.Conf (
   module Sweetroll.Conf
@@ -32,25 +31,19 @@ data SweetrollSecrets = SweetrollSecrets
   {                secretKey ∷ Text }
 
 data SweetrollConf = SweetrollConf
-  {               domainName ∷ Text
-  ,               httpsWorks ∷ Bool
+  {               httpsWorks ∷ Bool
   ,            mediaEndpoint ∷ String
   ,   indieAuthRedirEndpoint ∷ String
   ,   indieAuthCheckEndpoint ∷ String -- Separated for debugging
-  ,                  pushHub ∷ String
-  ,                pushDelay ∷ Int
   ,                 testMode ∷ Bool
   } deriving (Generic, Show)
 
 instance Default SweetrollConf where
   def = SweetrollConf {
         httpsWorks               = False
-      , domainName               = "localhost"
       , mediaEndpoint            = "/micropub/media"
       , indieAuthCheckEndpoint   = "https://indieauth.com/auth"
       , indieAuthRedirEndpoint   = "https://indieauth.com/auth"
-      , pushHub                  = "https://switchboard.p3k.io"
-      , pushDelay                = 3
       , testMode                 = False }
 
 instance DefConfig SweetrollConf where
@@ -62,11 +55,6 @@ instance FromEnv SweetrollConf where
 instance Default SweetrollSecrets where
   def = SweetrollSecrets {
         secretKey                = "SECRET" } -- the executable sets to a secure random value by default
-
-baseURI ∷ SweetrollConf → Maybe URI
-baseURI conf = asum [ parseURI $ (if httpsWorks conf then "https://" else "http://") ++ unpack (domainName conf) -- need to parse because we need the :PORT parsed correctly for dev
-                    , parseURI $ unpack $ domainName conf -- in case someone puts "https://" in the field which is clearly called DOMAIN NAME
-                    , Just $ URI (if httpsWorks conf then "https:" else "http:") (Just $ URIAuth "" (cs $ domainName conf) "") "" "" "" ]
 
 mf2Options ∷ Mf2ParserSettings
 mf2Options = def

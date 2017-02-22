@@ -37,7 +37,6 @@ library
       , safe
       , cryptonite
       , memory
-      , process
       , errors
       , directory
       , data-default
@@ -93,15 +92,15 @@ library
       , filepath
     default-language: Haskell2010
     exposed-modules:
-        Sweetroll.Api
+        Sweetroll.App
         Sweetroll.Auth
         Sweetroll.Conf
+        Sweetroll.Context
         Sweetroll.Database
         Sweetroll.HTTPClient
         Sweetroll.Micropub.Endpoint
         Sweetroll.Micropub.Request
         Sweetroll.Micropub.Response
-        Sweetroll.Monads
         Sweetroll.Prelude
         Sweetroll.Routes
         Sweetroll.Webmention.Send

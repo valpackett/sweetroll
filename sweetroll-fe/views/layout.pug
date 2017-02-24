@@ -37,16 +37,15 @@ mixin showMeta(entry, comments, permalink, compactView)
 		const mfeeds = helpers.matchingFeeds(siteFeeds, entry).filter(feed =>
 			_.get(feed, 'feedObj.properties.show-in-post[0]', false) && !(_.get(feed, 'params.tag', '').startsWith('_')))
 	.entry-meta
-		| posted
+		| posted on 
+		time.dt-published(datetime=_.head(properties.published))
+			a.u-url.u-uid.note-permalink(rel=compactView ? 'bookmark' : '' href=permalink)
+				= moment.utc(_.head(properties.published)).format(dateFormat)
 		if !_.isEmpty(mfeeds)
 			|  in
 			each feed in mfeeds
 				= ' '
 				a.p-category(href=relativeUrl(feed.url))= feed.name
-		|  on 
-		time.dt-published(datetime=_.head(properties.published))
-			a.u-url.u-uid.note-permalink(rel=compactView ? 'bookmark' : '' href=permalink)
-				= moment.utc(_.head(properties.published)).format(dateFormat)
 		if !_.isEmpty(properties['client-id'])
 			|  using 
 			a.u-client-id(href=_.head(properties['client-id']))
@@ -130,7 +129,7 @@ mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, lo
 			- const authors = properties.author
 			.ref-context-core
 				a(href=helpers.onlyHttpUrl(_.get(authors, '[0].properties.url[0]', '')))
-					img.ref-context-avatar(alt="" src=helpers.showAvatar(authors[0]) is="lazyload-image")
+					img.ref-context-avatar(alt="" src=helpers.showAvatar((authors || [])[0]) is="lazyload-image")
 				.ref-context-content
 					.ref-context-meta
 						span.ref-context-authors
@@ -195,12 +194,13 @@ html(lang="en")
 			meta(name="viewport" content="width=device-width, initial-scale=1")
 			link(rel="stylesheet" href=assets.url('dist/style.css'))
 			if siteSettings
-				-
-					const name = obj && obj.deleted ? 'Deleted'
-						: (_.includes(obj && obj.type, 'h-feed')
-							? helpers.insertParams(_.get(obj, 'properties.name[0]', 'Unnamed feed'), reqUriFull.search(true))
-							: (_.get(obj, 'properties.name[0]') || _.get(obj, 'properties.published[0]', 'Untitled page')))
-				title= `${name} / ${siteSettings['site-name']}`
+				block title
+					-
+						const name = obj && obj.deleted ? 'Deleted'
+							: (_.includes(obj && obj.type, 'h-feed')
+								? helpers.insertParams(_.get(obj, 'properties.name[0]', 'Unnamed feed'), reqUriFull.search(true))
+								: helpers.entryName(obj))
+					title= `${name} / ${siteSettings['site-name']}`
 			if domainUri
 				link(rel="openid.delegate" href=domainUri.toString())
 			link(rel="openid.server" href="https://indieauth.com/openid")
@@ -244,4 +244,9 @@ html(lang="en")
 						.site-meta.
 							This website supports #[a(href="https://webmention.net") Webmentions]!
 							Because it's powered by #[a(href="https://github.com/myfreeweb/sweetroll") Sweetroll], an #[a(href="https://indieweb.org") #IndieWeb] engine.
+						block search-form
+							form(method="get" action="/search").search-form
+								fieldset
+									input(name="q" type="search" value=searchQuery)
+									button Search
 			script(defer src=assets.url('dist/svgxuse/svgxuse.min.js'))

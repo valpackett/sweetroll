@@ -1,7 +1,7 @@
 /*! https://unrelenting.technology */
 :root {
 	hyphens: auto;
-	background: #eeeaf3;
+	background: #efeaf4;
 	color: #34495e;
 	font-size: calc(1rem + 2 * ((100vw - 600px) / 800)); /* https://github.com/seaneking/postcss-responsive-type */
 }
@@ -74,7 +74,7 @@ indie-action .icon {
 }
 
 ul, ol {
-	list-style: inside;
+	list-style-position: inside;
 }
 
 ul {
@@ -186,6 +186,7 @@ fieldset {
 	align-items: center;
 	padding: 0;
 	border-radius: 3px;
+	border: 1px solid #706aca;
 }
 
 fieldset :first-child {
@@ -204,8 +205,8 @@ fieldset input {
 }
 
 fieldset button {
-	border-left: 1px solid #666;
-	background: #cacaca;
+	border-left: 1px solid #706aca;
+	background: #d7c7ea;
 }
 
 fieldset input:focus, fieldset button:hover, fieldset button:hover {
@@ -281,7 +282,7 @@ fieldset * {
 }
 
 .entry-webmention-form {
-	background: #ebebe9;
+	background: #d4cbdf;
 	font-size: 0.85em;
 }
 
@@ -289,9 +290,24 @@ fieldset * {
 	margin: 1em 0;
 }
 
+aside .search-form {
+	margin-top: 1em;
+	opacity: 0.7;
+	font-size: 0.85em;
+}
+
+.search-results li {
+	padding: 0.6em;
+}
+
+.search-results li:nth-child(even) {
+	background: rgba(255, 255, 255, 0.3);
+}
+
 .entry * {
 	max-width: 100%;
 } /* oh ffs flex */
+
 .entry-footer {
 	padding: 1rem;
 }
@@ -434,6 +450,15 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 
 .ref-context-thread-down {
 	border-left: 0.5rem solid #cecece;
+}
+
+.search-results {
+	list-style-position: outside;
+}
+
+.search-snippet {
+	font-size: 0.9em;
+	opacity: 0.9;
 }
 
 @media screen and (min-width: 400px) {

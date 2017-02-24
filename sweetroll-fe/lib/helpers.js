@@ -115,6 +115,10 @@ module.exports = {
 			)
 	},
 
+	entryName (obj) {
+		return get(obj, 'properties.name[0]') || get(obj, 'properties.published[0]', 'Untitled page')
+	},
+
 	processContent (content) {
 		if (!content) return content
 		// NOTE: do not use => functions for cheerio!

@@ -1,0 +1,21 @@
+extends /layout.pug
+
+block title
+	title= `Searching for '${searchQuery}' / ${siteSettings['site-name']}`
+
+block search-form
+
+block append main
+	form(method="get" action="/search").search-form
+		fieldset
+			input(name="q" type="search" value=searchQuery)
+			button Search
+	ol.search-results
+		each entry in results || []
+			li.h-cite.search-result
+				-
+					const name = helpers.entryName(entry)
+					const body = (entry.snippet || '').replace(/\\[a-z]/g, ' ')
+					const fragmention = (/<b>([^<]+)<\/b>/.exec(body) || [])[1]
+				a.p-name.u-url(href=relativeUrl(_.get(entry, 'properties.url[0]')) + '##' + fragmention)= name
+				p.search-snippet !{body}

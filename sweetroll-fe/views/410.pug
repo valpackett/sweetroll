@@ -1,5 +1,8 @@
 extends /layout.pug
 
+block title
+	title= `Gone / ${siteSettings['site-name']}`
+
 block main
 	main.site-main.gone-main.h-entry
 		h1.p-name Gone

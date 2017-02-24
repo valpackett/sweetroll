@@ -87,12 +87,46 @@ const liveHandler = async (ctx, next) => {
 	return next()
 }
 
-const handler = async ({ request, response, domainUri, reqUri, reqUriFull, domainUriStr, reqUriStr, reqUriFullStr, cashed }, next) => {
-	// TODO full text search
+const searchHandler = async ({ request, response, domainUriStr, tplctx, cashed }, next) => {
+	const searchQuery = request.query.q || ''
+	const { dobj, results, feeds } = await db.row(SQL`SELECT
+	objects_smart_fetch(${domainUriStr}, ${domainUriStr + '%'}, 1, null, null, null) AS dobj,
+	(SELECT jsonb_agg(row_to_json(subq)) FROM (
+		SELECT
+			type,
+			properties,
+			ts_headline(regexp_replace((objects.properties->'content'->0->'html')::text, E'<.*?>', '', 'g'), query, 'MaxFragments=2') AS snippet,
+			ts_rank_cd(tsv, query, 32) AS rank
+		FROM objects, plainto_tsquery(${searchQuery}) query
+		WHERE query @@ tsv
+		AND (properties->'url'->>0)::text LIKE ${domainUriStr + '%'}
+		AND type @> '{h-entry}'
+		AND deleted IS NOT True
+		ORDER BY rank DESC
+		LIMIT 64
+	) subq) AS results,
+	(SELECT jsonb_agg(obj) FROM (
+		SELECT jsonb_build_object('type', type, 'properties', properties, 'children', children) AS obj
+		FROM objects
+		WHERE (properties->'url'->>0)::text LIKE ${domainUriStr + '%'}
+		AND type @> '{h-x-dynamic-feed}'
+		AND deleted IS NOT True
+	) subq) AS feeds
+	`)
+	tplctx.searchQuery = searchQuery
+	tplctx.results = results
+	tplctx.siteCard = get(dobj, 'properties.author[0]', {})
+	tplctx.siteSettings = get(dobj, 'properties.site-settings[0]', {})
+	tplctx.siteFeeds = feeds
+	response.type = 'text/html'
+	response.body = await render('search.pug', tplctx)
+	return next()
+}
+
+const handler = async ({ request, response, domainUri, reqUri, reqUriFull, domainUriStr, reqUriStr, reqUriFullStr, tplctx, cashed }, next) => {
 	if (cache && await cashed(2 * 60 * 1000)) return
 	// TODO don't fetch twice when domain URI == request URI (i.e. home page)
 	const perPage = 20
-	log(new Date(request.query.before))
 	const { dobj, obj, feeds } = await db.row(SQL`SELECT
 	objects_smart_fetch(${domainUriStr}, ${domainUriStr + '%'}, 1, null, null, null) AS dobj,
 	objects_smart_fetch(${reqUriStr}, ${domainUriStr + '%'}, ${perPage + 5}, ${request.query.before || null}, ${request.query.after || null}, ${request.query}) AS obj,
@@ -105,30 +139,10 @@ const handler = async ({ request, response, domainUri, reqUri, reqUriFull, domai
 	) subq) AS feeds
 	`)
 
-	const tplctx = {
-		// Libraries and our code
-		moment,
-		_,
-		URI,
-		helpers,
-		// Markup related stuff
-		assets,
-		// The Data
-		domainUri,
-		reqUri,
-		reqUriFull,
-		requestUriStr: reqUriFullStr,
-		perPage,
-		siteCard: get(dobj, 'properties.author[0]', {}),
-		siteSettings: get(dobj, 'properties.site-settings[0]', {}),
-		siteFeeds: feeds,
-		// App settings
-		livereload: env.LIVE_RELOAD,
-		// Pug settings
-		basedir: './views',
-		pretty: true,
-		cache: env.CACHE_TEMPLATES,
-	}
+	tplctx.perPage = perPage
+	tplctx.siteCard = get(dobj, 'properties.author[0]', {})
+	tplctx.siteSettings = get(dobj, 'properties.site-settings[0]', {})
+	tplctx.siteFeeds = feeds
 	response.status = 404
 	response.type = 'text/html'
 	let tpl = '404.pug'
@@ -151,7 +165,7 @@ const handler = async ({ request, response, domainUri, reqUri, reqUriFull, domai
 	return next()
 }
 
-const setUris = async (ctx, next) => {
+const addCommonContext = async (ctx, next) => {
 	const proto = env.FAKE_PROTO || ctx.request.protocol
 	const host = env.FAKE_HOST || ctx.request.host
 	ctx.domainUri = new URI(`${proto}://${host}/`).normalizePort().normalizeHostname()
@@ -160,11 +174,32 @@ const setUris = async (ctx, next) => {
 	ctx.reqUriFullStr = ctx.reqUriFull.toString()
 	ctx.reqUri = ctx.reqUriFull.clone().search('')
 	ctx.reqUriStr = ctx.reqUri.toString()
+	ctx.tplctx = {
+		// Libraries and our code
+		moment,
+		_,
+		URI,
+		helpers,
+		// Markup related stuff
+		assets,
+		// The Data
+		domainUri: ctx.domainUri,
+		reqUri: ctx.reqUri,
+		reqUriFull: ctx.reqUriFull,
+		requestUriStr: ctx.reqUriFullStr,
+		// App settings
+		livereload: env.LIVE_RELOAD,
+		// Pug settings
+		basedir: './views',
+		pretty: true,
+		cache: env.CACHE_TEMPLATES,
+	}
 	return next()
 }
 
 const koaCache = cache ? require('koa-cash')({
 	hash (ctx) {
+		// TODO filter out unused params
 		return ctx.reqUriFullStr
 	},
 	async get (key, maxAge) {
@@ -192,7 +227,8 @@ if (!env.NO_SERVE_DIST) {
 	)
 }
 router.addRoute('GET', '/live', liveHandler)
-router.options.notFound = compose([setUris, koaCache, handler].filter(isObject))
+router.addRoute('GET', '/search', compose([addCommonContext, koaCache, searchHandler].filter(isObject)))
+router.options.notFound = compose([addCommonContext, koaCache, handler].filter(isObject))
 const app = new (require('koa'))()
 if (env.IS_PROXIED) {
 	app.proxy = true

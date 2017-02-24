@@ -49,13 +49,13 @@ When it's done, it says where it put the binary (something like `.stack-work/ins
 #### Making the binary smaller
 
 To get a smaller resulting binary, use the `split-objs` GHC option or the newer `split-sections`. Globally.
-And use the LLD linker to make linking much faster.
+And use a faster linker.
 
-Here's an example `~/.stack/config.yaml` (that also uses the LLVM backend):
+Here's an example `~/.stack/config.yaml`:
 
 ```yaml
 ghc-options:
-  "*": "-fllvm -split-sections -pgma clang37 -pgmlo opt37 -pgmlc llc37 -pgmc clang37 -pgml clang40 -optl -fuse-ld=lld"
+  "*": "-split-sections -optl-fuse-ld=gold"
 
 apply-ghc-options: everything
 ```

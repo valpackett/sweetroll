@@ -124,7 +124,11 @@ module.exports = {
 			const img = $(this)
 			img.replaceWith(`<span class="emoji">${img.attr('alt')}</span>`)
 		})
-		// TODO: proxy images
+		$('img').each(function (i) {
+			const img = $(this)
+			img.attr('is', 'lazyload-image')
+			// TODO: HTTPS proxy
+		})
 		return $.html()
 	}
 

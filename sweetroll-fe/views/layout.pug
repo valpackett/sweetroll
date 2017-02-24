@@ -20,7 +20,7 @@ mixin showContent(properties, long, onlySummary)
 		content = _.isString(content) ? content : null
 	each photo in properties.photo || []
 		if !(_.includes(content, photo.replace('&', '&amp;')) || _.includes(content, photo))
-			img.u-photo.entry-photo(src=photo alt="")
+			img.u-photo.entry-photo(src=photo alt="" is="lazyload-image")
 	each video in properties.video || []
 		if !(_.includes(content, video.replace('&', '&amp;')) || _.includes(content, video))
 			video.entry-video(controls="controls")
@@ -81,7 +81,7 @@ mixin showFacepile(entry, name, reactions)
 				const author = _.get(entry, 'properties.author[0]', {})
 				const authorName = _.get(author, 'properties.name[0]', 'Someone')
 			span.p-author.h-card
-				img.facepile-avatar.u-photo.p-name(alt=authorName title=authorName src=helpers.showAvatar(author))
+				img.facepile-avatar.u-photo.p-name(alt=authorName title=authorName src=helpers.showAvatar(author) is="lazyload-image")
 				if !_.isEmpty(author.url)
 					each url in author.url
 						data.u-url(value=url)
@@ -130,7 +130,7 @@ mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, lo
 			- const authors = properties.author
 			.ref-context-core
 				a(href=helpers.onlyHttpUrl(_.get(authors, '[0].properties.url[0]', '')))
-					img.ref-context-avatar(alt="" src=helpers.showAvatar(authors[0]))
+					img.ref-context-avatar(alt="" src=helpers.showAvatar(authors[0]) is="lazyload-image")
 				.ref-context-content
 					.ref-context-meta
 						span.ref-context-authors
@@ -207,6 +207,8 @@ html(lang="en")
 			script.
 				if (!('registerElement' in document && 'import' in document.createElement('link')))
 					document.write('<script src="#{assets.url('dist/webcomponentsjs/webcomponents-lite.min.js')}"></sc'+'ript>');
+				else if ('IntersectionObserver' in window)
+					document.write('<link rel="import" href="#{assets.url('dist/lazyload-image/lazyload-image.html')}"/>');
 			link(rel="import" href=assets.url('dist/indieweb-components/indie-action.html'))
 			link(rel="import" href=assets.url('dist/indieweb-components/fragmention-target.html'))
 			if livereload
@@ -242,4 +244,4 @@ html(lang="en")
 						.site-meta.
 							This website supports #[a(href="https://webmention.net") Webmentions]!
 							Because it's powered by #[a(href="https://github.com/myfreeweb/sweetroll") Sweetroll], an #[a(href="https://indieweb.org") #IndieWeb] engine.
-			script(defer src=assets.url('dist/svgxuse/svgxuse.js'))
+			script(defer src=assets.url('dist/svgxuse/svgxuse.min.js'))

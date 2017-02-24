@@ -181,10 +181,14 @@ const mount = require('koa-mount')
 const compose = require('koa-compose')
 const router = require('koa-better-router')()
 if (!env.NO_SERVE_DIST) {
+	const addImmutable = async (ctx, next) => {
+		await next()
+		ctx.response.header['cache-control'] += ', immutable'
+	}
 	router.addRoute('GET', '/dist/(.*)*',
-		mount('/dist', require('koa-better-serve')('./dist', '/', {
+		mount('/dist', compose([addImmutable, require('koa-better-serve')('./dist', '/', {
 			maxage: 30 * 24 * 60 * 60 * 1000
-		}))
+		})]))
 	)
 }
 router.addRoute('GET', '/live', liveHandler)

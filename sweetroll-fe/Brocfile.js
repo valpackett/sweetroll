@@ -10,7 +10,13 @@ const PostCSS = require('broccoli-postcss')
 const Concat = require('broccoli-concat')
 
 const bowerdeps = new Funnel('bower_components', {
-	include: ['webcomponentsjs/*.min.js', 'findAndReplaceDOMText/src/*.js', 'svgxuse/*.js', 'lazyload-image/*.html', 'indieweb-components/*.html']
+	include: [
+		'webcomponentsjs/*.min.js',
+		'findAndReplaceDOMText/src/*.js',
+		'svgxuse/*.min.js',
+		'lazyload-image/*.html',
+		'indieweb-components/*.html'
+	]
 })
 
 let styles = new Concat(new MergeTrees([

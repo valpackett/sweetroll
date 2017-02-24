@@ -1,10 +1,16 @@
 extends /layout.pug
 
+block append imports
+	link(rel="import" href=assets.url('dist/indieweb-components/simple-live.html'))
+
 block append main
 	//- Some pagination info: https://wiki.postgresql.org/images/3/35/Pagination_Done_the_PostgreSQL_Way.pdf
 	//- Also: some weirdness is related to the fact that entries can be marked deleted (tombstoned),
 	//- and yet we want to show the same number of visible entries per page.
 	//- This is why we fetch more entries than we'll show.
+	simple-live(hidden src="/live")
+		| This feed has been updated. 
+		a(href="javascript:location.reload()") Reload?
 	section.index-category
 		-
 			const qq = reqUriFull.search(true)
@@ -12,8 +18,6 @@ block append main
 			if (qq.after && !qq.before) i = obj.children.length - perPage
 			if (i < 0) i = 0
 			const firstI = i
-			console.log(firstI)
-			console.log(obj.children.slice(firstI).length)
 		each entry in obj.children.slice(firstI)
 			if i >= perPage + firstI
 			else if entry.deleted

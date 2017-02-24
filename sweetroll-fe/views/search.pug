@@ -7,7 +7,7 @@ block search-form
 
 block append main
 	form(method="get" action="/search").search-form
-		fieldset
+		.form-field
 			input(name="q" type="search" value=searchQuery)
 			button Search
 	ol.search-results

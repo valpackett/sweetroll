@@ -1,6 +1,12 @@
 extends /layout.pug
 
+block append imports
+	link(rel="import" href=assets.url('dist/indieweb-components/simple-live.html'))
+
 block append main
+	simple-live(hidden src="/live")
+		| This entry has been updated. 
+		a(href="javascript:location.reload()") Reload?
 	article.entry
 		+showEntry(obj, false)
 	form.entry-webmention-form(method="post" action="/webmention")
@@ -8,7 +14,7 @@ block append main
 			| Posted a <a href="https://indieweb.org/responses">response</a> on your own website?
 			| Send a <a href="https://webmention.net/">Webmention</a>:
 			input(type="hidden" name="target" value=requestUriStr)
-			fieldset
+			.form-field
 				input(type="url" name="source" placeholder="https://...")
 				button Send
 			small.

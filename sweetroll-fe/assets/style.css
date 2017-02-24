@@ -181,39 +181,39 @@ a:hover, a:focus, a:active, body .ref-context-meta a:hover, body .ref-context-me
 	padding-left: 0;
 }
 
-fieldset {
+.form-field {
 	display: flex;
-	align-items: center;
+	align-items: stretch;
 	padding: 0;
 	border-radius: 3px;
 	border: 1px solid #706aca;
 }
 
-fieldset :first-child {
+.form-field :first-child {
 	border-top-left-radius: 3px;
 	border-bottom-left-radius: 3px;
 }
 
-fieldset :last-child {
+.form-field :last-child {
 	border-top-right-radius: 3px;
 	border-bottom-right-radius: 3px;
 }
 
-fieldset input {
+.form-field input {
 	flex: 1;
 	background: #f9f9f9;
 }
 
-fieldset button {
+.form-field button {
 	border-left: 1px solid #706aca;
 	background: #d7c7ea;
 }
 
-fieldset input:focus, fieldset button:hover, fieldset button:hover {
+.form-field input:focus, .form-field button:hover, .form-field button:hover {
 	background: #fff;
 }
 
-fieldset * {
+.form-field * {
 	vertical-align: baseline;
 	padding: 0.5em;
 }
@@ -269,7 +269,7 @@ fieldset * {
 .entry, .site-author-block, .entry-webmention-form {
 	background: #fefefe;
 	border: #e3e3e3 1px solid;
-	border-radius: 5px;
+	border-radius: 4px;
 	margin-bottom: 1rem;
 }
 
@@ -286,7 +286,7 @@ fieldset * {
 	font-size: 0.85em;
 }
 
-.entry-webmention-form fieldset {
+.entry-webmention-form .form-field {
 	margin: 1em 0;
 }
 
@@ -354,7 +354,7 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 }
 
 .entry-footer a {
-	color: #77a;
+	color: #6b6b9b;
 }
 
 .entry-footer a:hover, .entry-footer a:focus, .entry-footer a:active {
@@ -389,7 +389,7 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 	width: 32px;
 	height: 32px;
 	min-width: 32px;
-	border-radius: 5px;
+	border-radius: 4px;
 	font-size: 0.7em;
 }
 
@@ -416,7 +416,7 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 	margin-right: 0.6rem;
 	width: 32px;
 	height: 32px;
-	border-radius: 5px;
+	border-radius: 4px;
 	background: #ccc;
 }
 
@@ -459,6 +459,25 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 .search-snippet {
 	font-size: 0.9em;
 	opacity: 0.9;
+}
+
+simple-live {
+	position: sticky;
+	top: 0;
+	width: 100%;
+	padding: 1em;
+	border-radius: 4px;
+	background: #832bfa;
+	color: #fff;
+}
+
+simple-live a {
+	color: #f5f5f5;
+	text-decoration: underline;
+}
+
+simple-live a:hover, simple-live a:focus, simple-live a:active {
+	color: #fff;
 }
 
 @media screen and (min-width: 400px) {

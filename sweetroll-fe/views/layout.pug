@@ -209,8 +209,9 @@ html(lang="en")
 					document.write('<script src="#{assets.url('dist/webcomponentsjs/webcomponents-lite.min.js')}"></sc'+'ript>');
 				else if ('IntersectionObserver' in window)
 					document.write('<link rel="import" href="#{assets.url('dist/lazyload-image/lazyload-image.html')}"/>');
-			link(rel="import" href=assets.url('dist/indieweb-components/indie-action.html'))
-			link(rel="import" href=assets.url('dist/indieweb-components/fragmention-target.html'))
+			block imports
+				link(rel="import" href=assets.url('dist/indieweb-components/indie-action.html'))
+				link(rel="import" href=assets.url('dist/indieweb-components/fragmention-target.html'))
 			if livereload
 				script.
 					document.write('<script src="//' + (location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1"></sc' + 'ript>')
@@ -246,7 +247,7 @@ html(lang="en")
 							Because it's powered by #[a(href="https://github.com/myfreeweb/sweetroll") Sweetroll], an #[a(href="https://indieweb.org") #IndieWeb] engine.
 						block search-form
 							form(method="get" action="/search").search-form
-								fieldset
+								.form-field
 									input(name="q" type="search" value=searchQuery)
 									button Search
 			script(defer src=assets.url('dist/svgxuse/svgxuse.min.js'))

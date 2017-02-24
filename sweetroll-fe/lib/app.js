@@ -4,7 +4,7 @@ const URI = require('urijs')
 const moment = require('moment')
 const Retry = require('promised-retry')
 const _ = require('lodash')
-const { concat, get, isObject } = _
+const { concat, get, isObject, groupBy } = _
 const pify = require('pify')
 const pug = require('pug')
 const pg = require('pg')
@@ -13,7 +13,7 @@ const { default: PgAsync, SQL } = require('pg-async')
 const env = process.env
 const assets = require('dynamic-asset-rev')('dist')
 const log = require('debug')('sweetroll-fe')
-const sse = require('sse-broadcast')()
+const sse = require('sse-broadcast')({ compression: true })
 const cache = env.DO_CACHE ? require('lru-cache')({
 	max: parseInt(env.CACHE_MAX_ITEMS || '128')
 }) : null
@@ -66,8 +66,10 @@ const notificationListener = new Retry({
 						cache.del(u)
 					}
 				}
-				sse.publish('changes', 'change', urls.join(','))
-				// TODO partition sse publishes by domain
+				const grouped = groupBy(urls, u => new URI(u).host())
+				for (const domain of Object.keys(grouped)) {
+					sse.publish(domain, 'change', grouped[domain].join(','))
+				}
 				// TODO WebSub publish
 			}).catch(err => {
 				console.error(err)
@@ -82,7 +84,8 @@ const notificationListener = new Retry({
 notificationListener.try()
 
 const liveHandler = async (ctx, next) => {
-	sse.subscribe('changes', ctx.res)
+	const host = env.FAKE_HOST || ctx.request.host
+	sse.subscribe(host, ctx.req, ctx.res)
 	ctx.respond = false
 	return next()
 }

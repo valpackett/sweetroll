@@ -1,6 +1,7 @@
 'use strict'
 const helpers = require('./helpers')
 const URI = require('urijs')
+const LinkHeader = require('http-link-header')
 const moment = require('moment')
 const Retry = require('promised-retry')
 const _ = require('lodash')
@@ -17,6 +18,8 @@ const sse = require('sse-broadcast')({ compression: true })
 const cache = env.DO_CACHE ? require('lru-cache')({
 	max: parseInt(env.CACHE_MAX_ITEMS || '128')
 }) : null
+const websubHub = env.WEBSUB_HUB || 'https://switchboard.p3k.io'
+const indieAuthEndpoint = env.INDIEAUTH_ENDPOINT || 'https://indieauth.com/auth'
 const dburi = env.DATABASE_URI || 'postgres://localhost/sweetroll'
 const db = new PgAsync(dburi)
 
@@ -197,7 +200,15 @@ const addCommonContext = async (ctx, next) => {
 		pretty: true,
 		cache: env.CACHE_TEMPLATES,
 	}
-	return next()
+	ctx.link = new LinkHeader()
+	ctx.link.set({ rel: 'webmention', uri: ctx.domainUri.clone().path('/webmention').toString() })
+	ctx.link.set({ rel: 'micropub', uri: ctx.domainUri.clone().path('/micropub').toString() })
+	ctx.link.set({ rel: 'token_endpoint', uri: ctx.domainUri.clone().path('/login').toString() })
+	ctx.link.set({ rel: 'authorization_endpoint', uri: indieAuthEndpoint })
+	ctx.link.set({ rel: 'hub', uri: websubHub })
+	ctx.link.set({ rel: 'self', uri: ctx.domainUriStr })
+	await next()
+	ctx.response.set('link', ctx.link.toString())
 }
 
 const koaCache = cache ? require('koa-cash')({

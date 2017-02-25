@@ -5,7 +5,7 @@ const log = require('debug')('sweetroll-fe:listen')
 const app = require('./lib/app')
 const argv = require('minimist')(process.argv.slice(2))
 if (argv.procotol === undefined || argv.protocol === 'http') {
-	const port = argv.port || 3000
+	const port = argv.port || 3300
 	app.listen(port, () => { log('listening on port', port) })
 } else if (argv.protocol === 'activate') {
 	app.listen({ fd: 3 }, () => { log('listening on fd 3') })

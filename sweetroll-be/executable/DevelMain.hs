@@ -18,6 +18,6 @@ app = logStdoutDev <$> initSweetrollApp def { testMode = True } def { secretKey 
 update ∷ IO ()
 update = do
   port ← lookupEnv "SWEETROLL_DEV_PORT"
-  let portNumber = fromMaybe 4000 $ readMaybe =<< port
+  let portNumber = fromMaybe 3000 $ readMaybe =<< port
   rapid 0 $ \r →
     restart r (asString "web") (runSettings (setPort portNumber defaultSettings) =<< app)

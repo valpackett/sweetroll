@@ -39,7 +39,7 @@ mixin showMeta(entry, comments, permalink, compactView)
 	.entry-meta
 		| posted on 
 		time.dt-published(datetime=_.head(properties.published))
-			a.u-url.u-uid.note-permalink(rel=compactView ? 'bookmark' : '' href=permalink)
+			a.u-url.u-uid.note-permalink(rel=compactView ? '' : 'bookmark' href=permalink)
 				= moment.utc(_.head(properties.published)).format(dateFormat)
 		if !_.isEmpty(mfeeds)
 			|  in
@@ -54,13 +54,13 @@ mixin showMeta(entry, comments, permalink, compactView)
 			|  and updated on 
 			time.dt-updated(datetime=_.head(properties.updated))
 				= moment.utc(_.head(properties.updated)).format(dateFormat)
-
 		if !_.isEmpty(properties.syndication)
 			|  / also on: 
 			each repost in properties.syndication
-				a.u-syndication(rel=!compactView ? 'syndication' : '' href=repost)
+				a.u-syndication(rel=compactView ? '' : 'syndication' href=repost)
 					= helpers.syndicationName(repost)
 		if compactView
+			|  &nbsp;
 			each reactions, name in comments || []
 				if !_.isEmpty(reactions)
 					if iconNames[name]
@@ -118,13 +118,14 @@ mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, lo
 			.ref-context-thread-up
 				each reply in _.get(entry, 'properties.in-reply-to', [])
 					+showRefContext(reply, { prop: 'u-in-reply-to', rel: '', long: false, showReplies, showContexts: true })
-		header.ref-context-reason
-			+icon(reasonIcon, null, { class: ['icon-ref-reason', 'icon-ref-' + (reasonIconClass || reasonIcon)] })
-			= ' ' + reason + ' '
-			if _.isString(entry)
-				a.p-name.u-url(href=helpers.onlyHttpUrl(entry))= entry
-			else if !_.isObject(entry)
-				| something weird
+		if reasonIcon
+			header.ref-context-reason
+				+icon(reasonIcon, null, { class: ['icon-ref-reason', 'icon-ref-' + (reasonIconClass || reasonIcon)] })
+				= ' ' + reason + ' '
+				if _.isString(entry)
+					a.p-name.u-url(href=helpers.onlyHttpUrl(entry))= entry
+				else if !_.isObject(entry)
+					| something weird
 		if _.isObject(entry)
 			- const authors = properties.author
 			.ref-context-core
@@ -143,7 +144,7 @@ mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, lo
 							= moment.utc(_.get(properties, 'published[0]', '')).format('MMM Do YYYY, HH:mm')
 					blockquote.ref-context-content.e-content
 						+showContent(properties, long, false)
-			if showContexts && !_.isEmpty(comments.replies)
+			if showReplies && !_.isEmpty(comments.replies)
 				.ref-context-thread-down
 					each reply in comments.replies
 						+showRefContext(reply, { prop: 'p-comment', rel: '', long: false, showReplies: true, showContexts: false })
@@ -158,14 +159,28 @@ mixin showEntry(entry, compactView)
 		const comments = helpers.separateComments(properties.url, properties.comment || [])
 	each reply in properties['in-reply-to'] || []
 		+showRefContext(reply, { prop: 'u-in-reply-to', reasonIcon: 'reply', reason: 'in reply to', rel: !compactView ? 'in-reply-to' : '', long: false, showReplies: false, showContexts: !compactView })
-	each reply in properties['like-of'] || []
-		+showRefContext(reply, { prop: 'u-like-of', reasonIcon: 'star', reasonIconClass: 'like', reason: 'liked', rel: !compactView ? 'like-of' : '', long: false, showReplies: false, showContexts: !compactView })
-	each reply in properties['quotation-of'] || []
-		+showRefContext(reply, { prop: 'u-quotation-of', reasonIcon: 'quote-left', reasonIconClass: 'quotation', reason: 'quoted', rel: !compactView ? 'quotation-of' : '', long: false, showReplies: false, showContexts: !compactView })
+	each like in properties['like-of'] || []
+		+showRefContext(like, { prop: 'u-like-of', reasonIcon: 'star', reasonIconClass: 'like', reason: 'liked', rel: !compactView ? 'like-of' : '', long: false, showReplies: false, showContexts: !compactView })
+	each quotation in properties['quotation-of'] || []
+		+showRefContext(quotation, { prop: 'u-quotation-of', reasonIcon: 'quote-left', reasonIconClass: 'quotation', reason: 'quoted', rel: !compactView ? 'quotation-of' : '', long: false, showReplies: false, showContexts: !compactView })
+	each bookmark in properties['bookmark'] || []
+		.ref-context.u-bookmark-of.h-cite
+			header.ref-context-reason
+				+icon('bookmark', null, { class: ['icon-ref-reason', 'icon-ref-bookmark'] })
+				|  bookmarked 
+				if _.isString(bookmark)
+					a.p-name.u-url(href=helpers.onlyHttpUrl(bookmark))
+						= properties.name ? _.head(properties.name) : bookmark
+				else if !_.isObject(bookmark)
+					| something weird
+				else
+					- const url = _.get(bookmark, 'properties.url[0]', '')
+					a.p-name.u-url(href=helpers.onlyHttpUrl(url))
+						= properties.name ? _.head(properties.name) : _.get(bookmark, 'properties.name[0]', url)
 	if !isUntitled
 		.entry-core
 			h1.p-name
-				a.u-url.u-uid(href=permalink rel=!compactView ? 'bookmark' : '' tabindex="-1")
+				a.u-url.u-uid(href=permalink rel=compactView ? '' : 'bookmark' tabindex="-1")
 					= _.head(properties.name)
 	if !_.isEmpty(properties.content) || !_.isEmpty(properties['repost-of'])
 		.e-content
@@ -184,6 +199,10 @@ mixin showEntry(entry, compactView)
 					+showFacepile(entry, name, reactions)
 		if _.isEmpty(properties['like-of']) && _.isEmpty(properties['bookmark-of'])
 			+showActions(entry, permalink)
+	if !compactView && !_.isEmpty(comments.replies)
+		section.entry-replies
+			each reply in comments.replies || []
+				+showRefContext(reply, { prop: 'p-comment', rel: '', long: false, showReplies: true, showContexts: false })
 
 
 doctype html

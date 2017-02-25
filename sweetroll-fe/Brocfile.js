@@ -44,7 +44,7 @@ const icons = new SVGStore(
 )
 
 const errPages = new Pug(new Funnel('views', {
-	include: ['404.pug', '500.pug']
+	include: ['403.pug', '404.pug', '500.pug', '502.pug', '503.pug', '504.pug']
 }), {
 	basedir: join(__dirname, '/views'),
 	pretty: true,

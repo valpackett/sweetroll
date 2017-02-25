@@ -3,6 +3,7 @@ const { count: countEmoji } = require('emoji-king')
 const URI = require('urijs')
 const cheerio = require('cheerio')
 const gravatarUrl = require('gravatar-url')
+const log = require('debug')('sweetroll-fe:helpers')
 
 module.exports = {
 	insertParams (name, params) {
@@ -93,6 +94,8 @@ module.exports = {
 				result.bookmarks.push(comment)
 			} else if (this.isValidRef(url, properties['quotation-of'])) {
 				result.quotations.push(comment)
+			} else {
+				log('Unknown mention type for object %O', comment)
 			}
 		}
 		return result

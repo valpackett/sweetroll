@@ -49,6 +49,7 @@
     "dynamic-asset-rev": "^0.1.0",
     "emoji-king": "^0.1.0",
     "gravatar-url": "^2.0.0",
+    "http-link-header": "^0.7.0",
     "koa": "^2.0.0",
     "koa-better-router": "^2.1.1",
     "koa-better-serve": "^1.0.0",

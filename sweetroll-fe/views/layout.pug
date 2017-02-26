@@ -19,8 +19,11 @@ mixin showContent(properties, long, onlySummary)
 		content = _.isObject(content) ? (content.html || content.value) : content
 		content = _.isString(content) ? content : null
 	each photo in properties.photo || []
-		if !(_.includes(content, photo.replace('&', '&amp;')) || _.includes(content, photo))
-			img.u-photo.entry-photo(src=photo alt="" is="lazyload-image")
+		-
+			const photoUrl = _.isObject(photo) ? photo.value : photo
+			const photoAlt = _.isObject(photo) ? photo.alt : ''
+		if !(_.includes(content, photoUrl.replace('&', '&amp;')) || _.includes(content, photoUrl))
+			img.u-photo.entry-photo(src=photoUrl alt=photoAlt is="lazyload-image")
 	each video in properties.video || []
 		if !(_.includes(content, video.replace('&', '&amp;')) || _.includes(content, video))
 			video.entry-video(controls="controls")

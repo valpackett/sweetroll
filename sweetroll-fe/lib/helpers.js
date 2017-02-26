@@ -1,3 +1,4 @@
+'use strict'
 const { some, trim, get, eq, includes, concat, flatMap, isString, isArray, isObject, difference } = require('lodash')
 const { count: countEmoji } = require('emoji-king')
 const URI = require('urijs')

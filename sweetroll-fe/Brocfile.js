@@ -1,3 +1,4 @@
+'use strict'
 const { join } = require('path')
 const Funnel = require('broccoli-funnel')
 const MergeTrees = require('broccoli-merge-trees')
@@ -29,6 +30,11 @@ let styles = new Concat(new MergeTrees([
 
 styles = new SourceMapExtractor(new PostCSS(styles, {
 	plugins: [
+		{ module: require('postcss-nesting') },
+		{ module: require('postcss-flexbugs-fixes') },
+		{ module: require('postcss-responsive-type') },
+		{ module: require('postcss-css-variables') },
+		{ module: require('postcss-color-function') },
 		{ module: require('autoprefixer') },
 		{ module: require('cssnano') },
 	],

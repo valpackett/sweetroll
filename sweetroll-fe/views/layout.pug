@@ -60,9 +60,9 @@ mixin showMeta(entry, comments, permalink, compactView)
 				a.u-syndication(rel=compactView ? '' : 'syndication' href=repost)
 					= helpers.syndicationName(repost)
 		if compactView
-			|  &nbsp;
 			each reactions, name in comments || []
 				if !_.isEmpty(reactions)
+					|  / 
 					if iconNames[name]
 						+icon(iconNames[name], name + ' count')
 					else
@@ -251,6 +251,7 @@ html(lang="en")
 								- const isCurrentPage = reqUri.equals(_.get(feed, 'properties.url[0]'))
 								if _.get(feed, 'properties.show-in-nav[0]') !== false || isCurrentPage
 									- const name = helpers.insertParams(_.get(feed, 'properties.name[0]', 'Unnamed feed'), reqUriFull.search(true))
+									|  
 									if isCurrentPage
 										span= name
 										data.p-name(value=`${name} / ${siteSettings && siteSettings['site-name']}`)

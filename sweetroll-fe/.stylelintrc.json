@@ -6,6 +6,7 @@
     "selector-list-comma-space-after": "always",
     "selector-list-comma-newline-after": "never-multi-line",
     "selector-list-comma-newline-before": "never-multi-line",
-    "selector-type-no-unknown": null
+    "selector-type-no-unknown": null,
+    "property-no-unknown": null
   }
 }

@@ -4,14 +4,14 @@
   "description": "",
   "scripts": {
     "deps": "mkdir -p bower_components; ln -s ../../indieweb-components bower_components/indieweb-components; bower update",
-    "assets": "rm -rf dist.new; broccoli build dist.new && mkdir -p dist && rm -rf dist/* && mv dist.new/* dist/ && rmdir dist.new",
+    "assets": "rm -rf dist.new; broccoli build dist.new && mkdir -p dist && rsync -au --inplace --remove-source-files dist.new/ dist && rm -rf dist.new && echo '==== Built assets'",
     "lint": "eslint --ignore-path .gitignore . && echo ESLint OK; stylelint assets/*.css && echo Stylelint OK; true",
     "fmt": "stylefmt assets/*.css",
     "devserve": "prok"
   },
   "processes": {
-    "app": "DEBUG=*,-dynamic-asset-rev,-koa-mount LIVE_RELOAD=1 node-dev --harmony index.js",
-    "lr": "DEBUG=tinylr:* tiny-lr",
+    "app": "DEBUG=*,-koa-mount,-dynamic-asset-rev LIVE_RELOAD=1 node-dev --harmony index.js",
+    "lr": "tiny-lr",
     "re-asset": "chokidar 'assets/**/*' 'Brocfile.js' --initial -p -c 'npm run assets; curl -s -X POST \"localhost:35729/changed?files=dist\"; true'",
     "re-tpl": "chokidar 'views/**/*' -p -c 'curl -s -X POST \"localhost:35729/changed?files=dist\"; true'"
   },
@@ -37,6 +37,11 @@
     "eslint-plugin-standard": "^2.0.1",
     "make-livereload": "^0.1.2",
     "node-dev": "^3.1.3",
+    "postcss-color-function": "^3.0.0",
+    "postcss-css-variables": "^0.6.0",
+    "postcss-flexbugs-fixes": "^2.1.0",
+    "postcss-nesting": "^2.3.1",
+    "postcss-responsive-type": "^0.5.1",
     "prok": "0.0.8",
     "stylefmt": "^5.1.2",
     "stylelint": "^7.8.0",

@@ -65,6 +65,7 @@ library
       , wai-extra
       , wai-cors
       , wai-conduit
+      , cookie
       , servant
       , servant-server
       , network-uri

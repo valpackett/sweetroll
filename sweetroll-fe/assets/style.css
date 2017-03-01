@@ -3,7 +3,6 @@
 	--background-color: #efeaf4;
 	--accent-color: #706aca;
 	--text-color: #34495e;
-
 	--link-color: color(var(--accent-color) shade(35%) l(+10%));
 	--content-link-color: #408acc;
 	--heading-color: color(var(--text-color) l(-15%));
@@ -526,6 +525,10 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 .search-snippet {
 	font-size: 0.9em;
 	opacity: 0.9;
+}
+
+.login-form {
+	opacity: 0;
 }
 
 simple-live {

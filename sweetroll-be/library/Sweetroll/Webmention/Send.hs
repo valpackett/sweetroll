@@ -45,7 +45,7 @@ sendWebmentions ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ SourceURI → [Mention]
 sendWebmentions from ms = mapM (sendWebmention from) $ nub ms
 
 
-linksFromHeader ∷ ∀ body. Response body → [Link]
+linksFromHeader ∷ Response body → [Link]
 linksFromHeader r = fromMaybe [] (lookup "Link" (responseHeaders r) >>= parseLinkHeader . decodeUtf8)
 
 discoverWebmentionEndpoints ∷ Value → [Link] → [URI]

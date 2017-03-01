@@ -17,8 +17,9 @@ import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as S8
 import           Web.JWT hiding (header)
 import qualified Network.Wai as Wai
-import           Servant.API
+import           Servant
 import           Servant.Server.Experimental.Auth
+import           Web.Cookie (parseCookies)
 import           Sweetroll.Context
 import           Sweetroll.Conf
 import           Sweetroll.HTTPClient hiding (Header)
@@ -32,8 +33,9 @@ instance HasLink sub ⇒ HasLink (AuthProtect "jwt" :> sub) where
 authHandler ∷ Text → AuthHandler Wai.Request (JWT VerifiedJWT)
 authHandler secKey = mkAuthHandler h
   where h req =
-          case asum [ lookup hAuthorization (Wai.requestHeaders req) >>= fromHeader
+          case asum [ fromHeader =<< lookup hAuthorization (Wai.requestHeaders req)
                     , join $ lookup "access_token" $ Wai.queryString req
+                    , lookup "Bearer" =<< parseCookies <$> lookup hCookie (Wai.requestHeaders req)
                     ] of
             Nothing → throwE errNoAuth
             Just tok →
@@ -93,12 +95,26 @@ postLogin host params = do
            putStrLn $ cs $ "Authentication error: " ++ e ++ " / params: " ++ tshow params
            throwError errWrongAuth
 
+getSelfLogin ∷ Maybe Text → Maybe Text → Maybe Text → Sweetroll NoContent
+getSelfLogin host me code = do
+  let domain = fromMaybe "localhost" host
+  isTestMode ← getConfOpt testMode
+  let security = if isTestMode then "" else "; Secure; SameSite=Strict"
+  result ← postLogin host [ ("me", fromMaybe ("https://" ++ domain) me)
+                          , ("code", fromMaybe "" code)
+                          , ("redirect_uri", "https://" ++ domain ++ "/login/self")
+                          , ("client_id", "https://" ++ domain ++ "/")
+                          , ("grant_type", "authorization_code") ]
+  throwError err303 { errHeaders = [ ("Set-Cookie", "Bearer=" ++ (cs $ fromMaybe "" $ lookup "access_token" result) ++ "; Path=/; Max-Age=5184000; HttpOnly" ++ security)
+                                   , (hLocation, "/") ] }
+
 
 supportFormAuth ∷ Wai.Middleware
 supportFormAuth app req respond = do
   let headers = Wai.requestHeaders req
   if "urlencoded" `isInfixOf` (fromMaybe "" $ lookup hContentType headers)
      && not ("Bearer" `isInfixOf` (fromMaybe "" $ lookup hAuthorization headers))
+     && not ("Bearer" `isInfixOf` (fromMaybe "" $ lookup hCookie headers))
      then do
        (req', body) ← getRequestBody req
        let form = fromMaybe [] $ readForm $ S8.concat body ∷ [(ByteString, ByteString)]

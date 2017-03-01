@@ -2,6 +2,7 @@
 const helpers = require('./helpers')
 const URI = require('urijs')
 const LinkHeader = require('http-link-header')
+const jwt = require('jsonwebtoken')
 const moment = require('moment')
 const Retry = require('promised-retry')
 const _ = require('lodash')
@@ -20,6 +21,7 @@ const cache = env.DO_CACHE ? require('lru-cache')({
 }) : null
 const websubHub = env.WEBSUB_HUB || 'https://switchboard.p3k.io'
 const indieAuthEndpoint = env.INDIEAUTH_ENDPOINT || 'https://indieauth.com/auth'
+const jwtkey = env.SWEETROLL_SECRET || 'TESTKEY'
 const dburi = env.DATABASE_URI || 'postgres://localhost/sweetroll'
 const db = new PgAsync(dburi)
 
@@ -93,7 +95,13 @@ const liveHandler = async (ctx, next) => {
 	return next()
 }
 
-const searchHandler = async ({ request, response, domainUriStr, tplctx, cashed }, next) => {
+const logoutHandler = async (ctx, next) => {
+	ctx.cookies.set('Bearer', '', { maxAge: -1 })
+	ctx.redirect('back')
+	return next()
+}
+
+const searchHandler = async ({ request, response, domainUriStr, tplctx }, next) => {
 	const searchQuery = request.query.q || ''
 	const { dobj, results, feeds } = await db.row(SQL`SELECT
 	objects_smart_fetch(${domainUriStr}, ${domainUriStr + '%'}, 1, null, null, null) AS dobj,
@@ -129,8 +137,8 @@ const searchHandler = async ({ request, response, domainUriStr, tplctx, cashed }
 	return next()
 }
 
-const handler = async ({ request, response, domainUri, reqUri, reqUriFull, domainUriStr, reqUriStr, reqUriFullStr, tplctx, cashed }, next) => {
-	if (cache && await cashed(2 * 60 * 1000)) return
+const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull, domainUriStr, reqUriStr, reqUriFullStr, tplctx, cashed }, next) => {
+	if (cache && !auth && await cashed(2 * 60 * 1000)) return
 	// TODO don't fetch twice when domain URI == request URI (i.e. home page)
 	const perPage = 20
 	const { dobj, obj, feeds } = await db.row(SQL`SELECT
@@ -180,6 +188,23 @@ const addCommonContext = async (ctx, next) => {
 	ctx.reqUriFullStr = ctx.reqUriFull.toString()
 	ctx.reqUri = ctx.reqUriFull.clone().search('')
 	ctx.reqUriStr = ctx.reqUri.toString()
+	const token = ctx.cookies.get('Bearer')
+	let auth
+	if (token) {
+		try {
+			auth = jwt.verify(token, jwtkey, { issuer: host })
+			if (auth.sub !== ctx.domainUriStr && auth.sub !== ctx.domainUriStr.slice(0, -1)) {
+				log('auth wrong subj: %s', auth.sub)
+				auth = undefined
+			} else {
+				log('auth success: %O', auth)
+			}
+		} catch (err) {
+			auth = undefined
+			log('auth error: %O', err)
+		}
+	}
+	ctx.auth = auth
 	ctx.tplctx = {
 		// Libraries and our code
 		moment,
@@ -193,7 +218,9 @@ const addCommonContext = async (ctx, next) => {
 		reqUri: ctx.reqUri,
 		reqUriFull: ctx.reqUriFull,
 		requestUriStr: ctx.reqUriFullStr,
+		auth,
 		// App settings
+		indieAuthEndpoint,
 		livereload: env.LIVE_RELOAD,
 		// Pug settings
 		basedir: './views',
@@ -241,6 +268,7 @@ if (!env.NO_SERVE_DIST) {
 	)
 }
 router.addRoute('GET', '/live', liveHandler)
+router.addRoute('POST', '/logout', logoutHandler)
 router.addRoute('GET', '/search', compose([addCommonContext, koaCache, searchHandler].filter(isObject)))
 router.options.notFound = compose([addCommonContext, koaCache, handler].filter(isObject))
 const app = new (require('koa'))()

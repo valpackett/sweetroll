@@ -94,11 +94,10 @@ mixin showActions(entry, permalink)
 			const twitterUrl = _(entry).at('properties.syndication')
 				.flatten().filter(_.isString).find(url => url.startsWith("https://twitter.com") || url.startsWith("http://twitter.com"))
 			const twitterId = twitterUrl ? twitterUrl.match(/.*status\/(.+)/)[1] : null
-			const twitterLink = act => {
+			const twitterLink = act =>
 				twitterId
 					? 'https://twitter.com/intent/' + act + '?' + (act == 'reply' ? 'in_reply_to' : 'tweet_id') + '=' + twitterId
 					: 'javascript:void(0)// ' + (act == 'retweet' ? 'repost' : act) + ' using indie-config. do not open this in a new tab. see https://indieweb.org/indie-config for info.'
-			}
 		indie-action(do="reply" with=permalink)
 			a(href=twitterLink('reply'))
 				+icon('reply')
@@ -140,8 +139,8 @@ mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, lo
 							if !_.isEmpty(authors)
 								each author in authors
 									span.p-author.h-card
-										a.u-url.p-name(href=_.head(author.properties.url))
-											= _.head(author.properties.name)
+										a.u-url.p-name(href=_.get(author, 'properties.url[0]'))
+											= _.get(author, 'properties.name[0]')
 						= ' '
 						a.u-url.ref-context-date(rel=rel href=helpers.onlyHttpUrl(_.get(properties, 'url[0]', '')))
 							= moment.utc(_.get(properties, 'published[0]', '')).format('MMM Do YYYY, HH:mm')
@@ -156,7 +155,7 @@ mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, lo
 mixin showEntry(entry, compactView)
 	-
 		const properties = entry.properties || {}
-		const permalink = relativeUrl(_.head(properties.url))
+		const permalink = relativeUrl(_.get(properties, 'url[0]'))
 		const isUntitled = _.isEmpty(properties.name) || !_.isEmpty(properties['bookmark-of'])
 		const props = { reposts: 'p-repost', likes: 'p-like', bookmarks: 'p-bookmark', quotations: 'p-quotation' }
 		const comments = helpers.separateComments(properties.url, properties.comment || [])
@@ -273,4 +272,14 @@ html(lang="en")
 								.form-field
 									input(name="q" type="search" value=searchQuery)
 									button Search
-			script(defer src=assets.url('dist/svgxuse/svgxuse.min.js'))
+						block login-form
+							if auth
+								form(method="post" action="/logout").logout-form
+									button Log out
+							else if domainUri
+								form(method="get" action=indieAuthEndpoint).login-form
+									input(type="hidden" name="me" value=domainUri.toString())
+									input(type="hidden" name="client_id" value=domainUri.toString())
+									input(type="hidden" name="redirect_uri" value=domainUri.clone().path('/login/self').toString())
+									button Log in
+				script(defer src=assets.url('dist/svgxuse/svgxuse.min.js'))

@@ -10,7 +10,7 @@
     "devserve": "prok"
   },
   "processes": {
-    "app": "DEBUG=*,-koa-mount,-dynamic-asset-rev LIVE_RELOAD=1 node-dev --harmony index.js",
+    "app": "DEBUG=*,-koa-mount,-dynamic-asset-rev LIVE_RELOAD=1 IS_PROXIED=1 INDIEAUTH_ENDPOINT=/login/self node-dev --harmony index.js",
     "lr": "tiny-lr",
     "re-asset": "chokidar 'assets/**/*' 'Brocfile.js' --initial -p -c 'npm run assets; curl -s -X POST \"localhost:35729/changed?files=dist\"; true'",
     "re-tpl": "chokidar 'views/**/*' -p -c 'curl -s -X POST \"localhost:35729/changed?files=dist\"; true'"
@@ -55,6 +55,7 @@
     "emoji-king": "^0.1.0",
     "gravatar-url": "^2.0.0",
     "http-link-header": "^0.7.0",
+    "jsonwebtoken": "^7.3.0",
     "koa": "^2.0.0",
     "koa-better-router": "^2.1.1",
     "koa-better-serve": "^1.0.0",

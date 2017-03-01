@@ -95,6 +95,19 @@ const liveHandler = async (ctx, next) => {
 	return next()
 }
 
+const robotsHandler = async (ctx, next) => {
+	ctx.type = 'text/plain'
+	ctx.body = `
+User-agent: *
+Disallow: /login
+Disallow: /webmention
+Disallow: /micropub
+Disallow: /dist
+Disallow: /live
+`
+	return next()
+}
+
 const logoutHandler = async (ctx, next) => {
 	ctx.cookies.set('Bearer', '', { maxAge: -1 })
 	ctx.redirect('back')
@@ -235,7 +248,12 @@ const addCommonContext = async (ctx, next) => {
 	ctx.link.set({ rel: 'hub', uri: websubHub })
 	ctx.link.set({ rel: 'self', uri: ctx.domainUriStr })
 	await next()
-	ctx.response.set('link', ctx.link.toString())
+	ctx.response.set('Link', ctx.link.toString())
+	if (!env.LIVE_RELOAD) {
+		// data: URI scripts are made by the HTML Imports polyfill
+		// the hash and data: images are for lazyload-image
+		ctx.response.set('Content-Security-Policy', "default-src 'self'; script-src 'self' data: 'sha256-8F+MddtNx9BXjGv2NKerT8QvmcOQy9sxZWMR6gaJgrU='; img-src 'self' https: data:; frame-ancestors 'none'")
+	}
 }
 
 const koaCache = cache ? require('koa-cash')({
@@ -268,6 +286,7 @@ if (!env.NO_SERVE_DIST) {
 	)
 }
 router.addRoute('GET', '/live', liveHandler)
+router.addRoute('GET', '/robots.txt', robotsHandler)
 router.addRoute('POST', '/logout', logoutHandler)
 router.addRoute('GET', '/search', compose([addCommonContext, koaCache, searchHandler].filter(isObject)))
 router.options.notFound = compose([addCommonContext, koaCache, handler].filter(isObject))

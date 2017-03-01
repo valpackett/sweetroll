@@ -1,0 +1,22 @@
+session_name: sweetroll
+start_directory: ./
+windows:
+  - window_name: ngx
+    panes:
+      - sudo nginx -p `pwd` -c nginx.conf
+  - window_name: sql
+    start_directory: mf2sql/
+    panes:
+      - pgcli sweetroll
+  - window_name: fe
+    start_directory: sweetroll-fe/
+    layout: main-horizontal
+    panes:
+      - npm run devserve
+      - vi lib/app.js
+  - window_name: be
+    start_directory: sweetroll-be/
+    layout: main-horizontal
+    panes:
+      - stack ghci --with-ghc intero
+      - vi library/Sweetroll

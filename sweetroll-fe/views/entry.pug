@@ -1,8 +1,5 @@
 extends /layout.pug
 
-block append imports
-	link(rel="import" href=assets.url('dist/indieweb-components/simple-live.html'))
-
 block append main
 	simple-live(hidden src="/live")
 		| This entry has been updated. 
@@ -10,13 +7,13 @@ block append main
 	article.entry
 		+showEntry(obj, false)
 	form.entry-webmention-form(method="post" action="/webmention")
-		p
-			| Posted a #[a(href="https://indieweb.org/responses") response] on your own website?
-			| Send a #[a(href="https://webmention.net/") Webmention]:
-			input(type="hidden" name="target" value=requestUriStr)
-			.form-field
-				input(type="url" name="source" placeholder="https://...")
-				button Send
-			small.
-				(Even better - #[a(href="https://webmention.net/implementations/") implement] automatic Webmention sending on your website.
-				And set up #[a(href="https://indieweb.org/indie-config") indie-config] to make reply/repost/like buttons work.)
+		p.
+			Posted a #[a(href="https://indieweb.org/responses") response] on your own website?
+			Send a #[a(href="https://webmention.net/") Webmention]:
+		input(type="hidden" name="target" value=requestUriStr)
+		.form-field
+			input(type="url" name="source" placeholder="https://...")
+			button Send
+		small.
+			(Even better - #[a(href="https://webmention.net/implementations/") implement] automatic Webmention sending on your website.
+			And set up #[a(href="https://indieweb.org/indie-config") indie-config] to make reply/repost/like buttons work.)

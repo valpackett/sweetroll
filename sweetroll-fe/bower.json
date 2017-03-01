@@ -9,12 +9,12 @@
   "license": "Unlicense",
   "private": true,
   "dependencies": {
-    "webcomponentsjs": "~0.7.22",
+    "webcomponentsjs": "webcomponents/webcomponentsjs#v1",
     "indieweb-components": "../indieweb-components",
     "sanitize-css": "^4.1.0",
     "normalize-opentype.css": "^0.2.4",
     "svgxuse": "^1.1.21",
     "Font-Awesome-SVG-PNG": "font-awesome-svg-png#^1.1.5",
-    "lazyload-image": "^2.1.0"
+    "lazyload-image": "1000ch/lazyload-image"
   }
 }

@@ -12,13 +12,17 @@ const Concat = require('broccoli-concat')
 
 const bowerdeps = new Funnel('bower_components', {
 	include: [
-		'webcomponentsjs/*.min.js',
+		'webcomponentsjs/*.js',
 		'findAndReplaceDOMText/src/*.js',
 		'svgxuse/*.min.js',
-		'lazyload-image/*.html',
-		'indieweb-components/*.html'
+		'lazyload-image/lazyload-image.html',
+		'indieweb-components/*.{html,js}'
 	]
 })
+
+const scripts = new Funnel('assets', { include: [ '*.js' ] })
+
+
 
 let styles = new Concat(new MergeTrees([
 	'assets',
@@ -60,7 +64,7 @@ const errPages = new Pug(new Funnel('views', {
 })
 
 const all = new MergeTrees([
-	bowerdeps, styles, icons, errPages
+	bowerdeps, styles, scripts, icons, errPages
 ])
 
 const compressExts = ['js', 'css', 'svg', 'html']

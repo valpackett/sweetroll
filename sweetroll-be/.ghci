@@ -1,8 +1,6 @@
--- NOTE: run with: stack ghci --no-load
-:set -fobject-code
+:set -XNoMonomorphismRestriction
 :set -XOverloadedStrings
 :set -XNoImplicitPrelude
-:load executable/DevelMain.hs
 :m Sweetroll.Prelude DevelMain
 
 :{

@@ -1,6 +1,6 @@
 -
 	const iconNames = { replies: 'reply', reposts: 'retweet', likes: 'star', bookmarks: 'bookmark', quotations: 'quote-left' }
-	const relativeUrl = (u) => '/' + new URI(u).relativeTo(domainUri).toString()
+	const relativeUrl = u => '/' + new URI(u).relativeTo(domainUri).toString()
 
 mixin icon(name, title, opts={})
 	svg(role="img" aria-hidden=title ? "false" : "true" class=_.concat(["icon"], opts.class || []) title=title)
@@ -131,7 +131,7 @@ mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, lo
 		if _.isObject(entry)
 			- const authors = properties.author
 			.ref-context-core
-				a(href=helpers.onlyHttpUrl(_.get(authors, '[0].properties.url[0]', '')))
+				a.ref-context-avatar-link(href=helpers.onlyHttpUrl(_.get(authors, '[0].properties.url[0]', '')))
 					img.ref-context-avatar(alt="" src=helpers.showAvatar((authors || [])[0]) is="lazyload-image")
 				.ref-context-content
 					.ref-context-meta

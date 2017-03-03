@@ -8,6 +8,8 @@ import           Servant (ServantErr, err500)
 import           Hasql.Query
 import qualified Hasql.Pool as P
 import qualified Hasql.Session as S
+import qualified Hasql.Transaction.Sessions as TS
+import qualified Hasql.Transaction as T
 import qualified Hasql.Decoders as D
 import qualified Hasql.Encoders as E
 import           Text.RawString.QQ
@@ -24,9 +26,19 @@ useDb s = asks getter >>= \p → liftIO $ P.use p s
 queryDb ∷ (Has Db α, MonadReader α μ, MonadIO μ) ⇒ χ → Query χ ψ → μ (Either P.UsageError ψ)
 queryDb a b = useDb $ S.query a b
 
+transactDb ∷ (Has Db α, MonadReader α μ, MonadIO μ) ⇒ T.Transaction ψ → μ (Either P.UsageError ψ)
+transactDb t = useDb $ TS.transaction T.RepeatableRead T.Write t
+
+queryTx ∷ χ → Query χ ψ → T.Transaction ψ
+queryTx = T.query
+
 guardDbError ∷ MonadError ServantErr μ ⇒ Either DbError α → μ α
 guardDbError (Right x) = return x
 guardDbError (Left x) = throwErrText err500 $ "Database error: " ++ cs (show x)
+
+guardTxError ∷ MonadError ServantErr μ ⇒ Either P.UsageError α → μ α
+guardTxError (Right x) = return x
+guardTxError (Left x) = throwErrText err500 $ "Database error: " ++ cs (show x)
 
 getObject ∷ Query Text (Maybe Value)
 getObject = statement q enc dec True

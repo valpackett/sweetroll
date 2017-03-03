@@ -98,10 +98,15 @@ postMicropub token host (Create htype props synds) = do
 
 postMicropub _ host (Update url upds) = do
   ensureRightDomain (base host) $ parseUri url
-  obj ← guardEntryNotFound =<< guardDbError =<< queryDb url getObject
-  let newObj = obj & key "properties" %~ (\o → foldl' applyUpdates o upds)
-  -- TODO ensure domain not modified
-  guardDbError =<< queryDb newObj upsertObject
+  guardEntryNotFound =<< guardTxError =<< transactDb (do
+    obj' ← queryTx url getObject
+    case obj' of
+      Just obj → do
+        let newObj = obj & key "properties" %~ (\o → foldl' applyUpdates o upds)
+        -- TODO ensure domain not modified
+        queryTx newObj upsertObject
+        return $ Just obj
+      _ → return Nothing)
   throwError respNoContent
 
 postMicropub _ host (Delete url) = do

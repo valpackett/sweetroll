@@ -59,6 +59,7 @@ library
       , jwt
       , hasql
       , hasql-pool
+      , hasql-transaction
       , microformats2-parser
       , indieweb-algorithms
       , wai

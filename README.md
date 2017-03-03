@@ -4,7 +4,7 @@
 
 A website engine for [the indie web] with curved swords. *Curved! Swords!*
 
-- (WIP) uses PostgreSQL with the [mf2sql] schema for storage
+- uses PostgreSQL with the [mf2sql] schema for storage
 - supports [Micropub] for posting, updating, deleting and undeleting (incl. a media endpoint for file uploads)
 - allows posting in [CommonMark Markdown]
 - sends and receives [Webmentions], including [Salmentions]
@@ -117,38 +117,24 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
 (the `http` command in the examples is [HTTPie](https://github.com/jkbrzt/httpie))
 
 
-## Libraries I made for this project
-
-- [pcre-heavy](https://github.com/myfreeweb/pcre-heavy), a usable regular expressions library
-- [http-link-header](https://github.com/myfreeweb/http-link-header), a parser for the Link header (RFC 5988)
-- [microformats2-parser](https://github.com/myfreeweb/microformats2-parser), a Microformats 2 parser
-- [indieweb-algorithms](https://github.com/myfreeweb/indieweb-algorithms), a collection of implementations of algorithms like [authorship](http://indieweb.org/authorship) and link discovery
-
-### but stopped using here
-
-- [gitson](https://github.com/myfreeweb/gitson), a git-backed storage engine
-- [hs-duktape](https://github.com/myfreeweb/hs-duktape), Haskell bindings to [duktape](http://duktape.org), a lightweight ECMAScript (JavaScript) engine
-
 ## TODO
 
-- [x] gitson → postgres
-- [x] multi domain support (use host header everywhere)
-- [ ] do something about category decisions
-- [ ] authorization based on JWT scopes for micropub etc.
+- micropub
+	- [ ] do something about category decisions
+	- [ ] JWT scopes authorization
+	- [ ] draft flag → draft tag and private acl
+	- [ ] media endpoint app with upload to openstack/s3, thumbnails, exif metadata extraction
 - webmention
-  - [ ] test receiving with the database
-  - [ ] bring back sending, now on postgres notifications
+  - [ ] fix all the things
   - [ ] reverify/refetch to update user profiles and stuff
   - [ ] moderation tools
     - [ ] different modes in config: allow all (except blocked), allow known good domains (e.g. domains replied to), premoderate all, turn off webmention
     - [ ] [blocking](https://indieweb.org/block) domains
       - [ ] sharing block lists
-  - [ ] deduplicate threaded replies like [there](https://unrelenting.technology/replies/2015-09-06-20-29-54) (a reply to both my post and another reply) -- maybe that's already happening? need to test
   - [ ] deduplicate syndicated replies
-  - [ ] queue up mention processing requests in the database ([`SELECT FOR UPDATE SKIP LOCKED`](http://blog.2ndquadrant.com/what-is-select-skip-locked-for-in-postgresql-9-5/), probably create that as a library) instead of sync processing
-- [ ] media endpoint upload to openstack/s3
-- [ ] indieweb-algorithms?: ensure the person you're replying to *never* gets picked up you when you're replying (caught in test without own h-card) (what?)
-- [ ] extract a `WebPrelude` package: `Sweetroll.Prelude`, `Sweetroll.HTTPClient`, `formToObject`, more stuff
+	- [ ] vouch
+	- [ ] private webmention
+  - [ ] queue up mention processing requests in the database instead of sync processing (worth it?)
 
 ## License
 

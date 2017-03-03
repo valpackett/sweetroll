@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken')
 const moment = require('moment')
 const Retry = require('promised-retry')
 const _ = require('lodash')
-const { concat, get, isObject, groupBy } = _
+const { concat, get, isObject, groupBy, includes } = _
 const pify = require('pify')
 const pug = require('pug')
 const pg = require('pg')
@@ -33,14 +33,8 @@ const affectedUrls = async (url) => {
 	const objUriStr = norm.clone().toString()
 	const domainUriStr = norm.pathname('').search('').toString()
 	const { obj, feeds } = await db.row(SQL`SELECT
-		objects_smart_fetch(${objUriStr}, ${domainUriStr + '%'}, 1, null, null, null) AS obj,
-		(SELECT jsonb_agg(obj) FROM (
-			SELECT jsonb_build_object('type', type, 'properties', properties, 'children', children) AS obj
-			FROM objects
-			WHERE (properties->'url'->>0)::text LIKE ${domainUriStr + '%'}
-			AND type @> '{h-x-dynamic-feed}'
-			AND deleted IS NOT True
-		) subq) AS feeds
+		objects_smart_fetch(${objUriStr}, ${domainUriStr}, 1, null, null, null) AS obj,
+		objects_fetch_feeds(${domainUriStr}) AS feeds
 	`)
 	if (!obj) return [url]
 	if (!feeds) return [url]
@@ -114,10 +108,11 @@ const logoutHandler = async (ctx, next) => {
 	return next()
 }
 
-const searchHandler = async ({ request, response, domainUriStr, tplctx }, next) => {
+const searchHandler = async ({ request, response, auth, domainUriStr, tplctx }, next) => {
 	const searchQuery = request.query.q || ''
 	const { dobj, results, feeds } = await db.row(SQL`SELECT
-	objects_smart_fetch(${domainUriStr}, ${domainUriStr + '%'}, 1, null, null, null) AS dobj,
+	set_config('mf2sql.current_user_url', ${auth && auth.sub || 'anonymous'}, true),
+	objects_smart_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj,
 	(SELECT jsonb_agg(row_to_json(subq)) FROM (
 		SELECT
 			type,
@@ -126,19 +121,14 @@ const searchHandler = async ({ request, response, domainUriStr, tplctx }, next) 
 			ts_rank_cd(tsv, query, 32) AS rank
 		FROM objects, plainto_tsquery(${searchQuery}) query
 		WHERE query @@ tsv
-		AND (properties->'url'->>0)::text LIKE ${domainUriStr + '%'}
+		AND ('*' = ANY(acl) OR current_setting('mf2sql.current_user_url', true) = ANY(acl))
+		AND properties->'url'->>0 LIKE ${domainUriStr + '%'}
 		AND type @> '{h-entry}'
 		AND deleted IS NOT True
 		ORDER BY rank DESC
 		LIMIT 64
 	) subq) AS results,
-	(SELECT jsonb_agg(obj) FROM (
-		SELECT jsonb_build_object('type', type, 'properties', properties, 'children', children) AS obj
-		FROM objects
-		WHERE (properties->'url'->>0)::text LIKE ${domainUriStr + '%'}
-		AND type @> '{h-x-dynamic-feed}'
-		AND deleted IS NOT True
-	) subq) AS feeds
+	objects_fetch_feeds(${domainUriStr}) AS feeds
 	`)
 	tplctx.searchQuery = searchQuery
 	tplctx.results = results
@@ -155,15 +145,10 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 	// TODO don't fetch twice when domain URI == request URI (i.e. home page)
 	const perPage = 20
 	const { dobj, obj, feeds } = await db.row(SQL`SELECT
-	objects_smart_fetch(${domainUriStr}, ${domainUriStr + '%'}, 1, null, null, null) AS dobj,
-	objects_smart_fetch(${reqUriStr}, ${domainUriStr + '%'}, ${perPage + 5}, ${request.query.before || null}, ${request.query.after || null}, ${request.query}) AS obj,
-	(SELECT jsonb_agg(obj) FROM (
-		SELECT jsonb_build_object('type', type, 'properties', properties, 'children', children) AS obj
-		FROM objects
-		WHERE (properties->'url'->>0)::text LIKE ${domainUriStr + '%'}
-		AND type @> '{h-x-dynamic-feed}'
-		AND deleted IS NOT True
-	) subq) AS feeds
+	set_config('mf2sql.current_user_url', ${auth && auth.sub || 'anonymous'}, true),
+	objects_smart_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj,
+	objects_smart_fetch(${reqUriStr}, ${domainUriStr}, ${perPage + 5}, ${request.query.before || null}, ${request.query.after || null}, ${request.query}) AS obj,
+	objects_fetch_feeds(${domainUriStr}) AS feeds
 	`)
 
 	tplctx.perPage = perPage
@@ -176,9 +161,14 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 	if (obj) {
 		response.status = 200
 		tplctx.obj = obj
+		const authorizedPersonally = includes(obj.acl, auth && auth.sub || 'anonymous') || includes(obj.acl, auth && (auth.sub + '/') || 'anonymous')
 		if (obj.deleted) {
 			response.status = 410
 			tpl = '410.pug'
+		} else if (!(includes(obj.acl, '*') || authorizedPersonally)) {
+			response.status = 401
+			response.set('WWW-Authenticate', 'Bearer')
+			tpl = '401.pug'
 		} else if (obj.type[0] === 'h-entry') {
 			tpl = 'entry.pug'
 		} else if (obj.type[0] === 'h-feed') {
@@ -186,6 +176,9 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 		} else {
 			console.error('Unknown entry type', obj.type)
 			tpl = 'unknown.pug'
+		}
+		if (authorizedPersonally) {
+			response.set('Referrer-Policy', 'no-referrer')
 		}
 	}
 	response.body = await render(tpl, tplctx)
@@ -201,17 +194,13 @@ const addCommonContext = async (ctx, next) => {
 	ctx.reqUriFullStr = ctx.reqUriFull.toString()
 	ctx.reqUri = ctx.reqUriFull.clone().search('')
 	ctx.reqUriStr = ctx.reqUri.toString()
-	const token = ctx.cookies.get('Bearer')
+	const token = ctx.cookies.get('Bearer') || ctx.request.header.Authorization
 	let auth
 	if (token) {
 		try {
-			auth = jwt.verify(token, jwtkey, { issuer: host })
-			if (auth.sub !== ctx.domainUriStr && auth.sub !== ctx.domainUriStr.slice(0, -1)) {
-				log('auth wrong subj: %s', auth.sub)
-				auth = undefined
-			} else {
-				log('auth success: %O', auth)
-			}
+			auth = jwt.verify(token.replace('Bearer ', ''), jwtkey, { issuer: host })
+			auth.sub = auth.sub.replace(/\/$/, '')
+			log('auth success: %O', auth)
 		} catch (err) {
 			auth = undefined
 			log('auth error: %O', err)

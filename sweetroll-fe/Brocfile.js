@@ -48,13 +48,13 @@ styles = new SourceMapExtractor(new PostCSS(styles, {
 
 const icons = new SVGStore(
 	new Funnel('bower_components/Font-Awesome-SVG-PNG/black/svg/', {
-		include: ['arrow-up', 'arrow-down', 'reply', 'retweet', 'star', 'info-circle', 'bookmark', 'quote-left'].map((x) => x + '.svg')
+		include: ['arrow-up', 'arrow-down', 'reply', 'retweet', 'star', 'info-circle', 'bookmark', 'quote-left', 'lock'].map((x) => x + '.svg')
 	}),
 	{ outputFile: 'icons.svg' }
 )
 
 const errPages = new Pug(new Funnel('views', {
-	include: ['403.pug', '404.pug', '500.pug', '502.pug', '503.pug', '504.pug']
+	include: ['401.pug', '403.pug', '404.pug', '500.pug', '502.pug', '503.pug', '504.pug']
 }), {
 	basedir: join(__dirname, '/views'),
 	pretty: true,

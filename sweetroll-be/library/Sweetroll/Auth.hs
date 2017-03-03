@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TypeOperators, TypeFamilies, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, DataKinds #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TypeOperators, TypeFamilies, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, DataKinds, QuasiQuotes #-}
 
 -- | The IndieAuth/rel-me-auth implementation, using JSON Web Tokens.
 module Sweetroll.Auth (
@@ -20,6 +20,7 @@ import qualified Network.Wai as Wai
 import           Servant
 import           Servant.Server.Experimental.Auth
 import           Web.Cookie (parseCookies)
+import qualified Text.Regex.PCRE.Heavy as RE
 import           Sweetroll.Context
 import           Sweetroll.Conf
 import           Sweetroll.HTTPClient hiding (Header)
@@ -60,7 +61,7 @@ getAuth token = return $ ("me", maybe "" tshow $ sub $ claims token) : unreg
 signAccessToken ∷ Text → Text → Text → UTCTime → Text → Text → Text
 signAccessToken sec domain me now scope clientId = encodeSigned HS256 (secret sec) t
   where t = def { iss = stringOrURI domain
-                , sub = stringOrURI me
+                , sub = stringOrURI $ RE.sub [RE.re|/$|] (asText "") me
                 , iat = numericDate $ utcTimeToPOSIXSeconds now
                 , unregisteredClaims = M.fromList [ ("scope", String scope)
                                                   , ("client_id", String clientId) ] }

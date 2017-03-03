@@ -18,7 +18,7 @@ receiveWebmention allParams = do
   target ← guardJustP (errNoURIInField "target") $ lookup "target" allParams
   shouldBeSync ← getConfOpt testMode
   (if shouldBeSync then void else void . fork) $ processWebmention source target
-  return NoContent
+  throw respAccepted
 
 processWebmention ∷ Text → Text → Sweetroll ()
 processWebmention source target = do

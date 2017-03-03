@@ -159,6 +159,7 @@ mixin showEntry(entry, compactView)
 		const isUntitled = _.isEmpty(properties.name) || !_.isEmpty(properties['bookmark-of'])
 		const props = { reposts: 'p-repost', likes: 'p-like', bookmarks: 'p-bookmark', quotations: 'p-quotation' }
 		const comments = helpers.separateComments(properties.url, properties.comment || [])
+		const acl = (entry.acl || []).filter(u => u !== '*')
 	each reply in properties['in-reply-to'] || []
 		+showRefContext(reply, { prop: 'u-in-reply-to', reasonIcon: 'reply', reason: 'in reply to', rel: !compactView ? 'in-reply-to' : '', long: false, showReplies: false, showContexts: !compactView })
 	each like in properties['like-of'] || []
@@ -179,6 +180,16 @@ mixin showEntry(entry, compactView)
 					- const url = _.get(bookmark, 'properties.url[0]', '')
 					a.p-name.u-url(href=helpers.onlyHttpUrl(url))
 						= properties.name ? _.head(properties.name) : _.get(bookmark, 'properties.name[0]', url)
+	if acl.length > 0
+		.entry-acl
+			+icon('lock', null, { class: ['icon-acl'] })
+			|  private for 
+			each url in acl
+				if url === domainUri.toString() || url + '/' === domainUri.toString()
+					| you
+				else
+					a(href=url)= url.replace('https://', '').replace('http://', '')
+				|  
 	if !isUntitled
 		.entry-core
 			h1.p-name
@@ -267,11 +278,13 @@ html(lang="en")
 								form(method="post" action="/logout").logout-form
 									button Log out
 							else if domainUri
-								form(method="get" action=indieAuthEndpoint).login-form
-									input(type="hidden" name="me" value=domainUri.toString())
+								a(href="#login-form").login-link Log in
+								form(method="get" action=indieAuthEndpoint).login-form#login-form
 									input(type="hidden" name="client_id" value=domainUri.toString())
 									input(type="hidden" name="redirect_uri" value=domainUri.clone().path('/login/self').toString())
-									button Log in
+									.form-field
+										input(type="url" name="me" value=domainUri.toString())
+										button Log in
 			block scripts
 				script(defer src=assets.url('dist/site.js'))
 				script(defer src=assets.url('dist/svgxuse/svgxuse.min.js'))

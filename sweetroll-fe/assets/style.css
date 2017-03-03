@@ -65,7 +65,7 @@ indie-action .icon {
 	margin-right: 0.3em;
 }
 
-.icon-ref-reason {
+.icon-ref-reason, .icon-acl {
 	padding: 0.1rem;
 	border-radius: 2px;
 	color: white;
@@ -88,6 +88,10 @@ indie-action .icon {
 
 .icon-ref-bookmark {
 	background: rgb(81, 93, 249);
+}
+
+.icon-acl {
+	background: rgb(170, 170, 170);
 }
 
 ul, ol {
@@ -329,7 +333,7 @@ a, body .ref-context-meta a {
 
 aside .search-form {
 	margin-top: 1em;
-	opacity: 0.7;
+	opacity: 0.8;
 	font-size: 0.85em;
 }
 
@@ -458,7 +462,7 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 	}
 }
 
-.ref-context-reason {
+.ref-context-reason, .entry-acl {
 	padding: 0.6rem 0 0.6rem 2rem;
 	font-size: 0.8em;
 	color: #777;
@@ -527,8 +531,21 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 	opacity: 0.9;
 }
 
+.login-link, .logout-form button {
+	margin-top: 1em;
+	font-size: 0.7em;
+	opacity: 0.6;
+	text-decoration: none !important;
+	border-bottom: dashed 1px;
+}
+
 .login-form {
 	opacity: 0;
+	font-size: 0.85em;
+
+	&:target {
+		opacity: 1;
+	}
 }
 
 simple-live {

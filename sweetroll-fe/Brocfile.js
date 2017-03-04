@@ -1,7 +1,10 @@
 'use strict'
 const { join } = require('path')
+const { readFileSync } = require('fs')
 const Funnel = require('broccoli-funnel')
 const MergeTrees = require('broccoli-merge-trees')
+const AssetRev = require('broccoli-static-asset-rev')
+const ConfigReplace = require('broccoli-config-replace')
 const SVGStore = require('broccoli-svgstore')
 const Zopfli = require('broccoli-zopfli')
 const Brotli = require('broccoli-brotli')
@@ -17,12 +20,9 @@ const bowerdeps = new Funnel('bower_components', {
 		'svgxuse/*.min.js',
 		'lazyload-image/lazyload-image.html',
 		'indieweb-components/*.{html,js}'
-	]
+	],
+	exclude: [ 'webcomponentsjs/gulpfile.js' ]
 })
-
-const scripts = new Funnel('assets', { include: [ '*.js' ] })
-
-
 
 let styles = new Concat(new MergeTrees([
 	'assets',
@@ -53,18 +53,44 @@ const icons = new SVGStore(
 	{ outputFile: 'icons.svg' }
 )
 
-const errPages = new Pug(new Funnel('views', {
-	include: ['401.pug', '403.pug', '404.pug', '500.pug', '502.pug', '503.pug', '504.pug']
-}), {
-	basedir: join(__dirname, '/views'),
+const rev = new AssetRev([ bowerdeps, styles, icons ])
+
+const errPages = new Pug(new MergeTrees([
+	new Funnel('views', {
+		include: ['401.pug', '403.pug', '404.pug', '500.pug', '502.pug', '503.pug', '504.pug', '_layout.pug']
+	}),
+	rev
+]), {
 	pretty: true,
 	_: require('lodash'),
-	assets: require('dynamic-asset-rev')('dist'), // yeah ?undefined cache busting but that's fine
+	helpers: require('./lib/helpers'),
+	assets: {
+		hashes: null,
+		prefix: '/',
+		url: function (path) {
+			if (!this.hashes) this.hashes = JSON.parse(readFileSync(join(this.basedir, 'assets.json'), { encoding: 'utf-8' }))
+			path = path.replace('dist/', '')
+			const hash = this.hashes[path]
+			return hash && `${this.prefix}${path}?${hash}` || `${this.prefix}${path}`
+		}
+	},
 	siteSettings: { }
 })
 
+const scripts = new ConfigReplace(
+	new Funnel('assets', { include: [ '*.js' ] }),
+	rev, {
+		files: [ 'site.js' ],
+		configPath: 'assets.json',
+		patterns: [{
+			match: /['"]\/dist\/([^'"]+)['"]/g,
+			replacement: (assets, match, url) => `'/dist/${url}?${assets[url]}'`
+		}]
+	}
+)
+
 const all = new MergeTrees([
-	bowerdeps, styles, scripts, icons, errPages
+	bowerdeps, scripts, styles, icons, errPages
 ])
 
 const compressExts = ['js', 'css', 'svg', 'html']

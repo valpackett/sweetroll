@@ -1,3 +1,5 @@
+/* global Element */
+
 document.getElementById('author-link').onclick = function () {
 	var a = document.getElementById('author')
 	a.setAttribute('tabindex', '-1')

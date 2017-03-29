@@ -111,7 +111,7 @@ const logoutHandler = async (ctx, next) => {
 const searchHandler = async ({ request, response, auth, domainUriStr, tplctx }, next) => {
 	const searchQuery = request.query.q || ''
 	const { dobj, results, feeds } = await db.row(SQL`SELECT
-	set_config('mf2sql.current_user_url', ${auth && auth.sub || 'anonymous'}, true),
+	set_config('mf2sql.current_user_url', ${(auth && auth.sub) || 'anonymous'}, true),
 	objects_smart_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj,
 	(SELECT jsonb_agg(row_to_json(subq)) FROM (
 		SELECT
@@ -145,7 +145,7 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 	// TODO don't fetch twice when domain URI == request URI (i.e. home page)
 	const perPage = 20
 	const { dobj, obj, feeds } = await db.row(SQL`SELECT
-	set_config('mf2sql.current_user_url', ${auth && auth.sub || 'anonymous'}, true),
+	set_config('mf2sql.current_user_url', ${(auth && auth.sub) || 'anonymous'}, true),
 	objects_smart_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj,
 	objects_smart_fetch(${reqUriStr}, ${domainUriStr}, ${perPage + 5}, ${request.query.before || null}, ${request.query.after || null}, ${request.query}) AS obj,
 	objects_fetch_feeds(${domainUriStr}) AS feeds
@@ -161,7 +161,7 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 	if (obj) {
 		response.status = 200
 		tplctx.obj = obj
-		const authorizedPersonally = includes(obj.acl, auth && auth.sub || 'anonymous') || includes(obj.acl, auth && (auth.sub + '/') || 'anonymous')
+		const authorizedPersonally = includes(obj.acl, (auth && auth.sub) || 'anonymous') || includes(obj.acl, (auth && (auth.sub + '/')) || 'anonymous')
 		if (obj.deleted) {
 			response.status = 410
 			tpl = '410.pug'

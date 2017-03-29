@@ -35,8 +35,8 @@ let styles = new Concat(new MergeTrees([
 styles = new SourceMapExtractor(new PostCSS(styles, {
 	plugins: [
 		{ module: require('postcss-nesting') },
-		{ module: require('postcss-flexbugs-fixes') },
 		{ module: require('postcss-responsive-type') },
+		{ module: require('postcss-flexbugs-fixes') },
 		{ module: require('postcss-css-variables') },
 		{ module: require('postcss-color-function') },
 		{ module: require('autoprefixer') },
@@ -71,7 +71,7 @@ const errPages = new Pug(new MergeTrees([
 			if (!this.hashes) this.hashes = JSON.parse(readFileSync(join(this.basedir, 'assets.json'), { encoding: 'utf-8' }))
 			path = path.replace('dist/', '')
 			const hash = this.hashes[path]
-			return hash && `${this.prefix}${path}?${hash}` || `${this.prefix}${path}`
+			return (hash && `${this.prefix}${path}?${hash}`) || `${this.prefix}${path}`
 		}
 	},
 	siteSettings: { }

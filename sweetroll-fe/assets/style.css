@@ -15,6 +15,7 @@
 	hyphens: auto;
 	background: var(--background-color);
 	color: var(--text-color);
+	font: 100%/1.5 sans-serif;
 	font-size: responsive 1.05rem 1.25rem;
 	font-range: 600px 2000px;
 
@@ -176,6 +177,10 @@ a, body .ref-context-meta a {
 		color: color(var(--link-color) l(+15%));
 		text-decoration: underline;
 	}
+}
+
+button, input, select, textarea {
+	border: none;
 }
 
 [hidden], data[value], a[data-synd], a[href*="brid.gy/publish"] {
@@ -612,7 +617,7 @@ simple-live {
 	a {
 		text-decoration: underline;
 
-		&:not(.ref-context-avatar-link)[href^='http']:after {
+		&:not(.ref-context-avatar-link)[href^='http']::after {
 			content: ' (' attr(href) ')';
 			font-size: 0.9em;
 		}
@@ -623,7 +628,7 @@ simple-live {
 		fill: #333;
 	}
 
-	abbr[title]:after {
+	abbr[title]::after {
 		content: ' (' attr(title) ')';
 	}
 

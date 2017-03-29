@@ -11,9 +11,9 @@
   "dependencies": {
     "webcomponentsjs": "webcomponents/webcomponentsjs#v1",
     "indieweb-components": "../indieweb-components",
-    "sanitize-css": "^4.1.0",
+    "sanitize-css": "^5.0.0",
     "normalize-opentype.css": "^0.2.4",
-    "svgxuse": "^1.1.21",
+    "svgxuse": "^1.2.3",
     "Font-Awesome-SVG-PNG": "font-awesome-svg-png#^1.1.5",
     "lazyload-image": "1000ch/lazyload-image"
   }

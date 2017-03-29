@@ -7,7 +7,7 @@ module Sweetroll.Micropub.Endpoint (
 , postMedia
 ) where
 
-import           Sweetroll.Prelude
+import           Sweetroll.Prelude hiding (host)
 import qualified Data.Vector as V
 import qualified Data.Map.Strict as MS
 import qualified Data.HashMap.Strict as HMS

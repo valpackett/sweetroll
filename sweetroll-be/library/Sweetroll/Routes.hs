@@ -3,16 +3,12 @@
 -- | The HTTP routes
 module Sweetroll.Routes where
 
-import           ClassyPrelude
+import           Sweetroll.Prelude
 --import qualified Network.HTTP.Link as L
-import           Servant
 import           Sweetroll.Micropub.Request
 import           Sweetroll.Micropub.Response
 
 type Auth = AuthProtect "jwt"
-type Host = Header "Host" Text
-type Form = ReqBody '[FormUrlEncoded] [(Text, Text)]
--- type WithLink α = (Headers '[Header "Link" [L.Link]] α)
 
 type PostLoginRoute           = "login" :> Host :> Form :> Post '[FormUrlEncoded] [(Text, Text)]
 type GetLoginRoute            = "login" :> Auth :> Get '[FormUrlEncoded] [(Text, Text)]

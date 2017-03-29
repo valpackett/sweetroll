@@ -11,56 +11,16 @@ module Sweetroll.HTTPClient (
 ) where
 
 import           Sweetroll.Prelude
-import           Sweetroll.Context ()
 import           Data.Conduit
-import qualified Data.Conduit.Combinators as C
 import qualified Data.Vector as V
 import qualified Data.HashMap.Strict as HMS
 import           Data.HashMap.Strict (adjust)
-import qualified Data.CaseInsensitive as CI
 import           Data.Microformats2.Parser
 import           Data.IndieWeb.MicroformatsUtil
 import           Data.IndieWeb.SiloToMicroformats
 import           Data.IndieWeb.Authorship
 import           Network.HTTP.Types
-import           Network.HTTP.Conduit as HC
-import           Network.HTTP.Client.Conduit as HCC
-import           Network.HTTP.Client.Internal (setUri) -- The fuck?
-import           Network.HTTP.Client (setRequestIgnoreStatus)
 import           Sweetroll.Conf (mf2Options)
-
-type MonadHTTP ψ μ = (Has Manager ψ, MonadReader ψ μ, MonadIO μ, MonadBaseControl IO μ)
-
-runHTTP = runEitherT
-
-reqU ∷ (MonadHTTP ψ μ) ⇒ URI → EitherT Text μ Request
-reqU uri = hoistEither $ bimap tshow id $ setUri defaultRequest uri
-
-reqS ∷ (MonadHTTP ψ μ, ConvertibleStrings σ String) ⇒ σ → EitherT Text μ Request
-reqS uri = hoistEither $ bimap tshow id $ parseUrlThrow $ cs uri
-
-anyStatus ∷ (MonadHTTP ψ μ) ⇒ Request → EitherT Text μ Request
-anyStatus req = return $ setRequestIgnoreStatus req
-
-postForm ∷ (MonadHTTP ψ μ) ⇒ [(Text, Text)] → Request → EitherT Text μ Request
-postForm form req =
-  return req { method = "POST"
-             , requestHeaders = [ (hContentType, "application/x-www-form-urlencoded; charset=utf-8") ]
-             , requestBody = RequestBodyBS $ writeForm form }
-
-performWithFn ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ (ConduitM ι ByteString μ () → μ ρ) → Request → EitherT Text μ (Response ρ)
-performWithFn fn req = do
-  res ← lift $ tryAny $ HCC.withResponse req $ \res → do
-    putStrLn $ cs $ "Request status for <" ++ show (getUri req) ++ ">: " ++ (show . statusCode . responseStatus $ res)
-    body ← fn $ responseBody res
-    return res { responseBody = body }
-  hoistEither $ bimap tshow id res
-
-performWithVoid ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ Request → EitherT Text μ (Response ())
-performWithVoid = performWithFn (const $ return ())
-
-performWithBytes ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ Request → EitherT Text μ (Response LByteString)
-performWithBytes = performWithFn ($$ C.sinkLazy)
 
 performWithHtml ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ Request → EitherT Text μ (Response XDocument)
 performWithHtml = performWithFn ($$ sinkDoc) . (\req → req { requestHeaders = [ (hAccept, "text/html; charset=utf-8") ] })
@@ -106,16 +66,3 @@ fetchAllReferenceContexts = fetchReferenceContexts "in-reply-to"
                         >=> fetchReferenceContexts "like-of"
                         >=> fetchReferenceContexts "repost-of"
                         >=> fetchReferenceContexts "quotation-of"
-
-jsonFetch ∷ Manager → Value → Value → IO Value
-jsonFetch mgr (String uri) rdata = do
-  let setData req = return $ req { method = fromMaybe "GET" $ cs . toUpper <$> rdata ^? key "method" . _String
-                                 , requestHeaders = fromMaybe [] $ map (bimap (CI.mk . cs) (cs . fromMaybe "" . (^? _String))) . HMS.toList <$> rdata ^? key "headers" . _Object
-                                 , requestBody = RequestBodyBS $ fromMaybe "" $ cs <$> rdata ^? key "body" . _String }
-  r ← runReaderT (runHTTP $ reqS uri >>= anyStatus >>= setData >>= performWithBytes) mgr
-  return $ case r of
-                Left errmsg → object [ "error" .= errmsg ]
-                Right res → object [ "status" .= statusCode (responseStatus res)
-                                   , "headers" .= object (map (\(k, v) → (asText $ cs $ CI.foldedCase k) .= (String $ cs v)) $ responseHeaders res)
-                                   , "body" .= String (cs $ responseBody res) ]
-jsonFetch _ _ _ = return $ object [ "error" .= String "The URI must be a string" ]

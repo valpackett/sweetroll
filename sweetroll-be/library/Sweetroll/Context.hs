@@ -5,37 +5,18 @@
 module Sweetroll.Context where
 
 import           Sweetroll.Prelude
-import           Network.HTTP.Client.Conduit
-import           Servant
 import           Sweetroll.Conf
 import           Sweetroll.Database (Db, mkDb)
 
-type SweetrollCtx = (SweetrollConf, SweetrollSecrets, Manager, Db)
+type SweetrollCtx = (SweetrollConf, SweetrollSecrets, ModHttpClient, Db)
 
-instance (Has Manager α) ⇒ HasHttpManager α where
-  getHttpManager = getter
-
-newtype Sweetroll α = Sweetroll {
-  runSweetroll ∷ ReaderT SweetrollCtx (ExceptT ServantErr IO) α
-} deriving (Functor, Applicative, Monad, MonadIO, MonadBase IO, MonadThrow, MonadCatch, MonadError ServantErr, MonadReader SweetrollCtx)
-
-instance MonadBaseControl IO Sweetroll where
-  type StM Sweetroll α = StM (ReaderT SweetrollCtx (ExceptT ServantErr IO)) α
-  liftBaseWith f = Sweetroll $ liftBaseWith $ \x → f $ x . runSweetroll
-  restoreM       = Sweetroll . restoreM
-
-runSweetrollExcept ∷ SweetrollCtx → Sweetroll α → ExceptT ServantErr IO α
-runSweetrollExcept ctx sweet = ExceptT $ liftIO $ runExceptT $ runReaderT (runSweetroll sweet) ctx
-
-sweetrollToExcept ∷ SweetrollCtx → Sweetroll :~> ExceptT ServantErr IO
-sweetrollToExcept ctx = Nat $ runSweetrollExcept ctx
+type Sweetroll = MagicbaneApp SweetrollCtx
 
 initCtx ∷ SweetrollConf → SweetrollSecrets → IO SweetrollCtx
 initCtx conf secs = do
-  hmg ← newManager
+  hmg ← newHttpClient
   dbp ← mkDb conf
   return (conf, secs, hmg, dbp)
-
 
 getConf ∷ (Has SweetrollConf α, MonadReader α μ) ⇒ μ SweetrollConf
 getConf = asks getter
@@ -45,6 +26,3 @@ getConfOpt f = asks $ f . getter
 
 getSecs ∷ (Has SweetrollSecrets α, MonadReader α μ) ⇒ μ SweetrollSecrets
 getSecs = asks getter
-
-getDeleted ∷ (Has (TVar [String]) α, MonadReader α μ) ⇒ μ (TVar [String])
-getDeleted = asks getter

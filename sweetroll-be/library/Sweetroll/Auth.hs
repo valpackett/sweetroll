@@ -10,20 +10,18 @@ module Sweetroll.Auth (
 , module Sweetroll.Auth
 ) where
 
-import           Sweetroll.Prelude hiding (iat, au)
+import           Sweetroll.Prelude hiding (iat, au, host)
 import           Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import           Data.Maybe (fromJust)
 import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as S8
 import           Web.JWT hiding (header)
 import qualified Network.Wai as Wai
-import           Servant
 import           Servant.Server.Experimental.Auth
 import           Web.Cookie (parseCookies)
 import qualified Text.Regex.PCRE.Heavy as RE
 import           Sweetroll.Context
 import           Sweetroll.Conf
-import           Sweetroll.HTTPClient hiding (Header)
 
 type instance AuthServerData (AuthProtect "jwt") = JWT VerifiedJWT
 

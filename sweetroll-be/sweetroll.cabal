@@ -67,6 +67,7 @@ library
       , wai-cors
       , wai-conduit
       , cookie
+      , magicbane
       , servant
       , servant-server
       , network-uri

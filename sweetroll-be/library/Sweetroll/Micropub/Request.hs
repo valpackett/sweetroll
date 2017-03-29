@@ -2,9 +2,7 @@
 
 module Sweetroll.Micropub.Request where
 
-import           Sweetroll.Prelude hiding (first)
-import           Control.Arrow (first)
-import           Data.Attoparsec.Text as AP
+import           Sweetroll.Prelude
 import           Data.Aeson.Types (parseMaybe)
 import           Web.FormUrlEncoded hiding (parseMaybe)
 
@@ -82,30 +80,3 @@ instance FromForm MicropubRequest where
                          -- no syndicate-to[], the [] is handled in formToObject
          in Right $ Create h o synd
       _ → Left "Unknown action type"
-
-
-formList ∷ Form → [(Text, Text)]
-formList = fromMaybe [] . hush . fromForm
-
-
-formToObject ∷ [(Text, Text)] → Value
-formToObject f = foldl' assignProp (object []) $ (map . first) parseKey f
-  where parseKey x = fromMaybe [ x ] $ hush $ parseOnly formKey x
-        assignProp (Object o) ([k], v) = Object $ insertWith concatJSON k (toJSON [ v ]) o
-        assignProp (Object o) (k : k' : ks, v) = Object $ insertWith (\_ o' → assignProp o' (k' : ks, v)) k (assignProp (object []) (k' : ks, v)) o
-        assignProp x _ = x
-        concatJSON (Array v1) (Array v2) = Array $ v1 ++ v2
-        concatJSON (Array v1) _ = Array v1
-        concatJSON _ (Array v2) = Array v2
-        concatJSON _ _ = Null
-
-formKey ∷ Parser [Text]
-formKey = do
-  firstKey ← AP.takeWhile (/= '[')
-  restKeys ← many' $ do
-    void $ char '['
-    s ← AP.takeWhile (/= ']')
-    void $ char ']'
-    return s
-  void $ option '_' $ char '[' >> char ']'
-  return $ firstKey : filter (not . null) restKeys

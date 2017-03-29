@@ -4,7 +4,6 @@ module Sweetroll.Database where
 
 import           Sweetroll.Prelude hiding (Query)
 import           Sweetroll.Conf (SweetrollConf)
-import           Servant (ServantErr, err500)
 import           Hasql.Query
 import qualified Hasql.Pool as P
 import qualified Hasql.Session as S
@@ -12,7 +11,6 @@ import qualified Hasql.Transaction.Sessions as TS
 import qualified Hasql.Transaction as T
 import qualified Hasql.Decoders as D
 import qualified Hasql.Encoders as E
-import           Text.RawString.QQ
 
 type DbError = P.UsageError
 type Db = P.Pool

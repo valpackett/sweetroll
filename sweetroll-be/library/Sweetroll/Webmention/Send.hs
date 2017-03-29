@@ -2,7 +2,7 @@
 
 module Sweetroll.Webmention.Send where
 
-import           Sweetroll.Prelude hiding (from, to)
+import           Sweetroll.Prelude hiding (from, to, Link)
 import           Data.Microformats2.Parser
 import           Data.IndieWeb.Endpoints
 import qualified Text.HTML.DOM as HTML
@@ -26,18 +26,18 @@ data MentionResult = MentionFailed Mention Text | MentionAccepted Mention | Ment
 
 sendWebmention ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ SourceURI → Mention → μ MentionResult
 sendWebmention source mention@Mention{..} = do
-  resp ← runHTTP $ reqU mentionEndpoint >>= anyStatus
-                 >>= postForm [ ("source", tshow source), ("target", tshow mentionTarget) ]
-                 >>= performWithBytes
-  return $ case resp of
+  resp' ← runHTTP $ reqU mentionEndpoint >>= anyStatus
+                  >>= postForm [ ("source", tshow source), ("target", tshow mentionTarget) ]
+                  >>= performWithBytes
+  return $ case resp' of
     Left e →
       MentionFailed mention e
-    Right r | not (statusIsSuccessful $ responseStatus r) →
-      MentionFailed mention $ "Error code: " ++ tshow (responseStatus r)
-    Right r | mentionType == Syndicate →
+    Right resp | not (statusIsSuccessful $ responseStatus resp) →
+      MentionFailed mention $ "Error code: " ++ tshow (responseStatus resp)
+    Right resp | mentionType == Syndicate →
       maybe (MentionFailed mention "No Location header for syndication")
             (MentionSyndicated mention . decodeUtf8)
-            (lookup "Location" $ responseHeaders r)
+            (lookup "Location" $ responseHeaders resp)
     Right _ →
       MentionAccepted mention
 
@@ -46,14 +46,14 @@ sendWebmentions from ms = mapM (sendWebmention from) $ nub ms
 
 
 linksFromHeader ∷ Response body → [Link]
-linksFromHeader r = fromMaybe [] (lookup "Link" (responseHeaders r) >>= parseLinkHeader . decodeUtf8)
+linksFromHeader resp = fromMaybe [] (lookup "Link" (responseHeaders resp) >>= parseLinkHeader . decodeUtf8)
 
 discoverWebmentionEndpoints ∷ Value → [Link] → [URI]
 discoverWebmentionEndpoints = discoverEndpoints [ "webmention", "http://webmention.org/" ]
 
 getWebmentionEndpoint ∷ Response XDocument → Maybe URI
-getWebmentionEndpoint r = listToMaybe $ discoverWebmentionEndpoints mf2Root (linksFromHeader r)
-    where mf2Root = parseMf2 mf2Options $ documentRoot $ responseBody r
+getWebmentionEndpoint resp = listToMaybe $ discoverWebmentionEndpoints mf2Root (linksFromHeader resp)
+    where mf2Root = parseMf2 mf2Options $ documentRoot $ responseBody resp
 
 linkWebmention ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ MentionType → URI → μ (Maybe Mention)
 linkWebmention typ uri = do

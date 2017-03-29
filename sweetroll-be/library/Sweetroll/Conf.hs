@@ -6,7 +6,6 @@ module Sweetroll.Conf (
 ) where
 
 import           Sweetroll.Prelude
-import           System.Envy hiding ((.=))
 import           CMark
 import           Data.Microformats2.Parser
 
@@ -45,9 +44,6 @@ instance Default SweetrollConf where
       , indieAuthCheckEndpoint   = "https://indieauth.com/auth"
       , indieAuthRedirEndpoint   = "https://indieauth.com/auth"
       , testMode                 = False }
-
-instance DefConfig SweetrollConf where
-  defConfig = def
 
 instance FromEnv SweetrollConf where
   fromEnv = gFromEnvCustom Option { dropPrefixCount = 0, customPrefix = "SWEETROLL" }

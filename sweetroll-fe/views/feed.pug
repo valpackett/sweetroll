@@ -23,8 +23,11 @@ block append main
 					data.dt-deleted(value="1970-01-01T00:00:00")
 			else
 				- i += 1
-				article.h-entry.entry
-					+showEntry(entry, true)
+				try
+					article.h-entry.entry
+						+showEntry(entry, true)
+				catch
+					div.tpl-error Error: could not render the entry
 	nav.category-nav
 		if i >= perPage
 			-

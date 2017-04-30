@@ -228,6 +228,7 @@ const addCommonContext = async (ctx, next) => {
 		basedir: './views',
 		pretty: true,
 		cache: env.CACHE_TEMPLATES,
+		plugins: [ require('pug-plugin-try-catch') ],
 	}
 	ctx.link = new LinkHeader()
 	ctx.link.set({ rel: 'webmention', uri: ctx.domainUri.clone().path('/webmention').toString() })

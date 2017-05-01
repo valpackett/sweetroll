@@ -10,15 +10,7 @@ mixin icon(name, title, opts={})
 			title= title
 
 mixin showContent(properties, long, onlySummary)
-	-
-		let content = _.head(onlySummary ? properties.summary : (
-			long
-				? _(properties.content || []).concat(properties.summary || [], properties.name || []).value()
-				: _(properties.summary || []).concat(properties.content || [], properties.name || []).value()
-			)
-		) || ''
-		content = _.isObject(content) ? (content.html || content.value) : content
-		content = _.isString(content) ? content : null
+	- const content = helpers.getContent(properties, long, onlySummary)
 	each photo in properties.photo || []
 		-
 			const photoUrl = _.isObject(photo) ? photo.value : photo

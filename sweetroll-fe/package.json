@@ -10,7 +10,7 @@
     "devserve": "prok"
   },
   "processes": {
-    "app": "DEBUG=*,-koa-mount,-dynamic-asset-rev LIVE_RELOAD=1 IS_PROXIED=1 INDIEAUTH_ENDPOINT=/login/self MICRO_PANEL_ROOT=/micro-panel node-dev --harmony index.js",
+    "app": "DEBUG=*,-koa-mount,-dynamic-asset-rev LIVE_RELOAD=1 IS_PROXIED=1 INDIEAUTH_ENDPOINT=/login/self WEBSUB_HUB=https://httpbin.org/post MICRO_PANEL_ROOT=/micro-panel node-dev --harmony index.js",
     "lr": "tiny-lr",
     "re-asset": "chokidar 'assets/**/*' 'Brocfile.js' --initial -p -c 'npm run assets; curl -s -X POST \"localhost:35729/changed?files=dist\"; true'",
     "re-tpl": "chokidar 'views/**/*' -p -c 'curl -s -X POST \"localhost:35729/changed?files=dist\"; true'"
@@ -70,6 +70,7 @@
     "lru-cache": "^4.0.2",
     "minimist": "^1.2.0",
     "moment": "^2.18.1",
+    "node-fetch": "^1.6.3",
     "pg": "^6.1.5",
     "pg-async": "^2.4.3",
     "pify": "^2.3.0",

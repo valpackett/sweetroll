@@ -1,5 +1,9 @@
 'use strict'
-const { some, trim, get, eq, includes, concat, flatMap, isString, isArray, isObject, difference } = require('lodash')
+
+// There's no strict rule about "what is a helper" but generally,
+// helpers are about data manipulation.
+
+const { head, some, trim, get, eq, includes, concat, flatMap, isString, isArray, isObject, difference } = require('lodash')
 const { count: countEmoji } = require('emoji-king')
 const URI = require('urijs')
 const cheerio = require('cheerio')
@@ -123,6 +127,18 @@ module.exports = {
 		return get(obj, 'properties.name[0]') || get(obj, 'properties.published[0]', 'Untitled page')
 	},
 
+	getContent (properties, long, onlySummary) {
+		let content = head(onlySummary ? properties.summary : (
+			long
+				? concat(properties.content || [], properties.summary || [], properties.name || [])
+				: concat(properties.summary || [], properties.content || [], properties.name || [])
+			)
+		) || ''
+		content = isObject(content) ? (content.html || content.value) : content
+		content = isString(content) ? content : null
+		return content
+	},
+
 	processContent (content) {
 		if (!content) return content
 		// NOTE: do not use => functions for cheerio!
@@ -138,6 +154,30 @@ module.exports = {
 			// TODO: HTTPS proxy
 		})
 		return $.html()
+	},
+
+	findMentionedLinks (obj) {
+		const fromCtxs = concat(
+			get(obj, 'properties.in-reply-to', []),
+			get(obj, 'properties.like-of', []),
+			get(obj, 'properties.repost-of', []),
+			get(obj, 'properties.quotation-of', [])
+		).map(ctx => isObject(ctx) ? get(ctx, 'properties.url.0') : ctx)
+		let fromContent = []
+		try {
+			const $ = cheerio.load(this.getContent(obj.properties, true, false))
+			fromContent = $('a, link').toArray().map(el => el.attribs['href'])
+		} catch (err) {
+			log('HTML content parse error: %O', err)
+		}
+		return concat(fromCtxs, fromContent).filter(isString)
+	},
+
+	getHtmlLinksByRel (content) {
+		const $ = cheerio.load(content)
+		return $('link[rel], a[rel]').toArray().
+			filter(el => includes(el.attribs['rel'], 'webmention'))
+			.map(el => el.attribs['href'])
 	}
 
 }

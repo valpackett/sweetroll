@@ -33,8 +33,9 @@ function loadComponents () {
 
 var hasPanel = document.querySelector('micro-panel')
 
-if (hasPanel && !('KeyframeEffect' in window && 'timeline' in document && 'play' in document.timeline))
+if (hasPanel && !('KeyframeEffect' in window && 'timeline' in document && 'play' in document.timeline)) {
 	loadJs('/dist/web-animations-js/web-animations-next.min.js')
+}
 
 if (window.customElements && (!hasPanel || ('import' in document.createElement('link')))) {
 	loadComponents()

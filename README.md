@@ -8,7 +8,6 @@ A website engine for [the indie web] with curved swords. *Curved! Swords!*
 - supports [Micropub] for posting, updating, deleting and undeleting (incl. a media endpoint for file uploads)
 - allows posting in [CommonMark Markdown]
 - sends and receives [Webmentions], including [Salmentions]
-- supports the webmention-to-[syndication] / Syndicate by Reference process ([Bridgy Publish])
 - sends [WebSub] \(formerly PubSubHubbub) notifications on new posts (for [readers])
 - supports [indie-config]
 - has a [JSON Web Tokens]-based [token-endpoint]
@@ -25,8 +24,6 @@ I'm running it on [my website](https://unrelenting.technology).
 [Micropub]: https://indieweb.org/micropub
 [Webmentions]: https://indieweb.org/webmention
 [Salmentions]: https://indieweb.org/Salmention
-[syndication]: https://indieweb.org/POSSE
-[Bridgy Publish]: https://brid.gy/about#publishing
 [WebSub]: https://indieweb.org/PubSub
 [readers]: https://indieweb.org/readers
 [indie-config]: https://indieweb.org/indie-config

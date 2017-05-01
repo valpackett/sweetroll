@@ -4,9 +4,11 @@ const URI = require('urijs')
 const LinkHeader = require('http-link-header')
 const jwt = require('jsonwebtoken')
 const moment = require('moment')
+const fetch = require('node-fetch')
+const querystring = require('querystring')
 const Retry = require('promised-retry')
 const _ = require('lodash')
-const { concat, get, isObject, groupBy, includes } = _
+const { head, merge, concat, get, isObject, groupBy, includes } = _
 const pify = require('pify')
 const pug = require('pug')
 const pugTryCatch = require('pug-plugin-try-catch')
@@ -22,10 +24,12 @@ const cache = env.DO_CACHE ? require('lru-cache')({
 }) : null
 const websubHub = env.WEBSUB_HUB || 'https://switchboard.p3k.io'
 const indieAuthEndpoint = env.INDIEAUTH_ENDPOINT || 'https://indieauth.com/auth'
+const microPanelRoot = env.MICRO_PANEL_ROOT || '/dist/micro-panel' // To allow using the unpacked version of micro-panel in development
+const webmentionOutbox = env.WEBMENTION_OUTBOX // Allow using an external sender like Telegraph, default to sending on our own
+const webmentionOutboxConf = JSON.parse(env.WEBMENTION_OUTBOX_CONF || '{}') // Something like {token: '...'} for Telegraph
 const jwtkey = env.SWEETROLL_SECRET || 'TESTKEY'
 const dburi = env.DATABASE_URI || 'postgres://localhost/sweetroll'
 const db = new PgAsync(dburi)
-const microPanelRoot = env.MICRO_PANEL_ROOT || '/dist/micro-panel' // To allow using the unpacked version of micro-panel in development
 
 const render = async (file, tplctx) =>
 	pify(pug.renderFile)('views/' + file, tplctx)
@@ -40,7 +44,23 @@ const affectedUrls = async (url) => {
 	`)
 	if (!obj) return [url]
 	if (!feeds) return [url]
-	return concat(helpers.matchingFeeds(feeds, obj).map(x => x.url), url)
+	return {
+		affUrls: concat(helpers.matchingFeeds(feeds, obj).map(x => x.url), url),
+		obj, feeds, domainUriStr
+	}
+}
+
+const findWebmentionEndpoint = async (target) => {
+	const resp = await fetch(target, {
+		headers: {
+			'Accept': 'text/html',
+			'Accept-Charset': 'utf-8',
+			'User-Agent': 'Sweetroll',
+		},
+	})
+	return head(LinkHeader.parse(resp.headers.get('Link') || '')
+		.get('rel', 'webmention').map(l => l.uri))
+		|| head(helpers.getHtmlLinksByRel(await resp.text()))
 }
 
 const notificationListener = new Retry({
@@ -59,21 +79,56 @@ const notificationListener = new Retry({
 	success (ldb) {
 		ldb.on('notification', msg => {
 			const eventUrl = JSON.parse(msg.payload).url[0]
-			affectedUrls(eventUrl).then(urls => {
-				log('got change notification for %s, affected URLs: %o', eventUrl, urls)
+			affectedUrls(eventUrl).then(async ({ affUrls, obj, domainUriStr }) => {
+				const mentions = helpers.findMentionedLinks(obj)
+				log('got change notification for %s, affected URLs: %o, mentioned URLs: %o', eventUrl, affUrls, mentions)
+
+				// Cache invalidation
 				if (cache) {
-					for (const u of urls) {
+					for (const u of affUrls) {
 						log('cache delete: %s', u)
 						cache.del(u)
 					}
 				}
-				const grouped = groupBy(urls, u => new URI(u).host())
+
+				// Publishing to WebSub
+				try {
+					const resp = await fetch(websubHub, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
+						body: querystring.stringify({ 'hub.mode': 'publish', 'hub.topic': affUrls }),
+					})
+					log('WebSub hub response: %s %s %O', resp.status, resp.statusText, await resp.text())
+				} catch (err) {
+					log('Could not ping the WebSub hub: %O', err)
+				}
+
+				// Sending Webmentions
+				for (const target of mentions) {
+					try {
+						const endp = webmentionOutbox || await findWebmentionEndpoint(target)
+						if (!endp) {
+							log('No Webmention endpoint found for %o', target)
+							continue
+						}
+						const resp = await fetch(endp, {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
+							body: querystring.stringify(merge(webmentionOutboxConf, { source: eventUrl, target })),
+						})
+						log('Webmention endpoint response for %o: %s %s %s', target, resp.status, resp.statusText, await resp.text())
+					} catch (err) {
+						log('Could not send Webmention to %o: %O', target, err)
+					}
+				}
+
+				// Publishing to /live
+				const grouped = groupBy(affUrls, u => new URI(u).host())
 				for (const domain of Object.keys(grouped)) {
 					sse.publish(domain, 'change', grouped[domain].join(','))
 				}
-				// TODO WebSub publish
 			}).catch(err => {
-				console.error(err)
+				log('Update processing error: %O', err)
 			})
 		})
 		ldb.query('LISTEN objects')
@@ -239,7 +294,7 @@ const addCommonContext = async (ctx, next) => {
 	ctx.link.set({ rel: 'token_endpoint', uri: ctx.domainUri.clone().path('/login').toString() })
 	ctx.link.set({ rel: 'authorization_endpoint', uri: indieAuthEndpoint })
 	ctx.link.set({ rel: 'hub', uri: websubHub })
-	ctx.link.set({ rel: 'self', uri: ctx.domainUriStr })
+	ctx.link.set({ rel: 'self', uri: ctx.reqUriStr })
 	await next()
 	ctx.response.set('Link', ctx.link.toString())
 	if (!env.LIVE_RELOAD) {

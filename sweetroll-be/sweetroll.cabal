@@ -106,7 +106,6 @@ library
         Sweetroll.Micropub.Response
         Sweetroll.Prelude
         Sweetroll.Routes
-        Sweetroll.Webmention.Send
         Sweetroll.Webmention.Receive
     ghc-options: -Wall
     hs-source-dirs: library

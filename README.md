@@ -119,11 +119,13 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
 
 ## TODO
 
+- frontend
+  - [ ] color themes (w/ postcss on the fly)
 - micropub
-	- [ ] do something about category decisions
-	- [ ] JWT scopes authorization
-	- [ ] draft flag → draft tag and private acl
-	- [ ] media endpoint app with upload to openstack/s3, thumbnails, exif metadata extraction
+  - [ ] do something about category decisions
+  - [ ] JWT scopes authorization
+  - [ ] draft flag → draft tag and private acl
+  - [ ] media endpoint app with upload to openstack/s3, thumbnails, exif metadata extraction
 - webmention
   - [ ] fix all the things
   - [ ] reverify/refetch to update user profiles and stuff
@@ -132,8 +134,8 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
     - [ ] [blocking](https://indieweb.org/block) domains
       - [ ] sharing block lists
   - [ ] deduplicate syndicated replies
-	- [ ] vouch
-	- [ ] private webmention
+  - [ ] vouch
+  - [ ] private webmention
   - [ ] queue up mention processing requests in the database instead of sync processing (worth it?)
 
 ## License

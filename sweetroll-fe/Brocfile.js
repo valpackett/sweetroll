@@ -1,4 +1,5 @@
 'use strict'
+
 const { join } = require('path')
 const { readFileSync } = require('fs')
 const Funnel = require('broccoli-funnel')
@@ -13,16 +14,23 @@ const Pug = require('broccoli-pug-render')
 const PostCSS = require('broccoli-postcss')
 const Concat = require('broccoli-concat')
 
-const bowerdeps = new Funnel('bower_components', {
-	include: [
-		'webcomponentsjs/*.js',
-		'findAndReplaceDOMText/src/*.js',
-		'svgxuse/*.min.js',
-		'lazyload-image/lazyload-image.html',
-		'indieweb-components/*.{html,js}'
-	],
-	exclude: [ 'webcomponentsjs/gulpfile.js' ]
-})
+const bowerdeps = new MergeTrees([
+	new Funnel('bower_components', {
+		include: [
+			'webcomponentsjs/*.js',
+			'web-animations-js/web-animations-next.min.js',
+			'findAndReplaceDOMText/src/*.js',
+			'svgxuse/*.min.js',
+			'lazyload-image/lazyload-image.html',
+			'indieweb-components/*.{html,js}'
+		],
+		exclude: [ 'webcomponentsjs/gulpfile.js' ]
+	}),
+	new Funnel('../micro-panel/dist', {
+		destDir: 'micro-panel',
+		exclude: [ 'bower_components' ]
+	})
+])
 
 let styles = new Concat(new MergeTrees([
 	'assets',

@@ -9,6 +9,7 @@ const _ = require('lodash')
 const { concat, get, isObject, groupBy, includes } = _
 const pify = require('pify')
 const pug = require('pug')
+const pugTryCatch = require('pug-plugin-try-catch')
 const pg = require('pg')
 const { default: PgAsync, SQL } = require('pg-async')
 
@@ -24,6 +25,7 @@ const indieAuthEndpoint = env.INDIEAUTH_ENDPOINT || 'https://indieauth.com/auth'
 const jwtkey = env.SWEETROLL_SECRET || 'TESTKEY'
 const dburi = env.DATABASE_URI || 'postgres://localhost/sweetroll'
 const db = new PgAsync(dburi)
+const microPanelRoot = env.MICRO_PANEL_ROOT || '/dist/micro-panel' // To allow using the unpacked version of micro-panel in development
 
 const render = async (file, tplctx) =>
 	pify(pug.renderFile)('views/' + file, tplctx)
@@ -223,12 +225,13 @@ const addCommonContext = async (ctx, next) => {
 		auth,
 		// App settings
 		indieAuthEndpoint,
+		microPanelRoot,
 		livereload: env.LIVE_RELOAD,
 		// Pug settings
 		basedir: './views',
 		pretty: true,
 		cache: env.CACHE_TEMPLATES,
-		plugins: [ require('pug-plugin-try-catch') ],
+		plugins: [ pugTryCatch ],
 	}
 	ctx.link = new LinkHeader()
 	ctx.link.set({ rel: 'webmention', uri: ctx.domainUri.clone().path('/webmention').toString() })

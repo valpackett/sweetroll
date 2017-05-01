@@ -219,6 +219,7 @@ mixin showEntry(entry, compactView)
 				+showRefContext(reply, { prop: 'p-comment', rel: '', long: false, showReplies: true, showContexts: false })
 
 
+- const authedAsAdmin = auth && new URI(auth.sub).equals(domainUri)
 doctype html
 html(lang="en")
 	head
@@ -238,7 +239,11 @@ html(lang="en")
 				link(rel="openid.delegate" href=domainUri.toString())
 			link(rel="openid.server" href="https://openid.indieauth.com/openid")
 			link(rel="import" href=assets.url('dist/lazyload-image/lazyload-image.html'))
-	body(class=obj && obj.type)
+			if authedAsAdmin
+				link(rel="import" href=microPanelRoot + '/micro-panel.html')
+	body("class"=obj && obj.type)
+		if authedAsAdmin
+			| <micro-panel>
 		block body
 			header.site-header
 				block header
@@ -292,3 +297,5 @@ html(lang="en")
 				if livereload
 					script.
 						document.write('<script src="//' + (location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1"></sc' + 'ript>')
+		if authedAsAdmin
+			| </micro-panel>

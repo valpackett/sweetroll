@@ -31,6 +31,10 @@ body {
 	flex-direction: column;
 }
 
+micro-panel {
+	height: 100vh;
+}
+
 pre {
 	white-space: pre;
 

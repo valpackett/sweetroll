@@ -31,11 +31,16 @@ function loadComponents () {
 	}
 }
 
-if (window.customElements && (!document.querySelector('micro-panel') || ('import' in document.createElement('link')))) {
+var hasPanel = document.querySelector('micro-panel')
+
+if (hasPanel && !('KeyframeEffect' in window && 'timeline' in document && 'play' in document.timeline))
+	loadJs('/dist/web-animations-js/web-animations-next.min.js')
+
+if (window.customElements && (!hasPanel || ('import' in document.createElement('link')))) {
 	loadComponents()
 } else {
 	window.addEventListener('WebComponentsReady', loadComponents)
-	if (!document.querySelector('micro-panel')) {
+	if (!hasPanel) {
 		// No need for Shady DOM unless using micro-panel (Polymer)
 		Element.prototype.attachShadow = true
 		Element.prototype.getRootNode = true

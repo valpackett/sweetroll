@@ -8,7 +8,6 @@ module Sweetroll.Micropub.Endpoint (
 ) where
 
 import           Sweetroll.Prelude hiding (host)
-import qualified Data.Vector as V
 import qualified Data.Map.Strict as MS
 import qualified Data.HashMap.Strict as HMS
 import qualified Data.ByteString.Lazy as BL
@@ -41,12 +40,7 @@ getMicropub _ host (Just "source") props (Just url) = do
   obj ← guardEntryNotFound =<< guardDbError =<< queryDb url getObject
   return $ Source obj
 getMicropub _ _ (Just "syndicate-to") _ _ = do
-  -- TODO: put that into the domain's config
-  let (MkSyndicationConfig syndConf) = syndicationConfig
-  return $ SyndicateTo $ case syndConf of
-             Object o → map (\(k, v) → object [ "uid" .= v, "name" .= k ]) $ HMS.toList o
-             Array a → toList a
-             _ → []
+  return $ SyndicateTo []
 getMicropub _ host (Just "media-endpoint") _ _ = do
   url ← fromMaybe nullURI . parseURIReference <$> getConfOpt mediaEndpoint
   return $ MediaEndpoint $ tshow $ url `relativeTo` base host
@@ -81,7 +75,7 @@ postMedia _ host multipart = do
 
 postMicropub ∷ JWT VerifiedJWT → Maybe Text → MicropubRequest
              → Sweetroll (Headers '[Servant.Header "Location" Text] MicropubResponse)
-postMicropub token host (Create htype props synds) = do
+postMicropub token host (Create htype props _) = do
   now ← liftIO getCurrentTime
   category ← cs <$> runCategoryDeciders (Object props)
   let slug = decideSlug props now
@@ -91,7 +85,7 @@ postMicropub token host (Create htype props synds) = do
         |>  setDates now
         |>  setClientId token
         |>  setUrl absUrl -- TODO: allow any on the correct domain
-        |>  setContent (readContent =<< lookup "content" props) (unwords synds)
+        |>  setContent (readContent =<< lookup "content" props)
         |>  wrapWithType htype
   guardDbError =<< queryDb obj upsertObject
   return $ addHeader (tshow absUrl) Posted
@@ -139,18 +133,18 @@ setClientId token = insertMap "client-id" $ toJSON $ filter (/= "example.com") $
 setUrl ∷ URI → ObjProperties → ObjProperties
 setUrl url = insertMap "url" $ toJSON [ tshow url ]
 
-setContent ∷ Maybe CM.Node → Text → ObjProperties → ObjProperties
-setContent content syndLinks x =
+setContent ∷ Maybe CM.Node → ObjProperties → ObjProperties
+setContent content x =
   if isNothing $ Object x ^? key "content" . nth 0 . key "html" . _String
      then insertMap "content" (toJSON [ object [ "html" .= h ] ]) x
-     else x -- XXX: add syndLinks here!!!
-  where h = cs syndLinks ++ (fromMaybe "" $ rndr `liftM` content)
+     else x
+  where h = fromMaybe "" $ rndr `liftM` content
         rndr = CM.nodeToHtml cmarkOptions . CM.highlightNode
 
 wrapWithType ∷ ObjType → ObjProperties → Value
 wrapWithType htype props =
   object [ "type"       .= [ htype ]
-         , "properties" .= insertMap "syndication" (Array V.empty) props ]
+         , "properties" .= props ]
 
 decideSlug ∷ ObjProperties → UTCTime → String
 decideSlug props now = unpack . fromMaybe fallback $ getProp "mp-slug"

@@ -123,6 +123,7 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
   - [ ] JWT scopes authorization
   - [ ] draft flag → draft tag and private acl
   - [ ] media endpoint app with upload to openstack/s3, thumbnails, exif metadata extraction
+	- [ ] syndication to other micropub endpoints e.g. for silo.pub
 - webmention
   - [ ] fix all the things
   - [ ] reverify/refetch to update user profiles and stuff

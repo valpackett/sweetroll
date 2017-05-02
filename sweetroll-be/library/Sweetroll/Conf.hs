@@ -9,23 +9,6 @@ import           Sweetroll.Prelude
 import           CMark
 import           Data.Microformats2.Parser
 
-newtype SyndicationConfig = MkSyndicationConfig Value
-
-instance ToJSON SyndicationConfig where
-  toJSON (MkSyndicationConfig v) = toJSON v
-
-instance FromJSON SyndicationConfig where
-  parseJSON v = return $ MkSyndicationConfig v
-
-syndicationConfig ∷ SyndicationConfig
-syndicationConfig = MkSyndicationConfig $ toJSON [
-    object [ "name" .= asText "twitter.com",   "uid" .= asText "<a href=\"https://brid.gy/publish/twitter\" data-synd></a>" ]
-  , object [ "name" .= asText "facebook.com",  "uid" .= asText "<a href=\"https://brid.gy/publish/facebook\" data-synd></a>" ]
-  -- , object [ "name" .= asText "test",          "uid" .= asText "<a href=\"http://localhost:9247/post?type=link&amp;syndication=yep\" data-synd></a>" ]
-  , object [ "name" .= asText "instagram.com", "uid" .= asText "<a href=\"https://brid.gy/publish/instagram\" data-synd></a>" ]
-  ]
-
-
 data SweetrollSecrets = SweetrollSecrets
   {                secretKey ∷ Text }
 

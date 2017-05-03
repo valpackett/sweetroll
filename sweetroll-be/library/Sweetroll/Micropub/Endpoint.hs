@@ -77,18 +77,16 @@ postMicropub ∷ JWT VerifiedJWT → Maybe Text → MicropubRequest
              → Sweetroll (Headers '[Servant.Header "Location" Text] MicropubResponse)
 postMicropub token host (Create htype props _) = do
   now ← liftIO getCurrentTime
-  category ← cs <$> runCategoryDeciders (Object props)
-  let slug = decideSlug props now
-      absUrl = (fromJust $ parseURIReference $ "/" ++ category ++ "/" ++ slug) `relativeTo` base host
   obj ← return props
         >>= fetchAllReferenceContexts
         |>  setDates now
         |>  setClientId token
-        |>  setUrl absUrl -- TODO: allow any on the correct domain
+        |>  setCategory
         |>  setContent (readContent =<< lookup "content" props)
+        |>  setUrl (base host) now
         |>  wrapWithType htype
   guardDbError =<< queryDb obj upsertObject
-  return $ addHeader (tshow absUrl) Posted
+  return $ addHeader (tshow $ fromMaybe "" $ firstStr obj (key "url")) Posted
 
 postMicropub _ host (Update url upds) = do
   ensureRightDomain (base host) $ parseUri url
@@ -120,9 +118,24 @@ respNoContent = ServantErr { errHTTPCode = 204
                            , errHeaders = [ ]
                            , errBody    = "" }
 
-runCategoryDeciders ∷ MonadIO μ ⇒ Value → μ Text
-runCategoryDeciders v = do
-  return "notes" -- XXX
+decideSlug ∷ ObjProperties → UTCTime → String
+decideSlug props now = unpack . fromMaybe fallback $ getProp "mp-slug" <|> getProp "slug"
+  where fallback = slugify . fromMaybe (formatTimeSlug now) $ getProp "name"
+        formatTimeSlug = pack . formatTime defaultTimeLocale "%Y-%m-%d-%H-%M-%S"
+        getProp k = firstStr (Object props) (key k)
+
+decideCategory ∷ ObjProperties → Text
+decideCategory props | not (null $ (Object props) ^.. key "name" . values) = "_articles"
+decideCategory props | not (null $ (Object props) ^.. key "in-reply-to" . values) = "_replies"
+decideCategory props | not (null $ (Object props) ^.. key "like-of" . values) = "_likes"
+decideCategory props | not (null $ (Object props) ^.. key "repost-of" . values) = "_reposts"
+decideCategory props | not (null $ (Object props) ^.. key "quotation-of" . values) = "_quotations"
+decideCategory props | not (null $ (Object props) ^.. key "bookmark-of" . values) = "_bookmarks"
+decideCategory props | not (null $ (Object props) ^.. key "rsvp" . values) = "_rsvps"
+decideCategory props | otherwise = "_notes"
+
+categories ∷ ObjProperties → [Text]
+categories props = Object props ^.. key "category" . values . _String
 
 setDates ∷ UTCTime → ObjProperties → ObjProperties
 setDates now = insertMap "updated" (toJSON [ now ]) . insertWith (\_ x → x) "published" (toJSON [ now ])
@@ -130,14 +143,21 @@ setDates now = insertMap "updated" (toJSON [ now ]) . insertWith (\_ x → x) "p
 setClientId ∷ JWT VerifiedJWT → ObjProperties → ObjProperties
 setClientId token = insertMap "client-id" $ toJSON $ filter (/= "example.com") $ catMaybes [ lookup "client_id" $ unregisteredClaims $ claims token ]
 
-setUrl ∷ URI → ObjProperties → ObjProperties
-setUrl url = insertMap "url" $ toJSON [ tshow url ]
+setCategory ∷ ObjProperties → ObjProperties
+setCategory props | isJust (find (\x → headMay x == Just '_') $ categories props) = props
+setCategory props | otherwise = insertMap "category" (toJSON cats) props
+  where cats = decideCategory props : categories props
+
+setUrl ∷ URI → UTCTime → ObjProperties → ObjProperties
+setUrl hostbase _ props | Just True == ((compareDomain hostbase) <$> (parseURI =<< cs <$> firstStr (Object props) (key "url"))) = props
+setUrl hostbase now props | otherwise =
+  insertMap "url" (toJSON [ tshow $ (fromJust $ parseURIReference $ "/" ++ category ++ "/" ++ slug) `relativeTo` hostbase ]) props
+  where category = cs $ drop 1 $ fromMaybe "_unknown" $ find (\x → headMay x == Just '_') $ categories props
+        slug = decideSlug props now
 
 setContent ∷ Maybe CM.Node → ObjProperties → ObjProperties
-setContent content x =
-  if isNothing $ Object x ^? key "content" . nth 0 . key "html" . _String
-     then insertMap "content" (toJSON [ object [ "html" .= h ] ]) x
-     else x
+setContent content x | isJust (Object x ^? key "content" . nth 0 . key "html" . _String) = x
+setContent content x | otherwise = insertMap "content" (toJSON [ object [ "html" .= h ] ]) x
   where h = fromMaybe "" $ rndr `liftM` content
         rndr = CM.nodeToHtml cmarkOptions . CM.highlightNode
 
@@ -145,12 +165,6 @@ wrapWithType ∷ ObjType → ObjProperties → Value
 wrapWithType htype props =
   object [ "type"       .= [ htype ]
          , "properties" .= props ]
-
-decideSlug ∷ ObjProperties → UTCTime → String
-decideSlug props now = unpack . fromMaybe fallback $ getProp "mp-slug"
-  where fallback = slugify . fromMaybe (formatTimeSlug now) $ getProp "name"
-        formatTimeSlug = pack . formatTime defaultTimeLocale "%Y-%m-%d-%H-%M-%S"
-        getProp k = firstStr (Object props) (key k)
 
 readContent ∷ Value → Maybe CM.Node
 readContent c = CM.commonmarkToNode cmarkOptions <$>

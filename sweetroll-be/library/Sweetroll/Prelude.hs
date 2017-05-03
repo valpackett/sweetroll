@@ -78,8 +78,11 @@ base ∷ ConvertibleStrings a String ⇒ Maybe a → URI
 base (Just x) = fromJust $ parseURI $ "https://" ++ cs x -- have to parse because it might have a port number
 base Nothing = URI "http:" (Just $ URIAuth "" "localhost" "") "" "" ""
 
+compareDomain ∷ URI → URI → Bool
+compareDomain x y = (uriRegName <$> uriAuthority x) == (uriRegName <$> uriAuthority y)
+
 ensureRightDomain ∷ MonadError ServantErr μ ⇒ URI → URI → μ ()
-ensureRightDomain x y = guardBool errWrongDomain $ (uriRegName <$> uriAuthority x) == (uriRegName <$> uriAuthority y)
+ensureRightDomain x y = guardBool errWrongDomain $ compareDomain x y
 
 guardEntryNotFound ∷ MonadError ServantErr μ ⇒ Maybe α → μ α
 guardEntryNotFound (Just obj) = return obj

@@ -271,6 +271,16 @@ html(lang="en")
 								.form-field
 									input(name="q" type="search" value=searchQuery)
 									button Search
+						block site-tags
+							nav.all-tags-ever
+								- const tagfeed = _.head(helpers.matchingFeeds(siteFeeds, {properties: {category: ['--TAG-HERE--']}}).filter(feed => !(_.get(feed, 'params.tag', '').startsWith('_'))))
+								if tagfeed
+									for tag in siteTags || []
+										if !tag.name.startsWith('_')
+											a(href=relativeUrl(tagfeed.url.replace('--TAG-HERE--', tag.name)) data-mf-category=tag.name)
+												= tagfeed.name.replace('--TAG-HERE--', tag.name)
+												sup.obj_count= `(${tag.obj_count})`
+											| 
 						block login-form
 							if auth
 								form(method="post" action="/logout").logout-form

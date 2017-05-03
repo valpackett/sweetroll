@@ -297,8 +297,12 @@ button, input, select, textarea {
 	min-width: 0;
 }
 
-.site-meta {
-	font-size: 0.7em;
+.site-meta, .all-tags-ever {
+	font-size: 0.75em;
+}
+
+.all-tags-ever {
+	margin-top: 1rem;
 }
 
 /* ## Main */

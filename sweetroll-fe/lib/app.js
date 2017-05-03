@@ -167,7 +167,7 @@ const logoutHandler = async (ctx, next) => {
 
 const searchHandler = async ({ request, response, auth, domainUriStr, tplctx }, next) => {
 	const searchQuery = request.query.q || ''
-	const { dobj, results, feeds } = await db.row(SQL`SELECT
+	const { dobj, results, feeds, tags } = await db.row(SQL`SELECT
 	set_config('mf2sql.current_user_url', ${(auth && auth.sub) || 'anonymous'}, true),
 	objects_smart_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj,
 	(SELECT jsonb_agg(row_to_json(subq)) FROM (
@@ -185,13 +185,15 @@ const searchHandler = async ({ request, response, auth, domainUriStr, tplctx }, 
 		ORDER BY rank DESC
 		LIMIT 64
 	) subq) AS results,
-	objects_fetch_feeds(${domainUriStr}) AS feeds
+	objects_fetch_feeds(${domainUriStr}) AS feeds,
+	objects_fetch_categories(${domainUriStr}) AS tags
 	`)
 	tplctx.searchQuery = searchQuery
 	tplctx.results = results
 	tplctx.siteCard = get(dobj, 'properties.author[0]', {})
 	tplctx.siteSettings = get(dobj, 'properties.site-settings[0]', {})
 	tplctx.siteFeeds = feeds
+	tplctx.siteTags = tags
 	response.type = 'text/html'
 	response.body = await render('search.pug', tplctx)
 	return next()
@@ -201,17 +203,19 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 	if (cache && !auth && await cashed(2 * 60 * 1000)) return
 	// TODO don't fetch twice when domain URI == request URI (i.e. home page)
 	const perPage = 20
-	const { dobj, obj, feeds } = await db.row(SQL`SELECT
+	const { dobj, obj, feeds, tags } = await db.row(SQL`SELECT
 	set_config('mf2sql.current_user_url', ${(auth && auth.sub) || 'anonymous'}, true),
 	objects_smart_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj,
 	objects_smart_fetch(${reqUriStr}, ${domainUriStr}, ${perPage + 5}, ${request.query.before || null}, ${request.query.after || null}, ${request.query}) AS obj,
-	objects_fetch_feeds(${domainUriStr}) AS feeds
+	objects_fetch_feeds(${domainUriStr}) AS feeds,
+	objects_fetch_categories(${domainUriStr}) AS tags
 	`)
 
 	tplctx.perPage = perPage
 	tplctx.siteCard = get(dobj, 'properties.author[0]', {})
 	tplctx.siteSettings = get(dobj, 'properties.site-settings[0]', {})
 	tplctx.siteFeeds = feeds
+	tplctx.siteTags = tags
 	response.status = 404
 	response.type = 'text/html'
 	let tpl = '404.pug'

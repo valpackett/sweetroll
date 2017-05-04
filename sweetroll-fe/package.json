@@ -11,9 +11,7 @@
   },
   "processes": {
     "app": "DEBUG=*,-koa-mount,-dynamic-asset-rev LIVE_RELOAD=1 IS_PROXIED=1 INDIEAUTH_ENDPOINT=/login/self WEBSUB_HUB=https://httpbin.org/post MICRO_PANEL_ROOT=/micro-panel node-dev --harmony index.js",
-    "lr": "tiny-lr",
-    "re-asset": "chokidar 'assets/**/*' 'Brocfile.js' --initial -p -c 'npm run assets; curl -s -X POST \"localhost:35729/changed?files=dist\"; true'",
-    "re-tpl": "chokidar 'views/**/*' -p -c 'curl -s -X POST \"localhost:35729/changed?files=dist\"; true'"
+    "re-asset": "chokidar 'assets/**/*' 'Brocfile.js' --initial -p -c 'yarn assets'"
   },
   "devDependencies": {
     "autoprefixer": "^6.7.7",
@@ -39,7 +37,6 @@
     "eslint-plugin-node": "^4.2.2",
     "eslint-plugin-promise": "^3.5.0",
     "eslint-plugin-standard": "^3.0.1",
-    "make-livereload": "^0.1.2",
     "node-dev": "^3.1.3",
     "postcss-color-function": "^3.0.0",
     "postcss-css-variables": "^0.7.0",
@@ -75,7 +72,7 @@
     "pg-async": "^2.4.3",
     "pify": "^2.3.0",
     "promised-retry": "^0.2.3",
-    "pug": "^2.0.0-beta12",
+    "pug": "^2.0.0-rc.1",
     "pug-plugin-try-catch": "^1.2.0",
     "sse-broadcast": "^0.4.1",
     "urijs": "^1.18.10"

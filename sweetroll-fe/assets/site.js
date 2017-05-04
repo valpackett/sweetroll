@@ -1,5 +1,12 @@
 /* global Element */
 
+// the actual hiding happens in JS to prevent no-JS users from seeing nothing
+const rs = document.querySelectorAll('.click-to-reveal')
+const rts = document.querySelectorAll('.click-to-reveal-target')
+
+for (var i = 0; i < rs.length; i++) { rs[i].hidden = false }
+for (i = 0; i < rts.length; i++) { rts[i].hidden = true }
+
 document.getElementById('author-link').onclick = function () {
 	var a = document.getElementById('author')
 	a.setAttribute('tabindex', '-1')

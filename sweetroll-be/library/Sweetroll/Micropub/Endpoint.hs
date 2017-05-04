@@ -65,6 +65,7 @@ postMedia _ host multipart = do
                    then fileExt
                    else fromMaybe fileExt $ (("." ++) . cs) <$> lookup (fileContentType file) extMap
       let fullname = "static/" ++ digest ++ ext
+      -- let fullname = "/tmp/static/" ++ digest ++ ext
       renameFile (fileContent file) fullname
       writeIORef nameRef fullname
     return (params, files)
@@ -125,13 +126,13 @@ decideSlug props now = unpack . fromMaybe fallback $ getProp "mp-slug" <|> getPr
         getProp k = firstStr (Object props) (key k)
 
 decideCategory ∷ ObjProperties → Text
-decideCategory props | not (null $ (Object props) ^.. key "name" . values) = "_articles"
-decideCategory props | not (null $ (Object props) ^.. key "in-reply-to" . values) = "_replies"
-decideCategory props | not (null $ (Object props) ^.. key "like-of" . values) = "_likes"
-decideCategory props | not (null $ (Object props) ^.. key "repost-of" . values) = "_reposts"
-decideCategory props | not (null $ (Object props) ^.. key "quotation-of" . values) = "_quotations"
-decideCategory props | not (null $ (Object props) ^.. key "bookmark-of" . values) = "_bookmarks"
-decideCategory props | not (null $ (Object props) ^.. key "rsvp" . values) = "_rsvps"
+decideCategory props | not (null $ Object props ^.. key "name" . values) = "_articles"
+decideCategory props | not (null $ Object props ^.. key "in-reply-to" . values) = "_replies"
+decideCategory props | not (null $ Object props ^.. key "like-of" . values) = "_likes"
+decideCategory props | not (null $ Object props ^.. key "repost-of" . values) = "_reposts"
+decideCategory props | not (null $ Object props ^.. key "quotation-of" . values) = "_quotations"
+decideCategory props | not (null $ Object props ^.. key "bookmark-of" . values) = "_bookmarks"
+decideCategory props | not (null $ Object props ^.. key "rsvp" . values) = "_rsvps"
 decideCategory props | otherwise = "_notes"
 
 categories ∷ ObjProperties → [Text]
@@ -149,7 +150,7 @@ setCategory props | otherwise = insertMap "category" (toJSON cats) props
   where cats = decideCategory props : categories props
 
 setUrl ∷ URI → UTCTime → ObjProperties → ObjProperties
-setUrl hostbase _ props | Just True == ((compareDomain hostbase) <$> (parseURI =<< cs <$> firstStr (Object props) (key "url"))) = props
+setUrl hostbase _ props | Just True == (compareDomain hostbase <$> (parseURI =<< cs <$> firstStr (Object props) (key "url"))) = props
 setUrl hostbase now props | otherwise =
   insertMap "url" (toJSON [ tshow $ (fromJust $ parseURIReference $ "/" ++ category ++ "/" ++ slug) `relativeTo` hostbase ]) props
   where category = cs $ drop 1 $ fromMaybe "_unknown" $ find (\x → headMay x == Just '_') $ categories props

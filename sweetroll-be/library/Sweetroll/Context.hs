@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans -fno-warn-missing-methods #-}
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, MultiParamTypeClasses, FlexibleInstances, UndecidableInstances, IncoherentInstances, TypeOperators, TypeFamilies, FlexibleContexts, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, MultiParamTypeClasses, FlexibleInstances, UndecidableInstances, IncoherentInstances, TypeOperators, TypeFamilies, FlexibleContexts #-}
 
 -- | The Sweetroll monad contains the application context.
 module Sweetroll.Context where

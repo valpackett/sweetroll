@@ -46,7 +46,9 @@ const affectedUrls = async (url) => {
 	if (!feeds) return [url]
 	return {
 		affUrls: concat(helpers.matchingFeeds(feeds, obj).map(x => x.url), url),
-		obj, feeds, domainUriStr
+		obj,
+		feeds,
+		domainUriStr
 	}
 }
 
@@ -59,8 +61,8 @@ const findWebmentionEndpoint = async (target) => {
 		},
 	})
 	return head(LinkHeader.parse(resp.headers.get('Link') || '')
-		.get('rel', 'webmention').map(l => l.uri))
-		|| head(helpers.getHtmlLinksByRel(await resp.text()))
+		.get('rel', 'webmention').map(l => l.uri)) ||
+		head(helpers.getHtmlLinksByRel(await resp.text()))
 }
 
 const notificationListener = new Retry({

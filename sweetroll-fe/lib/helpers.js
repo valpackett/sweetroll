@@ -175,8 +175,8 @@ module.exports = {
 
 	getHtmlLinksByRel (content) {
 		const $ = cheerio.load(content)
-		return $('link[rel], a[rel]').toArray().
-			filter(el => includes(el.attribs['rel'], 'webmention'))
+		return $('link[rel], a[rel]').toArray()
+			.filter(el => includes(el.attribs['rel'], 'webmention'))
 			.map(el => el.attribs['href'])
 	}
 

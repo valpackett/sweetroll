@@ -1,22 +1,24 @@
 # sweetroll [![unlicense](https://img.shields.io/badge/un-license-green.svg?style=flat)](http://unlicense.org)
 
-A website engine for [the indie web] with curved swords. *Curved! Swords!*
+A powerful engine for [your personal website].
 
-- uses PostgreSQL with the [mf2sql] schema for storage
-- represents *all the things* as [Microformats2] objects
-- supports [Micropub] for posting, updating, deleting and undeleting
+- lets you publish many [kinds of content]
+	- notes (microblog posts), articles (big blog posts), replies, reposts, likes, quotations, bookmarks, reviews…
+- supports categories, tags, full text search, content warnings, photos, videos, audio files, private posts (drafts)
+- lets you talk to other IndieWeb-style websites by sending and receiving [Webmentions] (including [Salmentions] for threaded conversations)
+- lets you use [Micropub] to edit your site (post, update, delete, undelete)
   - has a media endpoint for file uploads
-- allows posting in [CommonMark Markdown]
-- sends and receives [Webmentions], including [Salmentions]
+  - lets you use [CommonMark Markdown] for post text
+  - the included admin panel (micro-panel) itself uses Micropub
 - sends [WebSub] \(formerly PubSubHubbub) notifications on new posts (for [readers])
-- supports [indie-config]
-- has a [JSON Web Tokens]-based [token-endpoint]
+- represents *all the things* as [Microformats2] objects
+- uses PostgreSQL with the [mf2sql] schema for storage
 - consists of services written in [Haskell] and [Node.js]
 
 I'm running it on [my website](https://unrelenting.technology).
 
-[the indie web]: https://indieweb.org
-[JSON Web Tokens]: https://jwt.io
+[your personal website]: https://indieweb.org
+[kinds of content]: https://indieweb.org/posts
 [CommonMark Markdown]: http://commonmark.org
 [Haskell]: https://www.haskell.org
 [Node.js]: https://nodejs.org/en/
@@ -25,10 +27,8 @@ I'm running it on [my website](https://unrelenting.technology).
 [Micropub]: https://indieweb.org/micropub
 [Webmentions]: https://indieweb.org/webmention
 [Salmentions]: https://indieweb.org/Salmention
-[WebSub]: https://indieweb.org/PubSub
+[WebSub]: https://indieweb.org/WebSub
 [readers]: https://indieweb.org/readers
-[indie-config]: https://indieweb.org/indie-config
-[token-endpoint]: https://indieweb.org/token-endpoint
 
 ## Usage
 
@@ -66,11 +66,13 @@ TODO same for frontend
 ## TODO
 
 - frontend
+	- [ ] bring back the atom feed
+	- [ ] pushover notifications on new/updated mentions
   - [ ] color themes (w/ postcss on the fly)
 - micropub
   - [ ] JWT scopes authorization
   - [ ] draft flag → draft tag and private acl
-  - [ ] separate media endpoint app with upload to openstack/s3, thumbnails, exif metadata extraction
+  - [ ] separate media endpoint app with upload to openstack/s3, thumbnails, metadata extraction, video conversion
   - [ ] syndication to other micropub endpoints e.g. for silo.pub
 - webmention
   - [ ] fix all the things

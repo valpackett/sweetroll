@@ -56,7 +56,9 @@ mixin showMeta(entry, comments, permalink, compactView)
 					| #
 					= ftag
 					| 
-		| posted on 
+		if _.isEmpty(properties['like-of']) && _.isEmpty(properties['bookmark-of'])
+			+showActions(entry, permalink)
+		| / posted on 
 		time.dt-published(datetime=_.head(properties.published))
 			a.u-url.u-uid.note-permalink(rel=compactView ? '' : 'bookmark' href=permalink)
 				= moment.utc(_.head(properties.published)).format(dateFormat)
@@ -105,7 +107,7 @@ mixin showFacepile(entry, name, reactions)
 						data.u-url(value=url)
 
 mixin showActions(entry, permalink)
-	.entry-actions
+	span.entry-actions
 		-
 			const twitterUrl = _(entry).at('properties.syndication')
 				.flatten().filter(_.isString).find(url => url.startsWith("https://twitter.com") || url.startsWith("http://twitter.com"))
@@ -117,15 +119,12 @@ mixin showActions(entry, permalink)
 		indie-action(do="reply" with=permalink)
 			a(href=twitterLink('reply'))
 				+icon('reply')
-				| Reply
 		indie-action(do="repost" with=permalink)
 			a(href=twitterLink('retweet'))
 				+icon('retweet')
-				| Repost
 		indie-action(do="like" with=permalink)
 			a(href=twitterLink('favorite'))
 				+icon('star')
-				| Like
 
 mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, long, showReplies, showContexts })
 	-
@@ -246,8 +245,6 @@ mixin showEntry(entry, compactView)
 			each reactions, name in comments || []
 				if name != 'replies' && !_.isEmpty(reactions)
 					+showFacepile(entry, name, reactions)
-		if _.isEmpty(properties['like-of']) && _.isEmpty(properties['bookmark-of'])
-			+showActions(entry, permalink)
 	if !compactView && !_.isEmpty(comments.replies)
 		section.entry-replies
 			each reply in comments.replies || []

@@ -196,6 +196,26 @@ mixin showEntry(entry, compactView)
 					- const url = _.get(bookmark, 'properties.url[0]', '')
 					a.p-name.u-url(href=helpers.onlyHttpUrl(url))
 						= properties.name ? _.head(properties.name) : _.get(bookmark, 'properties.name[0]', url)
+	each item in properties.item || []
+		.ref-context
+			header.ref-context-reason.ref-context-review
+				- const url = _.get(item, 'properties.url[0]', '')
+				a.review-item-link.p-item('class'=item.type.join(' ') href=helpers.onlyHttpUrl(url))
+					= _.get(item, 'properties.name[0]', url)
+				- const best = _.toNumber(_.get(properties, 'best[0]', '5')) || 5
+				each rating in properties.rating || []
+					data.p-best(value=best)
+					div.review-rating.p-rating(title=rating)
+						- let [f, h, e] = helpers.ratingStars(rating, best)
+						while f > 0
+							+icon('star', null, { class: ['icon-rating'] })
+							- f--
+						while h > 0
+							+icon('star-half-o', null, { class: ['icon-rating'] })
+							- h--
+						while e > 0
+							+icon('star-o', null, { class: ['icon-rating'] })
+							- e--
 	if acl.length > 0
 		.entry-acl
 			+icon('lock', null, { class: ['icon-acl'] })
@@ -212,8 +232,8 @@ mixin showEntry(entry, compactView)
 				a.u-url.u-uid(href=permalink rel=compactView ? '' : 'bookmark' tabindex="-1")
 					= _.head(properties.name)
 	if !_.isEmpty(properties.content) || !_.isEmpty(properties['repost-of'])
-		.e-content
-			fragmention-target(exact)
+		fragmention-target(exact)
+			.e-content
 				each repost in properties['repost-of'] || []
 					+showRefContext(repost, { long: true, prop: 'u-repost-of', reasonIcon: 'retweet', reasonIconClass: 'repost', reason: 'reposted', rel: !compactView ? 'repost-of' : '' })
 				- const onlySummary = !isUntitled && compactView
@@ -286,7 +306,7 @@ html(lang="en")
 				aside#author.site-author.h-card.p-author
 					block side
 						.site-author-block
-							.p-note !{_.get(siteCard, 'properties.note[0]')}
+							.p-note !{helpers.getHtml(_.get(siteCard, 'properties.note[0]'))}
 						data.u-photo(value=_.get(siteCard, 'properties.photo[0]'))
 						.site-meta.
 							This website supports #[a(href="https://webmention.net") Webmentions]!

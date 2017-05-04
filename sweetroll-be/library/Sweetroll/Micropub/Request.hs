@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, GADTs, FlexibleInstances #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, GADTs, FlexibleInstances, LambdaCase #-}
 
 module Sweetroll.Micropub.Request where
 
@@ -6,7 +6,7 @@ import           Sweetroll.Prelude
 import           Data.Aeson.Types (parseMaybe)
 import           Web.FormUrlEncoded hiding (parseMaybe)
 
-type ObjType = Text
+type ObjType = [Text]
 type ObjProperties = Object
 type ObjSyndication = Text
 type ObjUrl = Text
@@ -49,7 +49,7 @@ instance FromJSON MicropubRequest where
           Nothing → fail "Update with no url"
           Just url → return $ Update url $ fromMaybe [] $ parseMaybe parseJSON v
       Nothing → return $
-        Create (fromMaybe "h-entry" $ firstStr v $ key "type")
+        Create ((\case [] → ["h-entry"]; x → x) $ v ^.. key "type" . values . _String)
                (fromMaybe (object [] ^. _Object) $ v ^? key "properties" . _Object)
                (v ^.. key "mp-syndicate-to" . values . _String)
       _ → fail "Unknown action type"
@@ -78,5 +78,5 @@ instance FromForm MicropubRequest where
             synd = nub $ (v ^.. key "mp-syndicate-to" . values . _String) ++
                          (v ^.. key "syndicate-to" . values . _String)
                          -- no syndicate-to[], the [] is handled in formToObject
-         in Right $ Create h o synd
+         in Right $ Create [h] o synd
       _ → Left "Unknown action type"

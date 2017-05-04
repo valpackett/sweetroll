@@ -481,6 +481,17 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 	color: #777;
 }
 
+.ref-context-review {
+	display: flex;
+	align-items: center;
+	padding: 1rem;
+}
+
+a.review-item-link {
+	display: block;
+	flex: 1;
+}
+
 .ref-context-core {
 	display: flex;
 	align-items: flex-start;

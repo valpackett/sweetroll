@@ -126,6 +126,8 @@ decideSlug props now = unpack . fromMaybe fallback $ getProp "mp-slug" <|> getPr
         getProp k = firstStr (Object props) (key k)
 
 decideCategory ∷ ObjProperties → Text
+decideCategory props | not (null $ Object props ^.. key "rating" . values) = "_reviews"
+decideCategory props | not (null $ Object props ^.. key "ingredient" . values) = "_recipes"
 decideCategory props | not (null $ Object props ^.. key "name" . values) = "_articles"
 decideCategory props | not (null $ Object props ^.. key "in-reply-to" . values) = "_replies"
 decideCategory props | not (null $ Object props ^.. key "like-of" . values) = "_likes"
@@ -164,7 +166,7 @@ setContent content x | otherwise = insertMap "content" (toJSON [ object [ "html"
 
 wrapWithType ∷ ObjType → ObjProperties → Value
 wrapWithType htype props =
-  object [ "type"       .= [ htype ]
+  object [ "type"       .= toJSON htype
          , "properties" .= props ]
 
 readContent ∷ Value → Maybe CM.Node

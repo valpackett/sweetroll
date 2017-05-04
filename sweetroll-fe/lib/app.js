@@ -232,9 +232,10 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 			response.status = 401
 			response.set('WWW-Authenticate', 'Bearer')
 			tpl = '401.pug'
-		} else if (obj.type[0] === 'h-entry') {
+		} else if (obj.type[0] === 'h-entry' || obj.type[0] === 'h-review') {
 			tpl = 'entry.pug'
-		} else if (obj.type[0] === 'h-feed') {
+		} else if (obj.type[0] === 'h-feed' || obj.type[0] === 'h-x-dynamic-feed') {
+			obj.type[0] = 'h-feed'
 			tpl = 'feed.pug'
 		} else {
 			console.error('Unknown entry type', obj.type)

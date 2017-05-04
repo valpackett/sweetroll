@@ -3,7 +3,8 @@
 // There's no strict rule about "what is a helper" but generally,
 // helpers are about data manipulation.
 
-const { head, some, trim, get, eq, includes, concat, flatMap, isString, isArray, isObject, difference } = require('lodash')
+const { head, some, trim, get, eq, includes, concat,
+	flatMap, isString, isArray, isObject, difference } = require('lodash')
 const { count: countEmoji } = require('emoji-king')
 const URI = require('urijs')
 const cheerio = require('cheerio')
@@ -26,7 +27,8 @@ module.exports = {
 			const params = {}
 			const walk = (x, y) => {
 				for (const k of Object.keys(x)) {
-					if (x[k].length === 1 && isString(x[k][0]) && x[k][0].startsWith('{') && x[k][0].endsWith('}') && isArray(y[k])) {
+					if (x[k].length === 1 && isString(x[k][0]) &&
+						x[k][0].startsWith('{') && x[k][0].endsWith('}') && isArray(y[k])) {
 						const p = trim(x[k][0], '{}')
 						params[p] = concat(params[p] || [], y[k])
 					} else if (isArray(x[k]) && isArray(y[k])) {
@@ -71,7 +73,8 @@ module.exports = {
 	},
 
 	isValidRef (url, x) {
-		return some(x, v => some(url, u => v && ((v.startsWith && v.startsWith(u)) || (v.value && v.value.startsWith && v.value.startsWith(u)))))
+		return some(x, v => some(url, u => v && ((v.startsWith && v.startsWith(u)) ||
+			(v.value && v.value.startsWith && v.value.startsWith(u)))))
 	},
 
 	separateComments (url, comments) {
@@ -127,16 +130,30 @@ module.exports = {
 		return get(obj, 'properties.name[0]') || get(obj, 'properties.published[0]', 'Untitled page')
 	},
 
+	ratingStars (rating, best) {
+		if (rating > best) {
+			return [best, 0, 0]
+		}
+		if (rating - Math.floor(rating) > 0.001) {
+			return [Math.floor(rating), 1, best - Math.floor(rating) - 1]
+		}
+		return [Math.floor(rating), 0, best - Math.floor(rating)]
+	},
+
+	getHtml (content) {
+		content = isObject(content) ? (content.html || content.value) : content
+		content = isString(content) ? content : null
+		return content
+	},
+
 	getContent (properties, long, onlySummary) {
-		let content = head(onlySummary ? properties.summary : (
+		const content = head(onlySummary ? properties.summary : (
 			long
 				? concat(properties.content || [], properties.summary || [], properties.name || [])
 				: concat(properties.summary || [], properties.content || [], properties.name || [])
 			)
 		) || ''
-		content = isObject(content) ? (content.html || content.value) : content
-		content = isString(content) ? content : null
-		return content
+		return this.getHtml(content)
 	},
 
 	processContent (content) {

@@ -10,6 +10,7 @@ block append main
 		a(href="javascript:location.reload()") Reload?
 	section.index-category
 		-
+			obj.children = obj.children || []
 			const qq = reqUriFull.search(true)
 			let i = 0
 			if (qq.after && !qq.before) i = obj.children.length - perPage
@@ -24,7 +25,7 @@ block append main
 			else
 				- i += 1
 				try
-					article.h-entry.entry
+					article.entry(class=entry.type.join(' '))
 						+showEntry(entry, true)
 				catch
 					div.tpl-error Error: could not render the entry

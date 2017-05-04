@@ -56,7 +56,8 @@ styles = new SourceMapExtractor(new PostCSS(styles, {
 
 const icons = new SVGStore(
 	new Funnel('bower_components/Font-Awesome-SVG-PNG/black/svg/', {
-		include: ['arrow-up', 'arrow-down', 'reply', 'retweet', 'star', 'info-circle', 'bookmark', 'quote-left', 'lock'].map((x) => x + '.svg')
+		include: ['arrow-up', 'arrow-down', 'reply', 'retweet',
+			'star', 'star-half-o', 'star-o', 'info-circle', 'bookmark', 'quote-left', 'lock'].map((x) => x + '.svg')
 	}),
 	{ outputFile: 'icons.svg' }
 )

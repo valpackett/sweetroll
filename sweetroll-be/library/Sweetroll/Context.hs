@@ -14,10 +14,10 @@ type Sweetroll = MagicbaneApp SweetrollCtx
 
 initCtx ∷ SweetrollConf → SweetrollSecrets → IO SweetrollCtx
 initCtx conf secs = do
-  (_, log) ← newLogger $ LogStderr defaultBufSize
+  (_, lgr) ← newLogger $ LogStderr defaultBufSize
   hmg ← newHttpClient
   dbp ← mkDb conf
-  return (conf, secs, log, hmg, dbp)
+  return (conf, secs, lgr, hmg, dbp)
 
 getConf ∷ (Has SweetrollConf α, MonadReader α μ) ⇒ μ SweetrollConf
 getConf = asks getter

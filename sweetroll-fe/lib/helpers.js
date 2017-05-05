@@ -78,7 +78,7 @@ module.exports = {
 	},
 
 	separateComments (url, comments) {
-		const result = { replies: [], likes: [], reposts: [], bookmarks: [], quotations: [] }
+		const result = { replies: [], likes: [], reposts: [], bookmarks: [], quotations: [], mentions: [] }
 		for (const comment of comments) {
 			const properties = comment.properties || {}
 			if (this.isValidRef(url, properties['in-reply-to'])) {
@@ -103,7 +103,7 @@ module.exports = {
 			} else if (this.isValidRef(url, properties['quotation-of'])) {
 				result.quotations.push(comment)
 			} else {
-				log('Unknown mention type for object %O', comment)
+				result.mentions.push(comment)
 			}
 		}
 		return result

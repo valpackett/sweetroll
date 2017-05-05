@@ -4,6 +4,7 @@ module Sweetroll.Webmention.Receive where
 
 import           Sweetroll.Prelude hiding (snoc, r)
 import           Control.Lens (snoc)
+import           Text.XML.Lens
 import qualified Data.HashMap.Strict as HMS
 import qualified Data.Vector as V
 import           Sweetroll.Database
@@ -14,9 +15,9 @@ receiveWebmention ∷ [(Text, Text)] → Sweetroll NoContent
 receiveWebmention allParams = do
   source ← guardJustP (errNoURIInField "source") $ lookup "source" allParams
   target ← guardJustP (errNoURIInField "target") $ lookup "target" allParams
-  guardJustP (errNoURIInField "source") $ parseURI $ cs source
-  guardJustP (errNoURIInField "source") $ parseURI $ cs target
-  processWebmention source target
+  void $ guardJustP (errNoURIInField "source") $ parseURI $ cs source
+  void $ guardJustP (errNoURIInField "source") $ parseURI $ cs target
+  void $ fork $ processWebmention source target
   return NoContent -- throw respAccepted
 
 processWebmention ∷ Text → Text → Sweetroll ()
@@ -27,8 +28,6 @@ processWebmention source target = do
     Left e →
       $logInfo$ "Error fetching webmention " ++ forfrom ++ ": " ++ e
     Right resp → do
-      -- XXX: servant errors in a forked thread after the response...?!
-      entry ← guardEntryNotFound =<< guardDbError =<< queryDb target getObject
       case statusCode $ responseStatus resp of
         410 → do
           $logInfo$ "Received gone webmention " ++ forfrom ++ tshow source
@@ -36,11 +35,17 @@ processWebmention source target = do
         200 → do
           (mention0, _) ← fetchEntryWithAuthors (parseUri source) resp
           case mention0 of
-            Just mention@(Object _) | verifyMention (parseUri target) mention → do
+            Just mention@(Object _) | verifyMention (parseUri target) mention (responseBody resp) → do
               $logInfo$ "Received correct webmention for " ++ tshow target ++ " from " ++ tshow source
-              let updatedEntry = upsertMention (entry ∷ Value) $ ensurePresentUrl (parseUri source) mention
-              -- TODO: kick off fetching
-              guardDbError =<< queryDb updatedEntry upsertObject
+              -- TODO: insert into db
+              void $ guardEntryNotFound =<< guardTxError =<< transactDb (do
+                obj' ← queryTx target getObject
+                case obj' of
+                  Just obj → do
+                    let updatedEntry = upsertMention (obj ∷ Value) $ ensurePresentUrl (parseUri source) mention
+                    queryTx updatedEntry upsertObject
+                    return $ Just obj
+                  _ → return Nothing)
             Just mention@(Object _) → do
               $logInfo$ "Received unverified webmention " ++ forfrom ++ ": " ++ tshow mention
               guardDbError =<< queryDb (tshow source) deleteObject
@@ -50,13 +55,13 @@ processWebmention source target = do
               $logInfo$ "Received unreadable webmention " ++ forfrom
         x → $logInfo$ "Received status code " ++ tshow x ++ " when fetching webmention " ++ forfrom
 
-verifyMention ∷ URI → Value → Bool
-verifyMention t m | propIncludesURI t "in-reply-to"   m = True
-verifyMention t m | propIncludesURI t "like-of"       m = True
-verifyMention t m | propIncludesURI t "bookmark-of"   m = True
-verifyMention t m | propIncludesURI t "repost-of"     m = True
-verifyMention t m | propIncludesURI t "quotation-of"  m = True
-verifyMention t m = False -- TODO
+verifyMention ∷ URI → Value → XDocument → Bool
+verifyMention t m _ | propIncludesURI t "in-reply-to"   m = True
+verifyMention t m _ | propIncludesURI t "like-of"       m = True
+verifyMention t m _ | propIncludesURI t "bookmark-of"   m = True
+verifyMention t m _ | propIncludesURI t "repost-of"     m = True
+verifyMention t m _ | propIncludesURI t "quotation-of"  m = True
+verifyMention t _ b = isJust $ b ^? root . entire . named "a" . attributeIs "href" (tshow t)
 
 propIncludesURI ∷ URI → Text → Value → Bool
 propIncludesURI t p m = elem t $ catMaybes $ map (parseURI <=< unCite) $ fromMaybe empty $ m ^? key "properties" . key p . _Array
@@ -65,9 +70,9 @@ propIncludesURI t p m = elem t $ catMaybes $ map (parseURI <=< unCite) $ fromMay
         unCite _            = Nothing
 
 upsertMention ∷ Value → Value → Value
-upsertMention root mention =
-  root & key "properties" . _Object %~ HMS.insert "comment" (Array $ V.fromList upd)
-  where orig = root ^.. key "properties" . key "comment" . values
+upsertMention obj mention =
+  obj & key "properties" . _Object %~ HMS.insert "comment" (Array $ V.fromList upd)
+  where orig = obj ^.. key "properties" . key "comment" . values
         upd = if any (urlMatches mention) orig
                  then orig
                  else orig ++ (String <$> (toList $ headMay $ urls mention))

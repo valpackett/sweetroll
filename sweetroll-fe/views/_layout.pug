@@ -1,13 +1,15 @@
 -
 	assets.basedir = basedir
-	const iconNames = { replies: 'reply', reposts: 'retweet', likes: 'star', bookmarks: 'bookmark', quotations: 'quote-left' }
+	const iconNames = { replies: 'reply', reposts: 'retweet', likes: 'star',
+		bookmarks: 'bookmark', quotations: 'quote-left', mentions: 'link' }
 	const relativeUrl = u => '/' + new URI(u).relativeTo(domainUri).toString()
 
 mixin icon(name, title, opts={})
 	svg(role="img" aria-hidden=title ? "false" : "true" class=_.concat(["icon"], opts.class || []) title=title)
 		use(xlink:href=assets.url('dist/icons.svg') + '#' + name)
-		if title
-			title= title
+			if title
+				title= title
+				// NOTE: chromium only understands <title> nested under something
 
 mixin showContent(properties, long, onlySummary)
 	- const content = helpers.getContent(properties, long, onlySummary)
@@ -100,11 +102,9 @@ mixin showFacepile(entry, name, reactions)
 			-
 				const author = _.get(entry, 'properties.author[0]', {})
 				const authorName = _.get(author, 'properties.name[0]', 'Someone')
-			span.p-author.h-card
-				img.facepile-avatar.u-photo.p-name(alt=authorName title=authorName src=helpers.showAvatar(author) is="lazyload-image")
-				if !_.isEmpty(author.url)
-					each url in author.url
-						data.u-url(value=url)
+			a.h-cite('class'=`p-${_.trimEnd(name, 's')}` href=_.isString(entry) ? entry : _.get(entry, 'properties.url[0]'))
+				span.p-author.h-card
+					img.facepile-avatar.u-photo.p-name(alt=authorName title=authorName src=helpers.showAvatar(author) is="lazyload-image")
 
 mixin showActions(entry, permalink)
 	span.entry-actions

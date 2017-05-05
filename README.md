@@ -75,7 +75,6 @@ TODO same for frontend
   - [ ] separate media endpoint app with upload to openstack/s3, thumbnails, metadata extraction, video conversion
   - [ ] syndication to other micropub endpoints e.g. for silo.pub
 - webmention
-  - [ ] fix all the things
   - [ ] [link removal webmentions](https://webmention.rocks/update/2)
   - [ ] reverify/refetch to update user profiles and stuff
   - [ ] moderation tools

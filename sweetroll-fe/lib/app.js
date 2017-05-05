@@ -218,12 +218,12 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 	const { dobj, obj, feeds, tags } = await db.row(SQL`SELECT
 	set_config('mf2sql.current_user_url', ${(auth && auth.sub) || 'anonymous'}, true),
 	objects_smart_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj,
-	objects_smart_fetch(${reqUriStr}, ${domainUriStr}, ${perPage + 5}, ${request.query.before || null}, ${request.query.after || null}, ${request.query}) AS obj,
+	objects_smart_fetch(${reqUriStr}, ${domainUriStr}, ${perPage}, ${request.query.before || null}, ${request.query.after || null}, ${request.query}) AS obj,
 	objects_fetch_feeds(${domainUriStr}) AS feeds,
 	objects_fetch_categories(${domainUriStr}) AS tags
 	`)
 
-	tplctx.perPage = perPage
+	//tplctx.perPage = perPage
 	tplctx.siteCard = get(dobj, 'properties.author[0]', {})
 	tplctx.siteSettings = get(dobj, 'properties.site-settings[0]', {})
 	tplctx.siteFeeds = feeds

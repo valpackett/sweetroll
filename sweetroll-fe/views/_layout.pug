@@ -199,7 +199,7 @@ mixin showEntry(entry, compactView)
 		.ref-context
 			header.ref-context-reason.ref-context-review
 				- const url = _.get(item, 'properties.url[0]', '')
-				a.review-item-link.p-item('class'=item.type.join(' ') href=helpers.onlyHttpUrl(url))
+				a.review-item-link.p-item('class'=(item.type || ['h-item']).join(' ') href=helpers.onlyHttpUrl(url))
 					= _.get(item, 'properties.name[0]', url)
 				- const best = _.toNumber(_.get(properties, 'best[0]', '5')) || 5
 				each rating in properties.rating || []
@@ -232,7 +232,7 @@ mixin showEntry(entry, compactView)
 					= _.head(properties.name)
 	if !_.isEmpty(properties.content) || !_.isEmpty(properties['repost-of'])
 		fragmention-target(exact)
-			.e-content
+			.e-content('class'=isUntitled ? 'p-name' : '')
 				each repost in properties['repost-of'] || []
 					+showRefContext(repost, { long: true, prop: 'u-repost-of', reasonIcon: 'retweet', reasonIconClass: 'repost', reason: 'reposted', rel: !compactView ? 'repost-of' : '' })
 				- const onlySummary = !isUntitled && compactView
@@ -332,6 +332,7 @@ html(lang="en")
 								form(method="get" action=indieAuthEndpoint).login-form#login-form
 									input(type="hidden" name="client_id" value=domainUri.toString())
 									input(type="hidden" name="redirect_uri" value=domainUri.clone().path('/login/self').toString())
+									input(type="hidden" name="state" value="TODO")
 									.form-field
 										input(type="url" name="me" value=domainUri.toString())
 										button Log in

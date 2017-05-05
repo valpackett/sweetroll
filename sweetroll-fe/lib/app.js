@@ -8,7 +8,7 @@ const fetch = require('node-fetch')
 const querystring = require('querystring')
 const Retry = require('promised-retry')
 const _ = require('lodash')
-const { head, merge, concat, get, isObject, groupBy, includes } = _
+const { head, merge, concat, get, isObject, groupBy, includes, isString } = _
 const pify = require('pify')
 const pug = require('pug')
 const pugTryCatch = require('pug-plugin-try-catch')
@@ -59,10 +59,18 @@ const findWebmentionEndpoint = async (target) => {
 			'Accept-Charset': 'utf-8',
 			'User-Agent': 'Sweetroll',
 		},
+		redirect: 'follow',
+		timeout: 20 * 1000,
 	})
-	return head(LinkHeader.parse(resp.headers.get('Link') || '')
-		.get('rel', 'webmention').map(l => l.uri)) ||
+	const lh = LinkHeader.parse(resp.headers.get('Link') || '')
+	let result = head(lh.get('rel', 'webmention').map(l => l.uri)) ||
 		head(helpers.getHtmlLinksByRel(await resp.text()))
+	console.log(resp.url, result)
+	if (isString(result)) {
+		result = new URI(result).absoluteTo(resp.url).toString()
+		console.log(resp.url, result)
+	}
+	return result
 }
 
 const notificationListener = new Retry({
@@ -117,6 +125,8 @@ const notificationListener = new Retry({
 							method: 'POST',
 							headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
 							body: querystring.stringify(merge(webmentionOutboxConf, { source: eventUrl, target })),
+							redirect: 'follow',
+							timeout: 40 * 1000,
 						})
 						log('Webmention endpoint response for %o: %s %s %s', target, resp.status, resp.statusText, await resp.text())
 					} catch (err) {
@@ -232,10 +242,9 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 			response.status = 401
 			response.set('WWW-Authenticate', 'Bearer')
 			tpl = '401.pug'
-		} else if (obj.type[0] === 'h-entry' || obj.type[0] === 'h-review') {
+		} else if (includes(obj.type, 'h-entry') || includes(obj.type, 'h-review')) {
 			tpl = 'entry.pug'
-		} else if (obj.type[0] === 'h-feed' || obj.type[0] === 'h-x-dynamic-feed') {
-			obj.type[0] = 'h-feed'
+		} else if (includes(obj.type, 'h-feed') || includes(obj.type, 'h-x-dynamic-feed')) {
 			tpl = 'feed.pug'
 		} else {
 			console.error('Unknown entry type', obj.type)

@@ -78,16 +78,16 @@ postMicropub ∷ JWT VerifiedJWT → Maybe Text → MicropubRequest
              → Sweetroll (Headers '[Servant.Header "Location" Text] MicropubResponse)
 postMicropub token host (Create htype props _) = do
   now ← liftIO getCurrentTime
-  obj ← return props
+  prs ← return props
         >>= fetchAllReferenceContexts
         |>  setDates now
         |>  setClientId token
         |>  setCategory
         |>  setContent (readContent =<< lookup "content" props)
         |>  setUrl (base host) now
-        |>  wrapWithType htype
+  let obj = wrapWithType htype prs
   guardDbError =<< queryDb obj upsertObject
-  return $ addHeader (tshow $ fromMaybe "" $ firstStr obj (key "url")) Posted
+  return $ addHeader (fromMaybe "" $ firstStr (Object prs) (key "url")) Posted
 
 postMicropub _ host (Update url upds) = do
   ensureRightDomain (base host) $ parseUri url
@@ -127,6 +127,7 @@ decideSlug props now = unpack . fromMaybe fallback $ getProp "mp-slug" <|> getPr
 
 decideCategory ∷ ObjProperties → Text
 decideCategory props | not (null $ Object props ^.. key "rating" . values) = "_reviews"
+decideCategory props | not (null $ Object props ^.. key "item" . values) = "_reviews"
 decideCategory props | not (null $ Object props ^.. key "ingredient" . values) = "_recipes"
 decideCategory props | not (null $ Object props ^.. key "name" . values) = "_articles"
 decideCategory props | not (null $ Object props ^.. key "in-reply-to" . values) = "_replies"

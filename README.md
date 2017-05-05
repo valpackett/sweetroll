@@ -66,8 +66,8 @@ TODO same for frontend
 ## TODO
 
 - frontend
-	- [ ] bring back the atom feed
-	- [ ] pushover notifications on new/updated mentions
+  - [ ] bring back the atom feed
+  - [ ] webhooks (e.g. pushover notifications) on new/updated mentions, config in `site-settings`
   - [ ] color themes (w/ postcss on the fly)
 - micropub
   - [ ] JWT scopes authorization
@@ -76,6 +76,7 @@ TODO same for frontend
   - [ ] syndication to other micropub endpoints e.g. for silo.pub
 - webmention
   - [ ] fix all the things
+  - [ ] [link removal webmentions](https://webmention.rocks/update/2)
   - [ ] reverify/refetch to update user profiles and stuff
   - [ ] moderation tools
     - [ ] different modes in config: allow all (except blocked), allow known good domains (e.g. domains replied to), premoderate all, turn off webmention
@@ -84,7 +85,6 @@ TODO same for frontend
   - [ ] deduplicate syndicated replies
   - [ ] vouch
   - [ ] private webmention
-  - [ ] queue up mention processing requests in the database instead of sync processing (worth it?)
 
 ## License
 

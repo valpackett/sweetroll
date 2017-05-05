@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TypeOperators, TypeFamilies, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, DataKinds, QuasiQuotes #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TypeOperators, TypeFamilies, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, DataKinds, QuasiQuotes, TemplateHaskell #-}
 
 -- | The IndieAuth/rel-me-auth implementation, using JSON Web Tokens.
 module Sweetroll.Auth (
@@ -77,6 +77,7 @@ postLogin ∷ Maybe Text → [(Text, Text)] → Sweetroll [(Text, Text)]
 postLogin host params = do
   let domain = fromMaybe "localhost" host
   isTestMode ← getConfOpt testMode
+  --let isTestMode = False
   if isTestMode
      then makeAccessToken domain (fromMaybe "unknown" $ lookup "me" params) "post" "example.com"
      else do
@@ -86,18 +87,19 @@ postLogin host params = do
          Right (indieAuthRespParams ∷ [(Text, Text)]) → do
            let me = orEmptyMaybe $ lookup "me" indieAuthRespParams
            guardBool errWrongAuth $ Just domain == fmap (cs . uriRegName) (uriAuthority $ fromMaybe nullURI $ parseURI $ cs me)
-           putStrLn $ cs $ "Authenticated a client: " ++ fromMaybe "unknown" (lookup "client_id" params)
+           $logWarn$ cs $ "Authenticated a client: " ++ fromMaybe "unknown" (lookup "client_id" params)
            makeAccessToken domain me
                            (fromMaybe "post" $ lookup "scope" indieAuthRespParams)
-                           (fromMaybe "example.com" $ lookup "client_id" params)
+                           (fromMaybe "" $ lookup "client_id" params)
          Left e → do
-           putStrLn $ cs $ "Authentication error: " ++ e ++ " / params: " ++ tshow params
+           $logInfo$ cs $ "Authentication error: " ++ e ++ " / params: " ++ tshow params
            throwError errWrongAuth
 
 getSelfLogin ∷ Maybe Text → Maybe Text → Maybe Text → Sweetroll NoContent
 getSelfLogin host me code = do
   let domain = fromMaybe "localhost" host
   isTestMode ← getConfOpt testMode
+  --let isTestMode = False
   let security = if isTestMode then "" else "; Secure; SameSite=Strict"
   result ← postLogin host [ ("me", fromMaybe ("https://" ++ domain) me)
                           , ("code", fromMaybe "" code)

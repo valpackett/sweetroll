@@ -10,7 +10,7 @@
     "devserve": "prok"
   },
   "processes": {
-    "app": "DEBUG=*,-koa-mount,-dynamic-asset-rev LIVE_RELOAD=1 IS_PROXIED=1 INDIEAUTH_ENDPOINT=/login/self WEBSUB_HUB=https://httpbin.org/post MICRO_PANEL_ROOT=/micro-panel node-dev --harmony index.js",
+    "app": "DEBUG=*,-koa-mount,-dynamic-asset-rev LIVE_RELOAD=1 IS_PROXIED=1 INDIEAUTH_ENDPOINT=https://indiecert.net/auth WEBSUB_HUB=https://httpbin.org/post MICRO_PANEL_ROOT=/micro-panel node-dev --harmony index.js",
     "re-asset": "chokidar 'assets/**/*' 'Brocfile.js' --initial -p -c 'yarn assets'"
   },
   "devDependencies": {
@@ -55,7 +55,7 @@
     "dynamic-asset-rev": "^0.1.0",
     "emoji-king": "^0.1.0",
     "gravatar-url": "^2.0.0",
-    "http-link-header": "^0.8.0",
+    "http-link-header": "myfreeweb/node-http-link-header#master",
     "jsonwebtoken": "^7.4.0",
     "koa": "^2.2.0",
     "koa-better-router": "^2.1.1",

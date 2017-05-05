@@ -8,15 +8,16 @@ import           Sweetroll.Prelude
 import           Sweetroll.Conf
 import           Sweetroll.Database (Db, mkDb)
 
-type SweetrollCtx = (SweetrollConf, SweetrollSecrets, ModHttpClient, Db)
+type SweetrollCtx = (SweetrollConf, SweetrollSecrets, ModLogger, ModHttpClient, Db)
 
 type Sweetroll = MagicbaneApp SweetrollCtx
 
 initCtx ∷ SweetrollConf → SweetrollSecrets → IO SweetrollCtx
 initCtx conf secs = do
+  (_, log) ← newLogger $ LogStderr defaultBufSize
   hmg ← newHttpClient
   dbp ← mkDb conf
-  return (conf, secs, hmg, dbp)
+  return (conf, secs, log, hmg, dbp)
 
 getConf ∷ (Has SweetrollConf α, MonadReader α μ) ⇒ μ SweetrollConf
 getConf = asks getter

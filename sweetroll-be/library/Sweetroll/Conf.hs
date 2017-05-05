@@ -13,19 +13,15 @@ data SweetrollSecrets = SweetrollSecrets
   {                secretKey ∷ Text }
 
 data SweetrollConf = SweetrollConf
-  {               httpsWorks ∷ Bool
-  ,            mediaEndpoint ∷ String
-  ,   indieAuthRedirEndpoint ∷ String
-  ,   indieAuthCheckEndpoint ∷ String -- Separated for debugging
+  {            mediaEndpoint ∷ String
+  ,   indieAuthCheckEndpoint ∷ String
   ,                 testMode ∷ Bool
   } deriving (Generic, Show)
 
 instance Default SweetrollConf where
   def = SweetrollConf {
-        httpsWorks               = False
-      , mediaEndpoint            = "/micropub/media"
+        mediaEndpoint            = "/micropub/media"
       , indieAuthCheckEndpoint   = "https://indieauth.com/auth"
-      , indieAuthRedirEndpoint   = "https://indieauth.com/auth"
       , testMode                 = False }
 
 instance FromEnv SweetrollConf where

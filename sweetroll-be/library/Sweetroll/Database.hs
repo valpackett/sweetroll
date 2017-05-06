@@ -61,3 +61,11 @@ undeleteObject = statement q enc dec True
   where q = [r|UPDATE objects SET deleted = False WHERE properties->'url'->>0 = $1|]
         enc = E.value E.text
         dec = D.unit
+
+-- Local domains are domains managed by this Sweetroll instance.
+-- We don't want to fetch-parse-overwrite their entries!
+getLocalDomains ∷ Query () [Text]
+getLocalDomains = statement q enc dec True
+  where q = [r|SELECT properties->'url'->>0 FROM objects WHERE properties->'site-settings' IS NOT NULL|]
+        enc = E.unit
+        dec = D.rowsList $ D.value D.text

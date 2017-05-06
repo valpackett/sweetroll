@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, FlexibleContexts, ConstraintKinds #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, FlexibleContexts, ConstraintKinds, LambdaCase, TemplateHaskell #-}
 
 -- | All the things related to making HTTP requests and parsing them.
 module Sweetroll.HTTPClient (
@@ -12,8 +12,8 @@ module Sweetroll.HTTPClient (
 
 import           Sweetroll.Prelude
 import           Data.Conduit
-import qualified Data.Vector as V
 import qualified Data.HashMap.Strict as HMS
+import qualified Data.Set as S
 import           Data.HashMap.Strict (adjust)
 import           Data.Microformats2.Parser
 import           Data.IndieWeb.MicroformatsUtil
@@ -43,26 +43,46 @@ fetchEntryWithAuthors uri res = do
              Just mfE → (Just mfE, mfRoot)
              _ → (Nothing, mfRoot)
 
-fetchReferenceContexts ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ Text → Object → μ Object
-fetchReferenceContexts k props = do
-    newCtxs ← updateCtxs $ lookup k props
-    return $ insertMap k newCtxs props
-  where updateCtxs (Just (Array v)) = (Array . reverse) `liftM` mapM fetch v
-        updateCtxs _ = return $ Array V.empty
-        fetch v@(Object _) = maybe (return v) (fetch . String) (v ^? key "properties" . key "url" . nth 0 . _String)
-        fetch (String u) = maybeT (return $ String u) return $ do
-          uri ← hoistMaybe $ parseURI $ cs u
-          resp ← hoistMaybe =<< (liftM hush $ runHTTP $ reqU uri >>= performWithHtml)
-          ewa ← fetchEntryWithAuthors uri resp
-          case ewa of
-            (Just (Object entry), _) → do
-              prs ← lift $ fetchAllReferenceContexts $ fromMaybe (HMS.fromList []) $ Object entry ^? key "properties" . _Object
-              return $ Object $ insertMap "properties" (Object prs) $ insertMap "fetched-url" (toJSON u) entry
-            _ → mzero
-        fetch x = return x
+-- TODO: instead of recursively fetching and then doing one db upsert,
+-- fetch - kick off separate link fetch - insert link
 
-fetchAllReferenceContexts ∷ (MonadHTTP ψ μ, MonadCatch μ) ⇒ Object → μ Object
-fetchAllReferenceContexts = fetchReferenceContexts "in-reply-to"
-                        >=> fetchReferenceContexts "like-of"
-                        >=> fetchReferenceContexts "repost-of"
-                        >=> fetchReferenceContexts "quotation-of"
+fetchLinkedEntires' ∷ (MonadHTTP ψ μ, MonadCatch μ, MonadLogger μ) ⇒ Int → Set URI → Set URI → Object → μ Object
+fetchLinkedEntires' 0 excludedDomains excludedURLs props = return props
+fetchLinkedEntires' depthLeft excludedDomains excludedURLs props = do
+  (flip HMS.traverseWithKey) props $ curry $ \case
+    (k, (Array v)) | k `notElem` excludedKeys → Array <$> forM v fetchIfAllowed
+    (_, v) → return v
+  where fetchIfAllowed v@(Object o) = maybe (do 
+              $logInfo$ "Could not extract URL from object for fetching: " ++ tshow o
+              return v)
+            (fetchIfAllowed . String)
+            (v ^? key "properties" . key "url" . nth 0 . _String)
+        fetchIfAllowed (String u) | isNothing (parseURI $ cs u) = do
+          $logInfo$ "Not a parsable URL for fetching: '" ++ u ++ "'"
+          return (String u)
+        fetchIfAllowed (String u)
+          | parseUri u `notElem` excludedURLs
+            && not (any (parseUri u `compareDomain`) excludedDomains) = do
+              $logInfo$ "Fetching: '" ++ u ++ "'"
+              eitherT (\x → do
+                        $logWarn x
+                        return $ String u)
+                      return
+                      (fetch $ parseUri u)
+        fetchIfAllowed x = do
+          $logInfo$ "Not fetching: '" ++ tshow x ++ "'"
+          return x
+        fetch uri = do
+          resp ← hoistEither =<< (runHTTP $ reqU uri >>= performWithHtml)
+          fetchEntryWithAuthors uri resp >>= \case
+            (Just (Object entry), _) → do
+              prs ← lift $ fetchLinkedEntires' (depthLeft - 1) excludedDomains (insertSet uri excludedURLs) $
+                fromMaybe (HMS.fromList []) $ Object entry ^? key "properties" . _Object
+              right $ Object $ insertMap "properties" (Object prs) $ insertMap "fetched-url" (toJSON $ tshow uri) entry
+            x → do
+              left $ "Received something that's not an h-entry when parsing fetched '" ++ tshow uri ++ "'"
+        excludedKeys = S.fromList [ "client-id", "content", "summary", "name", "photo", "video", "audio", "item",
+                                    "syndication", "author", "category", "published", "updated"  ]
+
+fetchLinkedEntires ∷ (MonadHTTP ψ μ, MonadCatch μ, MonadLogger μ) ⇒ Set URI → Set URI → Object → μ Object
+fetchLinkedEntires = fetchLinkedEntires' 5

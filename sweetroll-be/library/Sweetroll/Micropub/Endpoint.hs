@@ -8,6 +8,7 @@ module Sweetroll.Micropub.Endpoint (
 ) where
 
 import           Sweetroll.Prelude hiding (host)
+import qualified Data.Set as S
 import qualified Data.Map.Strict as MS
 import qualified Data.HashMap.Strict as HMS
 import qualified Data.ByteString.Lazy as BL
@@ -78,8 +79,9 @@ postMicropub ∷ JWT VerifiedJWT → Maybe Text → MicropubRequest
              → Sweetroll (Headers '[Servant.Header "Location" Text] MicropubResponse)
 postMicropub token host (Create htype props _) = do
   now ← liftIO getCurrentTime
+  lds ← return . S.fromList . map parseUri =<< guardDbError =<< queryDb () getLocalDomains
   prs ← return props
-        >>= fetchAllReferenceContexts
+        >>= fetchLinkedEntires lds S.empty
         |>  setDates now
         |>  setClientId token
         |>  setCategory

@@ -6,6 +6,7 @@ import           Sweetroll.Prelude hiding (snoc, r)
 import           Control.Lens (snoc)
 import           Text.XML.Lens
 import qualified Data.HashMap.Strict as HMS
+import qualified Data.Set as S
 import qualified Data.Vector as V
 import           Sweetroll.Database
 import           Sweetroll.Context
@@ -37,7 +38,12 @@ processWebmention source target = do
           case mention0 of
             Just mention@(Object _) | verifyMention (parseUri target) mention (responseBody resp) → do
               $logInfo$ "Received correct webmention for " ++ tshow target ++ " from " ++ tshow source
-              -- TODO: insert into db
+              lds ← return . S.fromList . map parseUri =<< guardDbError =<< queryDb () getLocalDomains
+              -- Fetch the actual stuff in the background if allowed:
+              when (not $ any (parseUri source `compareDomain`) lds) $ void $ fork $ do
+                obj' ← mapMOf (key "properties" . _Object) (fetchLinkedEntires lds S.empty) mention
+                guardDbError =<< queryDb obj' upsertObject
+              -- Insert the link into the target right now:
               void $ guardEntryNotFound =<< guardTxError =<< transactDb (do
                 obj' ← queryTx target getObject
                 case obj' of

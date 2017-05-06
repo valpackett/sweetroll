@@ -27,6 +27,7 @@ library
       , transformers-base
       , mtl
       , monad-control
+      , monad-logger
       , resourcet
       , lifted-base
       , containers

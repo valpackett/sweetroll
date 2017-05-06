@@ -242,10 +242,10 @@ mixin showEntry(entry, compactView)
 	footer.entry-footer
 		+showMeta(entry, comments, permalink, compactView)
 		if !compactView
-			each reactions, name in comments || []
+			each reactions, name in comments || {}
 				if name != 'replies' && !_.isEmpty(reactions)
 					+showFacepile(entry, name, reactions)
-	if !compactView && !_.isEmpty(comments.replies)
+	if !compactView && comments && !_.isEmpty(comments.replies)
 		section.entry-replies
 			each reply in comments.replies || []
 				+showRefContext(reply, { prop: 'p-comment', rel: '', long: false, showReplies: true, showContexts: false })

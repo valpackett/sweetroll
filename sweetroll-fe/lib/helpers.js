@@ -90,7 +90,7 @@ module.exports = {
 							result[e] = result[e] || []
 							result[e].push(comment)
 						}
-						return
+						continue
 					}
 				}
 				result.replies.push(comment)

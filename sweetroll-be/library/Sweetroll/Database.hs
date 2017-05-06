@@ -40,25 +40,25 @@ guardTxError (Left x) = throwErrText err500 $ "Database error: " ++ cs (show x)
 
 getObject ∷ Query Text (Maybe Value)
 getObject = statement q enc dec True
-  where q = [r|SELECT objects_smart_fetch($1, null, 0, null, null, null)|]
+  where q = [r|SELECT mf2.objects_smart_fetch($1, null, 0, null, null, null)|]
         enc = E.value E.text
         dec = D.maybeRow $ D.value D.jsonb
 
 upsertObject ∷ Query Value ()
 upsertObject = statement q enc dec True
-  where q = [r|SELECT objects_normalized_upsert($1)|]
+  where q = [r|SELECT mf2.objects_normalized_upsert($1)|]
         enc = E.value E.jsonb
         dec = D.unit
 
 deleteObject ∷ Query Text ()
 deleteObject = statement q enc dec True
-  where q = [r|UPDATE objects SET deleted = True WHERE properties->'url'->>0 = $1|]
+  where q = [r|UPDATE mf2.objects SET deleted = True WHERE properties->'url'->>0 = $1|]
         enc = E.value E.text
         dec = D.unit
 
 undeleteObject ∷ Query Text ()
 undeleteObject = statement q enc dec True
-  where q = [r|UPDATE objects SET deleted = False WHERE properties->'url'->>0 = $1|]
+  where q = [r|UPDATE mf2.objects SET deleted = False WHERE properties->'url'->>0 = $1|]
         enc = E.value E.text
         dec = D.unit
 
@@ -66,6 +66,6 @@ undeleteObject = statement q enc dec True
 -- We don't want to fetch-parse-overwrite their entries!
 getLocalDomains ∷ Query () [Text]
 getLocalDomains = statement q enc dec True
-  where q = [r|SELECT properties->'url'->>0 FROM objects WHERE properties->'site-settings' IS NOT NULL|]
+  where q = [r|SELECT properties->'url'->>0 FROM mf2.objects WHERE properties->'site-settings' IS NOT NULL|]
         enc = E.unit
         dec = D.rowsList $ D.value D.text

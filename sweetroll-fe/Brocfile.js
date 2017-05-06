@@ -104,7 +104,7 @@ const all = new MergeTrees([
 
 const compressExts = ['js', 'css', 'svg', 'html']
 
-module.exports = new MergeTrees([
+module.exports = process.env.SKIP_COMPRESSION ? all : new MergeTrees([
 	all,
 	new Zopfli(all, { extensions: compressExts }),
 	new Brotli(all, { extensions: compressExts })

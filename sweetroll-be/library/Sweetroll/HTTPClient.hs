@@ -43,9 +43,6 @@ fetchEntryWithAuthors uri res = do
              Just mfE → (Just mfE, mfRoot)
              _ → (Nothing, mfRoot)
 
--- TODO: instead of recursively fetching and then doing one db upsert,
--- fetch - kick off separate link fetch - insert link
-
 fetchLinkedEntires' ∷ (MonadHTTP ψ μ, MonadCatch μ, MonadLogger μ) ⇒ Int → Set URI → Set URI → Object → μ Object
 fetchLinkedEntires' 0 excludedDomains excludedURLs props = return props
 fetchLinkedEntires' depthLeft excludedDomains excludedURLs props = do
@@ -82,7 +79,8 @@ fetchLinkedEntires' depthLeft excludedDomains excludedURLs props = do
             x → do
               left $ "Received something that's not an h-entry when parsing fetched '" ++ tshow uri ++ "'"
         excludedKeys = S.fromList [ "client-id", "content", "summary", "name", "photo", "video", "audio", "item",
-                                    "syndication", "author", "category", "published", "updated"  ]
+                                    "syndication", "author", "category", "published", "updated",
+                                    "comment", "like", "repost", "quotation", "rsvp", "mention" ]
 
 fetchLinkedEntires ∷ (MonadHTTP ψ μ, MonadCatch μ, MonadLogger μ) ⇒ Set URI → Set URI → Object → μ Object
-fetchLinkedEntires = fetchLinkedEntires' 5
+fetchLinkedEntires = fetchLinkedEntires' 3

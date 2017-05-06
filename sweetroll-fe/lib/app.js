@@ -1,4 +1,5 @@
 'use strict'
+
 const helpers = require('./helpers')
 const URI = require('urijs')
 const LinkHeader = require('http-link-header')
@@ -8,7 +9,7 @@ const fetch = require('node-fetch')
 const querystring = require('querystring')
 const Retry = require('promised-retry')
 const _ = require('lodash')
-const { head, merge, concat, get, isObject, groupBy, includes, isString } = _
+const { head, merge, concat, get, isObject, groupBy, includes, isString, debounce, some } = _
 const pify = require('pify')
 const pug = require('pug')
 const pugTryCatch = require('pug-plugin-try-catch')
@@ -19,6 +20,8 @@ const env = process.env
 const assets = require('dynamic-asset-rev')('dist')
 const log = require('debug')('sweetroll-fe')
 const sse = require('sse-broadcast')({ compression: true })
+const relaxCSP = env.RELAX_CSP // Mainly for micro-panel development
+const cacheTemplates = env.CACHE_TEMPLATES
 const cache = env.DO_CACHE ? require('lru-cache')({
 	max: parseInt(env.CACHE_MAX_ITEMS || '128')
 }) : null
@@ -39,8 +42,8 @@ const affectedUrls = async (url) => {
 	const objUriStr = norm.clone().toString()
 	const domainUriStr = norm.pathname('').search('').toString()
 	const { obj, feeds } = await db.row(SQL`SELECT
-		objects_smart_fetch(${objUriStr}, ${domainUriStr}, 1, null, null, null) AS obj,
-		objects_fetch_feeds(${domainUriStr}) AS feeds
+		mf2.objects_smart_fetch(${objUriStr}, ${domainUriStr}, 1, null, null, null) AS obj,
+		mf2.objects_fetch_feeds(${domainUriStr}) AS feeds
 	`)
 	if (!obj) return [url]
 	if (!feeds) return [url]
@@ -60,18 +63,26 @@ const findWebmentionEndpoint = async (target) => {
 			'User-Agent': 'Sweetroll',
 		},
 		redirect: 'follow',
-		timeout: 20 * 1000,
+		timeout: 15 * 1000,
 	})
 	const lh = LinkHeader.parse(resp.headers.get('Link') || '')
 	let result = head(lh.get('rel', 'webmention').map(l => l.uri)) ||
 		head(helpers.getHtmlLinksByRel(await resp.text()))
-	console.log(resp.url, result)
 	if (isString(result)) {
 		result = new URI(result).absoluteTo(resp.url).toString()
-		console.log(resp.url, result)
 	}
 	return result
 }
+
+let localDomains = []
+
+const updateLocalDomains = debounce(() => {
+	db.rows(SQL`SELECT properties->'url'->>0 AS url FROM mf2.objects WHERE properties->'site-settings' IS NOT NULL`).then(rows => {
+		localDomains = rows.map(x => x.url)
+	})
+}, 2000)
+
+updateLocalDomains()
 
 const notificationListener = new Retry({
 	name: 'notificationListener',
@@ -89,6 +100,13 @@ const notificationListener = new Retry({
 	success (ldb) {
 		ldb.on('notification', msg => {
 			const eventUrl = JSON.parse(msg.payload).url[0]
+			if (!eventUrl) {
+				return log('skipping event without a url')
+			}
+			updateLocalDomains()
+			if (!some(localDomains, d => eventUrl.startsWith(d))) {
+				return log('skipping event %o for non-local domain', eventUrl)
+			}
 			affectedUrls(eventUrl).then(async ({ affUrls, obj, domainUriStr }) => {
 				const mentions = helpers.findMentionedLinks(obj)
 				log('got change notification for %s, affected URLs: %o, mentioned URLs: %o', eventUrl, affUrls, mentions)
@@ -99,6 +117,12 @@ const notificationListener = new Retry({
 						log('cache delete: %s', u)
 						cache.del(u)
 					}
+				}
+
+				// Publishing to /live
+				const grouped = groupBy(affUrls, u => new URI(u).host())
+				for (const domain of Object.keys(grouped)) {
+					sse.publish(domain, 'change', grouped[domain].join(','))
 				}
 
 				// Publishing to WebSub
@@ -133,17 +157,11 @@ const notificationListener = new Retry({
 						log('Could not send Webmention to %o: %O', target, err)
 					}
 				}
-
-				// Publishing to /live
-				const grouped = groupBy(affUrls, u => new URI(u).host())
-				for (const domain of Object.keys(grouped)) {
-					sse.publish(domain, 'change', grouped[domain].join(','))
-				}
 			}).catch(err => {
 				log('Update processing error: %O', err)
 			})
 		})
-		ldb.query('LISTEN objects')
+		ldb.query('LISTEN mf2_objects')
 	},
 	end (ldb) {
 		ldb.end()
@@ -181,14 +199,14 @@ const searchHandler = async ({ request, response, auth, domainUriStr, tplctx }, 
 	const searchQuery = request.query.q || ''
 	const { dobj, results, feeds, tags } = await db.row(SQL`SELECT
 	set_config('mf2sql.current_user_url', ${(auth && auth.sub) || 'anonymous'}, true),
-	objects_smart_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj,
+	mf2.objects_smart_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj,
 	(SELECT jsonb_agg(row_to_json(subq)) FROM (
 		SELECT
 			type,
 			properties,
 			ts_headline(regexp_replace((objects.properties->'content'->0->'html')::text, E'<.*?>', '', 'g'), query, 'MaxFragments=2') AS snippet,
 			ts_rank_cd(tsv, query, 32) AS rank
-		FROM objects, plainto_tsquery(${searchQuery}) query
+		FROM mf2.objects, plainto_tsquery(${searchQuery}) query
 		WHERE query @@ tsv
 		AND ('*' = ANY(acl) OR current_setting('mf2sql.current_user_url', true) = ANY(acl))
 		AND properties->'url'->>0 LIKE ${domainUriStr + '%'}
@@ -197,8 +215,8 @@ const searchHandler = async ({ request, response, auth, domainUriStr, tplctx }, 
 		ORDER BY rank DESC
 		LIMIT 64
 	) subq) AS results,
-	objects_fetch_feeds(${domainUriStr}) AS feeds,
-	objects_fetch_categories(${domainUriStr}) AS tags
+	mf2.objects_fetch_feeds(${domainUriStr}) AS feeds,
+	mf2.objects_fetch_categories(${domainUriStr}) AS tags
 	`)
 	tplctx.searchQuery = searchQuery
 	tplctx.results = results
@@ -217,10 +235,10 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 	const perPage = 20
 	const { dobj, obj, feeds, tags } = await db.row(SQL`SELECT
 	set_config('mf2sql.current_user_url', ${(auth && auth.sub) || 'anonymous'}, true),
-	objects_smart_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj,
-	objects_smart_fetch(${reqUriStr}, ${domainUriStr}, ${perPage}, ${request.query.before || null}, ${request.query.after || null}, ${request.query}) AS obj,
-	objects_fetch_feeds(${domainUriStr}) AS feeds,
-	objects_fetch_categories(${domainUriStr}) AS tags
+	mf2.objects_smart_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj,
+	mf2.objects_smart_fetch(${reqUriStr}, ${domainUriStr}, ${perPage}, ${request.query.before || null}, ${request.query.after || null}, ${request.query}) AS obj,
+	mf2.objects_fetch_feeds(${domainUriStr}) AS feeds,
+	mf2.objects_fetch_categories(${domainUriStr}) AS tags
 	`)
 
 	//tplctx.perPage = perPage
@@ -247,7 +265,7 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 		} else if (includes(obj.type, 'h-feed') || includes(obj.type, 'h-x-dynamic-feed')) {
 			tpl = 'feed.pug'
 		} else {
-			console.error('Unknown entry type', obj.type)
+			log('Unknown entry type: %o', obj.type)
 			tpl = 'unknown.pug'
 		}
 		if (authorizedPersonally) {
@@ -297,11 +315,10 @@ const addCommonContext = async (ctx, next) => {
 		// App settings
 		indieAuthEndpoint,
 		microPanelRoot,
-		livereload: env.LIVE_RELOAD,
 		// Pug settings
 		basedir: './views',
 		pretty: true,
-		cache: env.CACHE_TEMPLATES,
+		cache: cacheTemplates,
 		plugins: [ pugTryCatch ],
 	}
 	ctx.link = new LinkHeader()
@@ -313,10 +330,11 @@ const addCommonContext = async (ctx, next) => {
 	ctx.link.set({ rel: 'self', uri: ctx.reqUriStr })
 	await next()
 	ctx.response.set('Link', ctx.link.toString())
-	if (!env.LIVE_RELOAD) {
-		// data: URI scripts are made by the HTML Imports polyfill
-		// the hash and data: images are for lazyload-image
-		ctx.response.set('Content-Security-Policy', "default-src 'self'; script-src 'self' data: 'sha256-8F+MddtNx9BXjGv2NKerT8QvmcOQy9sxZWMR6gaJgrU='; img-src 'self' https: data:; frame-ancestors 'none'")
+	// data: URI scripts are made by the HTML Imports polyfill, but that doesn't prevent buildled micro-panel from working
+	if (relaxCSP) {
+		ctx.response.set('Content-Security-Policy', `default-src 'self'; script-src 'self' data: 'unsafe-inline' 'unsafe-eval'; style-src 'self' data: 'unsafe-inline'; img-src 'self' https: data:; form-action 'self' ${indieAuthEndpoint}; frame-ancestors 'none'`)
+	} else {
+		ctx.response.set('Content-Security-Policy', `default-src 'self'; script-src 'self' 'unsafe-eval' 'sha256-8F+MddtNx9BXjGv2NKerT8QvmcOQy9sxZWMR6gaJgrU='; style-src 'self' data: 'unsafe-inline'; img-src 'self' https: data:; form-action 'self' ${indieAuthEndpoint}; frame-ancestors 'none'; upgrade-insecure-requests`)
 	}
 }
 

@@ -127,44 +127,49 @@ mixin showActions(entry, permalink)
 				+icon('star')
 
 mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, long, showReplies, showContexts })
-	-
-		const properties = entry.properties || {}
-		const comments = helpers.separateComments(properties.url, properties.comment || [])
-	.ref-context.h-cite(class=prop)
-		if showContexts && !_.isEmpty(inReplyTo)
-			.ref-context-thread-up
-				each reply in _.get(entry, 'properties.in-reply-to', [])
-					+showRefContext(reply, { prop: 'u-in-reply-to', rel: '', long: false, showReplies, showContexts: true })
-		if reasonIcon
-			header.ref-context-reason
-				+icon(reasonIcon, null, { class: ['icon-ref-reason', 'icon-ref-' + (reasonIconClass || reasonIcon)] })
-				= ' ' + reason + ' '
-				if _.isString(entry)
-					a.p-name.u-url(href=helpers.onlyHttpUrl(entry))= entry
-				else if !_.isObject(entry)
-					| something weird
-		if _.isObject(entry)
-			- const authors = properties.author
-			.ref-context-core
-				a.ref-context-avatar-link(href=helpers.onlyHttpUrl(_.get(authors, '[0].properties.url[0]', '')))
-					img.ref-context-avatar(alt="" src=helpers.showAvatar((authors || [])[0]) is="lazyload-image")
-				.ref-context-content
-					.ref-context-meta
-						span.ref-context-authors
-							if !_.isEmpty(authors)
-								each author in authors
-									span.p-author.h-card
-										a.u-url.p-name(href=_.get(author, 'properties.url[0]'))
-											= _.get(author, 'properties.name[0]')
-						= ' '
-						a.u-url.ref-context-date(rel=rel href=helpers.onlyHttpUrl(_.get(properties, 'url[0]', '')))
-							= moment.utc(_.get(properties, 'published[0]', '')).format('MMM Do YYYY, HH:mm')
-					blockquote.ref-context-content.e-content
-						+showContent(properties, long, false)
-			if showReplies && !_.isEmpty(comments.replies)
-				.ref-context-thread-down
-					each reply in comments.replies
-						+showRefContext(reply, { prop: 'p-comment', rel: '', long: false, showReplies: true, showContexts: false })
+	try
+		-
+			const properties = entry.properties || {}
+			const comments = helpers.separateComments(properties.url, properties.comment || [])
+		.ref-context.h-cite('class'=prop)
+			if showContexts && !_.isEmpty(inReplyTo)
+				.ref-context-thread-up
+					each reply in _.get(entry, 'properties.in-reply-to', [])
+						+showRefContext(reply, { prop: 'u-in-reply-to', rel: '', long: false, showReplies, showContexts: true })
+			if reasonIcon
+				header.ref-context-reason
+					+icon(reasonIcon, null, { class: ['icon-ref-reason', 'icon-ref-' + (reasonIconClass || reasonIcon)] })
+					= ' ' + reason + ' '
+					if _.isString(entry)
+						a.p-name.u-url(href=helpers.onlyHttpUrl(entry))= entry
+					else if !_.isObject(entry)
+						| something weird
+			if _.isObject(entry)
+				- const authors = properties.author
+				.ref-context-core
+					a.ref-context-avatar-link(href=helpers.onlyHttpUrl(_.get(authors, '[0].properties.url[0]', '')))
+						img.ref-context-avatar(alt="" src=helpers.showAvatar((authors || [])[0]) is="lazyload-image")
+					.ref-context-content
+						.ref-context-meta
+							span.ref-context-authors
+								if !_.isEmpty(authors)
+									each author in authors
+										span.p-author.h-card
+											a.u-url.p-name(href=_.get(author, 'properties.url[0]'))
+												= _.get(author, 'properties.name[0]')
+							= ' '
+							a.u-url.ref-context-date(rel=rel href=helpers.onlyHttpUrl(_.get(properties, 'url[0]', '')))
+								= moment.utc(_.get(properties, 'published[0]', '')).format('MMM Do YYYY, HH:mm')
+						blockquote.ref-context-content.e-content
+							+showContent(properties, long, false)
+				if showReplies && !_.isEmpty(comments.replies)
+					.ref-context-thread-down
+						each reply in comments.replies
+							+showRefContext(reply, { prop: 'p-comment', rel: '', long: false, showReplies: true, showContexts: false })
+	catch
+		div.tpl-error Error: could not render the entry
+		- const url = _.get(entry, 'properties.url[0]', 'javascript:void(0)')
+		a('class'=prop href=url)= url
 
 
 mixin showEntry(entry, compactView)
@@ -272,7 +277,7 @@ html(lang="en")
 			link(rel="openid.server" href="https://openid.indieauth.com/openid")
 			link(rel="import" href=assets.url('dist/lazyload-image/lazyload-image.html'))
 			if authedAsAdmin
-				link(rel="import" href=microPanelRoot + '/micro-panel.html')
+				link(rel="import" href=microPanelRoot + '/src/micro-panel.html')
 	body
 		if authedAsAdmin
 			| <micro-panel>
@@ -304,15 +309,9 @@ html(lang="en")
 					block side
 						.site-author-block
 							.p-note !{helpers.getHtml(_.get(siteCard, 'properties.note[0]'))}
-						data.u-photo(value=_.get(siteCard, 'properties.photo[0]'))
-						.site-meta.
-							This website supports #[a(href="https://webmention.net") Webmentions]!
-							Because it's powered by #[a(href="https://github.com/myfreeweb/sweetroll") Sweetroll], an #[a(href="https://indieweb.org") #IndieWeb] engine.
-						block search-form
-							form(method="get" action="/search").search-form
-								.form-field
-									input(name="q" type="search" value=searchQuery)
-									button Search
+						- const photo = _.get(siteCard, 'properties.photo[0]')
+						if photo
+							data.u-photo(value=photo)
 						block site-tags
 							nav.all-tags-ever
 								- const tagfeed = _.head(helpers.matchingFeeds(siteFeeds, {properties: {category: ['--TAG-HERE--']}}).filter(feed => !(_.get(feed, 'params.tag', '').startsWith('_'))))
@@ -323,6 +322,11 @@ html(lang="en")
 												= tagfeed.name.replace('--TAG-HERE--', tag.name)
 												sup.obj_count= `(${tag.obj_count})`
 											| 
+						block search-form
+							form(method="get" action="/search").search-form
+								.form-field
+									input(name="q" type="search" value=searchQuery)
+									button Search
 						block login-form
 							if auth
 								form(method="post" action="/logout").logout-form
@@ -336,6 +340,9 @@ html(lang="en")
 									.form-field
 										input(type="url" name="me" value=domainUri.toString())
 										button Log in
+						.site-meta.
+							This website supports #[a(href="https://webmention.net") Webmentions]!
+							Because it's powered by #[a(href="https://github.com/myfreeweb/sweetroll") Sweetroll], an #[a(href="https://indieweb.org") #IndieWeb] engine.
 			block scripts
 				script(defer src=assets.url('dist/site.js'))
 				script(defer src=assets.url('dist/svgxuse/svgxuse.min.js'))

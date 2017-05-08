@@ -21,7 +21,8 @@ const assets = require('dynamic-asset-rev')('dist')
 const log = require('debug')('sweetroll-fe')
 const sse = require('sse-broadcast')({ compression: true })
 const relaxCSP = env.RELAX_CSP // Mainly for micro-panel development
-const cacheTemplates = env.CACHE_TEMPLATES
+const isProxied = env.IS_PROXIED // Whether to trust X-Forwarded-Proto
+const cacheTemplates = env.CACHE_TEMPLATES // Do not recompile templates on every request. Enable in prod for perf boost
 const cache = env.DO_CACHE ? require('lru-cache')({
 	max: parseInt(env.CACHE_MAX_ITEMS || '128')
 }) : null
@@ -30,8 +31,8 @@ const indieAuthEndpoint = env.INDIEAUTH_ENDPOINT || 'https://indieauth.com/auth'
 const microPanelRoot = env.MICRO_PANEL_ROOT || '/dist/micro-panel' // To allow using the unpacked version of micro-panel in development
 const webmentionOutbox = env.WEBMENTION_OUTBOX // Allow using an external sender like Telegraph, default to sending on our own
 const webmentionOutboxConf = JSON.parse(env.WEBMENTION_OUTBOX_CONF || '{}') // Something like {token: '...'} for Telegraph
-const jwtkey = env.SWEETROLL_SECRET || 'TESTKEY'
-const dburi = env.DATABASE_URI || 'postgres://localhost/sweetroll'
+const jwtkey = env.SWEETROLL_SECRET || 'TESTKEY' // JWT signature private key. Make a long pseudorandom string in production
+const dburi = env.DATABASE_URI || env.DATABASE_URL || 'postgres://localhost/sweetroll'
 const db = new PgAsync(dburi)
 
 const render = async (file, tplctx) =>
@@ -373,7 +374,7 @@ router.addRoute('POST', '/logout', logoutHandler)
 router.addRoute('GET', '/search', compose([addCommonContext, koaCache, searchHandler].filter(isObject)))
 router.options.notFound = compose([addCommonContext, koaCache, handler].filter(isObject))
 const app = new (require('koa'))()
-if (env.IS_PROXIED) {
+if (isProxied) {
 	app.proxy = true
 }
 app.use(router.middleware())

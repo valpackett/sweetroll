@@ -4,7 +4,7 @@ require('dotenv').config()
 const log = require('debug')('sweetroll-fe:listen')
 const app = require('./lib/app')
 const argv = require('minimist')(process.argv.slice(2))
-if (argv.procotol === undefined || argv.protocol === 'http') {
+if (argv.protocol === undefined || argv.protocol === 'http') {
 	const port = argv.port || 3300
 	app.listen(port, () => { log('listening on port', port) })
 } else if (argv.protocol === 'activate') {

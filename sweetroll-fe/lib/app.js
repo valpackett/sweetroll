@@ -27,6 +27,7 @@ const cache = env.DO_CACHE ? require('lru-cache')({
 	max: parseInt(env.CACHE_MAX_ITEMS || '128')
 }) : null
 const websubHub = env.WEBSUB_HUB || 'https://switchboard.p3k.io'
+const websubHubMode = env.WEBSUB_HUB_MODE || 'multi' // Whether to do one request for all URLs affected by a change or one request per URL
 const indieAuthEndpoint = env.INDIEAUTH_ENDPOINT || 'https://indieauth.com/auth'
 const microPanelRoot = env.MICRO_PANEL_ROOT || '/dist/micro-panel' // To allow using the unpacked version of micro-panel in development
 const webmentionOutbox = env.WEBMENTION_OUTBOX // Allow using an external sender like Telegraph, default to sending on our own
@@ -130,16 +131,26 @@ const notificationListener = new Retry({
 				}
 
 				// Publishing to WebSub
-				try {
-					const resp = await fetch(websubHub, {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
-						body: qs.stringify({ 'hub.mode': 'publish', 'hub.topic': affUrls }, { arrayFormat: 'brackets' }),
-					})
-					log('WebSub hub response: %s %s %O', resp.status, resp.statusText, await resp.text())
-				} catch (err) {
-					log('Could not ping the WebSub hub: %O', err)
+				async function pushWebSub(urls) {
+					try {
+						const resp = await fetch(websubHub, {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
+							body: qs.stringify({ 'hub.mode': 'publish', 'hub.topic': urls }, { arrayFormat: 'brackets' }),
+						})
+						log('WebSub hub response: %s %s %O', resp.status, resp.statusText, await resp.text())
+					} catch (err) {
+						log('Could not ping the WebSub hub: %O', err)
+					}
 				}
+				if (websubHubMode === 'multi') {
+					pushWebSub(affUrls)
+				} else {
+					for (const url of affUrls) {
+						pushWebSub(url)
+					}
+				}
+
 
 				// Sending Webmentions
 				for (const target of mentions) {

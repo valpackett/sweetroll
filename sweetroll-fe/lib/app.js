@@ -32,8 +32,11 @@ const microPanelRoot = env.MICRO_PANEL_ROOT || '/dist/micro-panel' // To allow u
 const webmentionOutbox = env.WEBMENTION_OUTBOX // Allow using an external sender like Telegraph, default to sending on our own
 const webmentionOutboxConf = JSON.parse(env.WEBMENTION_OUTBOX_CONF || '{}') // Something like {token: '...'} for Telegraph
 const jwtkey = env.SWEETROLL_SECRET || 'TESTKEY' // JWT signature private key. Make a long pseudorandom string in production
-const dburi = env.DATABASE_URI || env.DATABASE_URL || 'postgres://localhost/sweetroll'
-const db = new PgAsync(dburi)
+const dbsettings = require('pg-connection-string').parse(env.DATABASE_URI || env.DATABASE_URL || 'postgres://localhost/sweetroll')
+dbsettings.application_name = 'sweetroll-fe'
+dbsettings.max = parseInt(env.PG_POOL_MAX || '4')
+dbsettings.ssl = env.PG_SSL
+const db = new PgAsync(dbsettings)
 
 const render = async (file, tplctx) =>
 	pify(pug.renderFile)('views/' + file, tplctx)
@@ -89,7 +92,7 @@ const notificationListener = new Retry({
 	name: 'notificationListener',
 	log: require('debug')('retry:pg-listen'),
 	try () {
-		const ldb = new pg.Client(dburi)
+		const ldb = new pg.Client(dbsettings)
 		ldb.on('error', () => {
 			notificationListener.reset()
 			notificationListener.try()
@@ -242,7 +245,7 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 	mf2.objects_fetch_categories(${domainUriStr}) AS tags
 	`)
 
-	//tplctx.perPage = perPage
+	// tplctx.perPage = perPage
 	tplctx.siteCard = get(dobj, 'properties.author[0]', {})
 	tplctx.siteSettings = get(dobj, 'properties.site-settings[0]', {})
 	tplctx.siteFeeds = feeds

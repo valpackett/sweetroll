@@ -81,7 +81,7 @@ postLogin host params = do
   if isTestMode
      then makeAccessToken domain (fromMaybe "unknown" $ lookup "me" params) "post" "example.com"
      else do
-       checkURI ← getConfOpt indieAuthCheckEndpoint
+       checkURI ← getConfOpt indieauthCheckEndpoint
        resp0 ← runHTTP $ reqS checkURI >>= postForm params >>= performWithBytes
        case (note "Could not read form" . readForm) =<< responseBody <$> resp0 of
          Right (indieAuthRespParams ∷ [(Text, Text)]) → do

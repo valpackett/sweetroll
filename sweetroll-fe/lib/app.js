@@ -6,7 +6,7 @@ const LinkHeader = require('http-link-header')
 const jwt = require('jsonwebtoken')
 const moment = require('moment')
 const fetch = require('node-fetch')
-const querystring = require('querystring')
+const qs = require('qs')
 const Retry = require('promised-retry')
 const _ = require('lodash')
 const { head, merge, concat, get, isObject, groupBy, includes, isString, debounce, some } = _
@@ -32,7 +32,7 @@ const microPanelRoot = env.MICRO_PANEL_ROOT || '/dist/micro-panel' // To allow u
 const webmentionOutbox = env.WEBMENTION_OUTBOX // Allow using an external sender like Telegraph, default to sending on our own
 const webmentionOutboxConf = JSON.parse(env.WEBMENTION_OUTBOX_CONF || '{}') // Something like {token: '...'} for Telegraph
 const jwtkey = env.SWEETROLL_SECRET || 'TESTKEY' // JWT signature private key. Make a long pseudorandom string in production
-const dbsettings = require('pg-connection-string').parse(env.DATABASE_URI || env.DATABASE_URL || 'postgres://localhost/sweetroll')
+const dbsettings = require('pg-connection-string').parse(env.DATABASE_URL || env.DATABASE_URI || 'postgres://localhost/sweetroll')
 dbsettings.application_name = 'sweetroll-fe'
 dbsettings.max = parseInt(env.PG_POOL_MAX || '4')
 dbsettings.ssl = env.PG_SSL
@@ -134,7 +134,7 @@ const notificationListener = new Retry({
 					const resp = await fetch(websubHub, {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
-						body: querystring.stringify({ 'hub.mode': 'publish', 'hub.topic': affUrls }),
+						body: qs.stringify({ 'hub.mode': 'publish', 'hub.topic': affUrls }, { arrayFormat: 'brackets' }),
 					})
 					log('WebSub hub response: %s %s %O', resp.status, resp.statusText, await resp.text())
 				} catch (err) {

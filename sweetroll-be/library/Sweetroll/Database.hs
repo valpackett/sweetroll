@@ -3,7 +3,7 @@
 module Sweetroll.Database where
 
 import           Sweetroll.Prelude hiding (Query)
-import           Sweetroll.Conf (SweetrollConf)
+import           Sweetroll.Conf
 import           Hasql.Query
 import qualified Hasql.Pool as P
 import qualified Hasql.Session as S
@@ -16,7 +16,7 @@ type DbError = P.UsageError
 type Db = P.Pool
 
 mkDb ∷ SweetrollConf → IO Db
-mkDb _ = P.acquire (4, 5, "postgres://localhost/sweetroll?sslmode=disable")
+mkDb conf = P.acquire (4, 5, databaseUrl conf)
 
 useDb ∷ (Has Db α, MonadReader α μ, MonadIO μ) ⇒ S.Session ψ → μ (Either P.UsageError ψ)
 useDb s = asks getter >>= \p → liftIO $ P.use p s

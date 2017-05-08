@@ -44,7 +44,7 @@ fetchEntryWithAuthors uri res = do
              _ → (Nothing, mfRoot)
 
 fetchLinkedEntires' ∷ (MonadHTTP ψ μ, MonadCatch μ, MonadLogger μ) ⇒ Int → Set URI → Set URI → Object → μ Object
-fetchLinkedEntires' 0 excludedDomains excludedURLs props = return props
+fetchLinkedEntires' 0 _ _ props = return props
 fetchLinkedEntires' depthLeft excludedDomains excludedURLs props = do
   (flip HMS.traverseWithKey) props $ curry $ \case
     (k, (Array v)) | k `notElem` excludedKeys → Array <$> forM v fetchIfAllowed

@@ -69,10 +69,11 @@ mixin showMeta(entry, comments, permalink, compactView)
 			each feed in mfeeds
 				= ' '
 				a.p-category(href=relativeUrl(feed.url))= feed.name
-		if !_.isEmpty(properties['client-id'])
+		- const client = properties['client-id'] && _.head(properties['client-id'])
+		if client
 			|  using 
-			a.u-client-id(href=_.head(properties['client-id']))
-				= _.trimEnd(_.head(properties['client-id']).replace('http://', '').replace('https://', ''), '/')
+			a.u-client-id(href=client)
+				= _.trimEnd(_.toString(client).replace('http://', '').replace('https://', ''), '/')
 		if !_.isEmpty(properties.updated) && (_.head(properties.updated) != _.head(properties.published))
 			|  and updated on 
 			time.dt-updated(datetime=_.head(properties.updated))

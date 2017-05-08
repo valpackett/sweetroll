@@ -14,18 +14,20 @@ data SweetrollSecrets = SweetrollSecrets
 
 data SweetrollConf = SweetrollConf
   {            mediaEndpoint ∷ String
-  ,   indieAuthCheckEndpoint ∷ String
+  ,   indieauthCheckEndpoint ∷ String
+  ,              databaseUrl ∷ ByteString
   ,                 testMode ∷ Bool
   } deriving (Generic, Show)
 
 instance Default SweetrollConf where
   def = SweetrollConf {
         mediaEndpoint            = "/micropub/media"
-      , indieAuthCheckEndpoint   = "https://indieauth.com/auth"
+      , indieauthCheckEndpoint   = "https://indieauth.com/auth"
+      , databaseUrl              = "postgres://localhost/sweetroll?sslmode=disable"
       , testMode                 = False }
 
 instance FromEnv SweetrollConf where
-  fromEnv = gFromEnvCustom Option { dropPrefixCount = 0, customPrefix = "SWEETROLL" }
+  fromEnv = gFromEnvCustom Option { dropPrefixCount = 0, customPrefix = "" }
 
 instance Default SweetrollSecrets where
   def = SweetrollSecrets {

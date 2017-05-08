@@ -348,7 +348,7 @@ const koaCache = cache ? require('koa-cash')({
 		return ctx.reqUriFullStr
 	},
 	async get (key, maxAge) {
-		//log('cache get: %s', key)
+		// log('cache get: %s', key)
 		return cache.get(key)
 	},
 	async set (key, value, maxAge) {

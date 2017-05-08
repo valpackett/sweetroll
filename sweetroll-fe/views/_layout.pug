@@ -25,7 +25,7 @@ mixin showContent(properties, long, onlySummary)
 				span.p-x-content-warning= cn + ''
 			span.click-to-reveal(hidden)
 				|  (
-				a(href="javascript:void(0)" onclick="this.parentElement.parentElement.nextSibling.hidden = false;this.parentElement.hidden = true") click to reveal
+				a(href="#") click to reveal
 				| )
 		| <div class="click-to-reveal-target">
 	each photo in properties.photo || []

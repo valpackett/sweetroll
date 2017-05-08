@@ -1,10 +1,17 @@
 /* global Element */
+/*! Sweetroll by https://unrelenting.technology */
 
 // the actual hiding happens in JS to prevent no-JS users from seeing nothing
 const rs = document.querySelectorAll('.click-to-reveal')
 const rts = document.querySelectorAll('.click-to-reveal-target')
 
-for (var i = 0; i < rs.length; i++) { rs[i].hidden = false }
+for (var i = 0; i < rs.length; i++) {
+	rs[i].hidden = false
+	rs[i].addEventListener('click', function (e) {
+		e.target.parentElement.parentElement.nextSibling.hidden = false
+		e.target.parentElement.hidden = true
+	})
+}
 for (i = 0; i < rts.length; i++) { rts[i].hidden = true }
 
 document.getElementById('author-link').onclick = function () {
@@ -31,7 +38,7 @@ function loadComponents () {
 	}
 	if (document.querySelector('fragmention-target')) {
 		loadJs('/dist/findAndReplaceDOMText/src/findAndReplaceDOMText.js')
-			.then(() => loadJs('/dist/indieweb-components/fragmention-target.js'))
+			.then(function () { return loadJs('/dist/indieweb-components/fragmention-target.js') })
 	}
 	if (document.querySelector('simple-live')) {
 		loadJs('/dist/indieweb-components/simple-live.js')

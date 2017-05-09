@@ -374,8 +374,5 @@ html(lang="en")
 			block scripts
 				script(defer src=assets.url('dist/site.js'))
 				script(defer src=assets.url('dist/svgxuse/svgxuse.min.js'))
-				if livereload
-					script.
-						document.write('<script src="//' + (location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1"></sc' + 'ript>')
 		if authedAsAdmin
 			| </micro-panel>

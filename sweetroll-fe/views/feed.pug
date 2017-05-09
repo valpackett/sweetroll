@@ -4,7 +4,7 @@ block append main
 	//- Some pagination info: https://wiki.postgresql.org/images/3/35/Pagination_Done_the_PostgreSQL_Way.pdf
 	simple-live(hidden src="/live")
 		| This feed has been updated. 
-		a(href="javascript:location.reload()") Reload?
+		a.do-reload(href="#") Reload?
 	section.index-category
 		-
 			obj.children = obj.children || []

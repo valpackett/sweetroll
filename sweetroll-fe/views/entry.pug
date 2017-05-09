@@ -3,7 +3,7 @@ extends /_layout.pug
 block append main
 	simple-live(hidden src="/live")
 		| This entry has been updated. 
-		a(href="javascript:location.reload()") Reload?
+		a.do-reload(href="#") Reload?
 	article.entry
 		+showEntry(obj, false)
 	form.entry-webmention-form(method="post" action="/webmention")

@@ -14,6 +14,13 @@ for (var i = 0; i < rs.length; i++) {
 }
 for (i = 0; i < rts.length; i++) { rts[i].hidden = true }
 
+const reloaders = document.querySelectorAll('.do-reload')
+for (i = 0; i < reloaders.length; i++) {
+	reloaders[i].addEventListener('click', function (e) {
+		window.location.reload()
+	})
+}
+
 document.getElementById('author-link').onclick = function () {
 	var a = document.getElementById('author')
 	a.setAttribute('tabindex', '-1')

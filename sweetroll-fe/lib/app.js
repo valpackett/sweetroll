@@ -132,7 +132,7 @@ const notificationListener = new Retry({
 				}
 
 				// Publishing to WebSub
-				async function pushWebSub(urls) {
+				async function pushWebSub (urls) {
 					try {
 						const resp = await fetch(websubHub, {
 							method: 'POST',
@@ -151,7 +151,6 @@ const notificationListener = new Retry({
 						pushWebSub(url)
 					}
 				}
-
 
 				// Sending Webmentions
 				for (const target of mentions) {

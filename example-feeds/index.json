@@ -1,0 +1,28 @@
+{
+  "type": ["h-x-dynamic-feed"],
+  "properties": {
+    "url": ["https://unrelenting.technology/"],
+    "name": ["Home"],
+    "show-in-nav": [true],
+    "show-in-post": [false],
+    "order-in-nav": [0],
+    "site-settings": [
+      {
+        "site-name": "unrelenting.technology"
+      }
+    ],
+    "filter": [
+      { "category": ["_notes"] },
+      { "category": ["_articles"] },
+      { "category": ["_reposts"] }
+    ],
+    "author": [
+      {
+        "type": ["h-card"],
+        "properties": {
+          "note": [ "Author bio. Include rel=me links for IndieAuth here (or certificate fingerprints for IndieCert or whatever)." ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "type": ["h-x-dynamic-feed"],
+  "properties": {
+    "url": ["https://unrelenting.technology/replies"],
+    "name": ["Replies"],
+    "show-in-nav": [true],
+    "show-in-post": [true],
+    "order-in-nav": [2],
+    "filter": [
+      { "category": ["_replies"] }
+    ]
+  }
+}

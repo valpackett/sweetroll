@@ -1,0 +1,13 @@
+{
+  "type": ["h-x-dynamic-feed"],
+  "properties": {
+    "url": ["https://unrelenting.technology/reviews"],
+    "name": ["Reviews"],
+    "show-in-nav": [true],
+    "show-in-post": [true],
+    "order-in-nav": [3],
+    "filter": [
+      { "category": ["_reviews"] }
+    ]
+  }
+}

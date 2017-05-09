@@ -1,0 +1,12 @@
+{
+  "type": ["h-x-dynamic-feed"],
+  "properties": {
+    "url": ["https://unrelenting.technology/tag"],
+    "name": ["#{tag}"],
+    "show-in-nav": [false],
+    "show-in-post": [true],
+    "filter": [
+      { "category": ["{tag}"] }
+    ]
+  }
+}

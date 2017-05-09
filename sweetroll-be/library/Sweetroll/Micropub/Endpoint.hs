@@ -8,6 +8,7 @@ module Sweetroll.Micropub.Endpoint (
 ) where
 
 import           Sweetroll.Prelude hiding (host)
+import qualified Data.Text as T
 import qualified Data.Set as S
 import qualified Data.Map.Strict as MS
 import qualified Data.HashMap.Strict as HMS
@@ -83,7 +84,7 @@ postMicropub token host (Create htype props _) = do
   prs ← return props
         >>= fetchLinkedEntires lds S.empty
         |>  setDates now
-        |>  setClientId token
+        |>  setClientId (tshow $ base host) token
         |>  setCategory
         |>  setContent (readContent =<< lookup "content" props)
         |>  setUrl (base host) now
@@ -146,8 +147,13 @@ categories props = Object props ^.. key "category" . values . _String
 setDates ∷ UTCTime → ObjProperties → ObjProperties
 setDates now = insertMap "updated" (toJSON [ now ]) . insertWith (\_ x → x) "published" (toJSON [ now ])
 
-setClientId ∷ JWT VerifiedJWT → ObjProperties → ObjProperties
-setClientId token = insertMap "client-id" $ toJSON $ filter (/= "example.com") $ catMaybes [ lookup "client_id" $ unregisteredClaims $ claims token ]
+setClientId ∷ Text → JWT VerifiedJWT → ObjProperties → ObjProperties
+setClientId hostbase token = insertMap "client-id" $ toJSON $ filter isAllowed $
+  catMaybes [ lookup "client_id" $ unregisteredClaims $ claims token ]
+  where isAllowed (String "example.com") = False
+        isAllowed (String x) | T.dropWhileEnd (== '/') x == T.dropWhileEnd (== '/') hostbase = False
+        -- funny bug: mf2sql would inline the whole home feed into the client id :D
+        isAllowed _ = True
 
 setCategory ∷ ObjProperties → ObjProperties
 setCategory props | isJust (find (\x → headMay x == Just '_') $ categories props) = props

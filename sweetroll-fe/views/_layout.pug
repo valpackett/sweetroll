@@ -29,18 +29,45 @@ mixin showContent(properties, long, onlySummary)
 				| )
 		| <div class="click-to-reveal-target">
 	each photo in properties.photo || []
-		-
-			const photoUrl = _.isObject(photo) ? photo.value : photo
-			const photoAlt = _.isObject(photo) ? photo.alt : ''
-		if !(_.includes(content, photoUrl.replace('&', '&amp;')) || _.includes(content, photoUrl))
-			img.u-photo.entry-photo(src=photoUrl alt=photoAlt is="lazyload-image")
+		if _.isString(photo)
+			if !(_.includes(content, photo.replace('&', '&amp;')) || _.includes(content, photo))
+				img.u-photo.entry-photo(src=photo alt="" is="lazyload-image")
+		else if _.isObject(photo)
+			if _.isString(photo.value)
+				img.u-photo.entry-photo(src=photo.value alt=photo.alt is="lazyload-image")
+			else if _.isArray(photo.source)
+				picture.entry-photo
+					- const defaultSource = _.head(_.sortBy(photo.source, [ s => !s.default, s => s.type != 'image/jpeg' ]))
+					each source in photo.source
+						if source !== defaultSource
+							source(srcset=(source.srcset || source.src) media=source.media sizes=source.sizes type=source.type)
+					img.u-photo(src=(defaultSource.srcset || defaultSource.src) alt=(defaultSource.alt || photo.alt))
 	each video in properties.video || []
-		if !(_.includes(content, video.replace('&', '&amp;')) || _.includes(content, video))
-			video.entry-video(controls="controls")
-				source.u-video(src=video)
+		if _.isString(video)
+			if !(_.includes(content, video.replace('&', '&amp;')) || _.includes(content, video))
+				video.u-video.entry-video(controls=true src=video)
+		else if _.isObject(video)
+			video.u-video.entry-video(poster=video.poster controls=(video.controls || true) autoplay=(video.autoplay || false) loop=(video.loop || false) muted=(video.muted || false))
+				if _.isString(video.value)
+						source(src=video.value)
+				else if _.isArray(video.source)
+						each source in video.source
+							source(src=source.src type=source.type)
+						each track in video.track || []
+							track(src=track.src kind=track.kind label=track.label srclang=track.srclang default=(track.default || false))
 	each audio in properties.audio || []
-		if !(_.includes(content, audio.replace('&', '&amp;')) || _.includes(content, audio))
-			audio.u-audio.entry-audio(src=audio controls="controls")
+		if _.isString(audio)
+			if !(_.includes(content, audio.replace('&', '&amp;')) || _.includes(content, audio))
+				audio.u-audio.entry-audio(controls=true src=audio)
+		else if _.isObject(audio)
+			audio.u-audio.entry-audio(controls=(audio.controls || true) autoplay=(audio.autoplay || false) loop=(audio.loop || false) muted=(audio.muted || false))
+				if _.isString(audio.value)
+						source(src=audio.value)
+				else if _.isArray(audio.source)
+						each source in audio.source
+							source(src=source.src type=source.type)
+						each track in audio.track || []
+							track(src=track.src kind=track.kind label=track.label srclang=track.srclang default=(track.default || false))
 	| !{ helpers.processContent(content) }
 	if !_.isEmpty(properties['x-content-warning'])
 		| </div>

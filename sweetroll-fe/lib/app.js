@@ -32,6 +32,7 @@ const indieAuthEndpoint = env.INDIEAUTH_ENDPOINT || 'https://indieauth.com/auth'
 const microPanelRoot = env.MICRO_PANEL_ROOT || '/dist/micro-panel' // To allow using the unpacked version of micro-panel in development
 const webmentionOutbox = env.WEBMENTION_OUTBOX // Allow using an external sender like Telegraph, default to sending on our own
 const webmentionOutboxConf = JSON.parse(env.WEBMENTION_OUTBOX_CONF || '{}') // Something like {token: '...'} for Telegraph
+const allowedCdns = env.ALLOWED_CDNS || '' // List of allowed CDN domains for Content-Security-Policy
 const jwtkey = env.SWEETROLL_SECRET || 'TESTKEY' // JWT signature private key. Make a long pseudorandom string in production
 const dbsettings = require('pg-connection-string').parse(env.DATABASE_URL || env.DATABASE_URI || 'postgres://localhost/sweetroll')
 dbsettings.application_name = 'sweetroll-fe'
@@ -347,9 +348,9 @@ const addCommonContext = async (ctx, next) => {
 	ctx.response.set('Link', ctx.link.toString())
 	// data: URI scripts are made by the HTML Imports polyfill, but that doesn't prevent buildled micro-panel from working
 	if (relaxCSP) {
-		ctx.response.set('Content-Security-Policy', `default-src 'self'; script-src 'self' data: 'unsafe-inline' 'unsafe-eval'; style-src 'self' data: 'unsafe-inline'; img-src 'self' https: data:; form-action 'self' ${indieAuthEndpoint}; frame-ancestors 'none'`)
+		ctx.response.set('Content-Security-Policy', `default-src 'self'; script-src 'self' data: 'unsafe-inline' 'unsafe-eval'; style-src 'self' data: 'unsafe-inline'; img-src 'self' https: data:; media-src 'self' ${allowedCdns}; form-action 'self' ${indieAuthEndpoint}; frame-ancestors 'none'`)
 	} else {
-		ctx.response.set('Content-Security-Policy', `default-src 'self'; script-src 'self' 'unsafe-eval' 'sha256-8F+MddtNx9BXjGv2NKerT8QvmcOQy9sxZWMR6gaJgrU='; style-src 'self' data: 'unsafe-inline'; img-src 'self' https: data:; form-action 'self' ${indieAuthEndpoint}; frame-ancestors 'none'; upgrade-insecure-requests`)
+		ctx.response.set('Content-Security-Policy', `default-src 'self'; script-src 'self' 'unsafe-eval' 'sha256-8F+MddtNx9BXjGv2NKerT8QvmcOQy9sxZWMR6gaJgrU='; style-src 'self' data: 'unsafe-inline'; img-src 'self' https: data:; media-src 'self' ${allowedCdns}; form-action 'self' ${indieAuthEndpoint}; frame-ancestors 'none'; upgrade-insecure-requests`)
 	}
 }
 

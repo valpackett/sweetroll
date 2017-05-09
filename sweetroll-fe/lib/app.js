@@ -164,7 +164,7 @@ const notificationListener = new Retry({
 						const resp = await fetch(endp, {
 							method: 'POST',
 							headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
-							body: querystring.stringify(merge(webmentionOutboxConf, { source: eventUrl, target })),
+							body: qs.stringify(merge(webmentionOutboxConf, { source: eventUrl, target })),
 							redirect: 'follow',
 							timeout: 40 * 1000,
 						})

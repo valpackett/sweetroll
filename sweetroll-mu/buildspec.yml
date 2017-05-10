@@ -1,0 +1,14 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+      - npm i -g yarn
+      - yarn
+      #- wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-git-64bit-static.tar.xz
+      #- tar -xvf ffmpeg-git-64bit-static.tar.xz
+      #- rm ffmpeg-git-64bit-static.tar.xz
+
+artifacts:
+  files:
+    - "**/*"

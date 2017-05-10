@@ -4,31 +4,19 @@
 module Sweetroll.Micropub.Endpoint (
   getMicropub
 , postMicropub
-, postMedia
 ) where
 
 import           Sweetroll.Prelude hiding (host)
 import qualified Data.Text as T
 import qualified Data.Set as S
-import qualified Data.Map.Strict as MS
 import qualified Data.HashMap.Strict as HMS
-import qualified Data.ByteString.Lazy as BL
-import           Data.ByteArray.Encoding
 import           Data.Maybe (fromJust)
 import qualified CMark as CM
 import qualified CMark.Highlight as CM
 import           Web.JWT hiding (header, decode)
 import           Servant
-import           System.Directory (renameFile)
-import           System.FilePath.Posix (takeExtension)
-import           Network.Wai.Parse
-import           Network.Mime
-import           Servant.Server.Internal
-import           Control.Monad.Trans.Resource (runResourceT, withInternalState)
-import           Crypto.Hash
 import           Sweetroll.Conf
 import           Sweetroll.Context
-import           Sweetroll.Routes
 import           Sweetroll.Micropub.Request
 import           Sweetroll.Micropub.Response
 import           Sweetroll.HTTPClient
@@ -52,30 +40,6 @@ getMicropub token host (Just "config") props url =
 getMicropub token host _ props url = getMicropub token host (Just "media-endpoint") props url
 
 
-extMap ∷ Map ByteString Text
-extMap = MS.foldlWithKey' (\a x y → MS.insert y x a) MS.empty defaultMimeMap
-
-postMedia ∷ JWT VerifiedJWT → Maybe Text → MultiPartDataT Tmp → Sweetroll (Headers '[Servant.Header "Location" Text] MicropubResponse)
-postMedia _ host multipart = do
-  nameRef ← newIORef ""
-  liftIO $ void $ multipart $ \(params, files) → do
-    forM_ files $ \(name, file) → when (name == "file") $ do
-      content ← BL.readFile $ fileContent file
-      let digest = cs $ asByteString $ convertToBase Base16 (hashlazy content ∷ Digest SHA256)
-      let fileExt = takeExtension $ cs $ fileName file
-      let ext = if fileContentType file == "application/octet-stream"
-                   then fileExt
-                   else fromMaybe fileExt $ (("." ++) . cs) <$> lookup (fileContentType file) extMap
-      let fullname = "static/" ++ digest ++ ext
-      -- let fullname = "/tmp/static/" ++ digest ++ ext
-      renameFile (fileContent file) fullname
-      writeIORef nameRef fullname
-    return (params, files)
-  name ← readIORef nameRef
-  let uri = tshow $ (fromMaybe nullURI $ parseURIReference name) `relativeTo` base host
-  return $ addHeader uri Posted
-
-
 postMicropub ∷ JWT VerifiedJWT → Maybe Text → MicropubRequest
              → Sweetroll (Headers '[Servant.Header "Location" Text] MicropubResponse)
 postMicropub token host (Create htype props _) = do
@@ -94,7 +58,7 @@ postMicropub token host (Create htype props _) = do
 
 postMicropub _ host (Update url upds) = do
   ensureRightDomain (base host) $ parseUri url
-  guardEntryNotFound =<< guardTxError =<< transactDb (do
+  _ ← guardEntryNotFound =<< guardTxError =<< transactDb (do
     obj' ← queryTx url getObject
     case obj' of
       Just obj → do
@@ -168,7 +132,7 @@ setUrl hostbase now props | otherwise =
         slug = decideSlug props now
 
 setContent ∷ Maybe CM.Node → ObjProperties → ObjProperties
-setContent content x | isJust (Object x ^? key "content" . nth 0 . key "html" . _String) = x
+setContent _ x | isJust (Object x ^? key "content" . nth 0 . key "html" . _String) = x
 setContent content x | otherwise = insertMap "content" (toJSON [ object [ "html" .= h ] ]) x
   where h = fromMaybe "" $ rndr `liftM` content
         rndr = CM.nodeToHtml cmarkOptions . CM.highlightNode
@@ -200,29 +164,3 @@ applyUpdates (Object props) (DelFromProps newProps) =
 applyUpdates (Object props) (DelProps newProps) =
   Object $ foldl' (flip HMS.delete) props newProps
 applyUpdates x _ = x
-
-
--- XXX: From https://github.com/haskell-servant/servant/issues/133 -- delete when support lands in servant
-
-class KnownBackend b where
-  type Storage b ∷ *
-  withBackend ∷ Proxy b → (BackEnd (Storage b) → IO r) → IO r
-
-instance KnownBackend Tmp where
-  type Storage Tmp = FilePath
-  withBackend Proxy f = runResourceT . withInternalState $ \s →
-    f (tempFileBackEnd s)
-
-
-type MultiPartData b = ([Param], [File (Storage b)])
-type MultiPartDataT b = ((MultiPartData b → IO (MultiPartData b)) → IO (MultiPartData b))
-
-instance (KnownBackend b, HasServer sublayout context) => HasServer (Files b :> sublayout) context where
-  type ServerT (Files b :> sublayout) m =
-    MultiPartDataT b → ServerT sublayout m
-
-  route Proxy context subserver =
-    route (Proxy ∷ Proxy sublayout) context (addBodyCheck subserver bodyCheck)
-    where
-      bodyCheck = withRequest $ \request → return (\f →
-        withBackend (Proxy ∷ Proxy b) $ \pb → parseRequestBody pb request >>= f)

@@ -21,7 +21,7 @@ data SweetrollConf = SweetrollConf
 
 instance Default SweetrollConf where
   def = SweetrollConf {
-        mediaEndpoint            = "/micropub/media"
+        mediaEndpoint            = "/uploadmedia"
       , indieauthCheckEndpoint   = "https://indieauth.com/auth"
       , databaseUrl              = "postgres://localhost/sweetroll?sslmode=disable"
       , testMode                 = False }

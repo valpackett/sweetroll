@@ -106,7 +106,8 @@ getSelfLogin host me code = do
                           , ("redirect_uri", "https://" ++ domain ++ "/login/self")
                           , ("client_id", "https://" ++ domain ++ "/")
                           , ("grant_type", "authorization_code") ]
-  throwError err303 { errHeaders = [ ("Set-Cookie", "Bearer=" ++ (cs $ fromMaybe "" $ lookup "access_token" result) ++ "; Path=/; Max-Age=5184000; HttpOnly" ++ security)
+  -- XXX: Can't be HttpOnly because media endpoint can be anywhere, need to read from JS
+  throwError err303 { errHeaders = [ ("Set-Cookie", "Bearer=" ++ (cs $ fromMaybe "" $ lookup "access_token" result) ++ "; Path=/; Max-Age=5184000" ++ security)
                                    , (hLocation, "/") ] }
 
 

@@ -7,7 +7,7 @@ A powerful engine for [your personal website].
 - supports categories, tags, full text search, content warnings, photos, videos, audio files, private posts (drafts)
 - lets you talk to other IndieWeb-style websites by sending and receiving [Webmentions] (including [Salmentions] for threaded conversations)
 - lets you use [Micropub] to edit your site (post, update, delete, undelete)
-  - has a media endpoint for file uploads
+  - has a media endpoint for file uploads that optimizes images, extracts Exif metadata, and works on AWS Lambda + S3
   - lets you use [CommonMark Markdown] for post text
   - the included admin panel (micro-panel) itself uses Micropub
 - sends [WebSub] \(formerly PubSubHubbub) notifications on new posts (for [readers])
@@ -72,7 +72,6 @@ TODO same for frontend
 - micropub
   - [ ] JWT scopes authorization
   - [ ] draft flag → draft tag and private acl
-  - [ ] separate media endpoint app with upload to openstack/s3, thumbnails, metadata extraction, video conversion
   - [ ] syndication to other micropub endpoints e.g. for silo.pub
 - webmention
   - [ ] [link removal webmentions](https://webmention.rocks/update/2)

@@ -29,6 +29,7 @@ const cache = env.DO_CACHE ? require('lru-cache')({
 const websubHub = env.WEBSUB_HUB || 'https://switchboard.p3k.io'
 const websubHubMode = env.WEBSUB_HUB_MODE || 'multi' // Whether to do one request for all URLs affected by a change or one request per URL
 const indieAuthEndpoint = env.INDIEAUTH_ENDPOINT || 'https://indieauth.com/auth'
+const mediaEndpoint = env.MEDIA_ENDPOINT || '/uploadmedia'
 const microPanelRoot = env.MICRO_PANEL_ROOT || '/dist/micro-panel' // To allow using the unpacked version of micro-panel in development
 const webmentionOutbox = env.WEBMENTION_OUTBOX // Allow using an external sender like Telegraph, default to sending on our own
 const webmentionOutboxConf = JSON.parse(env.WEBMENTION_OUTBOX_CONF || '{}') // Something like {token: '...'} for Telegraph
@@ -347,9 +348,9 @@ const addCommonContext = async (ctx, next) => {
 	ctx.response.set('Link', ctx.link.toString())
 	// data: URI scripts are made by the HTML Imports polyfill, but that doesn't prevent buildled micro-panel from working
 	if (relaxCSP) {
-		ctx.response.set('Content-Security-Policy', `default-src 'self'; script-src 'self' data: 'unsafe-inline' 'unsafe-eval'; style-src 'self' data: 'unsafe-inline'; img-src 'self' https: data:; media-src 'self' ${allowedCdns}; form-action 'self' ${indieAuthEndpoint}; frame-ancestors 'none'`)
+		ctx.response.set('Content-Security-Policy', `default-src 'self'; script-src 'self' data: 'unsafe-inline' 'unsafe-eval'; style-src 'self' data: 'unsafe-inline'; img-src 'self' https: data:; media-src 'self' ${allowedCdns}; connect-src 'self' ${mediaEndpoint}; form-action 'self' ${indieAuthEndpoint}; frame-ancestors 'none'`)
 	} else {
-		ctx.response.set('Content-Security-Policy', `default-src 'self'; script-src 'self' 'unsafe-eval' 'sha256-8F+MddtNx9BXjGv2NKerT8QvmcOQy9sxZWMR6gaJgrU='; style-src 'self' data: 'unsafe-inline'; img-src 'self' https: data:; media-src 'self' ${allowedCdns}; form-action 'self' ${indieAuthEndpoint}; frame-ancestors 'none'; upgrade-insecure-requests`)
+		ctx.response.set('Content-Security-Policy', `default-src 'self'; script-src 'self' 'unsafe-eval' 'sha256-8F+MddtNx9BXjGv2NKerT8QvmcOQy9sxZWMR6gaJgrU='; style-src 'self' data: 'unsafe-inline'; img-src 'self' https: data:; media-src 'self' ${allowedCdns}; connect-src 'self' ${mediaEndpoint}; form-action 'self' ${indieAuthEndpoint}; frame-ancestors 'none'; upgrade-insecure-requests`)
 	}
 }
 

@@ -58,7 +58,7 @@ if (hasPanel && !('KeyframeEffect' in window && 'timeline' in document && 'play'
 	loadJs('/dist/web-animations-js/web-animations-next.min.js')
 }
 
-if (window.customElements && (!hasPanel || ('import' in document.createElement('link')))) {
+if ('customElements' in window && (!hasPanel || ('import' in document.createElement('link')))) {
 	loadComponents()
 } else {
 	window.addEventListener('WebComponentsReady', loadComponents)
@@ -68,4 +68,17 @@ if (window.customElements && (!hasPanel || ('import' in document.createElement('
 		Element.prototype.getRootNode = true
 	}
 	loadJs('/dist/webcomponentsjs/webcomponents-loader.js')
+}
+
+if ('serviceWorker' in navigator) {
+	navigator.serviceWorker.register('/sw.js')
+	navigator.serviceWorker.addEventListener('message', e => {
+		const data = JSON.parse(e.data)
+		if (data.event === 'refreshed-in-cache') {
+			window.location.reload()
+		}
+	})
+	if ((document.querySelector('meta[name=sw-offline]') || {}).content === 'true') {
+		document.querySelector('.site-main').insertAdjacentHTML('afterbegin', '<div class="offline-popup">You are offline or on a slow connection. The page is still loading if you are not completely disconnected…</div>')
+	}
 }

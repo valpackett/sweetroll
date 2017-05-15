@@ -576,10 +576,10 @@ a.review-item-link {
 	}
 }
 
-simple-live {
+simple-live, .offline-popup {
 	position: sticky;
 	top: 0;
-	width: 100%;
+	width: auto;
 	padding: 1em;
 	border-radius: 4px;
 	background: #832bfa;

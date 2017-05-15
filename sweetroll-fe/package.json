@@ -4,13 +4,13 @@
   "description": "",
   "scripts": {
     "deps": "mkdir -p bower_components; ln -s ../../indieweb-components bower_components/indieweb-components; bower update",
-    "assets": "rm -rf dist.new; broccoli build dist.new && mkdir -p dist && rsync -au --inplace --remove-source-files dist.new/ dist && rm -rf dist.new && echo '==== Built assets'",
+    "assets": "rm -rf dist.new; broccoli build dist.new && mkdir -p dist && find dist -name '*.br' -or -name '*.gz' -delete && rsync -au --inplace --remove-source-files dist.new/ dist && rm -rf dist.new && echo '==== Built assets'",
     "lint": "eslint --ignore-path .gitignore . && echo ESLint OK; stylelint assets/*.css && echo Stylelint OK; true",
     "fmt": "stylefmt assets/*.css",
     "devserve": "prok"
   },
   "processes": {
-    "app": "DEBUG=*,-koa-mount,-dynamic-asset-rev IS_PROXIED=1 RELAX_CSP=1 INDIEAUTH_ENDPOINT=/login/self WEBSUB_HUB=https://httpbin.org/post MICRO_PANEL_ROOT=/micro-panel node-dev --harmony index.js",
+    "app": "DEBUG=*,-koa-mount,-dynamic-asset-rev IS_PROXIED=1 RELAX_CSP=1 INDIEAUTH_ENDPOINT=/login/self WEBSUB_HUB=https://httpbin.org/post MICRO_PANEL_ROOT=/dist/micro-panel node-dev --harmony index.js",
     "re-asset": "chokidar 'assets/**/*' 'Brocfile.js' --initial -p -c 'SKIP_COMPRESSION=1 yarn assets'"
   },
   "devDependencies": {

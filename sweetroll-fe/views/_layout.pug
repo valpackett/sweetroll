@@ -305,11 +305,16 @@ html(lang="en")
 			link(rel="openid.server" href="https://openid.indieauth.com/openid")
 			link(rel="import" href=assets.url('dist/lazyload-image/lazyload-image.html'))
 			if authedAsAdmin
-				link(rel="import" href=microPanelRoot + '/src/micro-panel.html')
-				link(rel="manifest" href=microPanelRoot + '/manifest.json')
+				link(rel='import' href=(microPanelRoot === '/dist/micro-panel' ? assets.url('dist/micro-panel/src/micro-panel.html') : microPanelRoot + '/src/micro-panel.html'))
+				link(rel='manifest' href=(microPanelRoot === '/dist/micro-panel' ? assets.url('dist/micro-panel/manifest.json') : microPanelRoot + '/manifest.json'))
+				link(rel='apple-touch-icon' sizes='180x180' href=microPanelRoot + '/icons/apple-touch-icon.png')
+				link(rel='mask-icon' href=microPanelRoot + '/icons/mask-icon.svg' color='#5bbad5')
+				link(rel='icon' type='image/x-icon' href=microPanelRoot + '/icons/favicon.ico')
+				link(rel='icon' type='image/png' sizes='32x32' href=microPanelRoot + '/icons/favicon-32x32.png')
+				meta(name='theme-color' content='#00897b')
 	body
 		if authedAsAdmin
-			| <micro-panel>
+			| <micro-panel force-micropub-source>
 		block body
 			header.site-header
 				block header

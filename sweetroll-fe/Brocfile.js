@@ -14,23 +14,18 @@ const Pug = require('broccoli-pug-render')
 const PostCSS = require('broccoli-postcss')
 const Concat = require('broccoli-concat')
 
-const bowerdeps = new MergeTrees([
-	new Funnel('bower_components', {
-		include: [
-			'webcomponentsjs/*.js',
-			'web-animations-js/web-animations-next.min.js',
-			'findAndReplaceDOMText/src/*.js',
-			'svgxuse/*.min.js',
-			'lazyload-image/lazyload-image.html',
-			'indieweb-components/*.{html,js}'
-		],
-		exclude: [ 'webcomponentsjs/gulpfile.js' ]
-	}),
-	new Funnel('../micro-panel/dist', {
-		destDir: 'micro-panel',
-		exclude: [ 'bower_components' ]
-	})
-])
+const bowerdeps = new Funnel('bower_components', {
+	include: [
+		'webcomponentsjs/*.js',
+		'web-animations-js/web-animations-next.min.js',
+		'findAndReplaceDOMText/src/*.js',
+		'svgxuse/*.min.js',
+		'localforage/dist/localforage.js',
+		'lazyload-image/lazyload-image.html',
+		'indieweb-components/*.{html,js}'
+	],
+	exclude: [ 'webcomponentsjs/gulpfile.js' ]
+})
 
 let styles = new Concat(new MergeTrees([
 	'assets',
@@ -62,11 +57,45 @@ const icons = new SVGStore(
 	{ outputFile: 'icons.svg' }
 )
 
-const rev = new AssetRev([ bowerdeps, styles, icons ])
+let micropanel = new Funnel('../micro-panel/dist', {
+	destDir: 'micro-panel',
+	exclude: [ 'bower_components' ]
+})
+
+let rev = new AssetRev([ bowerdeps, micropanel, styles, icons ])
+
+const scripts = new ConfigReplace(
+	new Funnel('assets', { include: [ 'site.js', 'offline.js' ] }),
+	rev, {
+		files: [ 'site.js', 'offline.js' ],
+		configPath: 'assets.json',
+		patterns: [{
+			match: /['"]\/dist\/([^'"]+)['"]/g,
+			replacement: (assets, match, url) => `'/dist/${url}?${assets[url]}'`
+		}]
+	}
+)
+
+rev = new AssetRev([ bowerdeps, micropanel, styles, icons, scripts ]) // TODO: append instead of recompute
+
+const sw = new ConfigReplace(
+	new Funnel('assets', { include: [ 'sw.js' ] }),
+	rev, {
+		files: [ 'sw.js' ],
+		configPath: 'assets.json',
+		patterns: [{
+			match: /['"]\/dist\/([^'"]+)['"]/g,
+			replacement: (assets, match, url) => `'/dist/${url}?${assets[url]}'`
+		}, {
+			match: /PRECACHED_ASSETS\s*=\s*\[\]/g,
+			replacement: (assets, _) => `PRECACHED_ASSETS = ${JSON.stringify(Object.keys(assets).map(url => `/dist/${url}?${assets[url]}`))}`
+		}]
+	}
+)
 
 const errPages = new Pug(new MergeTrees([
 	new Funnel('views', {
-		include: ['401.pug', '403.pug', '404.pug', '429.pug', '500.pug', '502.pug', '503.pug', '504.pug', '_layout.pug']
+		include: ['401.pug', '403.pug', '404.pug', '429.pug', '500.pug', '502.pug', '503.pug', '504.pug', 'offline.pug', '_layout.pug']
 	}),
 	rev
 ]), {
@@ -86,20 +115,19 @@ const errPages = new Pug(new MergeTrees([
 	siteSettings: { }
 })
 
-const scripts = new ConfigReplace(
-	new Funnel('assets', { include: [ '*.js' ] }),
-	rev, {
-		files: [ 'site.js' ],
+micropanel = new ConfigReplace(
+	micropanel, rev, {
+		files: [ 'micro-panel/src/micro-panel.html' ],
 		configPath: 'assets.json',
 		patterns: [{
-			match: /['"]\/dist\/([^'"]+)['"]/g,
-			replacement: (assets, match, url) => `'/dist/${url}?${assets[url]}'`
+			match: /['"]micro-panel\.js['"]/g,
+			replacement: (assets, match, url) => `"/dist/micro-panel/src/micro-panel.js?${assets['micro-panel/src/micro-panel.js']}"`
 		}]
 	}
 )
 
 const all = new MergeTrees([
-	bowerdeps, scripts, styles, icons, errPages
+	bowerdeps, micropanel, scripts, sw, styles, icons, errPages
 ])
 
 const compressExts = ['js', 'css', 'svg', 'html']

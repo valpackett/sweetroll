@@ -1,0 +1,15 @@
+extends /_layout.pug
+
+block title
+	title= `Offline / ${siteSettings['site-name']}`
+
+block main
+	h1 Offline
+	p You are offline (or your connection is very slow), and the page you're trying to access hasn't been cached on your device.
+	p If your connection is actually working, the page will load here automatically.
+	p Otherwise, check out the pages you have cached:
+	ul#cached-list
+
+block append scripts
+	script(src=assets.url('dist/localforage/dist/localforage.js'))
+	script(src=assets.url('dist/offline.js'))

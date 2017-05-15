@@ -115,16 +115,19 @@ const errPages = new Pug(new MergeTrees([
 	siteSettings: { }
 })
 
-micropanel = new ConfigReplace(
-	micropanel, rev, {
-		files: [ 'micro-panel/src/micro-panel.html' ],
-		configPath: 'assets.json',
-		patterns: [{
-			match: /['"]micro-panel\.js['"]/g,
-			replacement: (assets, match, url) => `"/dist/micro-panel/src/micro-panel.js?${assets['micro-panel/src/micro-panel.js']}"`
-		}]
-	}
-)
+micropanel = new MergeTrees([
+	micropanel,
+	new ConfigReplace(
+		micropanel, rev, {
+			files: [ 'micro-panel/src/micro-panel.html' ],
+			configPath: 'assets.json',
+			patterns: [{
+				match: /['"]micro-panel\.js['"]/g,
+				replacement: (assets, match, url) => `"/dist/micro-panel/src/micro-panel.js?${assets['micro-panel/src/micro-panel.js']}"`
+			}]
+		}
+	)
+], { overwrite: true })
 
 const all = new MergeTrees([
 	bowerdeps, micropanel, scripts, sw, styles, icons, errPages

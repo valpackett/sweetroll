@@ -10,7 +10,7 @@
     "devserve": "prok"
   },
   "processes": {
-    "app": "DEBUG=*,-koa-mount,-dynamic-asset-rev IS_PROXIED=1 RELAX_CSP=1 INDIEAUTH_ENDPOINT=/login/self WEBSUB_HUB=https://httpbin.org/post MICRO_PANEL_ROOT=/dist/micro-panel node-dev --harmony index.js",
+    "app": "DEBUG=*,-koa-mount,-dynamic-asset-rev IS_PROXIED=1 RELAX_CSP=1 INDIEAUTH_ENDPOINT=/login/self WEBSUB_HUB=https://httpbin.org/post MICRO_PANEL_ROOT=/micro-panel node-dev --harmony index.js",
     "re-asset": "chokidar 'assets/**/*' 'Brocfile.js' --initial -p -c 'SKIP_COMPRESSION=1 yarn assets'"
   },
   "devDependencies": {

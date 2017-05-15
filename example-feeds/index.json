@@ -3,12 +3,16 @@
   "properties": {
     "url": ["https://unrelenting.technology/"],
     "name": ["Home"],
-    "show-in-nav": [true],
-    "show-in-post": [false],
-    "order-in-nav": [0],
     "site-settings": [
       {
         "site-name": "unrelenting.technology"
+      }
+    ],
+    "feed-settings": [
+      {
+        "show-in-nav": true,
+        "show-in-post": false,
+        "order-in-nav": 0
       }
     ],
     "filter": [

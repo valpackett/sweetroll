@@ -3,9 +3,13 @@
   "properties": {
     "url": ["https://unrelenting.technology/articles"],
     "name": ["Articles"],
-    "show-in-nav": [true],
-    "show-in-post": [true],
-    "order-in-nav": [1],
+    "feed-settings": [
+      {
+        "show-in-nav": true,
+        "show-in-post": true,
+        "order-in-nav": 1
+      }
+    ],
     "filter": [
       { "category": ["_articles"] }
     ]

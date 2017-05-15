@@ -77,7 +77,7 @@ mixin showMeta(entry, comments, permalink, compactView)
 		const properties = entry.properties || {}
 		const dateFormat = compactView ? 'MMM Do YYYY, HH:mm' : 'dddd, MMMM Do YYYY, HH:mm'
 		const mfeeds = helpers.matchingFeeds(siteFeeds, entry).filter(feed =>
-			_.get(feed, 'feedObj.properties.show-in-post[0]', false) && !(_.get(feed, 'params.tag', '').startsWith('_')))
+			_.get(feed, 'feedObj.properties.feed-settings[0].show-in-post', false) && !(_.get(feed, 'params.tag', '').startsWith('_')))
 	.entry-meta
 		if !_.isEmpty(properties['x-fake-tags'])
 			div.p-x-fake-tags
@@ -296,7 +296,7 @@ html(lang="en")
 				block title
 					-
 						const name = obj && obj.deleted ? 'Deleted'
-							: (_.includes(obj && obj.type, 'h-feed')
+							: (_.includes(obj && obj.type, 'h-x-dynamic-feed')
 								? helpers.insertParams(_.get(obj, 'properties.name[0]', 'Unnamed feed'), reqUriFull.search(true))
 								: helpers.entryName(obj))
 					title= `${name} / ${siteSettings['site-name']}`
@@ -322,9 +322,9 @@ html(lang="en")
 				main.site-main
 					block main
 						nav.main-nav
-							each feed in _.sortBy(siteFeeds || [], f => _.get(f, 'properties.order-in-nav[0]', 0))
+							each feed in _.sortBy(siteFeeds || [], f => _.get(f, 'properties.feed-settings[0].order-in-nav', 0))
 								- const isCurrentPage = reqUri.equals(_.get(feed, 'properties.url[0]'))
-								if _.get(feed, 'properties.show-in-nav[0]') !== false || isCurrentPage
+								if _.get(feed, 'properties.feed-settings[0].show-in-nav') !== false || isCurrentPage
 									- const name = helpers.insertParams(_.get(feed, 'properties.name[0]', 'Unnamed feed'), reqUriFull.search(true))
 									|  
 									if isCurrentPage

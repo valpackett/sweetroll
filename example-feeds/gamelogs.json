@@ -3,9 +3,13 @@
   "properties": {
     "url": ["https://unrelenting.technology/gamelogs"],
     "name": ["Game logs"],
-    "show-in-nav": [true],
-    "show-in-post": [true],
-    "order-in-nav": [4],
+    "feed-settings": [
+      {
+        "show-in-nav": true,
+        "show-in-post": true,
+        "order-in-nav": 4
+      }
+    ],
     "filter": [
       { "category": ["_gamelogs"] }
     ]

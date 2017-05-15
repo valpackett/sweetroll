@@ -3,7 +3,7 @@
 importScripts('/dist/localforage/dist/localforage.js')
 
 const PRECACHED_ASSETS = []
-const SLOW_NET_TIMEOUT = 3000
+const SLOW_NET_TIMEOUT = 4000
 
 /* Simple push handling (why isn't there built-in functionality for URL focus-or-open?!) */
 

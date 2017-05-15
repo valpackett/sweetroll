@@ -75,6 +75,7 @@
     "pug": "^2.0.0-rc.1",
     "pug-plugin-try-catch": "^1.2.0",
     "sse-broadcast": "^0.4.1",
-    "urijs": "^1.18.10"
+    "urijs": "^1.18.10",
+    "web-push": "^3.2.2"
   }
 }

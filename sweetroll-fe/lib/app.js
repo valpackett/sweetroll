@@ -6,6 +6,7 @@ const LinkHeader = require('http-link-header')
 const jwt = require('jsonwebtoken')
 const moment = require('moment')
 const fetch = require('node-fetch')
+const webpush = require('web-push')
 const qs = require('qs')
 const Retry = require('promised-retry')
 const _ = require('lodash')
@@ -35,6 +36,10 @@ const webmentionOutbox = env.WEBMENTION_OUTBOX // Allow using an external sender
 const webmentionOutboxConf = JSON.parse(env.WEBMENTION_OUTBOX_CONF || '{}') // Something like {token: '...'} for Telegraph
 const allowedCdns = env.ALLOWED_CDNS || '' // List of allowed CDN domains for Content-Security-Policy
 const jwtkey = env.SWEETROLL_SECRET || 'TESTKEY' // JWT signature private key. Make a long pseudorandom string in production
+const vapidKeys = { publicKey: env.VAPID_PUBLIC_KEY, privateKey: env.VAPID_PRIVATE_KEY, contact: env.VAPID_CONTACT } // Web Push keypair
+if (vapidKeys.publicKey) {
+	webpush.setVapidDetails(vapidKeys.contact, vapidKeys.publicKey, vapidKeys.privateKey)
+}
 const dbsettings = require('pg-connection-string').parse(env.DATABASE_URL || env.DATABASE_URI || 'postgres://localhost/sweetroll')
 dbsettings.application_name = 'sweetroll-fe'
 dbsettings.max = parseInt(env.PG_POOL_MAX || '4')
@@ -91,6 +96,86 @@ const updateLocalDomains = debounce(() => {
 
 updateLocalDomains()
 
+const onWebmention = async ({ source, target }) => {
+	const curTime = moment.utc()
+	const domainUriStr = new URI(target).normalizePort().normalizeHostname().pathname('').search('').toString()
+	const { dobj } = await db.row(SQL`SELECT mf2.objects_smart_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj`)
+
+	// Web Push notifications
+	for (const subscription of get(dobj, 'properties.site-web-push-subscriptions', [])) {
+		try {
+			await webpush.sendNotification(subscription, JSON.stringify({
+				url: source,
+				body: 'Got response ' + source + ' to ' + target
+			}))
+		} catch (err) {
+			log('Could not send push notification: %O', err)
+		}
+	}
+}
+
+const onEntryChange = async (eventUrl) => {
+	const { affUrls, obj, domainUriStr } = await affectedUrls(eventUrl)
+	const mentions = helpers.findMentionedLinks(obj)
+	log('got change notification for %s, affected URLs: %o, mentioned URLs: %o', eventUrl, affUrls, mentions)
+
+	// Cache invalidation
+	if (cache) {
+		for (const u of affUrls) {
+			log('cache delete: %s', u)
+			cache.del(u)
+		}
+	}
+
+	// Publishing to /live
+	const grouped = groupBy(affUrls, u => new URI(u).host())
+	for (const domain of Object.keys(grouped)) {
+		sse.publish(domain, 'change', grouped[domain].join(','))
+	}
+
+	// Publishing to WebSub
+	async function pushWebSub (urls) {
+		try {
+			const resp = await fetch(websubHub, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
+				body: qs.stringify({ 'hub.mode': 'publish', 'hub.topic': urls }, { arrayFormat: 'brackets' }),
+			})
+			log('WebSub hub response: %s %s %O', resp.status, resp.statusText, await resp.text())
+		} catch (err) {
+			log('Could not ping the WebSub hub: %O', err)
+		}
+	}
+	if (websubHubMode === 'multi') {
+		pushWebSub(affUrls)
+	} else {
+		for (const url of affUrls) {
+			pushWebSub(url)
+		}
+	}
+
+	// Sending Webmentions
+	for (const target of mentions) {
+		try {
+			const endp = webmentionOutbox || await findWebmentionEndpoint(target)
+			if (!endp) {
+				log('No Webmention endpoint found for %o', target)
+				continue
+			}
+			const resp = await fetch(endp, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
+				body: qs.stringify(merge(webmentionOutboxConf, { source: eventUrl, target })),
+				redirect: 'follow',
+				timeout: 40 * 1000,
+			})
+			log('Webmention endpoint response for %o: %s %s %s', target, resp.status, resp.statusText, await resp.text())
+		} catch (err) {
+			log('Could not send Webmention to %o: %O', target, err)
+		}
+	}
+}
+
 const notificationListener = new Retry({
 	name: 'notificationListener',
 	log: require('debug')('retry:pg-listen'),
@@ -106,78 +191,34 @@ const notificationListener = new Retry({
 	},
 	success (ldb) {
 		ldb.on('notification', msg => {
-			const eventUrl = JSON.parse(msg.payload).url[0]
-			if (!eventUrl) {
-				return log('skipping event without a url')
-			}
-			updateLocalDomains()
-			if (!some(localDomains, d => eventUrl.startsWith(d))) {
-				return log('skipping event %o for non-local domain', eventUrl)
-			}
-			affectedUrls(eventUrl).then(async ({ affUrls, obj, domainUriStr }) => {
-				const mentions = helpers.findMentionedLinks(obj)
-				log('got change notification for %s, affected URLs: %o, mentioned URLs: %o', eventUrl, affUrls, mentions)
-
-				// Cache invalidation
-				if (cache) {
-					for (const u of affUrls) {
-						log('cache delete: %s', u)
-						cache.del(u)
+			try {
+				const payload = JSON.parse(msg.payload)
+				const eventUrl = payload.url && payload.url[0]
+				const eventTarget = payload.target
+				if (eventUrl && isString(eventUrl)) {
+					updateLocalDomains()
+					if (!some(localDomains, d => eventUrl.startsWith(d))) {
+						return log('skipping event %o for non-local domain', eventUrl)
 					}
-				}
-
-				// Publishing to /live
-				const grouped = groupBy(affUrls, u => new URI(u).host())
-				for (const domain of Object.keys(grouped)) {
-					sse.publish(domain, 'change', grouped[domain].join(','))
-				}
-
-				// Publishing to WebSub
-				async function pushWebSub (urls) {
-					try {
-						const resp = await fetch(websubHub, {
-							method: 'POST',
-							headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
-							body: qs.stringify({ 'hub.mode': 'publish', 'hub.topic': urls }, { arrayFormat: 'brackets' }),
-						})
-						log('WebSub hub response: %s %s %O', resp.status, resp.statusText, await resp.text())
-					} catch (err) {
-						log('Could not ping the WebSub hub: %O', err)
+					onEntryChange(eventUrl).catch(err => {
+						log('Update processing error: %O', err)
+					})
+				} else if (eventTarget && isString(eventTarget)) {
+					if (!some(localDomains, d => eventTarget.startsWith(d))) {
+						return log('skipping webmention to %o for non-local domain', eventTarget)
 					}
-				}
-				if (websubHubMode === 'multi') {
-					pushWebSub(affUrls)
+					onWebmention(payload).catch(err => {
+						log('Webmention processing error: %O', err)
+					})
 				} else {
-					for (const url of affUrls) {
-						pushWebSub(url)
-					}
+					return log('skipping unsupported pg pubsub event')
 				}
-
-				// Sending Webmentions
-				for (const target of mentions) {
-					try {
-						const endp = webmentionOutbox || await findWebmentionEndpoint(target)
-						if (!endp) {
-							log('No Webmention endpoint found for %o', target)
-							continue
-						}
-						const resp = await fetch(endp, {
-							method: 'POST',
-							headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
-							body: qs.stringify(merge(webmentionOutboxConf, { source: eventUrl, target })),
-							redirect: 'follow',
-							timeout: 40 * 1000,
-						})
-						log('Webmention endpoint response for %o: %s %s %s', target, resp.status, resp.statusText, await resp.text())
-					} catch (err) {
-						log('Could not send Webmention to %o: %O', target, err)
-					}
-				}
-			}).catch(err => {
-				log('Update processing error: %O', err)
-			})
+			} catch (err) {
+				return log('%O', err)
+			}
 		})
 		ldb.query('LISTEN mf2_objects')
+		ldb.query('LISTEN webmentions')
 	},
 	end (ldb) {
 		ldb.end()
@@ -330,6 +371,7 @@ const addCommonContext = async (ctx, next) => {
 		// App settings
 		indieAuthEndpoint,
 		microPanelRoot,
+		vapidKeys,
 		// Pug settings
 		basedir: './views',
 		pretty: true,

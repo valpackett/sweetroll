@@ -312,6 +312,7 @@ html(lang="en")
 				link(rel='icon' type='image/x-icon' href=microPanelRoot + '/icons/favicon.ico')
 				link(rel='icon' type='image/png' sizes='32x32' href=microPanelRoot + '/icons/favicon-32x32.png')
 				meta(name='theme-color' content='#00897b')
+				meta(name='vapid-pubkey' content=vapidKeys.publicKey)
 	body
 		if authedAsAdmin
 			| <micro-panel force-micropub-source>

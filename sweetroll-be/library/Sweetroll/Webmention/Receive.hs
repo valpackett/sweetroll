@@ -4,7 +4,7 @@ module Sweetroll.Webmention.Receive where
 
 import           Sweetroll.Prelude hiding (snoc, r)
 import           Control.Lens (snoc)
-import           Text.XML.Lens
+import           Text.XML.Lens hiding ((.=))
 import qualified Data.HashMap.Strict as HMS
 import qualified Data.Set as S
 import qualified Data.Vector as V
@@ -50,6 +50,7 @@ processWebmention source target = do
                   Just obj → do
                     let updatedEntry = upsertMention (obj ∷ Value) $ ensurePresentUrl (parseUri source) mention
                     queryTx updatedEntry upsertObject
+                    queryTx (object [ "source" .= source, "target" .= target ]) notifyWebmention
                     return $ Just obj
                   _ → return Nothing)
             Just mention@(Object _) → do

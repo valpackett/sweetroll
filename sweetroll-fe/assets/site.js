@@ -71,7 +71,40 @@ if ('customElements' in window && (!hasPanel || ('import' in document.createElem
 }
 
 if ('serviceWorker' in navigator) {
-	navigator.serviceWorker.register('/sw.js')
+	navigator.serviceWorker.register('/sw.js').then(reg => {
+		if (hasPanel && 'PushManager' in window) {
+			const lnk = document.createElement('a')
+			lnk.href = '#'
+			lnk.setAttribute('class', 'login-link')
+			lnk.innerHTML = 'Request Push Notifications'
+			lnk.addEventListener('click', e => {
+				function urlBase64ToUint8Array (base64String) {
+					const padding = '='.repeat((4 - base64String.length % 4) % 4)
+					const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/')
+					const rawData = window.atob(base64)
+					const outputArray = new Uint8Array(rawData.length)
+					for (let i = 0; i < rawData.length; ++i) {
+						outputArray[i] = rawData.charCodeAt(i)
+					}
+					return outputArray
+				}
+				reg.pushManager.subscribe({
+					userVisibleOnly: true,
+					applicationServerKey: urlBase64ToUint8Array(document.querySelector('meta[name=vapid-pubkey]').content)
+				}).then(sub => fetch('/micropub', {
+					method: 'post',
+					credentials: 'include',
+					headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						action: 'update', url: window.location.origin + '/', add: { 'site-web-push-subscriptions': [sub] }
+					})
+				})).then(resp => alert('Subscription added!'))
+					.catch(e => alert('Subscription error'))
+			})
+			const smeta = document.querySelector('.site-meta')
+			smeta.parentElement.insertBefore(lnk, smeta)
+		}
+	})
 	navigator.serviceWorker.addEventListener('message', e => {
 		const data = JSON.parse(e.data)
 		if (data.event === 'refreshed-in-cache') {

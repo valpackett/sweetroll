@@ -69,3 +69,9 @@ getLocalDomains = statement q enc dec True
   where q = [r|SELECT properties->'url'->>0 FROM mf2.objects WHERE properties->'site-settings' IS NOT NULL|]
         enc = E.unit
         dec = D.rowsList $ D.value D.text
+
+notifyWebmention ∷ Query Value ()
+notifyWebmention = statement q enc dec True
+  where q = [r|SELECT pg_notify('webmentions', $1::text)|]
+        enc = E.value E.json
+        dec = D.unit

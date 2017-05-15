@@ -6,6 +6,8 @@ packages:
     extra-dep: true
   - location: '../../magicbane'
     extra-dep: true
+  - location: '../../microformats2-parser'
+    extra-dep: true
 extra-deps:
   - highlighting-kate-0.6.4 # for the flags
   - data-has-0.2.1.0

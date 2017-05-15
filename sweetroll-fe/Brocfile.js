@@ -66,7 +66,7 @@ const rev = new AssetRev([ bowerdeps, styles, icons ])
 
 const errPages = new Pug(new MergeTrees([
 	new Funnel('views', {
-		include: ['401.pug', '403.pug', '404.pug', '500.pug', '502.pug', '503.pug', '504.pug', '_layout.pug']
+		include: ['401.pug', '403.pug', '404.pug', '429.pug', '500.pug', '502.pug', '503.pug', '504.pug', '_layout.pug']
 	}),
 	rev
 ]), {
@@ -75,7 +75,7 @@ const errPages = new Pug(new MergeTrees([
 	helpers: require('./lib/helpers'),
 	assets: {
 		hashes: null,
-		prefix: '/',
+		prefix: '/dist/',
 		url: function (path) {
 			if (!this.hashes) this.hashes = JSON.parse(readFileSync(join(this.basedir, 'assets.json'), { encoding: 'utf-8' }))
 			path = path.replace('dist/', '')

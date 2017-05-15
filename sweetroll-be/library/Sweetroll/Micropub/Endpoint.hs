@@ -25,10 +25,9 @@ import           Sweetroll.Database
 
 getMicropub ∷ JWT VerifiedJWT → Maybe Text → Maybe Text → [Text] → Maybe Text → Sweetroll MicropubResponse
 getMicropub _ host (Just "source") props (Just url) = do
-  -- TODO: props filtering
   ensureRightDomain (base host) $ parseUri url
   obj ← guardEntryNotFound =<< guardDbError =<< queryDb url getObject
-  return $ Source obj
+  return $ Source $ filterProps obj props
 getMicropub _ _ (Just "syndicate-to") _ _ = do
   return $ SyndicateTo []
 getMicropub _ host (Just "media-endpoint") _ _ = do
@@ -164,3 +163,7 @@ applyUpdates (Object props) (DelFromProps newProps) =
 applyUpdates (Object props) (DelProps newProps) =
   Object $ foldl' (flip HMS.delete) props newProps
 applyUpdates x _ = x
+
+filterProps ∷ Value → [Text] → Value
+filterProps obj [] = obj
+filterProps obj ps = obj & key "properties" . _Object %~ (HMS.filterWithKey (\k v → k `elem` ps))

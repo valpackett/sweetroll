@@ -306,6 +306,7 @@ html(lang="en")
 			link(rel="import" href=assets.url('dist/lazyload-image/lazyload-image.html'))
 			if authedAsAdmin
 				link(rel="import" href=microPanelRoot + '/src/micro-panel.html')
+				link(rel="manifest" href=microPanelRoot + '/manifest.json')
 	body
 		if authedAsAdmin
 			| <micro-panel>

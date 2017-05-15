@@ -10,7 +10,7 @@
   "private": true,
   "dependencies": {
     "web-animations-js": "^2.2.5",
-    "webcomponentsjs": "webcomponents/webcomponentsjs#1.0.0-rc.11",
+    "webcomponentsjs": "webcomponents/webcomponentsjs#1.0.0-rc.12",
     "fetch": "^2.0.2",
     "indieweb-components": "../indieweb-components",
     "sanitize-css": "^5.0.0",

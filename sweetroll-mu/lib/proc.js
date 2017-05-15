@@ -63,5 +63,5 @@ module.exports = (name, buf) => {
 
 	}// else if (ft.mime.startsWith('video')) { }
 
-	return Promise.resolve({ source: [{ name, buf }] })
+	return Promise.resolve({ source: [{ name, buf, type: ft.mime }] })
 }

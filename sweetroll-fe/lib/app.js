@@ -241,6 +241,7 @@ const searchHandler = async ({ request, response, auth, domainUriStr, tplctx }, 
 	tplctx.siteFeeds = feeds
 	tplctx.siteTags = tags
 	response.type = 'text/html'
+	response.set('Referrer-Policy', 'no-referrer')
 	response.body = await render('search.pug', tplctx)
 	return next()
 }
@@ -284,9 +285,7 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 			log('Unknown entry type: %o', obj.type)
 			tpl = 'unknown.pug'
 		}
-		if (authorizedPersonally) {
-			response.set('Referrer-Policy', 'no-referrer')
-		}
+		response.set('Referrer-Policy', authorizedPersonally ? 'no-referrer' : 'no-referrer-when-downgrade')
 	}
 	response.body = await render(tpl, tplctx)
 	return next()
@@ -352,6 +351,9 @@ const addCommonContext = async (ctx, next) => {
 	} else {
 		ctx.response.set('Content-Security-Policy', `default-src 'self'; script-src 'self' 'unsafe-eval' 'sha256-8F+MddtNx9BXjGv2NKerT8QvmcOQy9sxZWMR6gaJgrU='; style-src 'self' data: 'unsafe-inline'; img-src 'self' https: data:; media-src 'self' ${allowedCdns}; connect-src 'self' ${mediaEndpoint}; form-action 'self' ${indieAuthEndpoint}; frame-ancestors 'none'; upgrade-insecure-requests`)
 	}
+	ctx.response.set('X-Frame-Options', 'DENY')
+	ctx.response.set('X-XSS-Protection', '1; mode=block')
+	ctx.response.set('X-Content-Type-Options', 'nosniff')
 }
 
 const koaCache = cache ? require('koa-cash')({

@@ -37,6 +37,17 @@ function loadJs (u) {
 	})
 }
 
+function loadCss (u) {
+	return new Promise(function (resolve, reject) {
+		const el = document.createElement('link')
+		el.href = u
+		el.rel = 'stylesheet'
+		el.onload = resolve
+		el.onerror = reject
+		document.body.appendChild(el)
+	})
+}
+
 // We know these elements only use Custom Elements v1. Skip the loader and HTML imports to load faster.
 
 function loadComponents () {
@@ -68,6 +79,10 @@ if ('customElements' in window && (!hasPanel || ('import' in document.createElem
 		Element.prototype.getRootNode = true
 	}
 	loadJs('/dist/webcomponentsjs/webcomponents-loader.js')
+}
+
+if (document.querySelector('.katex')) {
+	loadCss('/dist/katex/dist/katex.css')
 }
 
 if ('serviceWorker' in navigator) {

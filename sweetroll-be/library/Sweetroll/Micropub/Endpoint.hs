@@ -11,8 +11,6 @@ import qualified Data.Text as T
 import qualified Data.Set as S
 import qualified Data.HashMap.Strict as HMS
 import           Data.Maybe (fromJust)
-import qualified CMark as CM
-import qualified CMark.Highlight as CM
 import           Web.JWT hiding (header, decode)
 import           Servant
 import           Sweetroll.Conf
@@ -49,7 +47,6 @@ postMicropub token host (Create htype props _) = do
         |>  setDates now
         |>  setClientId (tshow $ base host) token
         |>  setCategory
-        |>  setContent (readContent =<< lookup "content" props)
         |>  setUrl (base host) now
   let obj = wrapWithType htype prs
   guardDbError =<< queryDb obj upsertObject
@@ -130,22 +127,10 @@ setUrl hostbase now props | otherwise =
   where category = cs $ drop 1 $ fromMaybe "_unknown" $ find (\x → headMay x == Just '_') $ categories props
         slug = decideSlug props now
 
-setContent ∷ Maybe CM.Node → ObjProperties → ObjProperties
-setContent _ x | isJust (Object x ^? key "content" . nth 0 . key "html" . _String) = x
-setContent content x | otherwise = insertMap "content" (toJSON [ object [ "html" .= h ] ]) x
-  where h = fromMaybe "" $ rndr `liftM` content
-        rndr = CM.nodeToHtml cmarkOptions . CM.highlightNode
-
 wrapWithType ∷ ObjType → ObjProperties → Value
 wrapWithType htype props =
   object [ "type"       .= toJSON htype
          , "properties" .= props ]
-
-readContent ∷ Value → Maybe CM.Node
-readContent c = CM.commonmarkToNode cmarkOptions <$>
-                  (    firstStr c (key "markdown")
-                   <|> firstStr c (key "value")
-                   <|> firstStr c id)
 
 applyUpdates ∷ Value → MicropubUpdate → Value
 applyUpdates (Object props) (ReplaceProps newProps) =

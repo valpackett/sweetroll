@@ -1,18 +1,8 @@
-flags:
-  highlighting-kate: { pcre-light: true }
 packages:
   - '.'
   - location: '../indieweb-algorithms'
     extra-dep: true
-  - location: '../../magicbane'
-    extra-dep: true
-  - location: '../../microformats2-parser'
-    extra-dep: true
 extra-deps:
-  - highlighting-kate-0.6.4 # for the flags
-  - data-has-0.2.1.0
   - hasql-pool-0.4.1
-  - wai-cli-0.1.0
   - rapid-0.1.3
-  - refined-0.1.2.1
-resolver: lts-8.13
+resolver: lts-8.14

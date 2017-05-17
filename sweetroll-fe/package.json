@@ -74,6 +74,12 @@
     "promised-retry": "^0.2.3",
     "pug": "^2.0.0-rc.1",
     "pug-plugin-try-catch": "^1.2.0",
+    "remark": "^7.0.1",
+    "remark-highlight.js": "^5.0.0",
+    "remark-html": "^6.0.0",
+    "remark-html-katex": "^1.0.1",
+    "remark-math": "^1.0.0",
+    "remark-slug": "^4.2.2",
     "sse-broadcast": "^0.4.1",
     "urijs": "^1.18.10",
     "web-push": "^3.2.2"

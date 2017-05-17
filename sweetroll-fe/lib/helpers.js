@@ -10,6 +10,12 @@ const URI = require('urijs')
 const cheerio = require('cheerio')
 const gravatarUrl = require('gravatar-url')
 const log = require('debug')('sweetroll-fe:helpers')
+const markdown = require('remark')()
+	.use(require('remark-slug'))
+	.use(require('remark-math'))
+	.use(require('remark-html-katex'))
+	.use(require('remark-highlight.js'))
+	.use(require('remark-html'))
 
 module.exports = {
 	insertParams (name, params) {
@@ -140,10 +146,22 @@ module.exports = {
 		return [Math.floor(rating), 0, best - Math.floor(rating)]
 	},
 
+	renderMarkdown (content) {
+		return markdown.processSync(content).contents
+	},
+
 	getHtml (content) {
-		content = isObject(content) ? (content.html || content.value) : content
-		content = isString(content) ? content : null
-		return content
+		if (isObject(content)) {
+			if (isString(content.html)) {
+				return content.html
+			}
+			if (isString(content.markdown || content.value)) {
+				return this.renderMarkdown(content.markdown || content.value)
+			}
+		}
+		if (isString(content)) {
+			return this.renderMarkdown(content)
+		}
 	},
 
 	getContent (properties, long, onlySummary) {
@@ -157,7 +175,10 @@ module.exports = {
 	},
 
 	processContent (content) {
-		if (!content) return content
+		if (!isString(content)) {
+			log('non-string content given to processContent')
+			return content
+		}
 		// NOTE: do not use => functions for cheerio!
 		const $ = cheerio.load(content)
 		// detwitterize emoji

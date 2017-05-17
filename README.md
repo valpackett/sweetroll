@@ -8,7 +8,7 @@ A powerful engine for [your personal website].
 - lets you talk to other IndieWeb-style websites by sending and receiving [Webmentions] (including [Salmentions] for threaded conversations)
 - lets you use [Micropub] to edit your site (post, update, delete, undelete)
   - has a media endpoint for file uploads that optimizes images, extracts Exif metadata, and works on AWS Lambda + S3
-  - lets you use [CommonMark Markdown] for post text
+  - lets you use Markdown for post text, with nice [code highlighting](https://github.com/ben-eb/remark-highlight.js) and [math rendering](https://github.com/Rokt33r/remark-math)
   - the included admin panel (micro-panel) itself uses Micropub
 - sends [WebSub] \(formerly PubSubHubbub) notifications on new posts (for [readers])
 - represents *all the things* as [Microformats2] objects
@@ -19,7 +19,6 @@ I'm running it on [my website](https://unrelenting.technology).
 
 [your personal website]: https://indieweb.org
 [kinds of content]: https://indieweb.org/posts
-[CommonMark Markdown]: http://commonmark.org
 [Haskell]: https://www.haskell.org
 [Node.js]: https://nodejs.org/en/
 

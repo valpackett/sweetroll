@@ -89,9 +89,6 @@ library
       , xml-conduit-writer
       , xml-lens
       , async
-      , cmark
-      , cmark-highlight
-      , highlighting-kate
       , raw-strings-qq
       , filepath
     default-language: Haskell2010

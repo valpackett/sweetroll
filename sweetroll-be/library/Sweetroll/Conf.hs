@@ -6,7 +6,6 @@ module Sweetroll.Conf (
 ) where
 
 import           Sweetroll.Prelude
-import           CMark
 import           Data.Microformats2.Parser
 
 data SweetrollSecrets = SweetrollSecrets
@@ -35,6 +34,3 @@ instance Default SweetrollSecrets where
 
 mf2Options ∷ Mf2ParserSettings
 mf2Options = def
-
-cmarkOptions ∷ [CMarkOption]
-cmarkOptions = [ optNormalize, optSmart ]

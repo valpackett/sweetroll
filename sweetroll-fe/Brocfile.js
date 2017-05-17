@@ -22,17 +22,25 @@ const bowerdeps = new Funnel('bower_components', {
 		'svgxuse/*.min.js',
 		'localforage/dist/localforage.js',
 		'lazyload-image/lazyload-image.html',
-		'indieweb-components/*.{html,js}'
+		'indieweb-components/*.{html,js}',
 	],
 	exclude: [ 'webcomponentsjs/gulpfile.js' ]
 })
 
+const npmdeps = new Funnel('node_modules', {
+	include: [
+		'katex/dist/{*.css}',
+		'katex/dist/fonts/*',
+	]
+})
+
 let styles = new Concat(new MergeTrees([
 	'assets',
-	new Funnel('bower_components', { include: ['sanitize-css/*.css', 'normalize-opentype.css/*.css'] })
+	new Funnel('bower_components', { include: ['sanitize-css/*.css', 'normalize-opentype.css/*.css'] }),
+	new Funnel('node_modules', { include: ['highlight.js/styles/github.css'] }),
 ]), {
 	outputFile: 'style.css',
-	inputFiles: ['sanitize-css/sanitize.css', 'normalize-opentype.css/normalize-opentype.css', 'style.css']
+	inputFiles: ['sanitize-css/sanitize.css', 'normalize-opentype.css/normalize-opentype.css', 'style.css', 'highlight.js/styles/github.css']
 })
 
 styles = new SourceMapExtractor(new PostCSS(styles, {
@@ -59,10 +67,10 @@ const icons = new SVGStore(
 
 let micropanel = new Funnel('../micro-panel/dist', {
 	destDir: 'micro-panel',
-	exclude: [ 'bower_components' ]
+	exclude: [ 'bower_components/{webcomponentsjs,web-animations-js,fetch}' ]
 })
 
-let rev = new AssetRev([ bowerdeps, micropanel, styles, icons ])
+let rev = new AssetRev([ bowerdeps, npmdeps, micropanel, styles, icons ])
 
 const scripts = new ConfigReplace(
 	new Funnel('assets', { include: [ 'site.js', 'offline.js' ] }),
@@ -76,7 +84,7 @@ const scripts = new ConfigReplace(
 	}
 )
 
-rev = new AssetRev([ bowerdeps, micropanel, styles, icons, scripts ]) // TODO: append instead of recompute
+rev = new AssetRev([ bowerdeps, npmdeps, micropanel, styles, icons, scripts ]) // TODO: append instead of recompute
 
 const sw = new ConfigReplace(
 	new Funnel('assets', { include: [ 'sw.js' ] }),
@@ -130,7 +138,7 @@ micropanel = new MergeTrees([
 ], { overwrite: true })
 
 const all = new MergeTrees([
-	bowerdeps, micropanel, scripts, sw, styles, icons, errPages
+	bowerdeps, npmdeps, micropanel, scripts, sw, styles, icons, errPages
 ])
 
 const compressExts = ['js', 'css', 'svg', 'html']

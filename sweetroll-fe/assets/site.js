@@ -1,5 +1,5 @@
-/* global Element */
 /*! Sweetroll by https://unrelenting.technology */
+/* global Element */
 
 // the actual hiding happens in JS to prevent no-JS users from seeing nothing
 const rs = document.querySelectorAll('.click-to-reveal')
@@ -95,7 +95,7 @@ if ('serviceWorker' in navigator) {
 			lnk.addEventListener('click', e => {
 				function urlBase64ToUint8Array (base64String) {
 					const padding = '='.repeat((4 - base64String.length % 4) % 4)
-					const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/')
+					const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
 					const rawData = window.atob(base64)
 					const outputArray = new Uint8Array(rawData.length)
 					for (let i = 0; i < rawData.length; ++i) {

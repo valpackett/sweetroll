@@ -1,7 +1,7 @@
 {
   "extends": "standard",
   "parserOptions": { "ecmaVersion": 8 },
-  "env": { "node": true, "es6": true },
+  "env": { "node": true, "es6": true, "browser": true, "serviceworker": true },
   "globals": { },
   "rules": {
     "no-tabs": "off",

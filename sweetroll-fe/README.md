@@ -16,7 +16,7 @@ Use [yarn] to build.
 ```bash
 $ yarn
 
-$ yarn deps
+$ yarn devsetup
 
 $ yarn devserve
 ```

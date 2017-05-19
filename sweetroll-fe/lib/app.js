@@ -97,7 +97,6 @@ const updateLocalDomains = debounce(() => {
 updateLocalDomains()
 
 const onWebmention = async ({ source, target }) => {
-	const curTime = moment.utc()
 	const domainUriStr = new URI(target).normalizePort().normalizeHostname().pathname('').search('').toString()
 	const { dobj } = await db.row(SQL`SELECT mf2.objects_smart_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj`)
 

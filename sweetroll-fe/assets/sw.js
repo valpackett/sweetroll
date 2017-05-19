@@ -1,4 +1,5 @@
 /*! Sweetroll by https://unrelenting.technology | thanks to https://serviceworke.rs */
+/* global localforage */
 
 importScripts('/dist/localforage/dist/localforage.js')
 
@@ -63,7 +64,7 @@ self.addEventListener('fetch', e => {
 					return fromNetwork(e.request, SLOW_NET_TIMEOUT)
 						.then(addPageToCache(e.request))
 						.catch(err => {
-							console.log('SW | %cTimeout%c for page %s', 'color: red', 'color: inherit', e.request.url)
+							console.log('SW | %cTimeout%c for page %s / $O', 'color: red', 'color: inherit', e.request.url, err)
 							fromNetwork(e.request).then(addPageToCache(e.request))
 								.then(() => localforage.getItem('just-refreshed'))
 								.then(jr => localforage.setItem('just-refreshed', setAdd(jr, e.request.url)))
@@ -86,7 +87,7 @@ self.addEventListener('fetch', e => {
 									headers: {}
 								}
 								const hkeys = resp.headers.keys()
-								for (const k of resp.headers.keys()) {
+								for (const k of hkeys) {
 									meta.headers[k] = resp.headers.get(k)
 								}
 								return resp.text().then(body => new Response(body + '<meta name="sw-offline" content="true">', meta))
@@ -94,7 +95,7 @@ self.addEventListener('fetch', e => {
 								console.log('SW | Returning %cfallback%c page for %s (%O)', 'color: red', 'color: inherit', e.request.url, err)
 								return fromCache('fallback', 'offline.html')
 							})
-					})
+						})
 				})
 			)
 		}
@@ -117,17 +118,17 @@ function addPageToCache (req) {
 function fromCache (cname, req) {
 	return caches.open(cname).then(cache => {
 		return cache.match(req).then(matching => {
-			return matching || Promise.reject('no-match')
+			return matching || Promise.reject(new Error('no-match'))
 		})
 	})
 }
 
 function fromNetwork (req, timeout) {
-	return new Promise((fulfill, reject) => {
+	return new Promise((resolve, reject) => {
 		const timeoutId = timeout && setTimeout(reject, timeout)
 		fetch(req).then(resp => {
 			timeoutId && clearTimeout(timeoutId)
-			fulfill(resp)
+			resolve(resp)
 		}, reject)
 	})
 }

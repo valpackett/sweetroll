@@ -183,9 +183,22 @@ mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, lo
 								if !_.isEmpty(authors)
 									each author in authors
 										span.p-author.h-card
-											a.u-url.p-name(href=_.get(author, 'properties.url[0]'))
-												= _.get(author, 'properties.name[0]')
-							= ' '
+											a.u-url(href=_.get(author, 'properties.url[0]'))
+												span.p-name= _.get(author, 'properties.name[0]')
+												- const pN = _.get(author, 'properties.x-pronoun-nominative[0]')
+												- const pO = _.get(author, 'properties.x-pronoun-oblique[0]')
+												if pN || pO
+													sup
+														|  (
+														if pN
+															span.p-x-pronoun-nominative= pN
+														if pN && pO
+															| /
+														if pO
+															span.p-x-pronoun-oblique= pO
+														| )
+										|  
+							|  
 							a.u-url.ref-context-date(rel=rel href=helpers.onlyHttpUrl(_.get(properties, 'url[0]', '')))
 								= moment.utc(_.get(properties, 'published[0]', '')).format('MMM Do YYYY, HH:mm')
 						blockquote.ref-context-content.e-content

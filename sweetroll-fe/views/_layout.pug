@@ -30,10 +30,10 @@ mixin showContent(properties, long, onlySummary)
 	each photo in properties.photo || []
 		if _.isString(photo)
 			if !(_.includes(content, photo.replace('&', '&amp;')) || _.includes(content, photo))
-				img.u-photo.entry-photo(src=photo alt="" is="lazyload-image")
+				img.u-photo.entry-photo(src=photo alt="")
 		else if _.isObject(photo)
 			if _.isString(photo.value)
-				img.u-photo.entry-photo(src=photo.value alt=photo.alt is="lazyload-image")
+				img.u-photo.entry-photo(src=photo.value alt=photo.alt)
 			else if _.isArray(photo.source)
 				picture.entry-photo
 					- const defaultSource = _.head(_.sortBy(photo.source, [ s => !s.default, s => s.type != 'image/jpeg' ]))
@@ -131,7 +131,7 @@ mixin showFacepile(entry, name, reactions)
 				const authorName = _.get(author, 'properties.name[0]', 'Someone')
 			a.h-cite('class'=`p-${_.trimEnd(name, 's')}` href=_.isString(entry) ? entry : _.get(entry, 'properties.url[0]'))
 				span.p-author.h-card
-					img.facepile-avatar.u-photo.p-name(alt=authorName title=authorName src=helpers.showAvatar(author) is="lazyload-image")
+					img.facepile-avatar.u-photo.p-name(alt=authorName title=authorName src=helpers.showAvatar(author))
 
 mixin showActions(entry, permalink)
 	span.entry-actions
@@ -175,7 +175,7 @@ mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, lo
 				- const authors = properties.author
 				.ref-context-core
 					a.ref-context-avatar-link(href=helpers.onlyHttpUrl(_.get(authors, '[0].properties.url[0]', '')))
-						img.ref-context-avatar(alt="" src=helpers.showAvatar((authors || [])[0]) is="lazyload-image")
+						img.ref-context-avatar(alt="" src=helpers.showAvatar((authors || [])[0]))
 					.ref-context-content
 						.ref-context-meta
 							span.ref-context-authors
@@ -298,12 +298,13 @@ mixin showEntry(entry, compactView)
 
 - const authedAsAdmin = auth && new URI(auth.sub).equals(domainUri)
 doctype html
-html(lang="en")
+html(lang=_.get(siteSettings, 'site-lang', 'en'))
 	head
 		block head
 			meta(charset="utf-8")
 			meta(name="viewport" content="width=device-width, initial-scale=1")
 			link(rel="stylesheet" href=assets.url('dist/style.css'))
+			link(rel="stylesheet" href=assets.url(`dist/highlight.js/styles/${_.get(siteSettings, 'code-highlight-theme', 'github')}.css`))
 			if siteSettings
 				block title
 					-
@@ -315,7 +316,6 @@ html(lang="en")
 			if domainUri
 				link(rel="openid.delegate" href=domainUri.toString())
 			link(rel="openid.server" href="https://openid.indieauth.com/openid")
-			link(rel="import" href=assets.url('dist/lazyload-image/lazyload-image.html'))
 			if authedAsAdmin
 				link(rel='import' href=(microPanelRoot === '/dist/micro-panel' ? assets.url('dist/micro-panel/src/micro-panel.html') : microPanelRoot + '/src/micro-panel.html'))
 				link(rel='manifest' href=(microPanelRoot === '/dist/micro-panel' ? assets.url('dist/micro-panel/manifest.json') : microPanelRoot + '/manifest.json'))

@@ -410,24 +410,11 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 .entry-footer {
 	font-size: 0.8em;
 	color: #777;
-
-	& a {
-		color: var(--link-color);
-
-		&:hover, &:focus, &:active {
-			color: color(var(--link-color) l(+15%));
-		}
-	}
 }
 
 .entry-actions indie-action a {
 	padding: 0.35rem 0.5rem 0.35rem 0;
 	display: inline-block;
-	color: color(var(--link-color) tint(22%));
-
-	&:hover, &:focus, &:active {
-		color: color(var(--link-color) tint(18%) l(+15%));
-	}
 }
 
 .entry-actions indie-action:last-child a {

@@ -25,6 +25,7 @@ const npmdeps = new Funnel('node_modules', {
 		'localforage/dist/localforage.js',
 		'lazyload-image/lazyload-image.html',
 		'indieweb-components/*.{html,js}',
+		'highlight.js/styles/*.css',
 	],
 	exclude: [ '@webcomponents/webcomponentsjs/gulpfile.js' ],
 })
@@ -32,11 +33,11 @@ const npmdeps = new Funnel('node_modules', {
 let styles = new Concat(new MergeTrees([
 	'assets',
 	new Funnel('node_modules', { include: [
-		'sanitize.css/*.css', 'normalize-opentype.css/*.css', 'highlight.js/styles/github.css'
+		'sanitize.css/*.css', 'normalize-opentype.css/*.css'
 	] }),
 ]), {
 	outputFile: 'style.css',
-	inputFiles: ['sanitize.css/sanitize.css', 'normalize-opentype.css/normalize-opentype.css', 'style.css', 'highlight.js/styles/github.css']
+	inputFiles: ['sanitize.css/sanitize.css', 'normalize-opentype.css/normalize-opentype.css', 'style.css']
 })
 
 styles = new SourceMapExtractor(new PostCSS(styles, {

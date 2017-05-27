@@ -31,7 +31,7 @@ const npmdeps = new Funnel('node_modules', {
 })
 
 let styles = new Concat(new MergeTrees([
-	'assets',
+	new Funnel('assets', { include: [ '*.css' ] }),
 	new Funnel('node_modules', { include: [
 		'sanitize.css/*.css', 'normalize-opentype.css/*.css'
 	] }),
@@ -45,7 +45,7 @@ styles = new SourceMapExtractor(new PostCSS(styles, {
 		{ module: require('postcss-nesting') },
 		{ module: require('postcss-responsive-type') },
 		{ module: require('postcss-flexbugs-fixes') },
-		{ module: require('postcss-css-variables') },
+		{ module: require('postcss-custom-properties') },
 		{ module: require('postcss-color-function') },
 		{ module: require('autoprefixer') },
 		{ module: require('cssnano') },
@@ -53,6 +53,8 @@ styles = new SourceMapExtractor(new PostCSS(styles, {
 	from: 'assets/style.css',
 	map: { inline: true, annotation: true }
 }))
+
+styles = new MergeTrees([styles, new Funnel('assets', { include: ['color.css'] })])
 
 const icons = new SVGStore(
 	new Funnel('node_modules/octicons/build/svg', {
@@ -106,6 +108,7 @@ const errPages = new Pug(new MergeTrees([
 ]), {
 	pretty: true,
 	_: require('lodash'),
+	qs: require('qs'),
 	helpers: require('./lib/helpers'),
 	assets: {
 		hashes: null,

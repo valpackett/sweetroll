@@ -12,7 +12,7 @@ windows:
     start_directory: sweetroll-fe/
     layout: main-horizontal
     panes:
-      - yarn devserve
+      - npm run devserve
       - vi lib/app.js
   - window_name: be
     start_directory: sweetroll-be/

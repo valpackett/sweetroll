@@ -1,0 +1,76 @@
+:root {
+	--background-color: #efeaf4;
+	--accent-color: #706aca;
+	--text-color: #34495e;
+	--link-color: color(var(--accent-color) shade(35%) l(+10%));
+	--content-link-color: #408acc;
+	--heading-color: color(var(--text-color) l(-15%));
+	--input-color: #f9f9f9;
+	--button-color: color(var(--accent-color) shade(10%) l(+10%));
+	--layer-1-color: color(var(--background-color) tint(60%));
+	--layer-2-color: color(var(--background-color) tint(54%) l(-5%));
+	--layer-opt-color: color(var(--background-color) tint(54%) l(-10%));
+	background: var(--background-color);
+	color: var(--text-color);
+}
+
+h1, h2, h3, h4, h5, h6 {
+	color: var(--heading-color);
+}
+
+blockquote {
+	border-color: var(--accent-color);
+}
+
+a, body .ref-context-meta a {
+	color: var(--link-color);
+
+	&:hover, &:focus, &:active {
+		color: color(var(--link-color) l(+15%));
+	}
+}
+
+.e-content a, .e-note a {
+	color: var(--content-link-color);
+
+	&:hover, &:focus, &:active {
+		color: color(var(--content-link-color) shade(5%) l(+15%));
+	}
+}
+
+.form-field {
+	border-color: var(--accent-color);
+
+	& input {
+		background: var(--input-color);
+	}
+
+	& button {
+		border-left: 1px solid var(--accent-color);
+		background: var(--button-color);
+		color: var(--background-color);
+	}
+
+	& input:focus, & button:hover, & button:focus {
+		background: color(var(--input-color) tint(15%));
+		color: var(--accent-color);
+	}
+
+	& *:focus {
+		box-shadow: color(var(--accent-color) a(50%)) 0 0 4px;
+	}
+}
+
+.entry, .site-author-block, .entry-webmention-form {
+	background: var(--layer-1-color);
+	border-color: var(--accent-color);
+}
+
+.entry-webmention-form {
+	background: var(--layer-opt-color);
+}
+
+.ref-context {
+	background: var(--layer-2-color);
+	border-color: color(var(--accent-color) l(-10%));
+}

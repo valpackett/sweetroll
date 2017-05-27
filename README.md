@@ -4,7 +4,7 @@ A powerful engine for [your personal website].
 
 - lets you publish many [kinds of content]
   - notes (microblog posts), articles (big blog posts), replies, reposts, likes, quotations, bookmarks, reviews…
-- supports categories, tags, full text search, content warnings, photos, videos, audio files, private posts (drafts), automatic offline in-browser caching (ServiceWorkers)
+- supports categories, tags, full text search, content warnings, photos, videos, audio files, private posts (drafts), automatic offline in-browser caching (ServiceWorkers), color theme customization
 - lets you talk to other IndieWeb-style websites by sending and receiving [Webmentions] (including [Salmentions] for threaded conversations)
 - lets you use [Micropub] to edit your site (post, update, delete, undelete)
   - has a media endpoint for file uploads that optimizes images, extracts Exif metadata, and works on AWS Lambda + S3
@@ -67,8 +67,6 @@ TODO same for frontend
 - frontend
   - [ ] bring back the atom feed
   - [ ] webhooks (e.g. pushover notifications) on new/updated mentions, config in `site-settings`
-  - [ ] color themes (w/ postcss on the fly)
-	- [ ] fix review stars
 - micropub
   - [ ] JWT scopes authorization
   - [ ] draft flag → draft tag and private acl

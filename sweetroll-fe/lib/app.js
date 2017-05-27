@@ -251,6 +251,15 @@ const logoutHandler = async (ctx, next) => {
 	return next()
 }
 
+const colorHandler = async ({ request, response }, next) => {
+	response.type = 'text/css'
+	if (request.query.rev && request.query.rev !== 'undefined') {
+		response.header['cache-control'] += 'max-age=69420420, immutable'
+	}
+	response.body = await helpers.colorStyle(request.query)
+	return next()
+}
+
 const searchHandler = async ({ request, response, auth, domainUriStr, tplctx }, next) => {
 	const searchQuery = request.query.q || ''
 	const { dobj, results, feeds, tags } = await db.row(SQL`SELECT
@@ -358,6 +367,7 @@ const addCommonContext = async (ctx, next) => {
 		moment,
 		_,
 		URI,
+		qs,
 		helpers,
 		// Markup related stuff
 		assets,
@@ -429,6 +439,7 @@ if (!env.NO_SERVE_DIST) {
 router.addRoute('GET', '/live', liveHandler)
 router.addRoute('GET', '/robots.txt', robotsHandler)
 router.addRoute('POST', '/logout', logoutHandler)
+router.addRoute('GET', '/color.css', colorHandler)
 router.addRoute('GET', '/search', compose([addCommonContext, koaCache, searchHandler].filter(isObject)))
 router.options.notFound = compose([addCommonContext, koaCache, handler].filter(isObject))
 const app = new (require('koa'))()

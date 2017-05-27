@@ -1,20 +1,6 @@
 /*! Sweetroll by https://unrelenting.technology */
 :root {
-	--background-color: #efeaf4;
-	--accent-color: #706aca;
-	--text-color: #34495e;
-	--link-color: color(var(--accent-color) shade(35%) l(+10%));
-	--content-link-color: #408acc;
-	--heading-color: color(var(--text-color) l(-15%));
-	--input-color: #f9f9f9;
-	--button-color: color(var(--accent-color) shade(10%) l(+10%));
-	--layer-1-color: color(var(--background-color) tint(60%));
-	--layer-2-color: color(var(--background-color) tint(54%) l(-4.5%));
-	--layer-opt-color: color(var(--background-color) tint(54%) l(-10%));
-
 	hyphens: auto;
-	background: var(--background-color);
-	color: var(--text-color);
 	font: 100%/1.5 sans-serif;
 	font-size: responsive 1.05rem 1.25rem;
 	font-range: 600px 2000px;
@@ -47,7 +33,7 @@ pre {
 code {
 	word-wrap: normal;
 	white-space: pre;
-	font-family: monospace;
+	font-family: "Fira Mono", "Source Code Pro", Inconsolata, Consolas, monospace;
 }
 
 input, abbr, acronym, blockquote, code, kbd, q, samp, var {
@@ -100,6 +86,18 @@ indie-action .icon {
 	background: rgb(170, 170, 170);
 }
 
+.icon-rating {
+	stroke: currentColor;
+}
+
+.icon-rating.icon-rating-half {
+	clip-path: polygon(0% 0%, 0% 100%, 50% 100%, 50% 0);
+}
+
+.icon-rating.icon-rating-empty {
+	fill: transparent;
+}
+
 ul, ol {
 	list-style-position: inside;
 }
@@ -148,10 +146,6 @@ table {
 	border-collapse: collapse;
 }
 
-h1, h2, h3, h4, h5, h6 {
-	color: var(--heading-color);
-}
-
 [fragmention] {
 	background: rgba(246, 242, 195, 153);
 }
@@ -161,7 +155,7 @@ fragmention-exact {
 }
 
 blockquote {
-	border-left: var(--accent-color) 3px solid;
+	border-left: 3px solid;
 	padding: 0.2em 0 0.2em 0.5em;
 
 	& p:last-of-type {
@@ -175,11 +169,9 @@ a {
 
 a, body .ref-context-meta a {
 	display: inline-block;
-	color: var(--link-color);
 	transition: ease 0.3s color;
 
 	&:hover, &:focus, &:active {
-		color: color(var(--link-color) l(+15%));
 		text-decoration: underline;
 	}
 }
@@ -190,14 +182,6 @@ button, input, select, textarea {
 
 [hidden], data[value], a[data-synd], a[href*="brid.gy/publish"] {
 	display: none;
-}
-
-.e-content a, .e-note a {
-	color: var(--content-link-color);
-
-	&:hover, &:focus, &:active {
-		color: color(var(--content-link-color) shade(5%) l(+15%));
-	}
 }
 
 .pronouns {
@@ -218,36 +202,11 @@ button, input, select, textarea {
 	align-items: stretch;
 	padding: 0;
 	border-radius: 3px;
-	border: 1px solid var(--accent-color);
-
-	& :first-child {
-		border-top-left-radius: 3px;
-		border-bottom-left-radius: 3px;
-	}
-
-	& :last-child {
-		border-top-right-radius: 3px;
-		border-bottom-right-radius: 3px;
-	}
+	border: 1px solid;
+	overflow: hidden;
 
 	& input {
 		flex: 1;
-		background: var(--input-color);
-	}
-
-	& button {
-		border-left: 1px solid var(--accent-color);
-		background: var(--button-color);
-		color: var(--background-color);
-	}
-
-	& input:focus, & button:hover, & button:focus {
-		background: color(var(--input-color) tint(15%));
-		color: var(--accent-color);
-	}
-
-	& *:focus {
-		box-shadow: color(var(--accent-color) a(50%)) 0 0 4px;
 	}
 
 	& * {
@@ -325,8 +284,7 @@ button, input, select, textarea {
 }
 
 .entry, .site-author-block, .entry-webmention-form {
-	background: var(--layer-1-color);
-	border: var(--accent-color) 1px solid;
+	border: 1px solid;
 	border-radius: 4px;
 	margin-bottom: 1rem;
 	overflow: hidden;
@@ -341,7 +299,6 @@ button, input, select, textarea {
 }
 
 .entry-webmention-form {
-	background: var(--layer-opt-color);
 	font-size: 0.85em;
 
 	& .form-field {
@@ -392,6 +349,10 @@ aside .search-form {
 
 	& h3 {
 		font-size: 1.05em;
+	}
+	
+	& .hljs {
+		border-radius: 3px;
 	}
 
 	@nest .ref-context & {
@@ -455,15 +416,15 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 }
 
 .ref-context {
-	background: var(--layer-2-color);
-	border-bottom: color(var(--accent-color) l(-10%)) 1px solid;
+	border-bottom: 1px solid;
 
 	@nest .entry-replies & {
 		padding-top: 1rem;
 	}
 
 	@nest .entry-replies &:first-child {
-		border-top: color(var(--accent-color) l(-10%)) 1px solid;
+		border-top: 1px solid;
+		border-color: inherit;
 	}
 
 	@nest .entry-replies &:last-child {

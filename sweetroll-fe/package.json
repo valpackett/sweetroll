@@ -9,7 +9,7 @@
     "devserve": "prok"
   },
   "processes": {
-    "app": "DEBUG=*,-koa-mount,-dynamic-asset-rev IS_PROXIED=1 RELAX_CSP=1 INDIEAUTH_ENDPOINT=/login/self WEBSUB_HUB=https://httpbin.org/post MICRO_PANEL_ROOT=/micro-panel node-dev --harmony index.js",
+    "app": "DEBUG=*,-koa-mount,-css-color-function:parse,-dynamic-asset-rev IS_PROXIED=1 RELAX_CSP=1 INDIEAUTH_ENDPOINT=/login/self WEBSUB_HUB=https://httpbin.org/post MICRO_PANEL_ROOT=/micro-panel node-dev --harmony index.js",
     "re-asset": "chokidar 'assets/**/*' 'Brocfile.js' --initial -p -c 'SKIP_COMPRESSION=1 npm run assets'"
   },
   "devDependencies": {
@@ -77,7 +77,7 @@
     "pify": "^2.3.0",
     "postcss": "^6.0.1",
     "postcss-color-function": "^4.0.0",
-    "postcss-css-variables": "^0.7.0",
+    "postcss-custom-properties": "^6.0.1",
     "postcss-nesting": "^4.0.1",
     "promised-retry": "^0.2.3",
     "pug": "^2.0.0-rc.1",

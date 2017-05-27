@@ -304,6 +304,7 @@ html(lang=_.get(siteSettings, 'site-lang', 'en'))
 			meta(charset="utf-8")
 			meta(name="viewport" content="width=device-width, initial-scale=1")
 			link(rel="stylesheet" href=assets.url('dist/style.css'))
+			link(rel="stylesheet" href=`/color.css?rev=${assets.hashes['dist/color.css']}&${qs.stringify(_.get(siteSettings, 'site-colors', {}))}`)
 			link(rel="stylesheet" href=assets.url(`dist/highlight.js/styles/${_.get(siteSettings, 'code-highlight-theme', 'github')}.css`))
 			if siteSettings
 				block title
@@ -325,6 +326,8 @@ html(lang=_.get(siteSettings, 'site-lang', 'en'))
 				link(rel='icon' type='image/png' sizes='32x32' href=microPanelRoot + '/icons/favicon-32x32.png')
 				meta(name='theme-color' content='#00897b')
 				meta(name='vapid-pubkey' content=vapidKeys.publicKey)
+			else
+				meta(name='theme-color' content=_.get(siteSettings, 'site-colors.background-color', '#efeaf4'))
 	body
 		if authedAsAdmin
 			| <micro-panel force-micropub-source>

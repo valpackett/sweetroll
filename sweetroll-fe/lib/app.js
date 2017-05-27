@@ -329,6 +329,9 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 		} else if (includes(obj.type, 'h-entry') || includes(obj.type, 'h-review')) {
 			tpl = 'entry.pug'
 		} else if (includes(obj.type, 'h-feed') || includes(obj.type, 'h-x-dynamic-feed')) {
+			if (!includes(obj.type, 'h-feed')) {
+				obj.type.push('h-feed')
+			}
 			tpl = 'feed.pug'
 		} else {
 			log('Unknown entry type: %o', obj.type)

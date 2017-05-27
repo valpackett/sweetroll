@@ -12,14 +12,13 @@ This service can work locally with local uploads (`index.js`) and on AWS Lambda 
 
 You need a recent version (at least 7.6.0) of [Node.js].
 
-Use [yarn] to build.
+Use npm to build.
 
 ```bash
-$ yarn
+$ npm i
 ```
 
 [Node.js]: https://nodejs.org/en/
-[yarn]: https://yarnpkg.com/en/
 
 ## Amazon Lambda Deployment
 

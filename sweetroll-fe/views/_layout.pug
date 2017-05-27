@@ -1,6 +1,6 @@
 -
 	assets.basedir = basedir
-	const iconNames = { replies: 'reply', reposts: 'retweet', likes: 'star',
+	const iconNames = { replies: 'reply', reposts: 'megaphone', likes: 'star',
 		bookmarks: 'bookmark', quotations: 'quote-left', mentions: 'link' }
 	const relativeUrl = u => '/' + new URI(u).relativeTo(domainUri).toString()
 
@@ -9,7 +9,6 @@ mixin icon(name, title, opts={})
 		use(xlink:href=assets.url('dist/icons.svg') + '#' + name)
 			if title
 				title= title
-				// NOTE: chromium only understands <title> nested under something
 
 mixin showContent(properties, long, onlySummary)
 	- const content = helpers.getContent(properties, long, onlySummary)
@@ -149,7 +148,7 @@ mixin showActions(entry, permalink)
 				+icon('reply')
 		indie-action(do="repost" with=permalink)
 			a(href=twitterLink('retweet'))
-				+icon('retweet')
+				+icon('megaphone')
 		indie-action(do="like" with=permalink)
 			a(href=twitterLink('favorite'))
 				+icon('star')
@@ -256,10 +255,10 @@ mixin showEntry(entry, compactView)
 							+icon('star', null, { class: ['icon-rating'] })
 							- f--
 						while h > 0
-							+icon('star-half-o', null, { class: ['icon-rating'] })
+							+icon('star', null, { class: ['icon-rating', 'icon-rating-half'] })
 							- h--
 						while e > 0
-							+icon('star-o', null, { class: ['icon-rating'] })
+							+icon('star', null, { class: ['icon-rating', 'icon-rating-empty'] })
 							- e--
 	if acl.length > 0
 		.entry-acl
@@ -280,7 +279,7 @@ mixin showEntry(entry, compactView)
 		fragmention-target(exact)
 			.e-content('class'=isUntitled ? 'p-name' : '')
 				each repost in properties['repost-of'] || []
-					+showRefContext(repost, { long: true, prop: 'u-repost-of', reasonIcon: 'retweet', reasonIconClass: 'repost', reason: 'reposted', rel: !compactView ? 'repost-of' : '' })
+					+showRefContext(repost, { long: true, prop: 'u-repost-of', reasonIcon: 'megaphone', reasonIconClass: 'repost', reason: 'reposted', rel: !compactView ? 'repost-of' : '' })
 				- const onlySummary = !isUntitled && compactView
 				if !_.isEmpty(onlySummary ? properties.summary : properties.content)
 					.entry-core

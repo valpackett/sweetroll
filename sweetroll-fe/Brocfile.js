@@ -14,33 +14,29 @@ const Pug = require('broccoli-pug-render')
 const PostCSS = require('broccoli-postcss')
 const Concat = require('broccoli-concat')
 
-const bowerdeps = new Funnel('bower_components', {
+const npmdeps = new Funnel('node_modules', {
 	include: [
-		'webcomponentsjs/*.js',
+		'katex/dist/{*.css}',
+		'katex/dist/fonts/*',
+		'@webcomponents/webcomponentsjs/*.js',
 		'web-animations-js/web-animations-next.min.js',
-		'findAndReplaceDOMText/src/*.js',
+		'findandreplacedomtext/src/*.js',
 		'svgxuse/*.min.js',
 		'localforage/dist/localforage.js',
 		'lazyload-image/lazyload-image.html',
 		'indieweb-components/*.{html,js}',
 	],
-	exclude: [ 'webcomponentsjs/gulpfile.js' ]
-})
-
-const npmdeps = new Funnel('node_modules', {
-	include: [
-		'katex/dist/{*.css}',
-		'katex/dist/fonts/*',
-	]
+	exclude: [ '@webcomponents/webcomponentsjs/gulpfile.js' ],
 })
 
 let styles = new Concat(new MergeTrees([
 	'assets',
-	new Funnel('bower_components', { include: ['sanitize-css/*.css', 'normalize-opentype.css/*.css'] }),
-	new Funnel('node_modules', { include: ['highlight.js/styles/github.css'] }),
+	new Funnel('node_modules', { include: [
+		'sanitize.css/*.css', 'normalize-opentype.css/*.css', 'highlight.js/styles/github.css'
+	] }),
 ]), {
 	outputFile: 'style.css',
-	inputFiles: ['sanitize-css/sanitize.css', 'normalize-opentype.css/normalize-opentype.css', 'style.css', 'highlight.js/styles/github.css']
+	inputFiles: ['sanitize.css/sanitize.css', 'normalize-opentype.css/normalize-opentype.css', 'style.css', 'highlight.js/styles/github.css']
 })
 
 styles = new SourceMapExtractor(new PostCSS(styles, {
@@ -58,9 +54,9 @@ styles = new SourceMapExtractor(new PostCSS(styles, {
 }))
 
 const icons = new SVGStore(
-	new Funnel('bower_components/Font-Awesome-SVG-PNG/black/svg/', {
-		include: ['arrow-up', 'arrow-down', 'reply', 'retweet', 'link',
-			'star', 'star-half-o', 'star-o', 'info-circle', 'bookmark', 'quote-left', 'lock'].map((x) => x + '.svg')
+	new Funnel('node_modules/octicons/build/svg', {
+		include: ['arrow-up', 'arrow-down', 'reply', 'megaphone', 'link',
+			'star', 'info', 'bookmark', 'quote', 'lock'].map((x) => x + '.svg')
 	}),
 	{ outputFile: 'icons.svg' }
 )
@@ -70,7 +66,7 @@ let micropanel = new Funnel('../micro-panel/dist', {
 	exclude: [ 'bower_components/{webcomponentsjs,web-animations-js,fetch}' ]
 })
 
-let rev = new AssetRev([ bowerdeps, npmdeps, micropanel, styles, icons ])
+let rev = new AssetRev([ npmdeps, micropanel, styles, icons ])
 
 const scripts = new ConfigReplace(
 	new Funnel('assets', { include: [ 'site.js', 'offline.js' ] }),
@@ -84,7 +80,7 @@ const scripts = new ConfigReplace(
 	}
 )
 
-rev = new AssetRev([ bowerdeps, npmdeps, micropanel, styles, icons, scripts ]) // TODO: append instead of recompute
+rev = new AssetRev([ npmdeps, micropanel, styles, icons, scripts ]) // TODO: append instead of recompute
 
 const sw = new ConfigReplace(
 	new Funnel('assets', { include: [ 'sw.js' ] }),
@@ -138,7 +134,7 @@ micropanel = new MergeTrees([
 ], { overwrite: true })
 
 const all = new MergeTrees([
-	bowerdeps, npmdeps, micropanel, scripts, sw, styles, icons, errPages
+	npmdeps, micropanel, scripts, sw, styles, icons, errPages
 ])
 
 const compressExts = ['js', 'css', 'svg', 'html']

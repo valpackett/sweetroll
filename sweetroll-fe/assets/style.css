@@ -64,6 +64,7 @@ img {
 	margin: 0 0.1em 0 0.01em;
 	vertical-align: -0.16em;
 	shape-rendering: geometricprecision;
+	fill: currentColor;
 }
 
 indie-action .icon {
@@ -450,6 +451,10 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 	& a {
 		text-decoration: none;
 	}
+
+	& .icon {
+		vertical-align: 0.33rem;
+	}
 }
 
 .facepile-avatar {
@@ -648,7 +653,7 @@ simple-live, .offline-popup {
 
 	.icon-ref-reason {
 		background: transparent;
-		fill: #333;
+		color: #333;
 	}
 
 	abbr[title]::after {

@@ -11,20 +11,17 @@ The "frontend" is responsible for, roughly speaking, getting data *out* of the d
 
 You need a recent version (at least 7.6.0) of [Node.js].
 
-Use [yarn] to build.
+Use npm to build.
 
 ```bash
-$ yarn
+$ npm i
 
-$ yarn devsetup
-
-$ yarn devserve
+$ npm run devserve
 ```
 
 By default, the database URI is assumed to be `postgres://localhost/sweetroll`, change the `DATABASE_URI` environment variable if that's not the case.
 
 [Node.js]: https://nodejs.org/en/
-[yarn]: https://yarnpkg.com/en/
 
 ## General project info
 

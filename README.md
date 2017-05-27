@@ -68,6 +68,7 @@ TODO same for frontend
   - [ ] bring back the atom feed
   - [ ] webhooks (e.g. pushover notifications) on new/updated mentions, config in `site-settings`
   - [ ] color themes (w/ postcss on the fly)
+	- [ ] fix review stars
 - micropub
   - [ ] JWT scopes authorization
   - [ ] draft flag → draft tag and private acl

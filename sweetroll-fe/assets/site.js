@@ -55,7 +55,7 @@ function loadComponents () {
 		loadJs('/dist/indieweb-components/indie-action.js')
 	}
 	if (document.querySelector('fragmention-target')) {
-		loadJs('/dist/findAndReplaceDOMText/src/findAndReplaceDOMText.js')
+		loadJs('/dist/findandreplacedomtext/src/findAndReplaceDOMText.js')
 			.then(function () { return loadJs('/dist/indieweb-components/fragmention-target.js') })
 	}
 	if (document.querySelector('simple-live')) {
@@ -78,7 +78,7 @@ if ('customElements' in window && (!hasPanel || ('import' in document.createElem
 		Element.prototype.attachShadow = true
 		Element.prototype.getRootNode = true
 	}
-	loadJs('/dist/webcomponentsjs/webcomponents-loader.js')
+	loadJs('/dist/@webcomponents/webcomponentsjs/webcomponents-loader.js')
 }
 
 if (document.querySelector('.katex')) {

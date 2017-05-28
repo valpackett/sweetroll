@@ -90,49 +90,12 @@ Also go to the KMS key you've created (IAM → Encryption keys), make sure the r
 
 Now, the API gateway.
 
-Go to Actions → Enable CORS.
-That'll create an OPTIONS handler with CORS headers, but won't add them to the ANY handler that calls the lambda.
+Go to Resources → Actions → Enable CORS.
+That'll create an OPTIONS handler with CORS headers.
 
-Now go to the ANY handler → Integration Request.
-Uncheck "Use Lambda Proxy integration", open "Body Mapping Templates", set "Request body passthrough" to "Never", create the following mapping template for `multipart/form-data`:
+Go to Binary Support, add multipart/form-data.
 
-```velocity
-#set($inputParams = $input.body)
-#set($contentType = $input.params().header.get("Content-Type"))
-#set($auth = $input.params().header.get("Authorization"))
-{
-  "body": "$inputParams",
-  "contentType": "$contentType",
-  "authorization": "$auth"
-}
-```
-
-Don't forget to "Save".
-Yes, the multipart body will be shoved into the JSON as Base64, it's horrible, I think they kinda promised to add normal body support eventually.
-
-Now go to "Method Response".
-Remove the 200, create a 201, add the following headers:
-
-- `Access-Control-Allow-Headers`
-- `Access-Control-Allow-Origin`
-- `Access-Control-Allow-Methods`
-- `Location`
-
-Don't worry about "No models" in the body section, go to "Integration Response", remove the 200 if it's there, add one for 201.
-
-Header mappings:
-- `Access-Control-Allow-Headers`	`'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'`
-- `Access-Control-Allow-Origin`	`'*'`
-- `Access-Control-Allow-Methods`	`'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'`
-- `Location`	`integration.response.body.location` (without quotes! That's an expression that'll take the value from the lambda's response)
-
-Body Mapping Templates: one for `application/json`:
-
-```velocity
-$input.json('$.body')
-```
-
-Deploy to prod.
+Redeploy to prod (Resources → Actions → Deploy API).
 Should work now :D
 
 ## General project info

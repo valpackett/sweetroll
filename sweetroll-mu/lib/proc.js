@@ -8,28 +8,31 @@ const replaceExt = require('replace-ext')
 //const ffmpeg = require('fluent-ffmpeg')
 const imagemin = require('imagemin')
 const pngquant = require('imagemin-pngquant')
-const zopfli = require('imagemin-zopfli')
 //const jpegoptim = require('imagemin-jpegoptim')
 const mozjpeg = require('imagemin-mozjpeg')
 const webp = require('imagemin-webp')
+const sizeOf = require('image-size')
+const murmurHash = require('murmurhash-native').murmurHash
 
 const pngconf = () => ({ plugins: [
-	pngquant({ quality: '70-90' }),
-	zopfli(),
+	pngquant({ quality: '85-95' }),
 ] })
-const jpegconf = () => ({ plugins: [
+const jpegconf = (q) => ({ plugins: [
 	//jpegoptim({ quality: 99 }), // removes metadata
-	mozjpeg({ quality: 75 }),
+	mozjpeg({ quality: q || 75 }),
 ] })
-const webpconf = () => ({ plugins: [
-	webp({ quality: 70 }),
+const webpconf = (q) => ({ plugins: [
+	webp({ quality: q || 70 }),
 ] })
 const webplosslessconf = () => ({ plugins: [
-	webp({ lossless: true }),
+	webp({ nearLossless: 0 }),
 ] })
 
-module.exports = (name, buf) => {
+module.exports = (origName, buf) => {
 	const ft = fileType(buf)
+	const name = murmurHash(buf, 'hex') + '_' + origName
+	const origP = Promise.resolve({ name, buf, type: ft.mime })
+
 	if (ft.mime === 'image/png') {
 
 		const pngP = imagemin.buffer(buf, pngconf())
@@ -47,21 +50,47 @@ module.exports = (name, buf) => {
 		} catch (e) {
 			console.error(e)
 		}
+		let quality = 70
+		let saveOrig = false
+		const size = sizeOf(buf)
+		const dim = Math.max(size.width, size.height)
+		if (dim >= 5500) {
+			quality = 30
+			saveOrig = true
+		} else if (dim >= 4000) {
+			quality = 40
+			saveOrig = true
+		} else if (dim >= 3000) {
+			quality = 50
+			saveOrig = true
+		} else if (dim >= 2500) {
+			quality = 60
+		} else if (dim >= 2000) {
+			quality = 65
+		}
 		const jpegP = imagemin.buffer(buf, jpegconf())
 			.then(newbuf => ({ name, buf: newbuf, type: 'image/jpeg' }))
 		const webpP = imagemin.buffer(buf, webpconf())
 			.then(newbuf => ({ name: replaceExt(name, '.webp'), buf: newbuf, type: 'image/webp' }))
-		return Promise.all([jpegP, webpP])
+		const ps = [jpegP, webpP]
+		if (saveOrig) {
+			ps.push(origP.then(x => {
+				x.original = true
+				x.name = 'orig_' + x.name
+				return x
+			}))
+		}
+		return Promise.all(ps)
 			.then(srcs => ({ source: srcs, meta: exif }))
 
 	} else if (ft.mime === 'image/webp') {
 
 		const jpegP = imagemin.buffer(buf, jpegconf())
 			.then(newbuf => ({ name, buf: newbuf, type: 'image/jpeg' }))
-		return Promise.all([jpegP, Promise.resolve({ name, buf, type: 'image/webp' })])
+		return Promise.all([jpegP, origP])
 			.then(srcs => ({ source: srcs }))
 
 	}// else if (ft.mime.startsWith('video')) { }
 
-	return Promise.resolve({ source: [{ name, buf, type: ft.mime }] })
+	return origP.then(src => ({ source: [src] }))
 }

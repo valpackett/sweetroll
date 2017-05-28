@@ -32,7 +32,7 @@ app.use(async (ctx, next) => {
 
 const argv = require('minimist')(process.argv.slice(2))
 if (argv.protocol === undefined || argv.protocol === 'http') {
-	const port = argv.port || 3300
+	const port = argv.port || 3333
 	app.listen(port, () => { console.log('listening on port', port) })
 } else if (argv.protocol === 'activate') {
 	app.listen({ fd: 3 }, () => { console.log('listening on fd 3') })

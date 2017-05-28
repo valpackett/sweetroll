@@ -12,20 +12,20 @@
     "file-type": "^4.3.0",
     "fluent-ffmpeg": "^2.1.2",
     "get-stream": "^3.0.0",
+    "image-size": "^0.5.4",
     "imagemin": "^5.2.2",
     "imagemin-mozjpeg": "^6.0.0",
     "imagemin-pngquant": "^5.0.0",
-    "imagemin-webp": "^4.0.0",
-    "imagemin-zopfli": "^5.1.0",
+    "imagemin-webp": "git+https://github.com/myfreeweb/imagemin-webp.git",
     "jdataview": "^2.5.0",
     "jsonwebtoken": "^7.4.0",
     "koa": "^2.2.0",
     "koa-busboy": "^1.0.1",
     "lambda-env-vars": "^0.4.0",
     "minimist": "^1.2.0",
+    "murmurhash-native": "^3.2.1",
     "mz": "^2.6.0",
     "url-join": "^2.0.1",
-    "xmldom": "^0.1.27",
-    "zopflipng-bin": "^4.0.0"
+    "xmldom": "^0.1.27"
   }
 }

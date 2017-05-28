@@ -73,14 +73,17 @@ fetchLinkedEntires' depthLeft excludedDomains excludedURLs props = do
           resp ← hoistEither =<< (runHTTP $ reqU uri >>= performWithHtml)
           fetchEntryWithAuthors uri resp >>= \case
             (Just (Object entry), _) → do
-              prs ← lift $ fetchLinkedEntires' (depthLeft - 1) excludedDomains (insertSet uri excludedURLs) $
+              prs' ← lift $ fetchLinkedEntires' (depthLeft - 1) excludedDomains (insertSet uri excludedURLs) $
                 fromMaybe (HMS.fromList []) $ Object entry ^? key "properties" . _Object
+              -- additional filtering to prevent the author from overriding a local entry
+              let (Object prs) = (Object prs') & (deep $ filtered shouldExclude) %~ (\x → fromMaybe "" $ x ^? key "properties" . key "url" . _Array . each)
               right $ Object $ insertMap "properties" (Object prs) $ insertMap "fetched-url" (toJSON $ tshow uri) entry
             x → do
               left $ "Received something that's not an h-entry when parsing fetched '" ++ tshow uri ++ "'"
         excludedKeys = S.fromList [ "client-id", "content", "summary", "name", "photo", "video", "audio", "item",
                                     "syndication", "author", "category", "published", "updated",
                                     "comment", "like", "repost", "quotation", "rsvp", "mention" ]
+        shouldExclude x = (\u → any (u `compareDomain`) excludedDomains) $ parseUri $ fromMaybe "" $ x ^? key "properties" . key "url" . _Array . each . _String
 
 fetchLinkedEntires ∷ (MonadHTTP ψ μ, MonadCatch μ, MonadLogger μ) ⇒ Set URI → Set URI → Object → μ Object
 fetchLinkedEntires = fetchLinkedEntires' 3

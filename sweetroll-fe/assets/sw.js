@@ -36,21 +36,36 @@ self.addEventListener('notificationclick', e => {
 /* Smart site caching */
 
 self.addEventListener('install', e => {
-	return caches.delete('assets')
+	e.waitUntil(caches.delete('assets')
 		.then(() => caches.open('assets'))
 		.then(cache => cache.addAll(PRECACHED_ASSETS))
-		.then(() => caches.delete('fallback'))
+		.catch(console.error))
+	e.waitUntil(caches.delete('fallback')
 		.then(() => caches.open('fallback'))
 		.then(cache => cache.addAll(['/offline.html']))
-		.then(() => caches.open('pages'))
+		.catch(console.error))
+	e.waitUntil(caches.open('pages')
 		.then(cache => cache.addAll(['/']))
+		.catch(console.error))
 })
 
 self.addEventListener('fetch', e => {
 	if (e.request.method === 'GET') {
-		if (e.request.url.includes('/dist/') && e.request.url.includes('?')) {
-			// Assets: just return precached if exists, they're all cachebusted with query strings
-			e.respondWith(fromCache('assets', e.request).catch(() => fromNetwork(e.request)))
+		if ((e.request.url.includes('/dist/') || e.request.url.includes('/color.css'))
+			&& (e.request.url.includes('?') || e.request.url.endsWith('.woff2'))) {
+			// Assets: return cached if exists, they're all cachebusted with query strings
+			// Not all assets should be precached, every visitor does not need micro-panel :D
+			e.respondWith(
+				fromCache('assets', e.request).catch(() =>
+					fromNetwork(e.request)
+						.then(resp => {
+							const resp2 = resp.clone()
+							caches.open('assets')
+								.then(cache => cache.put(e.request, resp2))
+							return resp
+						})
+				)
+			)
 		} else if (e.request.headers.get('accept').includes('text/html')) {
 			// Pages: load from network, show cached (but keep loading) on timeout for slow connections
 			e.respondWith(
@@ -104,7 +119,7 @@ self.addEventListener('fetch', e => {
 
 function addPageToCache (req) {
 	return function (resp) {
-		if (resp.status < 200 || resp.status >= 300) {
+		if (resp.status < 200 || resp.status >= 300 || !(resp.headers.get('content-type') || '').includes('html')) {
 			return Promise.resolve(resp)
 		}
 		return localforage.getItem('cached-pages')

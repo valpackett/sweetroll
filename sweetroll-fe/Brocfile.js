@@ -95,7 +95,10 @@ const sw = new ConfigReplace(
 			replacement: (assets, match, url) => `'/dist/${url}?${assets[url]}'`
 		}, {
 			match: /PRECACHED_ASSETS\s*=\s*\[\]/g,
-			replacement: (assets, _) => `PRECACHED_ASSETS = ${JSON.stringify(Object.keys(assets).map(url => `/dist/${url}?${assets[url]}`))}`
+			replacement: (assets, _) => `PRECACHED_ASSETS = ${JSON.stringify(
+				Object.keys(assets)
+					.filter(url => !url.includes('micro-panel') && !url.includes('web-animation') && !url.includes('katex') && !url.includes('highlight.js'))
+					.map(url => `/dist/${url}?${assets[url]}`))}`
 		}]
 	}
 )

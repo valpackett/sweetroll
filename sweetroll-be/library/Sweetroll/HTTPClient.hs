@@ -58,7 +58,8 @@ fetchLinkedEntires' depthLeft excludedDomains excludedURLs props = do
           $logInfo$ "Not a parsable URL for fetching: '" ++ u ++ "'"
           return (String u)
         fetchIfAllowed (String u)
-          | parseUri u `notElem` excludedURLs
+          | isJust (parseURI $ cs u)
+            && parseUri u `notElem` excludedURLs
             && not (any (parseUri u `compareDomain`) excludedDomains) = do
               $logInfo$ "Fetching: '" ++ u ++ "'"
               eitherT (\x → do
@@ -83,7 +84,7 @@ fetchLinkedEntires' depthLeft excludedDomains excludedURLs props = do
         excludedKeys = S.fromList [ "client-id", "content", "summary", "name", "photo", "video", "audio", "item",
                                     "syndication", "author", "category", "published", "updated",
                                     "comment", "like", "repost", "quotation", "rsvp", "mention" ]
-        shouldExclude x = (\u → any (u `compareDomain`) excludedDomains) $ parseUri $ fromMaybe "" $ x ^? key "properties" . key "url" . _Array . each . _String
+        shouldExclude x = fromMaybe False $ (\u → any (u `compareDomain`) excludedDomains) <$> (parseURI =<< cs <$> x ^? key "properties" . key "url" . _Array . each . _String)
 
 fetchLinkedEntires ∷ (MonadHTTP ψ μ, MonadCatch μ, MonadLogger μ) ⇒ Set URI → Set URI → Object → μ Object
 fetchLinkedEntires = fetchLinkedEntires' 3

@@ -44,9 +44,10 @@ postMicropub token host (Create htype props _) = do
   lds ← return . S.fromList . map parseUri =<< guardDbError =<< queryDb () getLocalDomains
   prs ← return props
         >>= fetchLinkedEntires lds S.empty
-        |>  setDates now
+        |>  setPublished now
+        |>  setUpdated now
         |>  setClientId (tshow $ base host) token
-        |>  setCategory
+        |>  (if "h-entry" `elem` htype then setCategory else id)
         |>  setUrl (base host) now
   let obj = wrapWithType htype prs
   guardDbError =<< queryDb obj upsertObject
@@ -54,11 +55,14 @@ postMicropub token host (Create htype props _) = do
 
 postMicropub _ host (Update url upds) = do
   ensureRightDomain (base host) $ parseUri url
+  now ← liftIO getCurrentTime
   _ ← guardEntryNotFound =<< guardTxError =<< transactDb (do
     obj' ← queryTx url getObject
     case obj' of
       Just obj → do
-        let newObj = obj & key "properties" %~ (\o → foldl' applyUpdates o upds)
+        let modify o = foldl' applyUpdates o upds
+                     & setUpdated now
+            newObj = obj & key "properties" . _Object %~ modify
         -- TODO ensure domain not modified
         queryTx newObj upsertObject
         return $ Just obj
@@ -104,8 +108,11 @@ decideCategory props | otherwise = "_notes"
 categories ∷ ObjProperties → [Text]
 categories props = Object props ^.. key "category" . values . _String
 
-setDates ∷ UTCTime → ObjProperties → ObjProperties
-setDates now = insertMap "updated" (toJSON [ now ]) . insertWith (\_ x → x) "published" (toJSON [ now ])
+setUpdated ∷ UTCTime → ObjProperties → ObjProperties
+setUpdated now = insertMap "updated" (toJSON [ now ])
+
+setPublished ∷ UTCTime → ObjProperties → ObjProperties
+setPublished now = insertWith (\_ x → x) "published" (toJSON [ now ])
 
 setClientId ∷ Text → JWT VerifiedJWT → ObjProperties → ObjProperties
 setClientId hostbase token = insertMap "client-id" $ toJSON $ filter isAllowed $
@@ -132,21 +139,21 @@ wrapWithType htype props =
   object [ "type"       .= toJSON htype
          , "properties" .= props ]
 
-applyUpdates ∷ Value → MicropubUpdate → Value
-applyUpdates (Object props) (ReplaceProps newProps) =
-  Object $ foldl' (\ps (k, v) → HMS.insert k v ps) props (HMS.toList newProps)
-applyUpdates (Object props) (AddToProps newProps) =
-  Object $ foldl' (\ps (k, v) → HMS.insertWith add k v ps) props (HMS.toList newProps)
+applyUpdates ∷ ObjProperties → MicropubUpdate → ObjProperties
+applyUpdates props (ReplaceProps newProps) =
+  foldl' (\ps (k, v) → HMS.insert k v ps) props (HMS.toList newProps)
+applyUpdates props (AddToProps newProps) =
+  foldl' (\ps (k, v) → HMS.insertWith add k v ps) props (HMS.toList newProps)
     where add (Array new) (Array old) = Array $ new ++ old
           add new (Array old) = Array $ cons new old
           add _ old = old
-applyUpdates (Object props) (DelFromProps newProps) =
-  Object $ foldl' (\ps (k, v) → HMS.insertWith del k v ps) props (HMS.toList newProps)
+applyUpdates props (DelFromProps newProps) =
+  foldl' (\ps (k, v) → HMS.insertWith del k v ps) props (HMS.toList newProps)
     where del (Array new) (Array old) = Array $ filter (not . (`elem` new)) old
           del new (Array old) = Array $ filter (/= new) old
           del _ old = old
-applyUpdates (Object props) (DelProps newProps) =
-  Object $ foldl' (flip HMS.delete) props newProps
+applyUpdates props (DelProps newProps) =
+  foldl' (flip HMS.delete) props newProps
 applyUpdates x _ = x
 
 filterProps ∷ Value → [Text] → Value

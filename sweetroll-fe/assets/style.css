@@ -98,6 +98,16 @@ indie-action .icon {
 	fill: transparent;
 }
 
+@keyframes blink {
+	50% {
+		color: transparent;
+	}
+}
+
+blink {
+	animation: blink 1s steps(1) infinite;
+}
+
 ul, ol {
 	list-style-position: inside;
 }

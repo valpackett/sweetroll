@@ -10,6 +10,8 @@
 	--layer-1-color: color(var(--background-color) tint(60%));
 	--layer-2-color: color(var(--background-color) tint(54%) l(-5%));
 	--layer-opt-color: color(var(--background-color) tint(54%) l(-10%));
+	--layer-alt-opt-color: color(var(--accent-color) shade(50%) );
+	--layer-alt-opt-text-color: color(var(--text-color) tint(30%) l(+50%));
 	background: var(--background-color);
 	color: var(--text-color);
 }
@@ -73,4 +75,17 @@ a, body .ref-context-meta a {
 .ref-context {
 	background: var(--layer-2-color);
 	border-color: color(var(--accent-color) l(-10%));
+}
+
+.entry-photo-meta {
+	background: var(--layer-alt-opt-color);
+	color: var(--layer-alt-opt-text-color);
+}
+
+.entry-photo-meta a {
+	color: var(--layer-alt-opt-text-color);
+
+	&:hover, &:focus, &:active {
+		color: color(var(--layer-alt-opt-text-color) l(-15%));
+	}
 }

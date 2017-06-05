@@ -9,7 +9,7 @@
     "busboy": "^0.2.14",
     "cwebp-bin": "^3.2.0",
     "dotenv": "^4.0.0",
-    "exifreader": "^2.1.1",
+    "exiv2": "git+https://github.com/myfreeweb/exiv2node.git",
     "file-type": "^4.3.0",
     "fluent-ffmpeg": "^2.1.2",
     "get-stream": "^3.0.0",
@@ -27,6 +27,7 @@
     "mozjpeg": "git+https://github.com/myfreeweb/mozjpeg-bin.git",
     "murmurhash-native": "^3.2.1",
     "mz": "^2.6.0",
+    "pify": "^3.0.0",
     "pngquant-bin": "^3.1.1",
     "url-join": "^2.0.1",
     "xmldom": "^0.1.27"

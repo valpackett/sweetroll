@@ -13,12 +13,12 @@ mixin icon(name, title, opts={})
 mixin showContent(properties, long, onlySummary)
 	- const content = helpers.getContent(properties, long, onlySummary)
 	if !_.isEmpty(properties['x-content-note'])
-		p
+		p.entry-core
 			strong Content note: 
 			each cn in properties['x-content-note']
 				span.p-x-content-note= cn + ''
 	if !_.isEmpty(properties['x-content-warning'])
-		p
+		p.entry-core
 			strong Content warning: 
 			each cn in properties['x-content-warning']
 				span.p-x-content-warning= cn + ''
@@ -32,15 +32,70 @@ mixin showContent(properties, long, onlySummary)
 			if !(_.includes(content, photo.replace('&', '&amp;')) || _.includes(content, photo))
 				img.u-photo.entry-photo(src=photo alt="")
 		else if _.isObject(photo)
-			if _.isString(photo.value)
-				img.u-photo.entry-photo(src=photo.value alt=photo.alt)
-			else if _.isArray(photo.source)
-				picture.entry-photo
-					- const defaultSource = _.head(_.sortBy(photo.source, [ s => !s.default, s => s.type != 'image/jpeg' ]))
-					each source in photo.source
-						if source !== defaultSource
-							source(srcset=(source.srcset || source.src) media=source.media sizes=source.sizes type=source.type)
-					img.u-photo(src=(defaultSource.srcset || defaultSource.src) alt=(defaultSource.alt || photo.alt))
+			figure.entry-photo
+				if _.isString(photo.value)
+					img.u-photo(src=photo.value alt=photo.alt)
+				else if _.isArray(photo.source)
+					picture
+						- const defaultSource = _.head(_.sortBy(photo.source, [ s => !s.default, s => s.type != 'image/jpeg' ]))
+						each source in photo.source
+							if source !== defaultSource && !source.original
+								source(srcset=(source.srcset || source.src) media=source.media sizes=source.sizes type=source.type)
+						img.u-photo(src=(defaultSource.srcset || defaultSource.src) alt=(defaultSource.alt || photo.alt))
+				if _.isObject(photo.meta)
+					figcaption.entry-photo-meta
+						-
+							const meta = photo.meta
+							const make = meta['Exif.Image.Make']
+							const model = meta['Exif.Image.Model'] ? _.trim(meta['Exif.Image.Model'].replace(meta['Exif.Image.Make'], '')) : null
+							const lens = meta['Exif.Canon.LensModel'] || meta['Exif.Photo.LensModel']
+							const aperture = meta['Exif.Image.FNumber'] || meta['Exif.Photo.FNumber']
+							const shutter = meta['Exif.Image.ExposureTime'] || meta['Exif.Photo.ExposureTime']
+							const iso = meta['Exif.Photo.ISOSpeedRatings'] || meta['Exif.Photo.ISOSpeed']
+							const software = meta['Exif.Image.Software']
+							const original = _.find(photo.source, s => s.original)
+						span.meta-part
+							if make || model
+								+icon('device-camera', 'Camera')
+							if make
+								span.camera-make= make
+								| 
+							if model
+								span.camera-model= model
+						| 
+						span.meta-part
+							if lens
+								+icon('telescope', 'Lens')
+								span.camera-lens= _.trim(meta['Exif.Photo.LensMake'] || '' + ' ' + lens.replace(meta['Exif.Photo.LensMake'], ''))
+						| 
+						span.meta-part
+							if aperture || shutter || iso
+								+icon('eye', 'Photo parameters')
+							if shutter
+								- const [x, y] = shutter.split('/')
+								- const val = x / y
+								span.camera-shutter
+									if val >= 0
+										= `${val.toPrecision(2)}s`
+									else
+										= shutter
+								| 
+							if aperture
+								- const [x, y] = aperture.split('/')
+								span.camera-aperture= `ƒ/${(x / y).toPrecision(2)}`
+								| 
+							if iso
+								span.camera-iso= `ISO ${iso}`
+						| 
+						span.meta-part
+							if software
+								+icon('paintcan', 'Software')
+								span.camera-software= software
+						| 
+						span.meta-part
+							if original
+								+icon('desktop-download')
+								a.camera-original(href=original.src) Download original
 	each video in properties.video || []
 		if _.isString(video)
 			if !(_.includes(content, video.replace('&', '&amp;')) || _.includes(content, video))
@@ -67,7 +122,7 @@ mixin showContent(properties, long, onlySummary)
 							source(src=source.src type=source.type)
 						each track in audio.track || []
 							track(src=track.src kind=track.kind label=track.label srclang=track.srclang default=(track.default || false))
-	| !{ helpers.processContent(content) }
+	.entry-core !{ helpers.processContent(content) }
 	if !_.isEmpty(properties['x-content-warning'])
 		| </div>
 
@@ -113,11 +168,12 @@ mixin showMeta(entry, comments, permalink, compactView)
 			each reactions, name in comments || []
 				if !_.isEmpty(reactions)
 					|  / 
-					if iconNames[name]
-						+icon(iconNames[name], name + ' count')
-					else
-						= name
-					= reactions.length
+					span.meta-part
+						if iconNames[name]
+							+icon(iconNames[name], name + ' count')
+						else
+							= name
+						= reactions.length
 
 mixin showFacepile(entry, name, reactions)
 	section.entry-facepile
@@ -271,10 +327,9 @@ mixin showEntry(entry, compactView)
 					a(href=url)= url.replace('https://', '').replace('http://', '')
 				|  
 	if !isUntitled
-		.entry-core
-			h1.p-name
-				a.u-url.u-uid(href=permalink rel=compactView ? '' : 'bookmark' tabindex="-1")
-					= _.head(properties.name)
+		h1.p-name.entry-core
+			a.u-url.u-uid(href=permalink rel=compactView ? '' : 'bookmark' tabindex="-1")
+				= _.head(properties.name)
 	if !_.isEmpty(properties.content) || !_.isEmpty(properties['repost-of'])
 		fragmention-target(exact)
 			.e-content('class'=isUntitled ? 'p-name' : '')
@@ -282,7 +337,6 @@ mixin showEntry(entry, compactView)
 					+showRefContext(repost, { long: true, prop: 'u-repost-of', reasonIcon: 'megaphone', reasonIconClass: 'repost', reason: 'reposted', rel: !compactView ? 'repost-of' : '' })
 				- const onlySummary = !isUntitled && compactView
 				if !_.isEmpty(onlySummary ? properties.summary : properties.content)
-					.entry-core
 						+showContent(properties, !compactView, onlySummary)
 	footer.entry-footer
 		+showMeta(entry, comments, permalink, compactView)

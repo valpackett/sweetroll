@@ -1,9 +1,9 @@
 # Sweetroll Media Upload
 
-The media upload service implements the [Micropub Media Endpoint](https://www.w3.org/TR/micropub/#media-endpoint) spec, extended to return a JSON object in addition to the `Location` header, which allows Sweetroll to store image metadata extracted from Exif sections and store links to different formats of images/videos (e.g. WebP + JPEG, WebM + MP4).
+The media upload service implements the [Micropub Media Endpoint](https://www.w3.org/TR/micropub/#media-endpoint) spec, extended to return a JSON object in addition to the `Location` header, which allows Sweetroll to store image metadata extracted from Exif/XMP/etc. sections and store links to different formats of images/videos (e.g. WebP + JPEG, WebM + MP4).
 micro-panel simply picks up the JSON body if present instead of the `Location` header, shoves it into the `photo`/`video`/etc. property, and the templates in sweetroll-fe can work with that JSON object.
 
-This service currently does image optimization/transcoding and Exif metadata extraction.
+This service currently does image optimization/transcoding and metadata extraction.
 TODO: video.
 
 This service can work locally (`index.js`) and on AWS Lambda (`lambda.js`).
@@ -45,6 +45,7 @@ $ node index.js --protocol unix --socket /var/run/sweetroll-mu/sweetroll-mu.sock
 ## Amazon Lambda Deployment
 
 **NOTE**: Lambda has a terrible body size limit! (6 MB minus base64 overhead) Avoid it for now unless you'll never upload large media files (about 4 MB an up).
+Also currently it's broken because exiv2 is not installed in the build.
 
 First, set up the [AWS CLI](https://aws.amazon.com/cli/) on your machine, use `aws configure` to log in.
 

@@ -4,7 +4,7 @@ A powerful engine for [your personal website].
 
 - lets you publish many [kinds of content]
   - notes (microblog posts), articles (big blog posts), replies, reposts, likes, quotations, bookmarks, reviews…
-- supports categories, tags, full text search, content warnings, photos, videos, audio files, private posts (drafts), automatic offline in-browser caching (ServiceWorkers), color theme customization
+- supports categories, tags, full text search, content warnings, photos (with Exif metadata display), videos, audio files, private posts (drafts), automatic offline in-browser caching (ServiceWorkers), color theme customization
 - lets you talk to other IndieWeb-style websites by sending and receiving [Webmentions] (including [Salmentions] for threaded conversations)
 - lets you use [Micropub] to edit your site (post, update, delete, undelete)
   - has a media endpoint for file uploads that optimizes images, extracts Exif metadata, and works on AWS Lambda + S3

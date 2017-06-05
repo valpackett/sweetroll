@@ -58,8 +58,11 @@ styles = new MergeTrees([styles, new Funnel('assets', { include: ['color.css'] }
 
 const icons = new SVGStore(
 	new Funnel('node_modules/octicons/build/svg', {
-		include: ['arrow-up', 'arrow-down', 'reply', 'megaphone', 'link',
-			'star', 'info', 'bookmark', 'quote', 'lock'].map((x) => x + '.svg')
+		include: [
+			'arrow-up', 'arrow-down', 'reply', 'megaphone', 'link',
+			'star', 'info', 'bookmark', 'quote', 'lock',
+			'device-camera', 'telescope', 'eye', 'desktop-download', 'paintcan'
+		].map((x) => x + '.svg')
 	}),
 	{ outputFile: 'icons.svg' }
 )

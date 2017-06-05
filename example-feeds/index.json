@@ -18,13 +18,20 @@
     "filter": [
       { "category": ["_notes"] },
       { "category": ["_articles"] },
-      { "category": ["_reposts"] }
+      { "category": ["_reposts"] },
+      { "index-display": ["show"] }
+    ],
+    "unfilter": [
+      { "client-id": [ "https://micropub.rocks/" ] },
+      { "index-display": ["hide"] }
     ],
     "author": [
       {
         "type": ["h-card"],
         "properties": {
-          "note": [ "Author bio. Include rel=me links for IndieAuth here (or certificate fingerprints for IndieCert or whatever)." ]
+          "note": [
+            { "html": "Author bio. Include rel=me links for IndieAuth here (or certificate fingerprints for IndieCert or whatever)." }
+          ]
         }
       }
     ]

@@ -2,7 +2,7 @@
 
 global.DataView = require('jdataview')
 global.DOMParser = require('xmldom').DOMParser
-const ExifReader = require('exifreader')
+const readMetadata = require('pify')(require('exiv2').getImageTags)
 const fileType = require('file-type')
 const replaceExt = require('replace-ext')
 //const ffmpeg = require('fluent-ffmpeg')
@@ -32,6 +32,17 @@ module.exports = (origName, buf) => {
 	const ft = fileType(buf)
 	const name = murmurHash(buf, 'hex') + '_' + origName
 	const origP = Promise.resolve({ name, buf, type: ft.mime })
+	const addMetadata = (o) => readMetadata(buf).then(meta => {
+		// Avoid huge blobs and empty values
+		for (const k of Object.keys(meta)) {
+			if ( (meta[k].length > 128 && k !== 'Exif.Photo.UserComment' && k !== 'Exif.Image.Copyright' && k !== 'Exif.Image.Artist')
+				|| meta[k].length === 0) {
+				delete meta[k]
+			}
+		}
+		o.meta = meta
+		return o
+	})
 
 	if (ft.mime === 'image/png') {
 
@@ -41,15 +52,10 @@ module.exports = (origName, buf) => {
 			.then(newbuf => ({ name: replaceExt(name, '.webp'), buf: newbuf, type: 'image/webp' }))
 		return Promise.all([pngP, webpP])
 			.then(srcs => ({ source: srcs }))
+			.then(addMetadata)
 
 	} else if (ft.mime === 'image/jpeg') {
 
-		let exif = null
-		try {
-			exif = ExifReader.load(buf)
-		} catch (e) {
-			console.error(e)
-		}
 		let quality = 70
 		let saveOrig = false
 		const size = sizeOf(buf)
@@ -81,7 +87,8 @@ module.exports = (origName, buf) => {
 			}))
 		}
 		return Promise.all(ps)
-			.then(srcs => ({ source: srcs, meta: exif }))
+			.then(srcs => ({ source: srcs }))
+			.then(addMetadata)
 
 	} else if (ft.mime === 'image/webp') {
 
@@ -89,8 +96,10 @@ module.exports = (origName, buf) => {
 			.then(newbuf => ({ name, buf: newbuf, type: 'image/jpeg' }))
 		return Promise.all([jpegP, origP])
 			.then(srcs => ({ source: srcs }))
+			.then(addMetadata)
 
 	}// else if (ft.mime.startsWith('video')) { }
 
 	return origP.then(src => ({ source: [src] }))
+		.then(addMetadata)
 }

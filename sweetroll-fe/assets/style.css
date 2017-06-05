@@ -383,13 +383,37 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 }
 
 .entry-photo {
-	display: block;
+	margin: 0;
 
-	@nest .index-category & {
-		@media screen and (min-width: 600px) {
-			max-height: 60vh;
-		}
+	& picture, & img {
+		display: block;
 	}
+}
+
+.entry-photo-meta {
+	padding: 0.5rem;
+	font-size: 0.85em;
+
+	& a {
+		text-decoration: underline;
+	}
+
+	& .meta-part {
+		margin-right: 0.5em;
+	}
+
+	& .icon {
+		margin-right: 0.25em;
+	}
+}
+
+.camera-shutter, .camera-aperture, .camera-iso {
+	margin-left: 0.1em;
+	margin-right: 0.1em;
+}
+
+.meta-part {
+	white-space: nowrap;
 }
 
 .entry-facepile {
@@ -398,10 +422,6 @@ p, .entry-core blockquote, .entry-core ul, .entry-core ol, .entry-core table, .e
 
 	& a {
 		text-decoration: none;
-	}
-
-	& .icon {
-		vertical-align: 0.33rem;
 	}
 }
 

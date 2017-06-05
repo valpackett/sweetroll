@@ -1,0 +1,17 @@
+{
+  "type": ["h-x-dynamic-feed"],
+  "properties": {
+    "url": ["https://unrelenting.technology/photos"],
+    "name": ["Photos"],
+    "feed-settings": [
+      {
+        "show-in-nav": true,
+        "show-in-post": true,
+        "order-in-nav": 5
+      }
+    ],
+    "filter": [
+      { "category": ["_photos"] }
+    ]
+  }
+}

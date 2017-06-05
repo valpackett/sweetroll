@@ -3,7 +3,6 @@
 const helpers = require('./helpers')
 const URI = require('urijs')
 const LinkHeader = require('http-link-header')
-const jwt = require('jsonwebtoken')
 const moment = require('moment')
 const fetch = require('node-fetch')
 const webpush = require('web-push')
@@ -30,12 +29,11 @@ const cache = env.DO_CACHE ? require('lru-cache')({
 const websubHub = env.WEBSUB_HUB || 'https://switchboard.p3k.io'
 const websubHubMode = env.WEBSUB_HUB_MODE || 'multi' // Whether to do one request for all URLs affected by a change or one request per URL
 const indieAuthEndpoint = env.INDIEAUTH_ENDPOINT || 'https://indieauth.com/auth'
-const mediaEndpoint = env.MEDIA_ENDPOINT || '/uploadmedia'
+const mediaEndpoint = env.MEDIA_ENDPOINT || '/micropub/media'
 const microPanelRoot = env.MICRO_PANEL_ROOT || '/dist/micro-panel' // To allow using the unpacked version of micro-panel in development
 const webmentionOutbox = env.WEBMENTION_OUTBOX // Allow using an external sender like Telegraph, default to sending on our own
 const webmentionOutboxConf = JSON.parse(env.WEBMENTION_OUTBOX_CONF || '{}') // Something like {token: '...'} for Telegraph
 const allowedCdns = env.ALLOWED_CDNS || '' // List of allowed CDN domains for Content-Security-Policy
-const jwtkey = env.SWEETROLL_SECRET || 'TESTKEY' // JWT signature private key. Make a long pseudorandom string in production
 const vapidKeys = { publicKey: env.VAPID_PUBLIC_KEY, privateKey: env.VAPID_PRIVATE_KEY, contact: env.VAPID_CONTACT } // Web Push keypair
 if (vapidKeys.publicKey) {
 	webpush.setVapidDetails(vapidKeys.contact, vapidKeys.publicKey, vapidKeys.privateKey)
@@ -45,6 +43,9 @@ dbsettings.application_name = 'sweetroll-fe'
 dbsettings.max = parseInt(env.PG_POOL_MAX || '4')
 dbsettings.ssl = env.PG_SSL
 const db = new PgAsync(dbsettings)
+
+const common = require('../../sweetroll-node-common')
+const addAuth = common.authentication(log, require('jsonwebtoken').verify)
 
 const render = async (file, tplctx) =>
 	pify(pug.renderFile)('views/' + file, tplctx)
@@ -352,19 +353,6 @@ const addCommonContext = async (ctx, next) => {
 	ctx.reqUriFullStr = ctx.reqUriFull.toString()
 	ctx.reqUri = ctx.reqUriFull.clone().search('')
 	ctx.reqUriStr = ctx.reqUri.toString()
-	const token = ctx.cookies.get('Bearer') || ctx.request.header.Authorization
-	let auth
-	if (token) {
-		try {
-			auth = jwt.verify(token.replace('Bearer ', ''), jwtkey, { issuer: host })
-			auth.sub = auth.sub.replace(/\/$/, '')
-			log('auth success: %O', auth)
-		} catch (err) {
-			auth = undefined
-			log('auth error: %O', err)
-		}
-	}
-	ctx.auth = auth
 	ctx.tplctx = {
 		// Libraries and our code
 		moment,
@@ -379,7 +367,7 @@ const addCommonContext = async (ctx, next) => {
 		reqUri: ctx.reqUri,
 		reqUriFull: ctx.reqUriFull,
 		requestUriStr: ctx.reqUriFullStr,
-		auth,
+		auth: ctx.auth,
 		// App settings
 		indieAuthEndpoint,
 		microPanelRoot,
@@ -400,11 +388,10 @@ const addCommonContext = async (ctx, next) => {
 	await next()
 	ctx.response.set('Link', ctx.link.toString())
 	// data: URI scripts are made by the HTML Imports polyfill, but that doesn't prevent buildled micro-panel from working
-	if (relaxCSP) {
-		ctx.response.set('Content-Security-Policy', `default-src 'self'; script-src 'self' data: 'unsafe-inline' 'unsafe-eval'; style-src 'self' data: 'unsafe-inline'; img-src 'self' https: data:; media-src 'self' ${allowedCdns}; connect-src 'self' ${mediaEndpoint}; form-action 'self' ${indieAuthEndpoint}; frame-ancestors 'none'`)
-	} else {
-		ctx.response.set('Content-Security-Policy', `default-src 'self'; script-src 'self' 'unsafe-eval' 'sha256-8F+MddtNx9BXjGv2NKerT8QvmcOQy9sxZWMR6gaJgrU='; style-src 'self' data: 'unsafe-inline'; img-src 'self' https: data:; media-src 'self' ${allowedCdns}; connect-src 'self' ${mediaEndpoint}; form-action 'self' ${indieAuthEndpoint}; frame-ancestors 'none'; upgrade-insecure-requests`)
-	}
+	const connectSrc = `connect-src 'self' ${mediaEndpoint.startsWith('/') ? '' : mediaEndpoint}`
+	const scriptSrc = `script-src 'self' 'unsafe-eval' ${relaxCSP ? "data: 'unsafe-inline'" : "'sha256-8F+MddtNx9BXjGv2NKerT8QvmcOQy9sxZWMR6gaJgrU='"}`
+	const formAction = `form-action 'self' ${indieAuthEndpoint.startsWith('/') ? '' : indieAuthEndpoint}`
+	ctx.response.set('Content-Security-Policy', `default-src 'self'; ${scriptSrc}; style-src 'self' data: 'unsafe-inline'; img-src 'self' https: data:; media-src 'self' ${allowedCdns}; ${connectSrc}; ${formAction}${relaxCSP ? '' : "; frame-ancestors 'none'"}`)
 	ctx.response.set('X-Frame-Options', 'DENY')
 	ctx.response.set('X-XSS-Protection', '1; mode=block')
 	ctx.response.set('X-Content-Type-Options', 'nosniff')
@@ -443,8 +430,8 @@ router.addRoute('GET', '/live', liveHandler)
 router.addRoute('GET', '/robots.txt', robotsHandler)
 router.addRoute('POST', '/logout', logoutHandler)
 router.addRoute('GET', '/color.css', colorHandler)
-router.addRoute('GET', '/search', compose([addCommonContext, koaCache, searchHandler].filter(isObject)))
-router.options.notFound = compose([addCommonContext, koaCache, handler].filter(isObject))
+router.addRoute('GET', '/search', compose([addAuth, addCommonContext, koaCache, searchHandler].filter(isObject)))
+router.options.notFound = compose([addAuth, addCommonContext, koaCache, handler].filter(isObject))
 const app = new (require('koa'))()
 if (isProxied) {
 	app.proxy = true

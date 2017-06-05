@@ -36,6 +36,7 @@ exports.handler = (e, ctx, cb) => {
 						Body: s.buf,
 						ACL: 'public-read',
 						ContentType: s.type,
+						ContentDisposition: 'inline',
 					}).promise().then(res => {
 						s.src = urlJoin(process.env.S3_URL, s.name)
 						delete s.name

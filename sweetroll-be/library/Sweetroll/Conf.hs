@@ -15,14 +15,16 @@ data SweetrollConf = SweetrollConf
   {            mediaEndpoint ∷ String
   ,   indieauthCheckEndpoint ∷ String
   ,              databaseUrl ∷ ByteString
+  ,      allowJsCookieAccess ∷ Bool
   ,                 testMode ∷ Bool
   } deriving (Generic, Show)
 
 instance Default SweetrollConf where
   def = SweetrollConf {
-        mediaEndpoint            = "/uploadmedia"
+        mediaEndpoint            = "/micropub/media"
       , indieauthCheckEndpoint   = "https://indieauth.com/auth"
       , databaseUrl              = "postgres://localhost/sweetroll?sslmode=disable"
+      , allowJsCookieAccess      = False
       , testMode                 = False }
 
 instance FromEnv SweetrollConf where

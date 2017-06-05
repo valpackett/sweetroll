@@ -6,7 +6,9 @@ micro-panel simply picks up the JSON body if present instead of the `Location` h
 This service currently does image optimization/transcoding and Exif metadata extraction.
 TODO: video.
 
-This service can work locally with local uploads (`index.js`) and on AWS Lambda with AWS S3 uploads (`lambda.js`).
+This service can work locally (`index.js`) and on AWS Lambda (`lambda.js`).
+
+Supports local filesystem and Amazon S3 backends.
 
 ## Development
 
@@ -20,7 +22,29 @@ $ npm i
 
 [Node.js]: https://nodejs.org/en/
 
+## Regular Server Deployment
+
+Environment variables:
+
+- `SWEETROLL_SECRET`: same value as backend and frontend
+- `UPLOAD_BACKEND`: `S3` or `fs`
+- With fs backend:
+	- `FS_ROOT`: where to put files
+	- `FS_URL`: where files from that root will be served
+- With S3 backend:
+	- `S3_BUCKET`: bucket name
+	- `S3_URL`: where files from that bucket will be served (e.g. `https://unrelentingtech.s3.dualstack.eu-west-1.amazonaws.com/`, note the `dualstack` URL for IPv6 support)
+	- provide AWS credentials the usual way (the SDK handles it), e.g. `awscli` creates `~/.aws/credentials` and that works here
+
+```bash
+$ node index.js --port 3333 # 3333 is default
+$ node index.js --protocol activate # socket activation (listen on file descriptor 3)
+$ node index.js --protocol unix --socket /var/run/sweetroll-mu/sweetroll-mu.sock # unix domain socket
+```
+
 ## Amazon Lambda Deployment
+
+**NOTE**: Lambda has a terrible body size limit! (6 MB minus base64 overhead) Avoid it for now unless you'll never upload large media files (about 4 MB an up).
 
 First, set up the [AWS CLI](https://aws.amazon.com/cli/) on your machine, use `aws configure` to log in.
 

@@ -7,6 +7,7 @@
   "dependencies": {
     "aws-sdk": "^2.49.0",
     "busboy": "^0.2.14",
+    "cwebp-bin": "^3.2.0",
     "dotenv": "^4.0.0",
     "exifreader": "^2.1.1",
     "file-type": "^4.3.0",
@@ -23,8 +24,10 @@
     "koa-busboy": "^1.0.1",
     "lambda-env-vars": "^0.4.0",
     "minimist": "^1.2.0",
+    "mozjpeg": "git+https://github.com/myfreeweb/mozjpeg-bin.git",
     "murmurhash-native": "^3.2.1",
     "mz": "^2.6.0",
+    "pngquant-bin": "^3.1.1",
     "url-join": "^2.0.1",
     "xmldom": "^0.1.27"
   }

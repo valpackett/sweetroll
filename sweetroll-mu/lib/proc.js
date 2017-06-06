@@ -61,10 +61,10 @@ module.exports = (origName, buf) => {
 		const size = sizeOf(buf)
 		const dim = Math.max(size.width, size.height)
 		if (dim >= 5500) {
-			quality = 30
+			quality = 40
 			saveOrig = true
 		} else if (dim >= 4000) {
-			quality = 40
+			quality = 45
 			saveOrig = true
 		} else if (dim >= 3000) {
 			quality = 50
@@ -74,9 +74,9 @@ module.exports = (origName, buf) => {
 		} else if (dim >= 2000) {
 			quality = 65
 		}
-		const jpegP = imagemin.buffer(buf, jpegconf())
+		const jpegP = imagemin.buffer(buf, jpegconf(quality))
 			.then(newbuf => ({ name, buf: newbuf, type: 'image/jpeg' }))
-		const webpP = imagemin.buffer(buf, webpconf())
+		const webpP = imagemin.buffer(buf, webpconf(quality - 5))
 			.then(newbuf => ({ name: replaceExt(name, '.webp'), buf: newbuf, type: 'image/webp' }))
 		const ps = [jpegP, webpP]
 		if (saveOrig) {

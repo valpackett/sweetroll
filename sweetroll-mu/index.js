@@ -30,6 +30,7 @@ function backendS3 () {
 			ACL: 'public-read',
 			ContentType: type,
 			ContentDisposition: 'inline',
+			CacheControl: 'max-age=365000000, immutable',
 		}).promise()
 		return urlJoin(httpRoot, name)
 	}

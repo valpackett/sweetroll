@@ -34,7 +34,15 @@ Environment variables:
 - With S3 backend:
 	- `S3_BUCKET`: bucket name
 	- `S3_URL`: where files from that bucket will be served (e.g. `https://unrelentingtech.s3.dualstack.eu-west-1.amazonaws.com/`, note the `dualstack` URL for IPv6 support)
-	- provide AWS credentials the usual way (the SDK handles it), e.g. `awscli` creates `~/.aws/credentials` and that works here
+	- `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`, or the `~/.aws/credentials` file, i.e. [the standard AWS way to provide credentials](https://aws.amazon.com/blogs/security/a-new-and-standardized-way-to-manage-credentials-in-the-aws-sdks/)
+	- **NOTE**: do not use your root user credentials, create a user with a custom policy that is allowed `s3:PutObject` and `s3:PutObjectAcl` on your bucket (see the Lambda section below, you can take the policy from there, minus the logs part which is not used here)
+
+Install `libexiv2`, `libjpeg` (of any kind) and `libpng`.
+
+```bash
+$ sudo pkg install autoconf automake libtool nasm pkgconf exiv2 png jpeg-turbo
+$ npm i
+```
 
 ```bash
 $ node index.js --port 3333 # 3333 is default

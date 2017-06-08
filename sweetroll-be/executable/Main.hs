@@ -23,7 +23,7 @@ main = do
   traceShowM conf
   envSecret ← lookupEnv "SWEETROLL_SECRET"
   secretVal ← case envSecret of
-                  Just k | length k >= 40 → return $ T.pack k
+                  Just k | length k >= 40 || k == "TESTKEY" → return $ T.pack k
                   _ → do
                     hPutStrLn stderr "Warning: the SWEETROLL_SECRET value is shorter than 40 characters. Not using it and generating a random one. Authentication tokens will expire after restarting Sweetroll."
                     randBytes ← getRandomBytes 64 ∷ IO BS.ByteString

@@ -64,6 +64,7 @@ postMicropub _ host (Update url upds) = do
                      & setUpdated now
             newObj = obj & key "properties" . _Object %~ modify
         -- TODO ensure domain not modified
+        
         queryTx newObj upsertObject
         return $ Just obj
       _ → return Nothing)
@@ -154,7 +155,6 @@ applyUpdates props (DelFromProps newProps) =
           del _ old = old
 applyUpdates props (DelProps newProps) =
   foldl' (flip HMS.delete) props newProps
-applyUpdates x _ = x
 
 filterProps ∷ Value → [Text] → Value
 filterProps obj [] = obj

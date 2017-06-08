@@ -10,8 +10,15 @@ mixin icon(name, title, opts={})
 			if title
 				title= title
 
-mixin showContent(properties, long, onlySummary)
-	- const content = helpers.getContent(properties, long, onlySummary)
+mixin showContent(properties, { preferSummary, stronglyPreferSummary, showRels, permalink })
+	-
+		let isUntitled = _.isEmpty(properties.name) || !_.isEmpty(properties['bookmark-of'])
+		const onlySummary = !isUntitled && stronglyPreferSummary
+		const content = helpers.getContent(properties, { preferSummary, onlySummary })
+		const isCrapName = helpers.isActuallyTheSameDamnThing(_.get(properties, 'name[0]') || '', content)
+		if (isCrapName) {
+			isUntitled = true
+		}
 	if !_.isEmpty(properties['x-content-note'])
 		p.entry-core
 			strong Content note: 
@@ -27,6 +34,8 @@ mixin showContent(properties, long, onlySummary)
 				a(href="#") click to reveal
 				| )
 		| <div class="click-to-reveal-target">
+	each repost in properties['repost-of'] || []
+		+showRefContext(repost, { prop: 'u-repost-of', reasonIcon: 'megaphone', reasonIconClass: 'repost', reason: 'reposted a post by', rel: showRels ? 'repost-of' : '' })
 	each photo in properties.photo || []
 		if _.isString(photo)
 			if !(_.includes(content, photo.replace('&', '&amp;')) || _.includes(content, photo))
@@ -75,7 +84,7 @@ mixin showContent(properties, long, onlySummary)
 								- const [x, y] = shutter.split('/')
 								- const val = x / y
 								span.camera-shutter
-									if val >= 0
+									if val >= 0.3
 										= `${val.toPrecision(2)}s`
 									else
 										= shutter
@@ -122,7 +131,16 @@ mixin showContent(properties, long, onlySummary)
 							source(src=source.src type=source.type)
 						each track in audio.track || []
 							track(src=track.src kind=track.kind label=track.label srclang=track.srclang default=(track.default || false))
-	.entry-core !{ helpers.processContent(content) }
+	if !isUntitled
+		h1.p-name.entry-core
+			if showRels
+				= _.head(properties.name)
+			else
+				a.u-url.u-uid(href=permalink tabindex="-1")
+					= _.head(properties.name)
+	if _.trim(content).length > 0
+		fragmention-target(exact)
+			.e-content.entry-core('class'=isUntitled ? 'p-name' : '') !{ helpers.processContent(content) }
 	if !_.isEmpty(properties['x-content-warning'])
 		| </div>
 
@@ -209,7 +227,7 @@ mixin showActions(entry, permalink)
 			a(href=twitterLink('favorite'))
 				+icon('star')
 
-mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, long, showReplies, showContexts })
+mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, showReplies, showContexts })
 	try
 		-
 			const properties = entry.properties || {}
@@ -218,7 +236,7 @@ mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, lo
 			if showContexts && !_.isEmpty(inReplyTo)
 				.ref-context-thread-up
 					each reply in _.get(entry, 'properties.in-reply-to', [])
-						+showRefContext(reply, { prop: 'u-in-reply-to', rel: '', long: false, showReplies, showContexts: true })
+						+showRefContext(reply, { prop: 'u-in-reply-to', rel: '', showReplies, showContexts: true })
 			if reasonIcon
 				header.ref-context-reason
 					+icon(reasonIcon, null, { class: ['icon-ref-reason', 'icon-ref-' + (reasonIconClass || reasonIcon)] })
@@ -228,7 +246,9 @@ mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, lo
 					else if !_.isObject(entry)
 						| something weird
 			if _.isObject(entry)
-				- const authors = properties.author
+				-
+					const authors = properties.author
+					const permalink = helpers.onlyHttpUrl(_.get(properties, 'url[0]', ''))
 				.ref-context-core
 					a.ref-context-avatar-link(href=helpers.onlyHttpUrl(_.get(authors, '[0].properties.url[0]', '')))
 						img.ref-context-avatar(alt="" src=helpers.showAvatar((authors || [])[0]))
@@ -254,14 +274,14 @@ mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, lo
 														| )
 										|  
 							|  
-							a.u-url.ref-context-date(rel=rel href=helpers.onlyHttpUrl(_.get(properties, 'url[0]', '')))
+							a.u-url.ref-context-date(rel=rel href=permalink)
 								= moment.utc(_.get(properties, 'published[0]', '')).format('MMM Do YYYY, HH:mm')
-						blockquote.ref-context-content.e-content
-							+showContent(properties, long, false)
+						blockquote.ref-context-content
+							+showContent(properties, { preferSummary: true, stronglyPreferSummary: false, showRels: false, permalink })
 				if showReplies && !_.isEmpty(comments.replies)
 					.ref-context-thread-down
 						each reply in comments.replies
-							+showRefContext(reply, { prop: 'p-comment', rel: '', long: false, showReplies: true, showContexts: false })
+							+showRefContext(reply, { prop: 'p-comment', rel: '', showReplies: true, showContexts: false })
 	catch
 		div.tpl-error Error: could not render the entry
 		- const url = _.get(entry, 'properties.url[0]', 'javascript:void(0)')
@@ -272,16 +292,15 @@ mixin showEntry(entry, compactView)
 	-
 		const properties = entry.properties || {}
 		const permalink = relativeUrl(_.get(properties, 'url[0]'))
-		const isUntitled = _.isEmpty(properties.name) || !_.isEmpty(properties['bookmark-of'])
 		const props = { reposts: 'p-repost', likes: 'p-like', bookmarks: 'p-bookmark', quotations: 'p-quotation' }
 		const comments = helpers.separateComments(properties.url, properties.comment || [])
 		const acl = (entry.acl || []).filter(u => u !== '*')
 	each reply in properties['in-reply-to'] || []
-		+showRefContext(reply, { prop: 'u-in-reply-to', reasonIcon: 'reply', reason: 'in reply to', rel: !compactView ? 'in-reply-to' : '', long: false, showReplies: false, showContexts: !compactView })
+		+showRefContext(reply, { prop: 'u-in-reply-to', reasonIcon: 'reply', reason: 'in reply to', rel: !compactView ? 'in-reply-to' : '', showReplies: false, showContexts: !compactView })
 	each like in properties['like-of'] || []
-		+showRefContext(like, { prop: 'u-like-of', reasonIcon: 'star', reasonIconClass: 'like', reason: 'liked', rel: !compactView ? 'like-of' : '', long: false, showReplies: false, showContexts: !compactView })
+		+showRefContext(like, { prop: 'u-like-of', reasonIcon: 'star', reasonIconClass: 'like', reason: 'liked a post by', rel: !compactView ? 'like-of' : '', showReplies: false, showContexts: !compactView })
 	each quotation in properties['quotation-of'] || []
-		+showRefContext(quotation, { prop: 'u-quotation-of', reasonIcon: 'quote-left', reasonIconClass: 'quotation', reason: 'quoted', rel: !compactView ? 'quotation-of' : '', long: false, showReplies: false, showContexts: !compactView })
+		+showRefContext(quotation, { prop: 'u-quotation-of', reasonIcon: 'quote-left', reasonIconClass: 'quotation', reason: 'quoted a post by', rel: !compactView ? 'quotation-of' : '', showReplies: false, showContexts: !compactView })
 	each bookmark in properties['bookmark'] || []
 		.ref-context.u-bookmark-of.h-cite
 			header.ref-context-reason
@@ -326,18 +345,7 @@ mixin showEntry(entry, compactView)
 				else
 					a(href=url)= url.replace('https://', '').replace('http://', '')
 				|  
-	if !isUntitled
-		h1.p-name.entry-core
-			a.u-url.u-uid(href=permalink rel=compactView ? '' : 'bookmark' tabindex="-1")
-				= _.head(properties.name)
-	if !_.isEmpty(properties.content) || !_.isEmpty(properties['repost-of'])
-		fragmention-target(exact)
-			.e-content('class'=isUntitled ? 'p-name' : '')
-				each repost in properties['repost-of'] || []
-					+showRefContext(repost, { long: true, prop: 'u-repost-of', reasonIcon: 'megaphone', reasonIconClass: 'repost', reason: 'reposted', rel: !compactView ? 'repost-of' : '' })
-				- const onlySummary = !isUntitled && compactView
-				if !_.isEmpty(onlySummary ? properties.summary : properties.content)
-						+showContent(properties, !compactView, onlySummary)
+	+showContent(properties, { preferSummary: compactView, stronglyPreferSummary: compactView, showRels: !compactView, permalink })
 	footer.entry-footer
 		+showMeta(entry, comments, permalink, compactView)
 		if !compactView
@@ -347,7 +355,7 @@ mixin showEntry(entry, compactView)
 	if !compactView && comments && !_.isEmpty(comments.replies)
 		section.entry-replies
 			each reply in comments.replies || []
-				+showRefContext(reply, { prop: 'p-comment', rel: '', long: false, showReplies: true, showContexts: false })
+				+showRefContext(reply, { prop: 'p-comment', rel: '', showReplies: true, showContexts: false })
 
 
 - const authedAsAdmin = auth && new URI(auth.sub).equals(domainUri)

@@ -57,6 +57,7 @@
     "dotenv": "^4.0.0",
     "dynamic-asset-rev": "^0.1.0",
     "emoji-king": "^0.1.0",
+    "entities": "^1.1.1",
     "gravatar-url": "^2.0.0",
     "http-link-header": "github:myfreeweb/node-http-link-header#master",
     "jsonwebtoken": "^7.4.1",

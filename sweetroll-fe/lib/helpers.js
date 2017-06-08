@@ -7,6 +7,7 @@ const { head, some, trim, get, eq, includes, concat,
 	flatMap, isString, isArray, isObject, difference } = require('lodash')
 const { count: countEmoji } = require('emoji-king')
 const URI = require('urijs')
+const entities = require('entities')
 const cheerio = require('cheerio')
 const gravatarUrl = require('gravatar-url')
 const log = require('debug')('sweetroll-fe:helpers')
@@ -166,11 +167,11 @@ module.exports = {
 		}
 	},
 
-	getContent (properties, long, onlySummary) {
+	getContent (properties, { preferSummary, onlySummary }) {
 		const content = head(onlySummary ? properties.summary : (
-			long
-				? concat(properties.content || [], properties.summary || [], properties.name || [])
-				: concat(properties.summary || [], properties.content || [], properties.name || [])
+			preferSummary
+				? concat(properties.summary || [], properties.content || [], properties.name || [])
+				: concat(properties.content || [], properties.summary || [], properties.name || [])
 			)
 		) || ''
 		return this.getHtml(content)
@@ -217,6 +218,13 @@ module.exports = {
 		return $('link[rel], a[rel]').toArray()
 			.filter(el => includes(el.attribs['rel'].split(/\s+/), 'webmention') && isString(el.attribs['href']))
 			.map(el => el.attribs['href'])
+	},
+
+	isActuallyTheSameDamnThing(name, content) {
+		const process = x => entities.decodeHTML(x).replace(/\s+/g, '').replace(/<[^>]+>/g, '')
+		const n = process(name)
+		const c = process(content)
+		return n.length > 2 && c.length > 2 && n.includes(c)
 	},
 
 	async colorStyle (vars) {

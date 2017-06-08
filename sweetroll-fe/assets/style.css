@@ -40,6 +40,19 @@ input, abbr, acronym, blockquote, code, kbd, q, samp, var {
 	hyphens: none;
 }
 
+h1 {
+	font-size: 1.3em;
+}
+
+h2 {
+	font-size: 1.15em;
+}
+
+h3 {
+	font-size: 1.05em;
+}
+
+
 img {
 	max-width: 100%;
 }
@@ -48,7 +61,7 @@ img {
 	height: 1em;
 	width: 1em;
 	margin: 0 0.1em 0 0.01em;
-	vertical-align: -0.16em;
+	vertical-align: middle;
 	shape-rendering: geometricprecision;
 	fill: currentColor;
 }
@@ -349,18 +362,6 @@ aside .search-form {
 		margin-bottom: 0;
 	}
 
-	& h1 {
-		font-size: 1.3em;
-	}
-
-	& h2 {
-		font-size: 1.15em;
-	}
-
-	& h3 {
-		font-size: 1.05em;
-	}
-	
 	& .hljs {
 		border-radius: 3px;
 	}

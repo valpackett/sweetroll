@@ -42,69 +42,71 @@ mixin showContent(properties, { preferSummary, stronglyPreferSummary, showRels, 
 				img.u-photo.entry-photo(src=photo alt="")
 		else if _.isObject(photo)
 			figure.entry-photo
-				if _.isString(photo.value)
-					img.u-photo(src=photo.value alt=photo.alt)
-				else if _.isArray(photo.source)
-					picture
-						- const defaultSource = _.head(_.sortBy(photo.source, [ s => !s.default, s => s.type != 'image/jpeg' ]))
-						each source in photo.source
-							if source !== defaultSource && !source.original
-								source(srcset=(source.srcset || source.src) media=source.media sizes=source.sizes type=source.type)
-						img.u-photo(src=(defaultSource.srcset || defaultSource.src) alt=(defaultSource.alt || photo.alt))
+				div(style=helpers.containerStyle(photo) class=photo.width && photo.height ? 'responsive-container' : '')
+					if _.isString(photo.value)
+						img.u-photo(src=photo.value alt=photo.alt)
+					else if _.isArray(photo.source)
+						picture
+							- const defaultSource = _.head(_.sortBy(photo.source, [ s => !s.default, s => s.type != 'image/jpeg' ]))
+							each source in photo.source
+								if source !== defaultSource && !source.original
+									source(srcset=(source.srcset || source.src) media=source.media sizes=source.sizes type=source.type)
+							img.u-photo(src=(defaultSource.srcset || defaultSource.src) alt=(defaultSource.alt || photo.alt) width=photo.width height=photo.height)
 				if _.isObject(photo.meta)
-					figcaption.entry-photo-meta
-						-
-							const meta = photo.meta
-							const make = meta['Exif.Image.Make']
-							const model = meta['Exif.Image.Model'] ? _.trim(meta['Exif.Image.Model'].replace(meta['Exif.Image.Make'], '')) : null
-							const lens = meta['Exif.Canon.LensModel'] || meta['Exif.Photo.LensModel']
-							const aperture = meta['Exif.Image.FNumber'] || meta['Exif.Photo.FNumber']
-							const shutter = meta['Exif.Image.ExposureTime'] || meta['Exif.Photo.ExposureTime']
-							const iso = meta['Exif.Photo.ISOSpeedRatings'] || meta['Exif.Photo.ISOSpeed']
-							const software = meta['Exif.Image.Software']
-							const original = _.find(photo.source, s => s.original)
-						span.meta-part
+					-
+						const meta = photo.meta
+						const make = meta['Exif.Image.Make']
+						const model = meta['Exif.Image.Model'] ? _.trim(meta['Exif.Image.Model'].replace(meta['Exif.Image.Make'], '')) : null
+						const lens = meta['Exif.Canon.LensModel'] || meta['Exif.Photo.LensModel']
+						const aperture = meta['Exif.Image.FNumber'] || meta['Exif.Photo.FNumber']
+						const shutter = meta['Exif.Image.ExposureTime'] || meta['Exif.Photo.ExposureTime']
+						const iso = meta['Exif.Photo.ISOSpeedRatings'] || meta['Exif.Photo.ISOSpeed']
+						const software = meta['Exif.Image.Software']
+						const original = _.find(photo.source, s => s.original)
+					if make || model || lens || aperture || shutter || iso || software || original
+						figcaption.entry-photo-meta
 							if make || model
-								+icon('device-camera', 'Camera')
-							if make
-								span.camera-make= make
-								| 
-							if model
-								span.camera-model= model
-						| 
-						span.meta-part
+								span.meta-part
+									+icon('device-camera', 'Camera')
+									if make
+										span.camera-make= make
+										| 
+									if model
+										span.camera-model= model
 							if lens
-								+icon('telescope', 'Lens')
-								span.camera-lens= _.trim(meta['Exif.Photo.LensMake'] || '' + ' ' + lens.replace(meta['Exif.Photo.LensMake'], ''))
-						| 
-						span.meta-part
+								| 
+								span.meta-part
+									+icon('telescope', 'Lens')
+									span.camera-lens= _.trim(meta['Exif.Photo.LensMake'] || '' + ' ' + lens.replace(meta['Exif.Photo.LensMake'], ''))
 							if aperture || shutter || iso
-								+icon('eye', 'Photo parameters')
-							if shutter
-								- const [x, y] = shutter.split('/')
-								- const val = x / y
-								span.camera-shutter
-									if val >= 0.3
-										= `${val.toPrecision(2)}s`
-									else
-										= shutter
 								| 
-							if aperture
-								- const [x, y] = aperture.split('/')
-								span.camera-aperture= `ƒ/${(x / y).toPrecision(2)}`
-								| 
-							if iso
-								span.camera-iso= `ISO ${iso}`
-						| 
-						span.meta-part
+								span.meta-part
+									+icon('eye', 'Photo parameters')
+									if shutter
+										- const [x, y] = shutter.split('/')
+										- const val = x / y
+										span.camera-shutter
+											if val >= 0.3
+												= `${val.toPrecision(2)}s`
+											else
+												= shutter
+										| 
+									if aperture
+										- const [x, y] = aperture.split('/')
+										span.camera-aperture= `ƒ/${(x / y).toPrecision(2)}`
+										| 
+									if iso
+										span.camera-iso= `ISO ${iso}`
 							if software
-								+icon('paintcan', 'Software')
-								span.camera-software= software
-						| 
-						span.meta-part
+								| 
+								span.meta-part
+									+icon('paintcan', 'Software')
+									span.camera-software= software
 							if original
-								+icon('desktop-download')
-								a.camera-original(href=original.src) Download original
+								| 
+								span.meta-part
+									+icon('desktop-download')
+									a.camera-original(href=original.src) Download original
 	each video in properties.video || []
 		if _.isString(video)
 			if !(_.includes(content, video.replace('&', '&amp;')) || _.includes(content, video))

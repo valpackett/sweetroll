@@ -3,7 +3,7 @@
 // There's no strict rule about "what is a helper" but generally,
 // helpers are about data manipulation.
 
-const { head, some, trim, get, eq, includes, concat,
+const { head, some, trim, get, eq, includes, concat, sortBy,
 	flatMap, isString, isArray, isObject, difference } = require('lodash')
 const { count: countEmoji } = require('emoji-king')
 const URI = require('urijs')
@@ -225,6 +225,29 @@ module.exports = {
 		const n = process(name)
 		const c = process(content)
 		return n.length > 2 && c.length > 2 && n.includes(c)
+	},
+
+	containerStyle (media) {
+		let result = ''
+		if (!media) {
+			return result
+		}
+		const color = head(sortBy(media.palette, 'population'))
+		const preview = media.tiny_preview
+		if (color || preview) {
+			result += 'background:'
+			if (color) {
+				result += color.color
+			}
+			if (preview) {
+				result += ` url('${preview}')`
+			}
+			result += ';'
+		}
+		if (media.width && media.height) {
+			result += `padding-bottom:${(media.height / media.width * 100).toPrecision(4)}%`
+		}
+		return result
 	},
 
 	async colorStyle (vars) {

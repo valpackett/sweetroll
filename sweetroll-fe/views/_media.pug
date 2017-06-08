@@ -1,0 +1,88 @@
+mixin showPhoto(photo)
+	figure.entry-photo
+		div(style=helpers.containerStyle(photo) class=photo.width && photo.height ? 'responsive-container' : '')
+			if _.isString(photo.value)
+				img.u-photo(src=photo.value alt=photo.alt)
+			else if _.isArray(photo.source)
+				picture
+					- const defaultSource = _.head(_.sortBy(photo.source, [ s => !s.default, s => s.type != 'image/jpeg' ]))
+					each source in photo.source
+						if source !== defaultSource && !source.original
+							source(srcset=(source.srcset || source.src) media=source.media sizes=source.sizes type=source.type)
+					img.u-photo(src=(defaultSource.srcset || defaultSource.src) alt=(defaultSource.alt || photo.alt) width=photo.width height=photo.height)
+		if _.isObject(photo.meta)
+			-
+				const meta = photo.meta
+				const make = meta['Exif.Image.Make']
+				const model = meta['Exif.Image.Model'] ? _.trim(meta['Exif.Image.Model'].replace(meta['Exif.Image.Make'], '')) : null
+				const lens = meta['Exif.Canon.LensModel'] || meta['Exif.Photo.LensModel']
+				const aperture = meta['Exif.Image.FNumber'] || meta['Exif.Photo.FNumber']
+				const shutter = meta['Exif.Image.ExposureTime'] || meta['Exif.Photo.ExposureTime']
+				const iso = meta['Exif.Photo.ISOSpeedRatings'] || meta['Exif.Photo.ISOSpeed']
+				const software = meta['Exif.Image.Software']
+				const original = _.find(photo.source, s => s.original)
+			if make || model || lens || aperture || shutter || iso || software || original
+				figcaption.entry-photo-meta
+					if make || model
+						span.meta-part
+							+icon('device-camera', 'Camera')
+							if make
+								span.camera-make= make
+								| 
+							if model
+								span.camera-model= model
+					if lens
+						| 
+						span.meta-part
+							+icon('telescope', 'Lens')
+							span.camera-lens= _.trim(meta['Exif.Photo.LensMake'] || '' + ' ' + lens.replace(meta['Exif.Photo.LensMake'], ''))
+					if aperture || shutter || iso
+						| 
+						span.meta-part
+							+icon('eye', 'Photo parameters')
+							if shutter
+								- const [x, y] = shutter.split('/')
+								- const val = x / y
+								span.camera-shutter
+									if val >= 0.3
+										= `${val.toPrecision(2)}s`
+									else
+										= shutter
+								| 
+							if aperture
+								- const [x, y] = aperture.split('/')
+								span.camera-aperture= `ƒ/${(x / y).toPrecision(2)}`
+								| 
+							if iso
+								span.camera-iso= `ISO ${iso}`
+					if software
+						| 
+						span.meta-part
+							+icon('paintcan', 'Software')
+							span.camera-software= software
+					if original
+						| 
+						span.meta-part
+							+icon('desktop-download')
+							a.camera-original(href=original.src) Download original
+
+mixin showVideo(video)
+	div(style=helpers.containerStyle(video) class=video.width && video.height ? 'responsive-container' : '')
+		video.u-video.entry-video(poster=video.poster controls=(video.controls || true) autoplay=(video.autoplay || false) loop=(video.loop || false) muted=(video.muted || false) playsinline=(video.playsinline || false) width=video.width height=video.height)
+			if _.isString(video.value)
+				source(src=video.value)
+			else if _.isArray(video.source)
+				each source in video.source
+					source(src=source.src type=source.type)
+				each track in video.track || []
+					track(src=track.src kind=track.kind label=track.label srclang=track.srclang default=(track.default || false))
+
+mixin showAudio(audio)
+	audio.u-audio.entry-audio(controls=(audio.controls || true) autoplay=(audio.autoplay || false) loop=(audio.loop || false) muted=(audio.muted || false))
+		if _.isString(audio.value)
+				source(src=audio.value)
+		else if _.isArray(audio.source)
+				each source in audio.source
+					source(src=source.src type=source.type)
+				each track in audio.track || []
+					track(src=track.src kind=track.kind label=track.label srclang=track.srclang default=(track.default || false))

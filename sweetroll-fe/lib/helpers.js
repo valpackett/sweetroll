@@ -3,9 +3,12 @@
 // There's no strict rule about "what is a helper" but generally,
 // helpers are about data manipulation.
 
-const { head, some, trim, get, eq, includes, concat, sortBy,
-	flatMap, isString, isArray, isObject, difference } = require('lodash')
+const cacheTemplates = process.env.CACHE_TEMPLATES // Do not recompile templates on every request. Enable in prod for perf boost
+const _ = require('lodash')
+const { head, some, trim, get, eq, includes, concat, sortBy, capitalize,
+	flatMap, isString, isArray, isObject, difference } = _
 const { count: countEmoji } = require('emoji-king')
+const pug = require('pug')
 const URI = require('urijs')
 const entities = require('entities')
 const cheerio = require('cheerio')
@@ -177,23 +180,47 @@ module.exports = {
 		return this.getHtml(content)
 	},
 
-	processContent (content) {
-		if (!isString(content)) {
-			log('non-string content given to processContent')
-			return content
+	processContent (properties, opts) {
+		const textContent = this.getContent(properties, opts)
+		const media = {
+			photo: properties.photo || [],
+			video: properties.video || [],
+			audio: properties.audio || [],
+		}
+		if (!isString(textContent)) {
+			log('non-string content from getContent to processContent')
+			return Object.assign({ textContent }, media)
 		}
 		// NOTE: do not use => functions for cheerio!
-		const $ = cheerio.load(content)
+		const $ = cheerio.load(textContent)
 		// detwitterize emoji
 		$('img.Emoji').each(function (i) {
 			const img = $(this)
 			img.replaceWith(`<span class="emoji">${img.attr('alt')}</span>`)
 		})
-		//$('img').each(function (i) {
-			//const img = $(this)
-			// TODO: HTTPS proxy
-		//})
-		return $.html()
+		//$('img').each(function (i) { const img = $(this) })
+		const helpers = this
+		function processMedia (mediaType) {
+			$(`${mediaType}-here`).each(function (i) {
+				const el = $(this)
+				if (!media[mediaType]) {
+					return
+				}
+				let idx = media[mediaType].length
+				while (idx--) {
+					const obj = media[mediaType][idx]
+					if (obj.id === el.attr('id')) {
+						el.replaceWith($(pug.render(`include /_media.pug\n+show${capitalize(mediaType)}(media)`,
+							{ media: obj, helpers, _, basedir: './views', cacheTemplates })))
+						media[mediaType].splice(idx, 1)
+					}
+				}
+			})
+		}
+		processMedia('photo')
+		processMedia('video')
+		processMedia('audio')
+		return Object.assign({ textContent: $.html() }, media)
 	},
 
 	findMentionedLinks (obj) {

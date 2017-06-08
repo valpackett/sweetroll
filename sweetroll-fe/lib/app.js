@@ -47,8 +47,9 @@ const db = new PgAsync(dbsettings)
 const common = require('../../sweetroll-node-common')
 const addAuth = common.authentication(log, require('jsonwebtoken').verify)
 
+const pugRender = pify(pug.renderFile)
 const render = async (file, tplctx) =>
-	pify(pug.renderFile)('views/' + file, tplctx)
+	pugRender('views/' + file, tplctx)
 
 const affectedUrls = async (url) => {
 	const norm = new URI(url).normalizePort().normalizeHostname()

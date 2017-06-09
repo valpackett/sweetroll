@@ -6,9 +6,13 @@ const pify = require('pify')
 const readMetadata = pify(require('exiv2').getImageTags)
 const fileType = require('file-type')
 const replaceExt = require('replace-ext')
+const fs = require('mz/fs')
+const basename = require('path').basename
+const dirname = require('path').dirname
+const tmp = require('tmp')
 const Jimp = require('jimp')
 const Vibrant = require('node-vibrant')
-//const ffmpeg = require('fluent-ffmpeg')
+const ffmpeg = require('fluent-ffmpeg')
 const imagemin = require('imagemin')
 const pngquant = require('imagemin-pngquant')
 const jpegoptim = require('imagemin-jpegoptim')
@@ -31,10 +35,88 @@ const webplosslessconf = () => ({ plugins: [
 	webp({ nearLossless: 0 }),
 ] })
 
+const ffprobe = (src) => {
+	return new Promise((resolve, reject) =>
+		ffmpeg.ffprobe(src, (err, data) => err ? reject(err) : resolve(data))
+	)
+}
+
+const mp4 = (src) => {
+	const path = tmp.tmpNameSync()
+	return new Promise((resolve, reject) => {
+		ffmpeg(src)
+			.on('error', reject)
+			.on('end', () => resolve(path))
+			.audioCodec('aac')
+			.videoCodec('libx264')
+			.outputOptions(['-crf 25', '-pix_fmt yuv420p', '-profile:v baseline', '-level 3', '-b:a 96k'])
+			.format('mp4')
+			.renice(10)
+			.save(path)
+	})
+}
+
+const webm = (src) => {
+	const path = tmp.tmpNameSync()
+	return new Promise((resolve, reject) => {
+		ffmpeg(src)
+			.on('error', reject)
+			.on('end', () => resolve(path))
+			.audioCodec('opus')
+			.videoCodec('libvpx-vp9')
+			.outputOptions(['-crf 38', '-b:v 0', '-tile-columns 6', '-frame-parallel 1', '-speed 1', '-b:a 96k'])
+			.format('webm')
+			.renice(10)
+			.save(path)
+	})
+}
+
+const poster = (src) => {
+	const path = tmp.tmpNameSync() + '.png'
+	return new Promise((resolve, reject) => {
+		ffmpeg(src)
+			.on('error', reject)
+			.on('end', () => resolve(path))
+			.screenshots({
+				count: 1,
+				folder: dirname(path),
+				filename: basename(path)
+			})
+	})
+}
+
+const aac = (src) => {
+	const path = tmp.tmpNameSync()
+	return new Promise((resolve, reject) => {
+		ffmpeg(src)
+			.on('error', reject)
+			.on('end', () => resolve(path))
+			.audioCodec('aac')
+			.outputOptions(['-b:a 96k'])
+			.format('mp4')
+			.renice(10)
+			.save(path)
+	})
+}
+
+const opus = (src) => {
+	const path = tmp.tmpNameSync()
+	return new Promise((resolve, reject) => {
+		ffmpeg(src)
+			.on('error', reject)
+			.on('end', () => resolve(path))
+			.audioCodec('opus')
+			.outputOptions(['-compression_level 9', '-b:a 96k'])
+			.format('ogg')
+			.renice(10)
+			.save(path)
+	})
+}
+
 module.exports = (origName, buf) => {
 	const ft = fileType(buf)
 	const name = murmurHash(buf, 'hex') + '_' + origName
-	const origP = Promise.resolve({ name, buf, type: ft.mime })
+	const origP = Promise.resolve({ name, body: buf, type: ft.mime })
 	const addImageMeta = (o) => readMetadata(buf).then(meta => {
 		// Avoid huge blobs and empty values
 		for (const k of Object.keys(meta)) {
@@ -80,9 +162,9 @@ module.exports = (origName, buf) => {
 	if (ft.mime === 'image/png') {
 
 		const pngP = imagemin.buffer(buf, pngconf())
-			.then(newbuf => ({ name, buf: newbuf, type: 'image/png' }))
+			.then(newbuf => ({ name, body: newbuf, type: 'image/png' }))
 		const webpP = imagemin.buffer(buf, webplosslessconf())
-			.then(newbuf => ({ name: replaceExt(name, '.webp'), buf: newbuf, type: 'image/webp' }))
+			.then(newbuf => ({ name: replaceExt(name, '.webp'), body: newbuf, type: 'image/webp' }))
 		return Promise.all([pngP, webpP])
 			.then(srcs => ({ source: srcs }))
 			.then(addImageMeta)
@@ -108,9 +190,9 @@ module.exports = (origName, buf) => {
 			quality = 60
 		}
 		const jpegP = imagemin.buffer(buf, jpegconf(quality))
-			.then(newbuf => ({ name, buf: newbuf, type: 'image/jpeg' }))
+			.then(newbuf => ({ name, body: newbuf, type: 'image/jpeg' }))
 		const webpP = imagemin.buffer(buf, webpconf(quality - 5))
-			.then(newbuf => ({ name: replaceExt(name, '.webp'), buf: newbuf, type: 'image/webp' }))
+			.then(newbuf => ({ name: replaceExt(name, '.webp'), body: newbuf, type: 'image/webp' }))
 		const ps = [jpegP, webpP]
 		if (saveOrig) {
 			ps.push(origP.then(x => {
@@ -126,12 +208,61 @@ module.exports = (origName, buf) => {
 	} else if (ft.mime === 'image/webp') {
 
 		const jpegP = imagemin.buffer(buf, jpegconf())
-			.then(newbuf => ({ name, buf: newbuf, type: 'image/jpeg' }))
+			.then(newbuf => ({ name, body: newbuf, type: 'image/jpeg' }))
 		return Promise.all([jpegP, origP])
 			.then(srcs => ({ source: srcs }))
 			.then(addImageMeta)
 
-	}// else if (ft.mime.startsWith('video')) { }
+	} else if (ft.mime.startsWith('video')) {
+
+		const srcPath = tmp.tmpNameSync()
+		return fs.writeFile(srcPath, buf).then(() => {
+			const webmP = webm(srcPath).then(path => ({ name: replaceExt(name, '.webm'), body: path, type: 'video/webm' }))
+			const mp4P = mp4(srcPath).then(path => ({ name: replaceExt(name, '.mp4'), body: path, type: 'video/mp4' }))
+			const posterP = poster(srcPath)
+				.then(fs.readFile)
+				.then(buf => imagemin.buffer(buf, jpegconf()))
+				.then(buf => ({ name: replaceExt(name, '.poster.jpg'), body: buf, type: 'image/jpeg' }))
+			return Promise.all([webmP, mp4P, posterP])
+				.then(srcs => ({ source: srcs }))
+				.then(o => ffprobe(srcPath).then(probe => {
+					const vid = (probe.streams || []).filter(x => x.codec_type === 'video')[0]
+					if (vid) {
+						o.width = vid.width
+						o.height = vid.height
+					}
+					const aud = (probe.streams || []).filter(x => x.codec_type === 'audio')[0]
+					if (!aud) {
+						o.controls = false
+						o.loop = true
+						o.autoplay = true
+						o.muted = true
+					}
+					o.meta = (probe.format || {}).tags
+					return o
+				}))
+		}).catch(e => {
+			return fs.unlink(srcPath).then(() => { throw e })
+		})
+
+	} else if (ft.mime.startsWith('audio')) {
+
+		const srcPath = tmp.tmpNameSync()
+		return fs.writeFile(srcPath, buf).then(() => {
+			const opusP = opus(srcPath).then(path => ({ name: replaceExt(name, '.opus'), body: path, type: 'audio/ogg' }))
+			const aacP = aac(srcPath).then(path => ({ name: replaceExt(name, '.m4a'), body: path, type: 'audio/mp4' }))
+			return Promise.all([opusP, aacP])
+				.then(srcs => ({ source: srcs }))
+				.then(o => ffprobe(srcPath).then(probe => {
+					const aud = (probe.streams || []).filter(x => x.codec_type === 'audio')[0]
+					o.meta = (probe.format || {}).tags || (aud || {}).tags
+					return o
+				}))
+		}).catch(e => {
+			return fs.unlink(srcPath).then(() => { throw e })
+		})
+
+	}
 
 	return origP.then(src => ({ source: [src] }))
 		.then(addImageMeta)

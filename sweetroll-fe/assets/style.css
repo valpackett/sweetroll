@@ -58,6 +58,10 @@ img {
 	height: auto;
 }
 
+audio, video {
+	width: 100%;
+}
+
 .responsive-container {
 	background-size: cover !important;
 	background-repeat: no-repeat !important;
@@ -370,12 +374,17 @@ aside .search-form {
 .entry-core {
 	padding: 0 1rem;
 
+	& > * {
+		margin-top: 0;
+		margin-bottom: 1rem !important;
+	}
+
 	& > :first-child, & > a + p:first-of-type {
 		margin-top: 1rem;
 	}
 
 	& :last-child {
-		margin-bottom: 0;
+		margin-bottom: 0 !important;
 	}
 
 	& .hljs {

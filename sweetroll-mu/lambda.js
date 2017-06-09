@@ -33,7 +33,7 @@ exports.handler = (e, ctx, cb) => {
 				return Promise.all(results.source.map(s => {
 					return s3.putObject({
 						Key: s.name,
-						Body: s.buf,
+						Body: s.body,
 						ACL: 'public-read',
 						ContentType: s.type,
 						ContentDisposition: 'inline',
@@ -41,7 +41,7 @@ exports.handler = (e, ctx, cb) => {
 					}).promise().then(res => {
 						s.src = urlJoin(process.env.S3_URL, s.name)
 						delete s.name
-						delete s.buf
+						delete s.body
 						return s
 					})
 				})).then(srcs => {

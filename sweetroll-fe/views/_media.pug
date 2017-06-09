@@ -68,17 +68,19 @@ mixin showPhoto(photo)
 
 mixin showVideo(video)
 	div(style=helpers.containerStyle(video) class=video.width && video.height ? 'responsive-container' : '')
-		video.u-video.entry-video(poster=video.poster controls=(video.controls || true) autoplay=(video.autoplay || false) loop=(video.loop || false) muted=(video.muted || false) playsinline=(video.playsinline || false) width=video.width height=video.height)
+		- const poster = (video.source || []).filter(x => x.type.startsWith('image'))[0]
+		video.u-video.entry-video(poster=poster.src || poster controls=(video.controls === undefined ? true : video.controls) autoplay=video.autoplay loop=video.loop muted=video.muted playsinline=video.playsinline width=video.width height=video.height)
 			if _.isString(video.value)
 				source(src=video.value)
 			else if _.isArray(video.source)
 				each source in video.source
-					source(src=source.src type=source.type)
+					if !source.type.startsWith('image')
+						source(src=source.src type=source.type)
 				each track in video.track || []
 					track(src=track.src kind=track.kind label=track.label srclang=track.srclang default=(track.default || false))
 
 mixin showAudio(audio)
-	audio.u-audio.entry-audio(controls=(audio.controls || true) autoplay=(audio.autoplay || false) loop=(audio.loop || false) muted=(audio.muted || false))
+	audio.u-audio.entry-audio(controls=(audio.controls === undefined ? true : audio.controls) autoplay=audio.autoplay loop=audio.loop muted=audio.muted)
 		if _.isString(audio.value)
 				source(src=audio.value)
 		else if _.isArray(audio.source)

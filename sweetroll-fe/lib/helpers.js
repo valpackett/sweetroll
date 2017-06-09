@@ -200,12 +200,9 @@ module.exports = {
 		})
 		//$('img').each(function (i) { const img = $(this) })
 		const helpers = this
-		function processMedia (mediaType) {
+		for (const mediaType of Object.keys(media)) {
 			$(`${mediaType}-here`).each(function (i) {
 				const el = $(this)
-				if (!media[mediaType]) {
-					return
-				}
 				let idx = media[mediaType].length
 				while (idx--) {
 					const obj = media[mediaType][idx]
@@ -217,9 +214,6 @@ module.exports = {
 				}
 			})
 		}
-		processMedia('photo')
-		processMedia('video')
-		processMedia('audio')
 		return Object.assign({ textContent: $.html() }, media)
 	},
 

@@ -68,7 +68,6 @@ TODO same for frontend
   - [ ] bring back the atom feed
   - [ ] webhooks (e.g. pushover notifications) on new/updated mentions, config in `site-settings`
 - micropub
-  - [ ] JWT scopes authorization
   - [ ] draft flag → draft tag and private acl
   - [ ] syndication to other micropub endpoints e.g. for silo.pub
 - webmention

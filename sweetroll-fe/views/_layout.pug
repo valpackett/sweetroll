@@ -374,6 +374,7 @@ html(lang=_.get(siteSettings, 'site-lang', 'en'))
 								form(method="get" action=indieAuthEndpoint).login-form#login-form
 									input(type="hidden" name="client_id" value=domainUri.toString())
 									input(type="hidden" name="redirect_uri" value=domainUri.clone().path('/login/self').toString())
+									input(type="hidden" name="scope" value="create update delete undelete")
 									input(type="hidden" name="state" value="TODO")
 									.form-field
 										input(type="url" name="me" value=domainUri.toString())

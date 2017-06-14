@@ -40,12 +40,6 @@ ensureArrayProp k (Object o) | HMS.member k o = Object o
 ensureArrayProp k (Object o) = Object $ HMS.insert k (Array empty) o
 ensureArrayProp _ v = v
 
-errNoAuth ∷ ServantErr
-errNoAuth = errText err401 "Authorization/access_token not found."
-
-errWrongAuth ∷ ServantErr
-errWrongAuth = errText err401 "Invalid auth token."
-
 errWrongDomain ∷ ServantErr
 errWrongDomain = errText err400 "The target URI is not on this domain."
 

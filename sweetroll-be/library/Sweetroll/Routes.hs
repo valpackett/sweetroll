@@ -12,7 +12,7 @@ type Auth = AuthProtect "jwt"
 
 type PostLoginRoute           = "login" :> Host :> Form :> Post '[FormUrlEncoded] [(Text, Text)]
 type GetLoginRoute            = "login" :> Auth :> Get '[FormUrlEncoded] [(Text, Text)]
-type GetSelfLoginRoute        = "login" :> "self" :> Host :> QueryParam "me" Text :> QueryParam "code" Text :> Get '[FormUrlEncoded] NoContent
+type GetSelfLoginRoute        = "login" :> "self" :> Host :> QueryParam "me" Text :> QueryParam "code" Text :> QueryParam "scope" Text :> Get '[FormUrlEncoded] NoContent
 type PostMicropubRoute        = "micropub" :> Auth :> Host :> ReqBody '[FormUrlEncoded, JSON] MicropubRequest :> PostCreated '[FormUrlEncoded, JSON] (Headers '[Header "Location" Text] MicropubResponse)
 type GetMicropubRoute         = "micropub" :> Auth :> Host :> QueryParam "q" Text :> QueryParams "properties" Text :> QueryParam "url" Text :> Get '[JSON, FormUrlEncoded] MicropubResponse
 type PostWebmentionRoute      = "webmention" :> Form :> PostAccepted '[JSON] NoContent

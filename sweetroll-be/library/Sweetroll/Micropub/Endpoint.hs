@@ -13,6 +13,7 @@ import qualified Data.HashMap.Strict as HMS
 import           Data.Maybe (fromJust)
 import           Web.JWT hiding (header, decode)
 import           Servant
+import           Sweetroll.Auth (ensureScope)
 import           Sweetroll.Conf
 import           Sweetroll.Context
 import           Sweetroll.Micropub.Request
@@ -40,6 +41,7 @@ getMicropub token host _ props url = getMicropub token host (Just "media-endpoin
 postMicropub ∷ JWT VerifiedJWT → Maybe Text → MicropubRequest
              → Sweetroll (Headers '[Servant.Header "Location" Text] MicropubResponse)
 postMicropub token host (Create htype props _) = do
+  ensureScope token $ any (\x → x == "create" || x == "post")
   now ← liftIO getCurrentTime
   lds ← return . S.fromList . map parseUri =<< guardDbError =<< queryDb () getLocalDomains
   prs ← return props
@@ -53,7 +55,8 @@ postMicropub token host (Create htype props _) = do
   guardDbError =<< queryDb obj upsertObject
   return $ addHeader (fromMaybe "" $ firstStr (Object prs) (key "url")) Posted
 
-postMicropub _ host (Update url upds) = do
+postMicropub token host (Update url upds) = do
+  ensureScope token $ any (== "update")
   ensureRightDomain (base host) $ parseUri url
   now ← liftIO getCurrentTime
   _ ← guardEntryNotFound =<< guardTxError =<< transactDb (do
@@ -70,12 +73,14 @@ postMicropub _ host (Update url upds) = do
       _ → return Nothing)
   throwError respNoContent
 
-postMicropub _ host (Delete url) = do
+postMicropub token host (Delete url) = do
+  ensureScope token $ any (== "delete")
   ensureRightDomain (base host) $ parseUri url
   guardDbError =<< queryDb url deleteObject
   throwError respNoContent
 
-postMicropub _ host (Undelete url) = do
+postMicropub token host (Undelete url) = do
+  ensureScope token $ any (== "undelete")
   ensureRightDomain (base host) $ parseUri url
   guardDbError =<< queryDb url undeleteObject
   throwError respNoContent

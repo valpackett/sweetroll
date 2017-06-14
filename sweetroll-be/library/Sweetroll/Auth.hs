@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TypeOperators, TypeFamilies, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, DataKinds, QuasiQuotes, TemplateHaskell #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TypeOperators, TypeFamilies, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, ScopedTypeVariables, DataKinds, QuasiQuotes, TemplateHaskell #-}
 
 -- | The IndieAuth/rel-me-auth implementation, using JSON Web Tokens.
 module Sweetroll.Auth (
@@ -51,9 +51,11 @@ fromHeader "" = Nothing
 fromHeader au = return $ drop 7 au -- 7 chars in "Bearer "
 
 getAuth ∷ JWT VerifiedJWT → Sweetroll [(Text, Text)]
-getAuth token = return $ ("me", maybe "" tshow $ sub $ claims token) : unreg
-  where unreg = mapMaybe unValue $ M.toList $ unregisteredClaims $ claims token
-        unValue (k, String s) = Just (k, s)
+getAuth token = return $ ("me", maybe "" tshow $ sub $ claims token) : unregClaims token
+
+unregClaims ∷ JWT VerifiedJWT → [(Text, Text)]
+unregClaims = mapMaybe unValue . M.toList . unregisteredClaims . claims
+  where unValue (k, String s) = Just (k, s)
         unValue _ = Nothing
 
 signAccessToken ∷ Text → Text → Text → UTCTime → Text → Text → Text
@@ -79,7 +81,7 @@ postLogin host params = do
   isTestMode ← getConfOpt testMode
   --let isTestMode = False
   if isTestMode
-     then makeAccessToken domain (fromMaybe "unknown" $ lookup "me" params) "post" "example.com"
+     then makeAccessToken domain (fromMaybe "unknown" $ lookup "me" params) (fromMaybe "post" $ lookup "scope" params) "example.com"
      else do
        checkURI ← getConfOpt indieauthCheckEndpoint
        resp0 ← runHTTP $ reqS checkURI >>= postForm params >>= performWithBytes
@@ -95,8 +97,8 @@ postLogin host params = do
            $logInfo$ cs $ "Authentication error: " ++ e ++ " / params: " ++ tshow params
            throwError errWrongAuth
 
-getSelfLogin ∷ Maybe Text → Maybe Text → Maybe Text → Sweetroll NoContent
-getSelfLogin host me code = do
+getSelfLogin ∷ Maybe Text → Maybe Text → Maybe Text → Maybe Text → Sweetroll NoContent
+getSelfLogin host me code scope = do
   let domain = fromMaybe "localhost" host
   isTestMode ← getConfOpt testMode
   --let isTestMode = False
@@ -105,12 +107,25 @@ getSelfLogin host me code = do
         ++ if isHttpOnly then "; HttpOnly" else ""
   result ← postLogin host [ ("me", fromMaybe ("https://" ++ domain) me)
                           , ("code", fromMaybe "" code)
+                          , ("scope", fromMaybe "post" scope)
                           , ("redirect_uri", "https://" ++ domain ++ "/login/self")
                           , ("client_id", "https://" ++ domain ++ "/")
                           , ("grant_type", "authorization_code") ]
   throwError err303 { errHeaders = [ ("Set-Cookie", "Bearer=" ++ (cs $ fromMaybe "" $ lookup "access_token" result) ++ "; Path=/; Max-Age=5184000" ++ security)
                                    , (hLocation, "/") ] }
 
+errNoAuth ∷ ServantErr
+errNoAuth = errText err401 "Authorization/access_token not found."
+
+errWrongAuth ∷ ServantErr
+errWrongAuth = errText err401 "Invalid auth token."
+
+errWrongAuthScope ∷ ServantErr
+errWrongAuthScope = errText err401 "Your access token is not authorized for this action."
+
+ensureScope ∷ MonadError ServantErr μ ⇒ JWT VerifiedJWT → ([Text] → Bool) → μ ()
+ensureScope token p = guardBool errWrongAuthScope $ p scopes
+  where scopes = words $ fromMaybe "" $ lookup "scope" $ unregClaims token
 
 supportFormAuth ∷ Wai.Middleware
 supportFormAuth app req respond = do

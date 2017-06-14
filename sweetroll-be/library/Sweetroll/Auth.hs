@@ -13,13 +13,13 @@ module Sweetroll.Auth (
 import           Sweetroll.Prelude hiding (iat, au, host)
 import           Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import           Data.Maybe (fromJust)
+import           Data.Text (dropWhileEnd)
 import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as S8
 import           Web.JWT hiding (header)
 import qualified Network.Wai as Wai
 import           Servant.Server.Experimental.Auth
 import           Web.Cookie (parseCookies)
-import qualified Text.Regex.PCRE.Heavy as RE
 import           Sweetroll.Context
 import           Sweetroll.Conf
 
@@ -59,7 +59,7 @@ getAuth token = return $ ("me", maybe "" tshow $ sub $ claims token) : unreg
 signAccessToken ∷ Text → Text → Text → UTCTime → Text → Text → Text
 signAccessToken sec domain me now scope clientId = encodeSigned HS256 (secret sec) t
   where t = def { iss = stringOrURI domain
-                , sub = stringOrURI $ RE.sub [RE.re|/$|] (asText "") me
+                , sub = stringOrURI $ dropWhileEnd (== '/') me
                 , iat = numericDate $ utcTimeToPOSIXSeconds now
                 , unregisteredClaims = M.fromList [ ("scope", String scope)
                                                   , ("client_id", String clientId) ] }

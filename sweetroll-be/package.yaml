@@ -1,0 +1,119 @@
+name: sweetroll
+version: '0.0.0'
+synopsis: A micro+blogging (IndieWeb) engine with curved swords. Curved! Swords!
+category: Web
+author: Greg V
+maintainer: greg@unrelenting.technology
+copyright: 2014-2017 Greg V <greg@unrelenting.technology>
+license: PublicDomain
+github: myfreeweb/sweetroll
+tested-with: GHC==8.0.1
+dependencies:
+  - base >=4.8.0.0 && <5
+  - cryptonite
+  - memory
+  - directory
+  - data-default
+  - text
+  - bytestring
+  - envy
+  - wai-extra
+  - network
+library:
+  source-dirs: library
+  ghc-options: -Wall
+  exposed-modules:
+    - Sweetroll.App
+    - Sweetroll.Auth
+    - Sweetroll.Conf
+    - Sweetroll.Context
+    - Sweetroll.Database
+    - Sweetroll.HTTPClient
+    - Sweetroll.Micropub.Endpoint
+    - Sweetroll.Micropub.Request
+    - Sweetroll.Micropub.Response
+    - Sweetroll.Prelude
+    - Sweetroll.Routes
+    - Sweetroll.Webmention.Receive
+  dependencies:
+    - classy-prelude
+    - mono-traversable
+    - split
+    - transformers
+    - transformers-base
+    - mtl
+    - monad-control
+    - monad-logger
+    - resourcet
+    - lifted-base
+    - containers
+    - unordered-containers
+    - vector
+    - either
+    - lens
+    - safe
+    - errors
+    - data-has
+    - string-conversions
+    - bytestring-conversion
+    - case-insensitive
+    - blaze-markup
+    - blaze-builder
+    - blaze-html
+    - time
+    - pcre-heavy
+    - attoparsec
+    - aeson
+    - lens-aeson
+    - aeson-qq
+    - jwt
+    - hasql
+    - hasql-pool
+    - hasql-transaction
+    - microformats2-parser
+    - indieweb-algorithms
+    - wai
+    - wai-cors
+    - wai-conduit
+    - cookie
+    - magicbane
+    - servant
+    - servant-server
+    - network-uri
+    - conduit
+    - conduit-combinators
+    - http-types
+    - http-media
+    - http-client
+    - http-client-tls
+    - http-conduit
+    - http-link-header
+    - http-date
+    - http-api-data
+    - mime-types
+    - html-conduit
+    - xml-conduit
+    - xml-conduit-writer
+    - xml-lens
+    - async
+    - raw-strings-qq
+    - filepath
+executables:
+  sweetroll:
+    main: Main.hs
+    source-dirs: executable
+    ghc-options:
+      - -Wall
+      - -O2
+      - -threaded
+      - -rtsopts
+      - '"-with-rtsopts=-N -qa -qm"'
+    ld-options: -pthread
+    dependencies:
+      - options
+      - wai-cli
+      - warp
+      - stm
+      - streaming-commons
+      - rapid
+      - sweetroll

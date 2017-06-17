@@ -59,6 +59,9 @@ self.addEventListener('fetch', e => {
 				fromCache('assets', e.request).catch(() =>
 					fromNetwork(e.request)
 						.then(resp => {
+							if (resp.status < 200 || resp.status >= 300) {
+								return resp
+							}
 							const resp2 = resp.clone()
 							caches.open('assets')
 								.then(cache => cache.put(e.request, resp2))

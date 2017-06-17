@@ -354,6 +354,7 @@ const addCommonContext = async (ctx, next) => {
 	ctx.reqUriFullStr = ctx.reqUriFull.toString()
 	ctx.reqUri = ctx.reqUriFull.clone().search('')
 	ctx.reqUriStr = ctx.reqUri.toString()
+	const basedir = assets.basedir = './views'
 	ctx.tplctx = {
 		// Libraries and our code
 		moment,
@@ -374,7 +375,7 @@ const addCommonContext = async (ctx, next) => {
 		microPanelRoot,
 		vapidKeys,
 		// Pug settings
-		basedir: './views',
+		basedir,
 		pretty: true,
 		cache: cacheTemplates,
 		plugins: [ pugTryCatch ],

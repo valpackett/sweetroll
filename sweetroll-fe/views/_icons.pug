@@ -1,0 +1,9 @@
+-
+	const iconNames = { replies: 'reply', reposts: 'megaphone', likes: 'star',
+		bookmarks: 'bookmark', quotations: 'quote-left', mentions: 'link' }
+
+mixin icon(name, title, opts={})
+	svg(role="img" aria-hidden=title ? "false" : "true" class=_.concat(["icon"], opts.class || []) title=title)
+		use(xlink:href=assets.url('dist/icons.svg') + '#' + name)
+			if title
+				title= title

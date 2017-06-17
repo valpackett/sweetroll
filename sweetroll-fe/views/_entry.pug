@@ -1,0 +1,276 @@
+include /_globals.pug
+include /_icons.pug
+include /_media.pug
+
+mixin showContent(properties, { preferSummary, stronglyPreferSummary, showRels, permalink })
+	-
+		let isUntitled = _.isEmpty(properties.name) || !_.isEmpty(properties['bookmark-of'])
+		const onlySummary = !isUntitled && stronglyPreferSummary
+		const { textContent, photos, videos, audios } = helpers.processContent(properties, { preferSummary, onlySummary })
+		const isCrapName = helpers.isActuallyTheSameDamnThing(_.get(properties, 'name[0]') || '', textContent)
+		if (isCrapName) {
+			isUntitled = true
+		}
+	if !_.isEmpty(properties['x-content-note'])
+		p.entry-core
+			strong Content note: 
+			each cn in properties['x-content-note']
+				span.p-x-content-note= cn + ''
+	if !_.isEmpty(properties['x-content-warning'])
+		p.entry-core
+			strong Content warning: 
+			each cn in properties['x-content-warning']
+				span.p-x-content-warning= cn + ''
+			span.click-to-reveal(hidden)
+				|  (
+				a(href="#") click to reveal
+				| )
+		| <div class="click-to-reveal-target">
+	each repost in properties['repost-of'] || []
+		+showRefContext(repost, { prop: 'u-repost-of', reasonIcon: 'megaphone', reasonIconClass: 'repost', reason: 'reposted a post by', rel: showRels ? 'repost-of' : '' })
+	if isUntitled || !onlySummary
+		each photo in properties.photo || []
+			if _.isString(photo)
+				if !(_.includes(textContent, photo.replace('&', '&amp;')) || _.includes(textContent, photo))
+					img.u-photo.entry-photo(src=photo alt="")
+			else if _.isObject(photo)
+				+showPhoto(photo)
+		each video in properties.video || []
+			if _.isString(video)
+				if !(_.includes(textContent, video.replace('&', '&amp;')) || _.includes(textContent, video))
+					video.u-video.entry-video(controls=true src=video)
+			else if _.isObject(video)
+				+showVideo(video)
+		each audio in properties.audio || []
+			if _.isString(audio)
+				if !(_.includes(textContent, audio.replace('&', '&amp;')) || _.includes(textContent, audio))
+					audio.u-audio.entry-audio(controls=true src=audio)
+			else if _.isObject(audio)
+				+showAudio(audio)
+	if !isUntitled
+		h1.p-name.entry-core
+			if showRels
+				= _.head(properties.name)
+			else
+				a.u-url.u-uid(href=permalink tabindex="-1")
+					= _.head(properties.name)
+	if _.trim(textContent).length > 0
+		fragmention-target(exact)
+			.e-content.entry-core('class'=isUntitled ? 'p-name' : '') !{ textContent }
+	if !_.isEmpty(properties['x-content-warning'])
+		| </div>
+
+mixin showMeta(entry, comments, permalink, compactView)
+	-
+		const properties = entry.properties || {}
+		const dateFormat = compactView ? 'MMM Do YYYY, HH:mm' : 'dddd, MMMM Do YYYY, HH:mm'
+		const mfeeds = helpers.matchingFeeds(siteFeeds, entry).filter(feed =>
+			_.get(feed, 'feedObj.properties.feed-settings[0].show-in-post', false) && !(_.get(feed, 'params.tag', '').startsWith('_')))
+	.entry-meta
+		if !_.isEmpty(properties['x-fake-tags'])
+			div.p-x-fake-tags
+				each ftag in properties['x-fake-tags']
+					| #
+					= ftag
+					| 
+		if _.isEmpty(properties['like-of']) && _.isEmpty(properties['bookmark-of'])
+			+showActions(entry, permalink)
+		| / posted on 
+		time.dt-published(datetime=_.head(properties.published))
+			a.u-url.u-uid.note-permalink(rel=compactView ? '' : 'bookmark' href=permalink)
+				= moment.utc(_.head(properties.published)).format(dateFormat)
+		if !_.isEmpty(mfeeds)
+			|  in
+			each feed in mfeeds
+				= ' '
+				a.p-category(href=relativeUrl(feed.url))= feed.name
+		- const client = properties['client-id'] && _.head(properties['client-id'])
+		if client
+			|  using 
+			a.u-client-id(href=client)
+				= _.trimEnd(_.toString(client).replace('http://', '').replace('https://', ''), '/')
+		if !_.isEmpty(properties.updated) && (_.head(properties.updated) != _.head(properties.published))
+			|  and updated on 
+			time.dt-updated(datetime=_.head(properties.updated))
+				= moment.utc(_.head(properties.updated)).format(dateFormat)
+		if !_.isEmpty(properties.syndication)
+			|  / also on: 
+			each repost in properties.syndication
+				a.u-syndication(rel=compactView ? '' : 'syndication' href=repost)
+					= helpers.syndicationName(repost)
+		if compactView
+			each reactions, name in comments || []
+				if !_.isEmpty(reactions)
+					|  / 
+					span.meta-part
+						if iconNames[name]
+							+icon(iconNames[name], name + ' count')
+						else
+							= name
+						= reactions.length
+
+mixin showFacepile(entry, name, reactions)
+	section.entry-facepile
+		if iconNames[name]
+			+icon(iconNames[name], name)
+		else
+			= name
+		each entry in reactions
+			-
+				const author = _.get(entry, 'properties.author[0]', {})
+				const authorName = _.get(author, 'properties.name[0]', 'Someone')
+			a.h-cite('class'=`p-${_.trimEnd(name, 's')}` href=_.isString(entry) ? entry : _.get(entry, 'properties.url[0]'))
+				span.p-author.h-card
+					img.facepile-avatar.u-photo.p-name(alt=authorName title=authorName src=helpers.showAvatar(author))
+
+mixin showActions(entry, permalink)
+	span.entry-actions
+		-
+			const twitterUrl = _(entry).at('properties.syndication')
+				.flatten().filter(_.isString).find(url => url.startsWith("https://twitter.com") || url.startsWith("http://twitter.com"))
+			const twitterId = twitterUrl ? twitterUrl.match(/.*status\/(.+)/)[1] : null
+			const twitterLink = act =>
+				twitterId
+					? 'https://twitter.com/intent/' + act + '?' + (act == 'reply' ? 'in_reply_to' : 'tweet_id') + '=' + twitterId
+					: 'javascript:void(0)// ' + (act == 'retweet' ? 'repost' : act) + ' using indie-config. do not open this in a new tab. see https://indieweb.org/indie-config for info.'
+		indie-action(do="reply" with=permalink)
+			a(href=twitterLink('reply'))
+				+icon('reply')
+		indie-action(do="repost" with=permalink)
+			a(href=twitterLink('retweet'))
+				+icon('megaphone')
+		indie-action(do="like" with=permalink)
+			a(href=twitterLink('favorite'))
+				+icon('star')
+
+mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, showReplies, showContexts })
+	try
+		-
+			const properties = entry.properties || {}
+			const comments = helpers.separateComments(properties.url, properties.comment || [])
+		.ref-context.h-cite('class'=prop)
+			if showContexts && !_.isEmpty(inReplyTo)
+				.ref-context-thread-up
+					each reply in _.get(entry, 'properties.in-reply-to', [])
+						+showRefContext(reply, { prop: 'u-in-reply-to', rel: '', showReplies, showContexts: true })
+			if reasonIcon
+				header.ref-context-reason
+					+icon(reasonIcon, null, { class: ['icon-ref-reason', 'icon-ref-' + (reasonIconClass || reasonIcon)] })
+					= ' ' + reason + ' '
+					if _.isString(entry)
+						a.p-name.u-url(href=helpers.onlyHttpUrl(entry))= entry
+					else if !_.isObject(entry)
+						| something weird
+			if _.isObject(entry)
+				-
+					const authors = properties.author
+					const permalink = helpers.onlyHttpUrl(_.get(properties, 'url[0]', ''))
+				.ref-context-core
+					a.ref-context-avatar-link(href=helpers.onlyHttpUrl(_.get(authors, '[0].properties.url[0]', '')))
+						img.ref-context-avatar(alt="" src=helpers.showAvatar((authors || [])[0]))
+					.ref-context-content
+						.ref-context-meta
+							span.ref-context-authors
+								if !_.isEmpty(authors)
+									each author in authors
+										span.p-author.h-card
+											a.u-url(href=_.get(author, 'properties.url[0]'))
+												span.p-name= _.get(author, 'properties.name[0]')
+												- const pN = _.get(author, 'properties.x-pronoun-nominative[0]')
+												- const pO = _.get(author, 'properties.x-pronoun-oblique[0]')
+												if pN || pO
+													sup
+														|  (
+														if pN
+															span.p-x-pronoun-nominative= pN
+														if pN && pO
+															| /
+														if pO
+															span.p-x-pronoun-oblique= pO
+														| )
+										|  
+							|  
+							a.u-url.ref-context-date(rel=rel href=permalink)
+								= moment.utc(_.get(properties, 'published[0]', '')).format('MMM Do YYYY, HH:mm')
+						blockquote.ref-context-content
+							+showContent(properties, { preferSummary: true, stronglyPreferSummary: false, showRels: false, permalink })
+				if showReplies && !_.isEmpty(comments.replies)
+					.ref-context-thread-down
+						each reply in comments.replies
+							+showRefContext(reply, { prop: 'p-comment', rel: '', showReplies: true, showContexts: false })
+	catch
+		div.tpl-error Error: could not render the entry
+		- const url = _.get(entry, 'properties.url[0]', 'javascript:void(0)')
+		a('class'=prop href=url)= url
+
+
+mixin showEntry(entry, compactView)
+	-
+		const properties = entry.properties || {}
+		const permalink = relativeUrl(_.get(properties, 'url[0]'))
+		const props = { reposts: 'p-repost', likes: 'p-like', bookmarks: 'p-bookmark', quotations: 'p-quotation' }
+		const comments = helpers.separateComments(properties.url, properties.comment || [])
+		const acl = (entry.acl || []).filter(u => u !== '*')
+	each reply in properties['in-reply-to'] || []
+		+showRefContext(reply, { prop: 'u-in-reply-to', reasonIcon: 'reply', reason: 'in reply to', rel: !compactView ? 'in-reply-to' : '', showReplies: false, showContexts: !compactView })
+	each like in properties['like-of'] || []
+		+showRefContext(like, { prop: 'u-like-of', reasonIcon: 'star', reasonIconClass: 'like', reason: 'liked a post by', rel: !compactView ? 'like-of' : '', showReplies: false, showContexts: !compactView })
+	each quotation in properties['quotation-of'] || []
+		+showRefContext(quotation, { prop: 'u-quotation-of', reasonIcon: 'quote-left', reasonIconClass: 'quotation', reason: 'quoted a post by', rel: !compactView ? 'quotation-of' : '', showReplies: false, showContexts: !compactView })
+	each bookmark in properties['bookmark'] || []
+		.ref-context.u-bookmark-of.h-cite
+			header.ref-context-reason
+				+icon('bookmark', null, { class: ['icon-ref-reason', 'icon-ref-bookmark'] })
+				|  bookmarked 
+				if _.isString(bookmark)
+					a.p-name.u-url(href=helpers.onlyHttpUrl(bookmark))
+						= properties.name ? _.head(properties.name) : bookmark
+				else if !_.isObject(bookmark)
+					| something weird
+				else
+					- const url = _.get(bookmark, 'properties.url[0]', '')
+					a.p-name.u-url(href=helpers.onlyHttpUrl(url))
+						= properties.name ? _.head(properties.name) : _.get(bookmark, 'properties.name[0]', url)
+	each item in properties.item || []
+		.ref-context
+			header.ref-context-reason.ref-context-review
+				- const url = _.get(item, 'properties.url[0]', '')
+				a.review-item-link.p-item('class'=(item.type || ['h-item']).join(' ') href=helpers.onlyHttpUrl(url))
+					= _.get(item, 'properties.name[0]', url)
+				- const best = _.toNumber(_.get(properties, 'best[0]', '5')) || 5
+				each rating in properties.rating || []
+					data.p-best(value=best)
+					div.review-rating.p-rating(title=rating)
+						- let [f, h, e] = helpers.ratingStars(rating, best)
+						while f > 0
+							+icon('star', null, { class: ['icon-rating'] })
+							- f--
+						while h > 0
+							+icon('star', null, { class: ['icon-rating', 'icon-rating-half'] })
+							- h--
+						while e > 0
+							+icon('star', null, { class: ['icon-rating', 'icon-rating-empty'] })
+							- e--
+	if acl.length > 0
+		.entry-acl
+			+icon('lock', null, { class: ['icon-acl'] })
+			|  private for 
+			each url in acl
+				if url === domainUri.toString() || url + '/' === domainUri.toString()
+					| you
+				else
+					a(href=url)= url.replace('https://', '').replace('http://', '')
+				|  
+	+showContent(properties, { preferSummary: compactView, stronglyPreferSummary: compactView, showRels: !compactView, permalink })
+	footer.entry-footer
+		+showMeta(entry, comments, permalink, compactView)
+		if !compactView
+			each reactions, name in comments || {}
+				if name != 'replies' && !_.isEmpty(reactions)
+					+showFacepile(entry, name, reactions)
+	if !compactView && comments && !_.isEmpty(comments.replies)
+		section.entry-replies
+			each reply in comments.replies || []
+				+showRefContext(reply, { prop: 'p-comment', rel: '', showReplies: true, showContexts: false })
+
+

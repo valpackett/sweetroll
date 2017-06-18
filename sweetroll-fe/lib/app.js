@@ -17,6 +17,7 @@ const pg = require('pg')
 const { default: PgAsync, SQL } = require('pg-async')
 
 const env = process.env
+const userAgent = 'Sweetroll'
 const assets = require('dynamic-asset-rev')('dist')
 const log = require('debug')('sweetroll-fe')
 const sse = require('sse-broadcast')({ compression: true })
@@ -59,8 +60,7 @@ const affectedUrls = async (url) => {
 		mf2.objects_smart_fetch(${objUriStr}, ${domainUriStr}, 1, null, null, null) AS obj,
 		mf2.objects_fetch_feeds(${domainUriStr}) AS feeds
 	`)
-	if (!obj) return [url]
-	if (!feeds) return [url]
+	if (!obj || !feeds) return { affUrls: [url], domainUriStr }
 	return {
 		affUrls: concat(helpers.matchingFeeds(feeds, obj).map(x => x.url), url),
 		obj,
@@ -74,7 +74,7 @@ const findWebmentionEndpoint = async (target) => {
 		headers: {
 			'Accept': 'text/html',
 			'Accept-Charset': 'utf-8',
-			'User-Agent': 'Sweetroll',
+			'User-Agent': userAgent,
 		},
 		redirect: 'follow',
 		timeout: 15 * 1000,
@@ -139,7 +139,10 @@ const onEntryChange = async (eventUrl) => {
 		try {
 			const resp = await fetch(websubHub, {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
+					'User-Agent': userAgent,
+				},
 				body: qs.stringify({ 'hub.mode': 'publish', 'hub.topic': urls }, { arrayFormat: 'brackets' }),
 			})
 			log('WebSub hub response: %s %s %O', resp.status, resp.statusText, await resp.text())
@@ -165,7 +168,10 @@ const onEntryChange = async (eventUrl) => {
 			}
 			const resp = await fetch(endp, {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' },
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
+					'User-Agent': userAgent,
+				},
 				body: qs.stringify(merge(webmentionOutboxConf, { source: eventUrl, target })),
 				redirect: 'follow',
 				timeout: 40 * 1000,

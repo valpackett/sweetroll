@@ -272,5 +272,3 @@ mixin showEntry(entry, compactView)
 		section.entry-replies
 			each reply in comments.replies || []
 				+showRefContext(reply, { prop: 'p-comment', rel: '', showReplies: true, showContexts: false })
-
-

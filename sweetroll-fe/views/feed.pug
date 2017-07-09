@@ -36,6 +36,18 @@ block append main
 								+showGalleryEntry(entry)
 							catch
 								div.tpl-error Error: could not render the entry
+		else if settings.layout === 'plain-list'
+			ul
+				each entry in entries
+					li
+						if entry.deleted
+							+showTombstone(entry)
+						else
+							try
+								- const permalink = relativeUrl(_.get(entry, 'properties.url[0]'))
+								a('class'=entry.type.join(' ') href=permalink)= _.get(entry, 'properties.name[0]', 'Untitled')
+							catch
+								div.tpl-error Error: could not render the entry
 		else
 			each entry in entries
 				if entry.deleted

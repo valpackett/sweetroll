@@ -1,4 +1,4 @@
-mixin showPhoto(photo)
+mixin showPhoto(photo, showMeta=true)
 	figure.entry-photo
 		div(style=helpers.containerStyle(photo) class=photo.width && photo.height ? 'responsive-container' : '')
 			if _.isString(photo.value)
@@ -10,7 +10,7 @@ mixin showPhoto(photo)
 						if source !== defaultSource && !source.original
 							source(srcset=(source.srcset || source.src) media=source.media sizes=source.sizes type=source.type)
 					img.u-photo(src=(defaultSource.srcset || defaultSource.src) alt=(defaultSource.alt || photo.alt) width=photo.width height=photo.height)
-		if _.isObject(photo.meta)
+		if showMeta && _.isObject(photo.meta)
 			-
 				const meta = photo.meta
 				const make = meta['Exif.Image.Make']
@@ -88,3 +88,23 @@ mixin showAudio(audio)
 					source(src=source.src type=source.type)
 				each track in audio.track || []
 					track(src=track.src kind=track.kind label=track.label srclang=track.srclang default=(track.default || false))
+
+mixin showMedia(properties, textContent, showMeta=true)
+	each photo in properties.photo || []
+		if _.isString(photo)
+			if !(_.includes(textContent, photo.replace('&', '&amp;')) || _.includes(textContent, photo))
+				img.u-photo.entry-photo(src=photo alt="")
+		else if _.isObject(photo)
+			+showPhoto(photo, showMeta)
+	each video in properties.video || []
+		if _.isString(video)
+			if !(_.includes(textContent, video.replace('&', '&amp;')) || _.includes(textContent, video))
+				video.u-video.entry-video(controls=true src=video)
+		else if _.isObject(video)
+			+showVideo(video)
+	each audio in properties.audio || []
+		if _.isString(audio)
+			if !(_.includes(textContent, audio.replace('&', '&amp;')) || _.includes(textContent, audio))
+				audio.u-audio.entry-audio(controls=true src=audio)
+		else if _.isObject(audio)
+			+showAudio(audio)

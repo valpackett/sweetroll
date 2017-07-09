@@ -279,6 +279,26 @@ module.exports = {
 			}),
 			require('postcss-color-function'),
 		]).process(colorCss, { from: 'color.css', to: 'color.css' }).then(x => x.css)
+	},
+
+	galleryRows (entries) {
+		const result = []
+		let cur = []
+		let cur_slots = 0
+		for (const entry of entries) {
+			cur.push(entry)
+			const media = get(entry, 'properties.photo[0]', get(entry, 'properties.video[0]', {}))
+			cur_slots += media.width > media.height ? 2 : 1
+			if (cur_slots >= 4) {
+				result.push(cur)
+				cur = []
+				cur_slots = 0
+			}
+		}
+		if (cur.length !== 0) {
+			result.push(cur)
+		}
+		return result
 	}
 
 }

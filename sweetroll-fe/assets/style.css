@@ -604,6 +604,30 @@ simple-live, .offline-popup {
 	}
 }
 
+.gallery-row {
+	display: flex;
+	flex-flow: row wrap;
+
+	& .h-entry {
+		flex: 1;
+		margin: 4px;
+		transition: transform 2s ease-out;
+
+		&:first-child {
+			margin-left: 0;
+		}
+
+		&:last-child {
+			margin-right: 0;
+		}
+
+		&:hover, &:focus {
+			transform: scale(1.15);
+			z-index: 2;
+		}
+	}
+}
+
 @media screen and (max-width: 900px) {
 	.site-author {
 		margin-top: 5rem;

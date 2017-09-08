@@ -81,7 +81,7 @@ app.use(async (ctx, next) => {
 	const buf = await getStream.buffer(file)
 	const results = await proc(file.filename, buf)
 	for (const s of results.source) {
-		s.src = await uploadBackend(s.name, s.body)
+		s.src = await uploadBackend(s.name, s.body, s.type)
 		delete s.name
 		delete s.body
 	}

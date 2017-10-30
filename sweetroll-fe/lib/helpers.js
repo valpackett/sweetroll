@@ -214,7 +214,7 @@ module.exports = {
 				}
 			})
 		}
-		return Object.assign({ textContent: $.html() }, media)
+		return Object.assign({ textContent: $('body').html() }, media)
 	},
 
 	findMentionedLinks (obj) {

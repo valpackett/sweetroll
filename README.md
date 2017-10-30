@@ -11,6 +11,7 @@ A powerful engine for [your personal website].
   - lets you use Markdown for post text, with nice [code highlighting](https://github.com/ben-eb/remark-highlight.js) and [math rendering](https://github.com/Rokt33r/remark-math)
   - the included admin panel (micro-panel) itself uses Micropub
 - sends [WebSub] \(formerly PubSubHubbub) notifications on new posts (for [readers])
+- uses [Granary] to provide content as Atom, ActivityStreams 2.0 and JSON Feed (with WebSub notifications too)
 - represents *all the things* as [Microformats2] objects
 - uses PostgreSQL with the [mf2sql] schema for storage
 - consists of services written in [Haskell] and [Node.js]
@@ -28,6 +29,7 @@ I'm running it on [my website](https://unrelenting.technology).
 [Salmentions]: https://indieweb.org/Salmention
 [WebSub]: https://indieweb.org/WebSub
 [readers]: https://indieweb.org/readers
+[Granary]: https://granary-demo.appspot.com
 
 ## Usage
 
@@ -65,7 +67,6 @@ TODO same for frontend
 ## TODO
 
 - frontend
-  - [ ] bring back the atom feed
   - [ ] webhooks (e.g. pushover notifications) on new/updated mentions, config in `site-settings`
 - micropub
   - [ ] draft flag → draft tag and private acl

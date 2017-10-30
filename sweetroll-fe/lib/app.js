@@ -9,7 +9,7 @@ const webpush = require('web-push')
 const qs = require('qs')
 const Retry = require('promised-retry')
 const _ = require('lodash')
-const { head, merge, concat, get, isObject, groupBy, includes, isString, debounce, some } = _
+const { head, merge, concat, get, isObject, groupBy, includes, isString, debounce, some, flatMap } = _
 const pify = require('pify')
 const pug = require('pug')
 const pugTryCatch = require('pug-plugin-try-catch')
@@ -27,6 +27,7 @@ const cacheTemplates = env.CACHE_TEMPLATES // Do not recompile templates on ever
 const cache = env.DO_CACHE ? require('lru-cache')({
 	max: parseInt(env.CACHE_MAX_ITEMS || '128')
 }) : null
+const granaryUrl = env.GRANARY_URL || 'https://granary-demo.appspot.com/url'
 const websubHub = env.WEBSUB_HUB || 'https://switchboard.p3k.io'
 const websubHubMode = env.WEBSUB_HUB_MODE || 'multi' // Whether to do one request for all URLs affected by a change or one request per URL
 const indieAuthEndpoint = env.INDIEAUTH_ENDPOINT || 'https://indieauth.com/auth'
@@ -51,6 +52,12 @@ const addAuth = common.authentication(log, require('jsonwebtoken').verify)
 const pugRender = pify(pug.renderFile)
 const render = async (file, tplctx) =>
 	pugRender('views/' + file, tplctx)
+
+const granaries = [
+	{ base: `${granaryUrl}?input=html&output=as2&hub=${encodeURIComponent(websubHub)}`, type: 'application/activity+json' },
+	{ base: `${granaryUrl}?input=html&output=atom&hub=${encodeURIComponent(websubHub)}`, type: 'application/atom+xml' },
+	{ base: `${granaryUrl}?input=html&output=jsonfeed&hub=${encodeURIComponent(websubHub)}`, type: 'application/json' },
+]
 
 const affectedUrls = async (url) => {
 	const norm = new URI(url).normalizePort().normalizeHostname()
@@ -152,9 +159,13 @@ const onEntryChange = async (eventUrl) => {
 	}
 	if (websubHubMode === 'multi') {
 		pushWebSub(affUrls)
+		pushWebSub(flatMap(affUrls, url => flatMap(granaries, ({base}) => `${base}&url=${encodeURIComponent(url)}`)))
 	} else {
 		for (const url of affUrls) {
 			pushWebSub(url)
+			for (const { base } of granaries) {
+				pushWebSub(`${base}&url=${encodeURIComponent(url)}`)
+			}
 		}
 	}
 
@@ -380,6 +391,7 @@ const addCommonContext = async (ctx, next) => {
 		indieAuthEndpoint,
 		microPanelRoot,
 		vapidKeys,
+		granaries,
 		// Pug settings
 		basedir,
 		pretty: true,

@@ -106,12 +106,12 @@ const sw = new ConfigReplace(
 	}
 )
 
-const errPages = new Pug(new MergeTrees([
+const errPages = new Pug([new MergeTrees([
 	new Funnel('views', {
 		include: ['401.pug', '403.pug', '404.pug', '429.pug', '500.pug', '502.pug', '503.pug', '504.pug', 'offline.pug', '_layout.pug', '_media.pug', '_entry.pug', '_globals.pug', '_icons.pug']
 	}),
 	rev
-]), {
+])], {
 	pretty: true,
 	_: require('lodash'),
 	qs: require('qs'),

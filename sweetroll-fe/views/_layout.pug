@@ -21,7 +21,7 @@ html(lang=_.get(siteSettings, 'site-lang', 'en'))
 			if domainUri
 				link(rel="openid.delegate" href=domainUri.toString())
 			link(rel="openid.server" href="https://openid.indieauth.com/openid")
-			each fmtlink in granaries
+			each fmtlink in granaries || []
 				link(rel="alternate" type=fmtlink.type href=`${fmtlink.base}&url=${encodeURIComponent(reqUri.toString())}`)
 			if authedAsAdmin
 				link(rel='import' href=(microPanelRoot === '/dist/micro-panel' ? assets.url('dist/micro-panel/src/micro-panel.html') : microPanelRoot + '/src/micro-panel.html'))

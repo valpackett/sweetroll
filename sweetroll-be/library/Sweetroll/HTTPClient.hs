@@ -10,7 +10,7 @@ module Sweetroll.HTTPClient (
 , responseBody
 ) where
 
-import           Sweetroll.Prelude
+import           Sweetroll.Prelude hiding (($$))
 import           Data.Conduit
 import qualified Data.HashMap.Strict as HMS
 import qualified Data.Set as S

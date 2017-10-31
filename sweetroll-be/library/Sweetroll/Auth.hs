@@ -19,6 +19,7 @@ import qualified Data.ByteString.Char8 as S8
 import           Web.JWT hiding (header)
 import qualified Network.Wai as Wai
 import           Servant.Server.Experimental.Auth
+import           Servant.Server
 import           Web.Cookie (parseCookies)
 import           Sweetroll.Context
 import           Sweetroll.Conf
@@ -31,7 +32,7 @@ instance HasLink sub ⇒ HasLink (AuthProtect "jwt" :> sub) where
 
 authHandler ∷ Text → AuthHandler Wai.Request (JWT VerifiedJWT)
 authHandler secKey = mkAuthHandler h
-  where h req =
+  where h req = Servant.Server.Handler $
           case asum [ fromHeader =<< lookup hAuthorization (Wai.requestHeaders req)
                     , join $ lookup "access_token" $ Wai.queryString req
                     , lookup "Bearer" =<< parseCookies <$> lookup hCookie (Wai.requestHeaders req)

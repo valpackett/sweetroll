@@ -3,6 +3,7 @@
 module Sweetroll.App where
 
 import           Sweetroll.Prelude hiding (Context)
+import           Servant.Server
 import           Network.Wai.Middleware.AcceptOverride
 import           Network.Wai.Middleware.Autohead
 import           Network.Wai.Middleware.Cors

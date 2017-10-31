@@ -86,13 +86,13 @@ upsertMention obj mention =
 
 urlMatches ∷ Value → Value → Bool
 urlMatches (String l) (String r) = l == r
-urlMatches (Object l) (String r) = any (== r) $ urls (Object l)
+urlMatches (Object l) (String r) = elem r $ urls (Object l)
 urlMatches (String l) (Object r) = urlMatches (Object r) (String l)
 urlMatches (Object l) (Object r) = any (urlMatches (Object r)) $ map String $ urls (Object l)
 urlMatches _ _ = False
 
 urls ∷ Value → [Text]
-urls (Object x) = (Object x) ^.. key "properties" . key "url" . values . _String
+urls (Object x) = Object x ^.. key "properties" . key "url" . values . _String
 urls (String x) = [x]
 urls _ = []
 

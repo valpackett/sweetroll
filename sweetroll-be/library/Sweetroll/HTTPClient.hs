@@ -77,10 +77,9 @@ fetchLinkedEntires' depthLeft excludedDomains excludedURLs props = do
               prs' ← lift $ fetchLinkedEntires' (depthLeft - 1) excludedDomains (insertSet uri excludedURLs) $
                 fromMaybe (HMS.fromList []) $ Object entry ^? key "properties" . _Object
               -- additional filtering to prevent the author from overriding a local entry
-              let (Object prs) = (Object prs') & (deep $ filtered shouldExclude) %~ (\x → fromMaybe "" $ x ^? key "properties" . key "url" . _Array . each)
+              let (Object prs) = Object prs' & (deep $ filtered shouldExclude) %~ (\x → fromMaybe "" $ x ^? key "properties" . key "url" . _Array . each)
               right $ Object $ insertMap "properties" (Object prs) $ insertMap "fetched-url" (toJSON $ tshow uri) entry
-            x → do
-              left $ "Received something that's not an h-entry when parsing fetched '" ++ tshow uri ++ "'"
+            x → left $ "Received something that's not an h-entry when parsing fetched '" ++ tshow uri ++ "'"
         excludedKeys = S.fromList [ "client-id", "content", "summary", "name", "photo", "video", "audio", "item",
                                     "syndication", "author", "category", "published", "updated",
                                     "comment", "like", "repost", "quotation", "rsvp", "mention" ]

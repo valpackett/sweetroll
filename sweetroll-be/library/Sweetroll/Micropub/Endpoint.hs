@@ -56,7 +56,7 @@ postMicropub token host (Create htype props _) = do
   return $ addHeader (fromMaybe "" $ firstStr (Object prs) (key "url")) Posted
 
 postMicropub token host (Update url upds) = do
-  ensureScope token $ any (== "update")
+  ensureScope token $ elem "update"
   ensureRightDomain (base host) $ parseUri url
   now ← liftIO getCurrentTime
   _ ← guardEntryNotFound =<< guardTxError =<< transactDb (do
@@ -74,13 +74,13 @@ postMicropub token host (Update url upds) = do
   throwError respNoContent
 
 postMicropub token host (Delete url) = do
-  ensureScope token $ any (== "delete")
+  ensureScope token $ elem "delete"
   ensureRightDomain (base host) $ parseUri url
   guardDbError =<< queryDb url deleteObject
   throwError respNoContent
 
 postMicropub token host (Undelete url) = do
-  ensureScope token $ any (== "undelete")
+  ensureScope token $ elem "undelete"
   ensureRightDomain (base host) $ parseUri url
   guardDbError =<< queryDb url undeleteObject
   throwError respNoContent
@@ -109,7 +109,7 @@ decideCategory props | not (null $ Object props ^.. key "repost-of" . values) = 
 decideCategory props | not (null $ Object props ^.. key "quotation-of" . values) = "_quotations"
 decideCategory props | not (null $ Object props ^.. key "bookmark-of" . values) = "_bookmarks"
 decideCategory props | not (null $ Object props ^.. key "rsvp" . values) = "_rsvps"
-decideCategory props | otherwise = "_notes"
+decideCategory _ = "_notes"
 
 categories ∷ ObjProperties → [Text]
 categories props = Object props ^.. key "category" . values . _String
@@ -130,12 +130,12 @@ setClientId hostbase token = insertMap "client-id" $ toJSON $ filter isAllowed $
 
 setCategory ∷ ObjProperties → ObjProperties
 setCategory props | isJust (find (\x → headMay x == Just '_') $ categories props) = props
-setCategory props | otherwise = insertMap "category" (toJSON cats) props
+setCategory props = insertMap "category" (toJSON cats) props
   where cats = decideCategory props : categories props
 
 setUrl ∷ URI → UTCTime → ObjProperties → ObjProperties
 setUrl hostbase _ props | Just True == (compareDomain hostbase <$> (parseURI =<< cs <$> firstStr (Object props) (key "url"))) = props
-setUrl hostbase now props | otherwise =
+setUrl hostbase now props =
   insertMap "url" (toJSON [ tshow $ (fromJust $ parseURIReference $ "/" ++ category ++ "/" ++ slug) `relativeTo` hostbase ]) props
   where category = cs $ drop 1 $ fromMaybe "_unknown" $ find (\x → headMay x == Just '_') $ categories props
         slug = decideSlug props now
@@ -163,4 +163,4 @@ applyUpdates props (DelProps newProps) =
 
 filterProps ∷ Value → [Text] → Value
 filterProps obj [] = obj
-filterProps obj ps = obj & key "properties" . _Object %~ (HMS.filterWithKey (\k v → k `elem` ps))
+filterProps obj ps = obj & key "properties" . _Object %~ HMS.filterWithKey (\k _ → k `elem` ps)

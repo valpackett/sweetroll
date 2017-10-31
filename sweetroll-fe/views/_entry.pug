@@ -100,8 +100,8 @@ mixin showFacepile(entry, name, reactions)
 			= name
 		each entry in reactions
 			-
-				const author = _.get(entry, 'properties.author[0]', {})
-				const authorName = _.get(author, 'properties.name[0]', 'Someone')
+				const author = _.get(entry, 'properties.author[0]') || {}
+				const authorName = _.get(author, 'properties.name[0]') || 'Someone'
 			a.h-cite('class'=`p-${_.trimEnd(name, 's')}` href=_.isString(entry) ? entry : _.get(entry, 'properties.url[0]'))
 				span.p-author.h-card
 					img.facepile-avatar.u-photo.p-name(alt=authorName title=authorName src=helpers.showAvatar(author))
@@ -134,7 +134,7 @@ mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, sh
 		.ref-context.h-cite('class'=prop)
 			if showContexts && !_.isEmpty(inReplyTo)
 				.ref-context-thread-up
-					each reply in _.get(entry, 'properties.in-reply-to', [])
+					each reply in _.get(entry, 'properties.in-reply-to') || []
 						+showRefContext(reply, { prop: 'u-in-reply-to', rel: '', showReplies, showContexts: true })
 			if reasonIcon
 				header.ref-context-reason

@@ -27,23 +27,6 @@ $ http -f post localhost:3000/micropub "Authorization: Bearer $(cat token)" h=en
 
 (the `http` command in the examples is [HTTPie](https://github.com/jkbrzt/httpie))
 
-### Making the binary smaller
-
-To get a smaller resulting binary, use the `split-objs` GHC option or the newer `split-sections`.
-Globally.
-Also, use a faster linker, especially with this option.
-
-Here's an example `~/.stack/config.yaml`:
-
-```yaml
-ghc-options:
-  "*": "-split-sections -optl-fuse-ld=gold"
-
-apply-ghc-options: everything
-```
-
-Do something like this, rebuild all your packages/snapshots and enjoy small binaries.
-
 [stack]: https://github.com/commercialhaskell/stack
 
 ## General project info

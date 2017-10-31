@@ -53,7 +53,9 @@ postMicropub token host (Create htype props _) = do
         |>  setUrl (base host) now
   let obj = wrapWithType htype prs
   guardDbError =<< queryDb obj upsertObject
-  return $ addHeader (fromMaybe "" $ firstStr (Object prs) (key "url")) Posted
+  let url = (fromMaybe "" $ firstStr (Object prs) (key "url"))
+  guardDbError =<< queryDb url undeleteObject -- for recreating at the same URL
+  return $ addHeader url Posted
 
 postMicropub token host (Update url upds) = do
   ensureScope token $ elem "update"

@@ -21,11 +21,10 @@ block append main
 		a.do-reload(href="#") Reload?
 	-
 		obj.children = obj.children || []
-		const settings = _.get(obj, 'properties.feed-settings[0]') || {}
 		const entries = obj.children.slice(firstI)
 		const qq = reqUriFull.search(true)
-	section.index-category(class=`layout-${settings.layout || 'default'}`)
-		if settings.layout === 'gallery'
+	section.index-category(class=`layout-${feedSettings.layout || 'default'}`)
+		if feedSettings.layout === 'gallery'
 			each row in helpers.galleryRows(entries)
 				.gallery-row
 					each entry in row
@@ -36,7 +35,7 @@ block append main
 								+showGalleryEntry(entry)
 							catch
 								div.tpl-error Error: could not render the entry
-		else if settings.layout === 'plain-list'
+		else if feedSettings.layout === 'plain-list'
 			ul
 				each entry in entries
 					li

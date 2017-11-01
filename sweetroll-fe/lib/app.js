@@ -9,7 +9,7 @@ const webpush = require('web-push')
 const qs = require('qs')
 const Retry = require('promised-retry')
 const _ = require('lodash')
-const { head, merge, concat, get, isObject, groupBy, includes, isString, debounce, some, flatMap } = _
+const { head, merge, concat, get, isObject, groupBy, sortBy, includes, isString, debounce, some, flatMap } = _
 const pify = require('pify')
 const pug = require('pug')
 const pugTryCatch = require('pug-plugin-try-catch')
@@ -317,7 +317,7 @@ const searchHandler = async ({ request, response, auth, domainUriStr, tplctx }, 
 const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull, domainUriStr, reqUriStr, reqUriFullStr, tplctx, cashed }, next) => {
 	if (cache && !auth && await cashed(2 * 60 * 1000)) return
 	// TODO don't fetch twice when domain URI == request URI (i.e. home page)
-	const perPage = 20
+	const perPage = reqUriStr.endsWith('/kb') ? 999999 : 20 // XXX: ugly hardcode but avoids a roundtrip :D
 	const { dobj, obj, feeds, tags } = await db.row(SQL`SELECT
 	set_config('mf2sql.current_user_url', ${(auth && auth.sub) || 'anonymous'}, true),
 	mf2.objects_smart_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj,
@@ -350,6 +350,10 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 		} else if (includes(obj.type, 'h-feed') || includes(obj.type, 'h-x-dynamic-feed')) {
 			if (!includes(obj.type, 'h-feed')) {
 				obj.type.push('h-feed')
+			}
+			tplctx.feedSettings = get(obj, 'properties.feed-settings[0]') || {}
+			if (tplctx.feedSettings.sort) {
+				obj.children = sortBy(obj.children || [], tplctx.feedSettings.sort)
 			}
 			tpl = 'feed.pug'
 		} else {

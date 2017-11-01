@@ -9,6 +9,7 @@ module Sweetroll.Micropub.Endpoint (
 import           Sweetroll.Prelude hiding (host)
 import qualified Data.Text as T
 import qualified Data.Set as S
+import qualified Data.Char as C
 import qualified Data.HashMap.Strict as HMS
 import           Data.Maybe (fromJust)
 import           Web.JWT hiding (header, decode)
@@ -96,9 +97,12 @@ respNoContent = ServantErr { errHTTPCode = 204
 
 decideSlug ∷ ObjProperties → UTCTime → String
 decideSlug props now = unpack . fromMaybe fallback $ getProp "mp-slug" <|> getProp "slug"
-  where fallback = slugify . fromMaybe (formatTimeSlug now) $ getProp "name"
+  where fallback = smartSlugify . fromMaybe (formatTimeSlug now) $ getProp "name"
         formatTimeSlug = pack . formatTime defaultTimeLocale "%Y-%m-%d-%H-%M-%S"
         getProp k = firstStr (Object props) (key k)
+        -- take WikiStyleTitles into slugs as-is (without lowercasing), for KnowledgeBase posts
+        smartSlugify s | C.isUpper (fromMaybe 'x' $ headMay s) && all C.isLetter s = s
+        smartSlugify s = slugify s
 
 decideCategory ∷ ObjProperties → Text
 decideCategory props | not (null $ Object props ^.. key "rating" . values) = "_reviews"

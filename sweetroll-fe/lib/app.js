@@ -274,8 +274,8 @@ const logoutHandler = async (ctx, next) => {
 const customCssHandler = async ({ request, response, auth, domainUriStr, cashed }, next) => {
 	if (cache && !auth && await cashed(2 * 60 * 1000)) return
 	response.type = 'text/css'
-	if (request.query.rev && request.query.rev !== 'undefined') {
-		response.header['cache-control'] += 'max-age=69420420, immutable'
+	if (request.query.rev && request.query.rev !== 'undefined' && request.query.rev !== 'null') {
+		response.set('Cache-Control', 'max-age=69420420, immutable')
 	}
 	const { dobj } = await db.row(SQL`SELECT
 	set_config('mf2sql.current_user_url', ${(auth && auth.sub) || 'anonymous'}, true),

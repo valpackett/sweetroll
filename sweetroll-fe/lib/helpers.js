@@ -14,14 +14,11 @@ const entities = require('entities')
 const cheerio = require('cheerio')
 const gravatarUrl = require('gravatar-url')
 const log = require('debug')('sweetroll-fe:helpers')
-const postcss = require('postcss')
 const markdown = require('remark')()
 	.use(require('remark-math'))
 	.use(require('remark-html-katex'))
 	.use(require('remark-highlight.js'))
 	.use(require('remark-html'))
-
-const colorCss = require('fs').readFileSync('assets/color.css', { encoding: 'utf-8' })
 
 module.exports = {
 	insertParams (name, params) {
@@ -269,16 +266,6 @@ module.exports = {
 			result += `padding-bottom:${(media.height / media.width * 100).toPrecision(4)}%`
 		}
 		return result
-	},
-
-	async colorStyle (vars) {
-		return await postcss([
-			require('postcss-nesting'),
-			require('postcss-custom-properties')({
-				variables: vars
-			}),
-			require('postcss-color-function'),
-		]).process(colorCss, { from: 'color.css', to: 'color.css' }).then(x => x.css)
 	},
 
 	galleryRows (entries) {

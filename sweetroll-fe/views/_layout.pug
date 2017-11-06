@@ -8,8 +8,9 @@ html(lang=_.get(siteSettings, 'site-lang', 'en'))
 			meta(charset="utf-8")
 			meta(name="viewport" content="width=device-width, initial-scale=1")
 			link(rel="stylesheet" href=assets.url('dist/style.css'))
-			link(rel="stylesheet" href=`/color.css?rev=${assets.hashes['dist/color.css']}&${qs.stringify(_.get(siteSettings, 'site-colors', {}))}`)
 			link(rel="stylesheet" href=assets.url(`dist/highlight.js/styles/${_.get(siteSettings, 'code-highlight-theme', 'github')}.css`))
+			if siteCss && siteCss.length > 0
+				link(rel="stylesheet" href=`/custom.css?rev=${revHash(siteCss.join('\n'))}`)
 			if siteSettings
 				block title
 					-
@@ -32,20 +33,17 @@ html(lang=_.get(siteSettings, 'site-lang', 'en'))
 				link(rel='icon' type='image/png' sizes='32x32' href=microPanelRoot + '/icons/favicon-32x32.png')
 				meta(name='theme-color' content='#00897b')
 				meta(name='vapid-pubkey' content=vapidKeys.publicKey)
-			else
-				meta(name='theme-color' content=_.get(siteSettings, 'site-colors.background-color', '#efeaf4'))
 	body
 		if authedAsAdmin
 			| <micro-panel force-micropub-source>
 		block body
-			header.site-header
-				block header
-					h1
-						a(href="/")= siteSettings['site-name']
-					a#author-link(href="#author")
-						+icon("info-circle")
-						span Skip to author info
 			.site-content("class"=obj && obj.type)
+				header#author.site-header.h-card.p-author
+					block author
+						| !{helpers.getHtml(_.get(siteCard, 'properties.note[0]'))}
+						- const photo = _.get(siteCard, 'properties.photo[0]')
+						if photo
+							data.u-photo(value=photo)
 				main.site-main
 					block main
 						nav.main-nav
@@ -61,45 +59,41 @@ html(lang=_.get(siteSettings, 'site-lang', 'en'))
 											data.p-editing-url(value=_.get(feed, 'properties.url[0]'))
 									else
 										a(href=relativeUrl(_.get(feed, 'properties.url[0]')) rel="feed" type="text/html" title=`${name} / ${siteSettings && siteSettings['site-name']}`)= name
-				aside#author.site-author.h-card.p-author
-					block side
-						.site-author-block
-							.p-note !{helpers.getHtml(_.get(siteCard, 'properties.note[0]'))}
-						- const photo = _.get(siteCard, 'properties.photo[0]')
-						if photo
-							data.u-photo(value=photo)
-						block site-tags
-							nav.all-tags-ever
-								- const tagfeed = _.head(helpers.matchingFeeds(siteFeeds, {properties: {category: ['--TAG-HERE--']}}).filter(feed => !(_.get(feed, 'params.tag', '').startsWith('_'))))
-								if tagfeed
-									for tag in siteTags || []
-										if !tag.name.startsWith('_')
-											a(href=relativeUrl(tagfeed.url.replace('--TAG-HERE--', tag.name)) data-mf-category=tag.name)
-												= tagfeed.name.replace('--TAG-HERE--', tag.name)
-												sup.obj_count= `(${tag.obj_count})`
-											| 
-						block search-form
-							form(method="get" action="/search").search-form
+				block site-tags
+					nav.site-tags
+						- const tagfeed = _.head(helpers.matchingFeeds(siteFeeds, {properties: {category: ['--TAG-HERE--']}}).filter(feed => !(_.get(feed, 'params.tag', '').startsWith('_'))))
+						if tagfeed
+							for tag in siteTags || []
+								if !tag.name.startsWith('_')
+									a(href=relativeUrl(tagfeed.url.replace('--TAG-HERE--', tag.name)) data-mf-category=tag.name)
+										= tagfeed.name.replace('--TAG-HERE--', tag.name)
+										sup.obj_count= `(${tag.obj_count})`
+									| 
+				footer.site-footer
+					block search-form
+						form(method="get" action="/search").search-form
+							.form-field
+								input(name="q" type="search" value=searchQuery)
+								button Search
+					block login-form
+						if auth
+							form(method="post" action="/logout").logout-form
+								button Log out
+						else if domainUri
+							a(href="#login-form").login-link Log in
+							form(method="get" action=indieAuthEndpoint).login-form#login-form
+								input(type="hidden" name="client_id" value=domainUri.toString())
+								input(type="hidden" name="redirect_uri" value=domainUri.clone().path('/login/self').toString())
+								input(type="hidden" name="scope" value="create update delete undelete")
+								input(type="hidden" name="state" value="TODO")
 								.form-field
-									input(name="q" type="search" value=searchQuery)
-									button Search
-						block login-form
-							if auth
-								form(method="post" action="/logout").logout-form
-									button Log out
-							else if domainUri
-								a(href="#login-form").login-link Log in
-								form(method="get" action=indieAuthEndpoint).login-form#login-form
-									input(type="hidden" name="client_id" value=domainUri.toString())
-									input(type="hidden" name="redirect_uri" value=domainUri.clone().path('/login/self').toString())
-									input(type="hidden" name="scope" value="create update delete undelete")
-									input(type="hidden" name="state" value="TODO")
-									.form-field
-										input(type="url" name="me" value=domainUri.toString())
-										button Log in
-						.site-meta.
-							This website supports #[a(href="https://webmention.net") Webmentions]!
-							Because it's powered by #[a(href="https://github.com/myfreeweb/sweetroll") Sweetroll], an #[a(href="https://indieweb.org") #IndieWeb] engine.
+									input(type="url" name="me" value=domainUri.toString())
+									button Log in
+					.site-meta.
+						This website supports #[a(href="https://webmention.net") Webmentions]!
+						Because it's powered by #[a(href="https://github.com/myfreeweb/sweetroll") Sweetroll], an #[a(href="https://indieweb.org") #IndieWeb] engine.
+
+
 			block scripts
 				script(defer src=assets.url('dist/site.js'))
 				script(defer src=assets.url('dist/svgxuse/svgxuse.min.js'))

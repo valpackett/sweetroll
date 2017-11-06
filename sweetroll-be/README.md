@@ -17,7 +17,7 @@ The `:serve` command in ghci runs the server in test mode, which means you don't
 ```bash
 $ stack build
 
-$ stack ghci --no-load
+$ stack ghci
 :serve
 
 $ http -f post localhost:3000/login x=x | sed -Ee 's/.*access_token=([^&]+).*/\1/' > token

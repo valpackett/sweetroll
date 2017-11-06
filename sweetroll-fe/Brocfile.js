@@ -45,8 +45,6 @@ styles = new SourceMapExtractor(new PostCSS(styles, {
 		{ module: require('postcss-nesting') },
 		{ module: require('postcss-responsive-type') },
 		{ module: require('postcss-flexbugs-fixes') },
-		{ module: require('postcss-custom-properties') },
-		{ module: require('postcss-color-function') },
 		{ module: require('autoprefixer') },
 		{ module: require('cssnano') },
 	],
@@ -115,6 +113,7 @@ const errPages = new Pug([new MergeTrees([
 	pretty: true,
 	_: require('lodash'),
 	qs: require('qs'),
+	revHash: require('rev-hash'),
 	helpers: require('./lib/helpers'),
 	assets: {
 		hashes: null,

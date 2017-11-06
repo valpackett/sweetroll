@@ -63,7 +63,7 @@ a, body .ref-context-meta a {
 	}
 }
 
-.entry, .site-author-block, .entry-webmention-form {
+.entry, .block {
 	background: var(--layer-1-color);
 	border-color: var(--accent-color);
 }

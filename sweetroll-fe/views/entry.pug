@@ -1,12 +1,12 @@
 extends /_layout.pug
 
 block append main
-	simple-live(hidden src="/live")
+	simple-live.layer-sticky(hidden src="/live")
 		| This entry has been updated. 
 		a.do-reload(href="#") Reload?
-	article.entry
+	article.block.layer-1.entry
 		+showEntry(obj, false)
-	form.entry-webmention-form(method="post" action="/webmention")
+	form.block.layer-1.entry-webmention-form(method="post" action="/webmention")
 		p.
 			Posted a #[a(href="https://indieweb.org/responses") response] on your own website?
 			Send a #[a(href="https://webmention.net/") Webmention]:

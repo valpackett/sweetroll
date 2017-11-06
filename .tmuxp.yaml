@@ -18,5 +18,5 @@ windows:
     start_directory: sweetroll-be/
     layout: main-horizontal
     panes:
-      - stack ghci --with-ghc intero
+      - stack ghci
       - vi library/Sweetroll

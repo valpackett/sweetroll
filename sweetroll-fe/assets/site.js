@@ -21,12 +21,6 @@ for (i = 0; i < reloaders.length; i++) {
 	})
 }
 
-document.getElementById('author-link').onclick = function () {
-	var a = document.getElementById('author')
-	a.setAttribute('tabindex', '-1')
-	a.focus()
-}
-
 function loadJs (u) {
 	return new Promise(function (resolve, reject) {
 		const el = document.createElement('script')
@@ -122,11 +116,15 @@ if ('serviceWorker' in navigator) {
 	})
 	navigator.serviceWorker.addEventListener('message', e => {
 		const data = JSON.parse(e.data)
+		console.log(data)
 		if (data.event === 'refreshed-in-cache') {
 			window.location.reload()
+		} else if (data.event === 'failed') {
+			document.querySelector('.offline-popup').innerText = 'Failed to load the page: ' + data.err + '. This cached copy is all you have…'
 		}
 	})
 	if ((document.querySelector('meta[name=sw-offline]') || {}).content === 'true') {
-		document.querySelector('.site-main').insertAdjacentHTML('afterbegin', '<div class="offline-popup">You are offline or on a slow connection. The page is still loading if you are not completely disconnected…</div>')
+		const msg = navigator.onLine ? 'This page is still loading (either your connection is slow or this server is experiencing problems), it will be refreshed automatically. Maybe.' : 'You are offline, but this page has been cached locally.'
+		document.querySelector('.site-main').insertAdjacentHTML('afterbegin', '<div class="offline-popup layer-sticky">' + msg + '</div>')
 	}
 }

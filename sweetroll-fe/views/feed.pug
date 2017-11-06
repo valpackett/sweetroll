@@ -16,7 +16,7 @@ mixin showGalleryEntry(entry)
 
 block append main
 	//- Some pagination info: https://wiki.postgresql.org/images/3/35/Pagination_Done_the_PostgreSQL_Way.pdf
-	simple-live(hidden src="/live")
+	simple-live.layer-sticky(hidden src="/live")
 		| This feed has been updated. 
 		a.do-reload(href="#") Reload?
 	-
@@ -53,7 +53,7 @@ block append main
 					+showTombstone(entry)
 				else
 					try
-						article.entry('class'=entry.type.join(' '))
+						article.block.layer-1.entry('class'=entry.type.join(' '))
 							+showEntry(entry, true)
 					catch
 						div.tpl-error Error: could not render the entry

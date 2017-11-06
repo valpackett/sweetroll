@@ -10,6 +10,7 @@ const qs = require('qs')
 const Retry = require('promised-retry')
 const _ = require('lodash')
 const { head, merge, concat, get, isObject, groupBy, sortBy, includes, isString, debounce, some, flatMap } = _
+const revHash = require('rev-hash')
 const pify = require('pify')
 const pug = require('pug')
 const pugTryCatch = require('pug-plugin-try-catch')
@@ -270,12 +271,16 @@ const logoutHandler = async (ctx, next) => {
 	return next()
 }
 
-const colorHandler = async ({ request, response }, next) => {
+const customCssHandler = async ({ request, response, auth, domainUriStr, cashed }, next) => {
+	if (cache && !auth && await cashed(2 * 60 * 1000)) return
 	response.type = 'text/css'
 	if (request.query.rev && request.query.rev !== 'undefined') {
 		response.header['cache-control'] += 'max-age=69420420, immutable'
 	}
-	response.body = await helpers.colorStyle(request.query)
+	const { dobj } = await db.row(SQL`SELECT
+	set_config('mf2sql.current_user_url', ${(auth && auth.sub) || 'anonymous'}, true),
+	mf2.objects_smart_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj`)
+	response.body = (dobj.properties['site-css'] || []).join('\n')
 	return next()
 }
 
@@ -306,6 +311,7 @@ const searchHandler = async ({ request, response, auth, domainUriStr, tplctx }, 
 	tplctx.results = results
 	tplctx.siteCard = get(dobj, 'properties.author[0]', {})
 	tplctx.siteSettings = get(dobj, 'properties.site-settings[0]', {})
+	tplctx.siteCss = get(dobj, 'properties.site-css', [])
 	tplctx.siteFeeds = feeds
 	tplctx.siteTags = tags
 	response.type = 'text/html'
@@ -315,6 +321,7 @@ const searchHandler = async ({ request, response, auth, domainUriStr, tplctx }, 
 }
 
 const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull, domainUriStr, reqUriStr, reqUriFullStr, tplctx, cashed }, next) => {
+	/// SW TEST: await new Promise(res => setTimeout(res, 6000)); response.status = 500; return 0
 	if (cache && !auth && await cashed(2 * 60 * 1000)) return
 	// TODO don't fetch twice when domain URI == request URI (i.e. home page)
 	const perPage = reqUriStr.endsWith('/kb') ? 999999 : 20 // XXX: ugly hardcode but avoids a roundtrip :D
@@ -329,6 +336,7 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 	// tplctx.perPage = perPage
 	tplctx.siteCard = get(dobj, 'properties.author[0]', {})
 	tplctx.siteSettings = get(dobj, 'properties.site-settings[0]', {})
+	tplctx.siteCss = get(dobj, 'properties.site-css', [])
 	tplctx.siteFeeds = feeds
 	tplctx.siteTags = tags
 	response.status = 404
@@ -383,6 +391,7 @@ const addCommonContext = async (ctx, next) => {
 		URI,
 		qs,
 		helpers,
+		revHash,
 		// Markup related stuff
 		assets,
 		// The Data
@@ -453,7 +462,7 @@ if (!env.NO_SERVE_DIST) {
 router.addRoute('GET', '/live', liveHandler)
 router.addRoute('GET', '/robots.txt', robotsHandler)
 router.addRoute('POST', '/logout', logoutHandler)
-router.addRoute('GET', '/color.css', colorHandler)
+router.addRoute('GET', '/custom.css', compose([addAuth, addCommonContext, koaCache, customCssHandler].filter(isObject)))
 router.addRoute('GET', '/search', compose([addAuth, addCommonContext, koaCache, searchHandler].filter(isObject)))
 router.options.notFound = compose([addAuth, addCommonContext, koaCache, handler].filter(isObject))
 const app = new (require('koa'))()

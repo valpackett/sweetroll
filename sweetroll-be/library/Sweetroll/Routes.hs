@@ -7,10 +7,11 @@ import           Sweetroll.Prelude
 --import qualified Network.HTTP.Link as L
 import           Sweetroll.Micropub.Request
 import           Sweetroll.Micropub.Response
+import           Sweetroll.Auth (AccessToken)
 
 type Auth = AuthProtect "jwt"
 
-type PostLoginRoute           = "login" :> Host :> Form :> Post '[FormUrlEncoded] [(Text, Text)]
+type PostLoginRoute           = "login" :> Host :> Form :> Post '[FormUrlEncoded, JSON] AccessToken
 type GetLoginRoute            = "login" :> Auth :> Get '[FormUrlEncoded] [(Text, Text)]
 type GetSelfLoginRoute        = "login" :> "self" :> Host :> QueryParam "me" Text :> QueryParam "code" Text :> QueryParam "scope" Text :> Get '[FormUrlEncoded] NoContent
 type PostMicropubRoute        = "micropub" :> Auth :> Host :> ReqBody '[FormUrlEncoded, JSON] MicropubRequest :> PostCreated '[FormUrlEncoded, JSON] (Headers '[Header "Location" Text] MicropubResponse)

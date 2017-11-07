@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TypeOperators, TypeFamilies, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, ScopedTypeVariables, DataKinds, QuasiQuotes, TemplateHaskell #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TypeOperators, TypeFamilies, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, ScopedTypeVariables, DataKinds, QuasiQuotes, TemplateHaskell, DeriveGeneric #-}
 
 -- | The IndieAuth/rel-me-auth implementation, using JSON Web Tokens.
 module Sweetroll.Auth (
@@ -7,10 +7,11 @@ module Sweetroll.Auth (
 , VerifiedJWT
 , AuthProtect
 , AuthHandler
+, AccessToken
 , module Sweetroll.Auth
 ) where
 
-import           Sweetroll.Prelude hiding (iat, au, host)
+import           Sweetroll.Prelude as SP hiding (iat, au, host)
 import           Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import           Data.Maybe (fromJust)
 import           Data.Text (dropWhileEnd)
@@ -21,6 +22,7 @@ import qualified Network.Wai as Wai
 import           Servant.Server.Experimental.Auth
 import           Servant.Server
 import           Web.Cookie (parseCookies)
+import           Web.FormUrlEncoded as FU
 import           Sweetroll.Context
 import           Sweetroll.Conf
 
@@ -29,6 +31,18 @@ type instance AuthServerData (AuthProtect "jwt") = JWT VerifiedJWT
 instance HasLink sub ⇒ HasLink (AuthProtect "jwt" :> sub) where
   type MkLink (AuthProtect "jwt" :> sub) = MkLink sub
   toLink _ = toLink (Proxy ∷ Proxy sub)
+
+data AccessToken = AccessToken
+  { accessToken ∷ Text
+  , scope ∷ Text
+  , clientId ∷ Text
+  , me ∷ Text } deriving (Generic)
+
+instance ToJSON AccessToken where
+  toEncoding = genericToEncoding defaultOptions { SP.fieldLabelModifier = camelTo2 '_' }
+
+instance ToForm AccessToken where
+  toForm = genericToForm FormOptions { FU.fieldLabelModifier = camelTo2 '_' }
 
 authHandler ∷ Text → AuthHandler Wai.Request (JWT VerifiedJWT)
 authHandler secKey = mkAuthHandler h
@@ -67,16 +81,16 @@ signAccessToken sec domain me now scope clientId = encodeSigned HS256 (secret se
                 , unregisteredClaims = M.fromList [ ("scope", String scope)
                                                   , ("client_id", String clientId) ] }
 
-makeAccessToken ∷ Text → Text → Text → Text → Sweetroll [(Text, Text)]
+makeAccessToken ∷ Text → Text → Text → Text → Sweetroll AccessToken
 makeAccessToken domain me scope clientId = do
   secs ← getSecs
   now ← liftIO getCurrentTime
-  return [ ("access_token", signAccessToken (secretKey secs) domain me now scope clientId)
-         , ("scope", scope)
-         , ("client_id", clientId)
-         , ("me", me) ]
+  return $ AccessToken { accessToken = signAccessToken (secretKey secs) domain me now scope clientId
+                       , scope = scope
+                       , clientId = clientId
+                       , me = me }
 
-postLogin ∷ Maybe Text → [(Text, Text)] → Sweetroll [(Text, Text)]
+postLogin ∷ Maybe Text → [(Text, Text)] → Sweetroll AccessToken
 postLogin host params = do
   let domain = fromMaybe "localhost" host
   isTestMode ← getConfOpt testMode
@@ -112,7 +126,7 @@ getSelfLogin host me code scope = do
                           , ("redirect_uri", "https://" ++ domain ++ "/login/self")
                           , ("client_id", "https://" ++ domain ++ "/")
                           , ("grant_type", "authorization_code") ]
-  throwError err303 { errHeaders = [ ("Set-Cookie", "Bearer=" ++ (cs $ fromMaybe "" $ lookup "access_token" result) ++ "; Path=/; Max-Age=5184000" ++ security)
+  throwError err303 { errHeaders = [ ("Set-Cookie", "Bearer=" ++ (cs $ accessToken result) ++ "; Path=/; Max-Age=5184000" ++ security)
                                    , (hLocation, "/") ] }
 
 errNoAuth ∷ ServantErr

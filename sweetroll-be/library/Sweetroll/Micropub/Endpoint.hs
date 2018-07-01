@@ -74,19 +74,19 @@ postMicropub token host (Update url upds) = do
         queryTx newObj upsertObject
         return $ Just obj
       _ → return Nothing)
-  throwError respNoContent
+  throwM respNoContent
 
 postMicropub token host (Delete url) = do
   ensureScope token $ elem "delete"
   ensureRightDomain (base host) $ parseUri url
   guardDbError =<< queryDb url deleteObject
-  throwError respNoContent
+  throwM respNoContent
 
 postMicropub token host (Undelete url) = do
   ensureScope token $ elem "undelete"
   ensureRightDomain (base host) $ parseUri url
   guardDbError =<< queryDb url undeleteObject
-  throwError respNoContent
+  throwM respNoContent
 
 
 respNoContent ∷ ServantErr -- XXX: Only way to return custom HTTP response codes

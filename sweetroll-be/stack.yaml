@@ -2,7 +2,13 @@ packages:
   - '.'
   - location: '../indieweb-algorithms'
     extra-dep: true
+  - location: '../../magicbane'
+    extra-dep: true
+  - location: '../../../nikita-volkov/bytestring-tree-builder'
+    extra-dep: true
 extra-deps:
   - rapid-0.1.3
-  - magicbane-0.1.2
-resolver: nightly-2017-10-31
+  - monad-metrics-0.2.1.1
+  - rio-orphans-0.1.1.0
+allow-newer: true
+resolver: nightly-2018-06-29

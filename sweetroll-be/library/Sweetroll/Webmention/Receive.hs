@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TupleSections, GADTs, RankNTypes, FlexibleContexts, QuasiQuotes, TemplateHaskell #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TupleSections, GADTs, RankNTypes, FlexibleContexts #-}
 
 module Sweetroll.Webmention.Receive where
 
@@ -18,7 +18,7 @@ receiveWebmention allParams = do
   target ← guardJustP (errNoURIInField "target") $ lookup "target" allParams
   void $ guardJustP (errNoURIInField "source") $ parseURI $ cs source
   void $ guardJustP (errNoURIInField "source") $ parseURI $ cs target
-  void $ fork $ processWebmention source target
+  void $ forkIO $ processWebmention source target
   return NoContent -- throw respAccepted
 
 processWebmention ∷ Text → Text → Sweetroll ()
@@ -27,20 +27,23 @@ processWebmention source target = do
   resp0 ← runHTTP $ reqU (parseUri source) >>= anyStatus >>= performWithHtml
   case resp0 of
     Left e →
-      $logInfo$ "Error fetching webmention " ++ forfrom ++ ": " ++ e
+      logInfo $ "Error fetching webmention " ++ display forfrom ++ ": " ++ display e
     Right resp → do
       case statusCode $ responseStatus resp of
         410 → do
-          $logInfo$ "Received gone webmention " ++ forfrom ++ tshow source
+          logInfo $ "Received gone webmention " ++ display forfrom ++ display source
           guardDbError =<< queryDb (tshow source) deleteObject
         200 → do
-          (mention0, _) ← fetchEntryWithAuthors (parseUri source) resp
+          (mention0, _) ← exceptT
+            (\e → logError (display e) >> return (Nothing, Null))
+            return
+            (fetchEntryWithAuthors (parseUri source) resp)
           case mention0 of
             Just mention@(Object _) | verifyMention (parseUri target) mention (responseBody resp) → do
-              $logInfo$ "Received correct webmention for " ++ tshow target ++ " from " ++ tshow source
-              lds ← return . S.fromList . map parseUri =<< guardDbError =<< queryDb () getLocalDomains
+              logInfo $ "Received correct webmention for " ++ display target ++ " from " ++ display source
+              lds ← S.fromList . map parseUri <$> (guardDbError =<< queryDb () getLocalDomains)
               -- Fetch the actual stuff in the background if allowed:
-              when (not $ any (parseUri source `compareDomain`) lds) $ void $ fork $ do
+              unless (any (parseUri source `compareDomain`) lds) $ void $ forkIO $ do
                 obj' ← mapMOf (key "properties" . _Object) (fetchLinkedEntires lds S.empty) mention
                 guardDbError =<< queryDb obj' upsertObject
               -- Insert the link into the target right now:
@@ -54,13 +57,13 @@ processWebmention source target = do
                     return $ Just obj
                   _ → return Nothing)
             Just mention@(Object _) → do
-              $logInfo$ "Received unverified webmention " ++ forfrom ++ ": " ++ tshow mention
+              logInfo $ "Received unverified webmention " ++ display forfrom ++ ": " ++ display (tshow mention)
               guardDbError =<< queryDb (tshow source) deleteObject
             Just mention →
-              $logInfo$ "Received incorrectly parsed webmention " ++ forfrom ++ ": " ++ tshow mention
+              logInfo $ "Received incorrectly parsed webmention " ++ display forfrom ++ ": " ++ display (tshow mention)
             Nothing →
-              $logInfo$ "Received unreadable webmention " ++ forfrom
-        x → $logInfo$ "Received status code " ++ tshow x ++ " when fetching webmention " ++ forfrom
+              logInfo $ "Received unreadable webmention " ++ display forfrom
+        x → logInfo $ "Received status code " ++ display x ++ " when fetching webmention " ++ display forfrom
 
 verifyMention ∷ URI → Value → XDocument → Bool
 verifyMention t m _ | propIncludesURI t "in-reply-to"   m = True

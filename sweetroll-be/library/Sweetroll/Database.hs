@@ -2,9 +2,9 @@
 
 module Sweetroll.Database where
 
-import           Sweetroll.Prelude hiding (Query)
+import           Sweetroll.Prelude
 import           Sweetroll.Conf
-import           Hasql.Query
+import           Hasql.Statement
 import qualified Hasql.Pool as P
 import qualified Hasql.Session as S
 import qualified Hasql.Transaction.Sessions as TS
@@ -21,57 +21,57 @@ mkDb conf = P.acquire (4, 5, databaseUrl conf)
 useDb ∷ (Has Db α, MonadReader α μ, MonadIO μ) ⇒ S.Session ψ → μ (Either P.UsageError ψ)
 useDb s = asks getter >>= \p → liftIO $ P.use p s
 
-queryDb ∷ (Has Db α, MonadReader α μ, MonadIO μ) ⇒ χ → Query χ ψ → μ (Either P.UsageError ψ)
-queryDb a b = useDb $ S.query a b
+queryDb ∷ (Has Db α, MonadReader α μ, MonadIO μ) ⇒ χ → Statement χ ψ → μ (Either P.UsageError ψ)
+queryDb a b = useDb $ S.statement a b
 
 transactDb ∷ (Has Db α, MonadReader α μ, MonadIO μ) ⇒ T.Transaction ψ → μ (Either P.UsageError ψ)
-transactDb t = useDb $ TS.transaction T.RepeatableRead T.Write t
+transactDb t = useDb $ TS.transaction TS.RepeatableRead TS.Write t
 
-queryTx ∷ χ → Query χ ψ → T.Transaction ψ
-queryTx = T.query
+queryTx ∷ χ → Statement χ ψ → T.Transaction ψ
+queryTx = T.statement
 
-guardDbError ∷ MonadError ServantErr μ ⇒ Either DbError α → μ α
+guardDbError ∷ MonadThrow μ ⇒ Either DbError α → μ α
 guardDbError (Right x) = return x
 guardDbError (Left x) = throwErrText err500 $ "Database error: " ++ cs (show x)
 
-guardTxError ∷ MonadError ServantErr μ ⇒ Either P.UsageError α → μ α
+guardTxError ∷ MonadThrow μ ⇒ Either P.UsageError α → μ α
 guardTxError (Right x) = return x
 guardTxError (Left x) = throwErrText err500 $ "Database error: " ++ cs (show x)
 
-getObject ∷ Query Text (Maybe Value)
-getObject = statement q enc dec True
+getObject ∷ Statement Text (Maybe Value)
+getObject = Statement q enc dec True
   where q = [r|SELECT mf2.objects_smart_fetch($1, null, 0, null, null, null)|]
-        enc = E.value E.text
-        dec = D.maybeRow $ D.value D.jsonb
+        enc = E.param E.text
+        dec = D.rowMaybe $ D.column D.jsonb
 
-upsertObject ∷ Query Value ()
-upsertObject = statement q enc dec True
+upsertObject ∷ Statement Value ()
+upsertObject = Statement q enc dec True
   where q = [r|SELECT mf2.objects_normalized_upsert($1)|]
-        enc = E.value E.jsonb
+        enc = E.param E.jsonb
         dec = D.unit
 
-deleteObject ∷ Query Text ()
-deleteObject = statement q enc dec True
+deleteObject ∷ Statement Text ()
+deleteObject = Statement q enc dec True
   where q = [r|UPDATE mf2.objects SET deleted = True WHERE properties->'url'->>0 = $1|]
-        enc = E.value E.text
+        enc = E.param E.text
         dec = D.unit
 
-undeleteObject ∷ Query Text ()
-undeleteObject = statement q enc dec True
+undeleteObject ∷ Statement Text ()
+undeleteObject = Statement q enc dec True
   where q = [r|UPDATE mf2.objects SET deleted = False WHERE properties->'url'->>0 = $1|]
-        enc = E.value E.text
+        enc = E.param E.text
         dec = D.unit
 
 -- Local domains are domains managed by this Sweetroll instance.
 -- We don't want to fetch-parse-overwrite their entries!
-getLocalDomains ∷ Query () [Text]
-getLocalDomains = statement q enc dec True
+getLocalDomains ∷ Statement () [Text]
+getLocalDomains = Statement q enc dec True
   where q = [r|SELECT properties->'url'->>0 FROM mf2.objects WHERE properties->'site-settings' IS NOT NULL|]
         enc = E.unit
-        dec = D.rowsList $ D.value D.text
+        dec = D.rowList $ D.column D.text
 
-notifyWebmention ∷ Query Value ()
-notifyWebmention = statement q enc dec True
+notifyWebmention ∷ Statement Value ()
+notifyWebmention = Statement q enc dec True
   where q = [r|SELECT pg_notify('webmentions', $1::text)|]
-        enc = E.value E.json
+        enc = E.param E.json
         dec = D.unit

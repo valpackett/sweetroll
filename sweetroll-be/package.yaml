@@ -36,6 +36,7 @@ library:
     - Sweetroll.Routes
     - Sweetroll.Webmention.Receive
   dependencies:
+    - rio
     - classy-prelude
     - mono-traversable
     - split

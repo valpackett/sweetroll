@@ -4,17 +4,18 @@
 -- | The Sweetroll monad contains the application context.
 module Sweetroll.Context where
 
+import           RIO (RIO)
 import           Sweetroll.Prelude
 import           Sweetroll.Conf
 import           Sweetroll.Database (Db, mkDb)
 
 type SweetrollCtx = (SweetrollConf, SweetrollSecrets, ModLogger, ModHttpClient, Db)
 
-type Sweetroll = MagicbaneApp SweetrollCtx
+type Sweetroll = RIO SweetrollCtx
 
 initCtx ∷ SweetrollConf → SweetrollSecrets → IO SweetrollCtx
 initCtx conf secs = do
-  (_, lgr) ← newLogger $ LogStderr defaultBufSize
+  (_, lgr) ← newLogger (LogStderr defaultBufSize) simpleFormatter
   hmg ← newHttpClient
   dbp ← mkDb conf
   return (conf, secs, lgr, hmg, dbp)

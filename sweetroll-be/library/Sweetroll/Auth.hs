@@ -1,13 +1,11 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TypeOperators, TypeFamilies, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, ScopedTypeVariables, DataKinds, QuasiQuotes, TemplateHaskell, DeriveGeneric #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TypeOperators, TypeFamilies, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, ScopedTypeVariables, DataKinds, QuasiQuotes, TemplateHaskell, DeriveGeneric, LambdaCase #-}
 
 -- | The IndieAuth/rel-me-auth implementation, using JSON Web Tokens.
 module Sweetroll.Auth (
   JWT
 , VerifiedJWT
 , AuthProtect
-, AuthHandler
-, AccessToken
 , module Sweetroll.Auth
 ) where
 
@@ -17,7 +15,7 @@ import           Data.Maybe (fromJust)
 import           Data.Text (dropWhileEnd)
 import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as S8
-import           Web.JWT hiding (header)
+import           Web.JWT hiding (Header)
 import qualified Network.Wai as Wai
 import           Servant.Server.Experimental.Auth
 import           Servant.Server
@@ -51,15 +49,15 @@ authHandler secKey = mkAuthHandler h
                     , join $ lookup "access_token" $ Wai.queryString req
                     , lookup "Bearer" =<< parseCookies <$> lookup hCookie (Wai.requestHeaders req)
                     ] of
-            Nothing → throwE errNoAuth
+            Nothing → throwM errNoAuth
             Just tok →
               case decodeAndVerifySignature (secret secKey) (cs tok) of
-                Nothing → throwE errWrongAuth
+                Nothing → throwM errWrongAuth
                 Just decodedToken → do
                   -- !!! Only allow tokens issued by the current Host !!!
                   if (fromMaybe "" $ lookup "Host" $ Wai.requestHeaders req) == (cs $ show $ fromJust $ iss $ claims decodedToken)
                   then return decodedToken
-                  else throwE errWrongAuth
+                  else throwM errWrongAuth
 
 fromHeader ∷ ByteString → Maybe ByteString
 fromHeader "" = Nothing
@@ -104,13 +102,13 @@ postLogin host params = do
          Right (indieAuthRespParams ∷ [(Text, Text)]) → do
            let me = orEmptyMaybe $ lookup "me" indieAuthRespParams
            guardBool errWrongAuth $ Just domain == fmap (cs . uriRegName) (uriAuthority $ fromMaybe nullURI $ parseURI $ cs me)
-           $logWarn$ cs $ "Authenticated a client: " ++ fromMaybe "unknown" (lookup "client_id" params)
+           logWarn $ "Authenticated a client: " ++ display (fromMaybe "unknown" $ lookup "client_id" params)
            makeAccessToken domain me
                            (fromMaybe "post" $ lookup "scope" indieAuthRespParams)
                            (fromMaybe "" $ lookup "client_id" params)
          Left e → do
-           $logInfo$ cs $ "Authentication error: " ++ e ++ " / params: " ++ tshow params
-           throwError errWrongAuth
+           logInfo $ "Authentication error: " ++ display e ++ " / params: " ++ display (tshow params)
+           throwM errWrongAuth
 
 getSelfLogin ∷ Maybe Text → Maybe Text → Maybe Text → Maybe Text → Sweetroll NoContent
 getSelfLogin host me code scope = do
@@ -126,7 +124,7 @@ getSelfLogin host me code scope = do
                           , ("redirect_uri", "https://" ++ domain ++ "/login/self")
                           , ("client_id", "https://" ++ domain ++ "/")
                           , ("grant_type", "authorization_code") ]
-  throwError err303 { errHeaders = [ ("Set-Cookie", "Bearer=" ++ (cs $ accessToken result) ++ "; Path=/; Max-Age=5184000" ++ security)
+  throwM err303 { errHeaders = [ ("Set-Cookie", "Bearer=" ++ (cs $ accessToken result) ++ "; Path=/; Max-Age=5184000" ++ security)
                                    , (hLocation, "/") ] }
 
 errNoAuth ∷ ServantErr
@@ -138,7 +136,7 @@ errWrongAuth = errText err401 "Invalid auth token."
 errWrongAuthScope ∷ ServantErr
 errWrongAuthScope = errText err401 "Your access token is not authorized for this action."
 
-ensureScope ∷ MonadError ServantErr μ ⇒ JWT VerifiedJWT → ([Text] → Bool) → μ ()
+ensureScope ∷ MonadThrow μ ⇒ JWT VerifiedJWT → ([Text] → Bool) → μ ()
 ensureScope token p = guardBool errWrongAuthScope $ p scopes
   where scopes = words $ fromMaybe "" $ lookup "scope" $ unregClaims token
 
@@ -163,8 +161,7 @@ supportFormAuth app req respond = do
                      else loop $ front . (bs:)
           body ← loop id
           ichunks ← newIORef body
-          let rbody = atomicModifyIORef ichunks $ \chunks →
-                 case chunks of
+          let rbody = atomicModifyIORef ichunks $ \case
                      [] → ([], S8.empty)
                      x:y → (y, x)
           let rq' = rq { Wai.requestBody = rbody }

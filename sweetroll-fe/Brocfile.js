@@ -7,7 +7,7 @@ const MergeTrees = require('broccoli-merge-trees')
 const AssetRev = require('broccoli-static-asset-rev')
 const ConfigReplace = require('broccoli-config-replace')
 const SVGStore = require('broccoli-svgstore')
-const Zopfli = require('broccoli-zopfli')
+const Zopfli = require('@floatboth/broccoli-zopfli')
 const Brotli = require('broccoli-brotli')
 const { SourceMapExtractor } = require('broccoli-source-map')
 const Pug = require('broccoli-pug-render')
@@ -16,7 +16,7 @@ const Concat = require('broccoli-concat')
 
 const npmdeps = new Funnel('node_modules', {
 	include: [
-		'katex/dist/{*.css}',
+		'katex/dist/katex.css',
 		'katex/dist/fonts/*',
 		'@webcomponents/webcomponentsjs/*.js',
 		'web-animations-js/web-animations-next.min.js',
@@ -65,9 +65,9 @@ const icons = new SVGStore(
 	{ outputFile: 'icons.svg' }
 )
 
-let micropanel = new Funnel('../micro-panel/dist', {
+let micropanel = new Funnel('../micro-panel', {
 	destDir: 'micro-panel',
-	exclude: [ 'bower_components/{webcomponentsjs,web-animations-js,fetch}' ]
+	include: [ 'dist/*', 'icons/*', 'manifest.json' ]
 })
 
 let rev = new AssetRev([ npmdeps, micropanel, styles, icons ])
@@ -128,20 +128,6 @@ const errPages = new Pug([new MergeTrees([
 	siteSettings: { }
 })
 
-micropanel = new MergeTrees([
-	micropanel,
-	new ConfigReplace(
-		micropanel, rev, {
-			files: [ 'micro-panel/src/micro-panel.html' ],
-			configPath: 'assets.json',
-			patterns: [{
-				match: /['"]micro-panel\.js['"]/g,
-				replacement: (assets, match, url) => `"/dist/micro-panel/src/micro-panel.js?${assets['micro-panel/src/micro-panel.js']}"`
-			}]
-		}
-	)
-], { overwrite: true })
-
 const all = new MergeTrees([
 	npmdeps, micropanel, scripts, sw, styles, icons, errPages
 ])
@@ -152,4 +138,4 @@ module.exports = process.env.SKIP_COMPRESSION ? all : new MergeTrees([
 	all,
 	new Zopfli(all, { extensions: compressExts }),
 	new Brotli(all, { extensions: compressExts })
-])
+], { overwrite: true })

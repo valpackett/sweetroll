@@ -22,7 +22,6 @@ const userAgent = 'Sweetroll'
 const assets = require('dynamic-asset-rev')('dist')
 const log = require('debug')('sweetroll-fe')
 const sse = require('sse-broadcast')({ compression: true })
-const relaxCSP = env.RELAX_CSP // Mainly for micro-panel development
 const isProxied = env.IS_PROXIED // Whether to trust X-Forwarded-Proto
 const cacheTemplates = env.CACHE_TEMPLATES // Do not recompile templates on every request. Enable in prod for perf boost
 const cache = env.DO_CACHE ? require('lru-cache')({
@@ -33,7 +32,6 @@ const websubHub = env.WEBSUB_HUB || 'https://switchboard.p3k.io'
 const websubHubMode = env.WEBSUB_HUB_MODE || 'multi' // Whether to do one request for all URLs affected by a change or one request per URL
 const indieAuthEndpoint = env.INDIEAUTH_ENDPOINT || 'https://indieauth.com/auth'
 const mediaEndpoint = env.MEDIA_ENDPOINT || '/micropub/media'
-const microPanelRoot = env.MICRO_PANEL_ROOT || '/dist/micro-panel' // To allow using the unpacked version of micro-panel in development
 const webmentionOutbox = env.WEBMENTION_OUTBOX // Allow using an external sender like Telegraph, default to sending on our own
 const webmentionOutboxConf = JSON.parse(env.WEBMENTION_OUTBOX_CONF || '{}') // Something like {token: '...'} for Telegraph
 const allowedCdns = env.ALLOWED_CDNS || '' // List of allowed CDN domains for Content-Security-Policy
@@ -400,9 +398,9 @@ const addCommonContext = async (ctx, next) => {
 		reqUriFull: ctx.reqUriFull,
 		requestUriStr: ctx.reqUriFullStr,
 		auth: ctx.auth,
+		authedAsAdmin: ctx.auth && new URI(ctx.auth.sub).equals(ctx.domainUri),
 		// App settings
 		indieAuthEndpoint,
-		microPanelRoot,
 		vapidKeys,
 		granaries,
 		// Pug settings
@@ -420,11 +418,13 @@ const addCommonContext = async (ctx, next) => {
 	ctx.link.set({ rel: 'self', uri: ctx.reqUriStr })
 	await next()
 	ctx.response.set('Link', ctx.link.toString())
-	// data: URI scripts are made by the HTML Imports polyfill, but that doesn't prevent buildled micro-panel from working
 	const connectSrc = `connect-src 'self' ${mediaEndpoint.startsWith('/') ? '' : mediaEndpoint}`
-	const scriptSrc = `script-src 'self' 'unsafe-eval' ${relaxCSP ? "data: 'unsafe-inline'" : "'sha256-8F+MddtNx9BXjGv2NKerT8QvmcOQy9sxZWMR6gaJgrU='"}`
+	const scriptSrc = `script-src 'self' 'unsafe-eval'`
+	const styleSrc = `style-src 'self' data: 'unsafe-inline'`
+	const imgSrc = `img-src 'self' https: data:`
+	const mediaSrc = `media-src 'self' ${allowedCdns}`
 	const formAction = `form-action 'self' ${indieAuthEndpoint.startsWith('/') ? '' : indieAuthEndpoint}`
-	ctx.response.set('Content-Security-Policy', `default-src 'self'; ${scriptSrc}; style-src 'self' data: 'unsafe-inline'; img-src 'self' https: data:; media-src 'self' ${allowedCdns}; ${connectSrc}; ${formAction}${relaxCSP ? '' : "; frame-ancestors 'none'"}`)
+	ctx.response.set('Content-Security-Policy', `default-src 'self'; ${scriptSrc}; ${styleSrc}; ${imgSrc}; ${mediaSrc}; ${connectSrc}; ${formAction}; frame-ancestors 'none'`)
 	ctx.response.set('X-Frame-Options', 'DENY')
 	ctx.response.set('X-XSS-Protection', '1; mode=block')
 	ctx.response.set('X-Content-Type-Options', 'nosniff')

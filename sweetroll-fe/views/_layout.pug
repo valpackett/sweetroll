@@ -1,6 +1,5 @@
 include /_entry.pug
 
-- const authedAsAdmin = auth && new URI(auth.sub).equals(domainUri)
 doctype html
 html(lang=_.get(siteSettings, 'site-lang', 'en'))
 	head
@@ -11,6 +10,9 @@ html(lang=_.get(siteSettings, 'site-lang', 'en'))
 			link(rel="stylesheet" href=assets.url(`dist/highlight.js/styles/${_.get(siteSettings, 'code-highlight-theme', 'github')}.css`))
 			if siteCss && siteCss.length > 0
 				link(rel="stylesheet" href=`/custom.css?rev=${revHash(siteCss.join('\n'))}`)
+			noscript
+				//- normally, it's conditionally loaded via js to save traffic
+				link(rel="stylesheet" href=assets.url('dist/katex/dist/katex.css'))
 			if siteSettings
 				block title
 					-
@@ -25,17 +27,17 @@ html(lang=_.get(siteSettings, 'site-lang', 'en'))
 			each fmtlink in granaries || []
 				link(rel="alternate" type=fmtlink.type href=`${fmtlink.base}&url=${encodeURIComponent(reqUri.toString())}`)
 			if authedAsAdmin
-				link(rel='import' href=(microPanelRoot === '/dist/micro-panel' ? assets.url('dist/micro-panel/src/micro-panel.html') : microPanelRoot + '/src/micro-panel.html'))
-				link(rel='manifest' href=(microPanelRoot === '/dist/micro-panel' ? assets.url('dist/micro-panel/manifest.json') : microPanelRoot + '/manifest.json'))
-				link(rel='apple-touch-icon' sizes='180x180' href=microPanelRoot + '/icons/apple-touch-icon.png')
-				link(rel='mask-icon' href=microPanelRoot + '/icons/mask-icon.svg' color='#5bbad5')
-				link(rel='icon' type='image/x-icon' href=microPanelRoot + '/icons/favicon.ico')
-				link(rel='icon' type='image/png' sizes='32x32' href=microPanelRoot + '/icons/favicon-32x32.png')
+				link(rel='manifest' href=assets.url('dist/micro-panel/manifest.json'))
+				link(rel='apple-touch-icon' sizes='180x180' href=assets.url('dist/micro-panel/icons/apple-touch-icon.png'))
+				link(rel='mask-icon' href=assets.url('dist/micro-panel/icons/mask-icon.svg') color='#5bbad5')
+				link(rel='icon' type='image/x-icon' href=assets.url('dist/micro-panel/icons/favicon.ico'))
+				link(rel='icon' type='image/png' sizes='32x32' href=assets.url('dist/micro-panel/icons/favicon-32x32.png'))
 				meta(name='theme-color' content='#00897b')
 				meta(name='vapid-pubkey' content=vapidKeys.publicKey)
 	body
 		if authedAsAdmin
-			| <micro-panel force-micropub-source>
+			micro-panel-toolbar
+			micro-panel-editor(hidden micropub='/micropub')
 		block body
 			.site-content("class"=obj && obj.type)
 				header#author.site-header.h-card.p-author
@@ -97,5 +99,3 @@ html(lang=_.get(siteSettings, 'site-lang', 'en'))
 			block scripts
 				script(defer src=assets.url('dist/site.js'))
 				script(defer src=assets.url('dist/svgxuse/svgxuse.min.js'))
-		if authedAsAdmin
-			| </micro-panel>

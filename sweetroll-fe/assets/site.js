@@ -42,10 +42,10 @@ function loadCss (u) {
 	})
 }
 
-// We know these elements only use Custom Elements v1. Skip the loader and HTML imports to load faster.
+const hasPanel = document.querySelector('micro-panel-editor')
 
 function loadComponents () {
-	if (document.querySelector('indie-action')) {
+	if (!hasPanel && document.querySelector('indie-action')) {
 		loadJs('/dist/indieweb-components/indie-action.js')
 	}
 	if (document.querySelector('fragmention-target')) {
@@ -55,20 +55,17 @@ function loadComponents () {
 	if (document.querySelector('simple-live')) {
 		loadJs('/dist/indieweb-components/simple-live.js')
 	}
+	if (hasPanel) {
+		loadJs('/dist/micro-panel/dist/micro-panel-all.bundle.min.js')
+	}
 }
 
-var hasPanel = document.querySelector('micro-panel')
-
-if (hasPanel && !('KeyframeEffect' in window && 'timeline' in document && 'play' in document.timeline)) {
-	loadJs('/dist/web-animations-js/web-animations-next.min.js')
-}
-
-if ('customElements' in window && (!hasPanel || ('import' in document.createElement('link')))) {
+if ('customElements' in window && ('attachShadow' in HTMLElement.prototype || !hasPanel)) {
 	loadComponents()
 } else {
 	window.addEventListener('WebComponentsReady', loadComponents)
 	if (!hasPanel) {
-		// No need for Shady DOM unless using micro-panel (Polymer)
+		// No need for Shady DOM unless using micro-panel (lit-element)
 		Element.prototype.attachShadow = true
 		Element.prototype.getRootNode = true
 	}

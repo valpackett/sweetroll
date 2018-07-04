@@ -43,7 +43,7 @@ mixin showContent(properties, { preferSummary, stronglyPreferSummary, showRels, 
 	if !_.isEmpty(properties['x-content-warning'])
 		| </div>
 
-mixin showMeta(entry, comments, permalink, compactView)
+mixin showMeta(entry, comments, permalinkAbs, compactView)
 	-
 		const properties = entry.properties || {}
 		const dateFormat = compactView ? 'MMM Do YYYY, HH:mm' : 'dddd, MMMM Do YYYY, HH:mm'
@@ -57,10 +57,10 @@ mixin showMeta(entry, comments, permalink, compactView)
 					= ftag
 					| 
 		if _.isEmpty(properties['like-of']) && _.isEmpty(properties['bookmark-of'])
-			+showActions(entry, permalink)
+			+showActions(entry, permalinkAbs)
 		| / posted on 
 		time.dt-published(datetime=_.head(properties.published))
-			a.u-url.u-uid.note-permalink(rel=compactView ? '' : 'bookmark' href=permalink)
+			a.u-url.u-uid.note-permalink(rel=compactView ? '' : 'bookmark' href=permalinkAbs)
 				= moment.utc(_.head(properties.published)).format(dateFormat)
 		if !_.isEmpty(mfeeds)
 			|  in
@@ -116,6 +116,10 @@ mixin showActions(entry, permalink)
 				twitterId
 					? 'https://twitter.com/intent/' + act + '?' + (act == 'reply' ? 'in_reply_to' : 'tweet_id') + '=' + twitterId
 					: 'javascript:void(0)// ' + (act == 'retweet' ? 'repost' : act) + ' using indie-config. do not open this in a new tab. see https://indieweb.org/indie-config for info.'
+		if authedAsAdmin
+			micro-panel-action(with=permalink)
+				button
+					| Edit
 		indie-action(do="reply" with=permalink)
 			a(href=twitterLink('reply'))
 				+icon('reply')
@@ -190,7 +194,8 @@ mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, sh
 mixin showEntry(entry, compactView)
 	-
 		const properties = entry.properties || {}
-		const permalink = relativeUrl(_.get(properties, 'url[0]'))
+		const permalinkAbs = _.get(properties, 'url[0]')
+		const permalink = relativeUrl(permalinkAbs)
 		const props = { reposts: 'p-repost', likes: 'p-like', bookmarks: 'p-bookmark', quotations: 'p-quotation' }
 		const comments = helpers.separateComments(properties.url, properties.comment || [])
 		const acl = (entry.acl || []).filter(u => u !== '*')
@@ -246,7 +251,7 @@ mixin showEntry(entry, compactView)
 				|  
 	+showContent(properties, { preferSummary: compactView, stronglyPreferSummary: compactView, showRels: !compactView, permalink })
 	footer.entry-footer
-		+showMeta(entry, comments, permalink, compactView)
+		+showMeta(entry, comments, permalinkAbs, compactView)
 		if !compactView
 			each reactions, name in comments || {}
 				if name != 'replies' && !_.isEmpty(reactions)

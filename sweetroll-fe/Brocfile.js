@@ -19,7 +19,6 @@ const npmdeps = new Funnel('node_modules', {
 		'katex/dist/katex.css',
 		'katex/dist/fonts/*',
 		'@webcomponents/webcomponentsjs/*.js',
-		'web-animations-js/web-animations-next.min.js',
 		'findandreplacedomtext/src/*.js',
 		'svgxuse/*.min.js',
 		'localforage/dist/localforage.js',
@@ -98,7 +97,7 @@ const sw = new ConfigReplace(
 			match: /PRECACHED_ASSETS\s*=\s*\[\]/g,
 			replacement: (assets, _) => `PRECACHED_ASSETS = ${JSON.stringify(
 				Object.keys(assets)
-					.filter(url => !url.includes('micro-panel') && !url.includes('web-animation') && !url.includes('katex') && !url.includes('highlight.js'))
+					.filter(url => !url.includes('micro-panel') && !url.includes('katex') && !url.includes('highlight.js'))
 					.map(url => `/dist/${url}?${assets[url]}`))}`
 		}]
 	}

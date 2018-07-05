@@ -77,3 +77,7 @@ block append main
 			a(href=href rel="next")
 				+icon('arrow-up')
 				| newer
+		if authedAsAdmin
+			micro-panel-action(with=_.get(obj, 'properties.url[0]'))
+				button
+					| Edit feed config

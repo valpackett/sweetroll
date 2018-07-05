@@ -57,8 +57,6 @@ html(lang=_.get(siteSettings, 'site-lang', 'en'))
 									if isCurrentPage
 										span= name
 										data.p-name(value=`${name} / ${siteSettings && siteSettings['site-name']}`)
-										if authedAsAdmin
-											data.p-editing-url(value=_.get(feed, 'properties.url[0]'))
 									else
 										a(href=relativeUrl(_.get(feed, 'properties.url[0]')) rel="feed" type="text/html" title=`${name} / ${siteSettings && siteSettings['site-name']}`)= name
 				block site-tags

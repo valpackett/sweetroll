@@ -69,6 +69,7 @@
     "promised-retry": "^0.2.3",
     "pug": "^2.0.3",
     "pug-plugin-try-catch": "^1.2.0",
+    "qs": "^6.5.2",
     "remark": "^9.0.0",
     "remark-highlight.js": "^5.0.0",
     "remark-html": "^7.0.0",

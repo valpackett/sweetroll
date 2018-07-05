@@ -27,6 +27,9 @@ function loadJs (u) {
 		el.src = u
 		el.onload = resolve
 		el.onerror = reject
+		if (u.includes('micro-panel')) {
+			el.setAttribute('data-manual', true) // prevent Prism from rehighlighting code on the page :D
+		}
 		document.body.appendChild(el)
 	})
 }

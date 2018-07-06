@@ -1,0 +1,15 @@
+doctype html
+meta(charset="utf-8")
+- const lol = '__WITH__' // do not encode '{url}' into '%7Burl%7D', we're making uri templates
+- const mklink = prop => domainUri.clone().addQuery('mp-reaction', prop).addQuery('with', lol).toString().replace(lol, '{url}')
+script.
+	(function() {
+		if (window.parent !== window) {
+			window.parent.postMessage(JSON.stringify({
+				reply: '!{mklink("in-reply-to")}',
+				like: '!{mklink("like-of")}',
+				repost: '!{mklink("repost-of")}',
+				bookmark: '!{mklink("bookmark-of")}',
+			}), '*');
+		}
+	}());

@@ -77,6 +77,7 @@ html(lang=_.get(siteSettings, 'site-lang', 'en'))
 								button Search
 					block login-form
 						if auth
+							button(data-indie-config=domainUri.clone().path('/_indie-config').addQuery('handler', '_DOOT_').toString().replace('_DOOT_', '%s')) Setup indie-config
 							form(method="post" action="/logout").logout-form
 								button Log out
 						else if domainUri

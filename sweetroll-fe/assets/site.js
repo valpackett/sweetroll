@@ -21,6 +21,13 @@ for (i = 0; i < reloaders.length; i++) {
 	})
 }
 
+const indconfs = document.querySelectorAll('[data-indie-config]')
+for (i = 0; i < indconfs.length; i++) {
+	indconfs[i].addEventListener('click', function (e) {
+		navigator.registerProtocolHandler('web+action', e.target.dataset.indieConfig, 'micro-panel')
+	})
+}
+
 function loadJs (u) {
 	return new Promise(function (resolve, reject) {
 		const el = document.createElement('script')

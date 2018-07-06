@@ -270,6 +270,15 @@ const logoutHandler = async (ctx, next) => {
 	return next()
 }
 
+const indieConfigHandler = async ({ response, tplctx, cashed }, next) => {
+	if (cache && await cashed(100 * 2 * 60 * 1000)) {
+		return
+	}
+	response.body = await render('indieconfig.pug', tplctx)
+	response.set('Content-Security-Policy', `default-src 'self'; script-src 'unsafe-inline'; frame-ancestors http: https:`)
+	return next()
+}
+
 const customCssHandler = async ({ request, response, auth, domainUriStr, cashed }, next) => {
 	if (cache && !auth && await cashed(2 * 60 * 1000)) return
 	response.type = 'text/css'
@@ -321,7 +330,9 @@ const searchHandler = async ({ request, response, auth, domainUriStr, tplctx }, 
 
 const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull, domainUriStr, reqUriStr, reqUriFullStr, tplctx, cashed }, next) => {
 	/// SW TEST: await new Promise(res => setTimeout(res, 6000)); response.status = 500; return 0
-	if (cache && !auth && await cashed(2 * 60 * 1000)) return
+	if (cache && !auth && await cashed(2 * 60 * 1000)) {
+		return
+	}
 	// TODO don't fetch twice when domain URI == request URI (i.e. home page)
 	const perPage = reqUriStr.endsWith('/kb') ? 999999 : 20 // XXX: ugly hardcode but avoids a roundtrip :D
 	const { dobj, obj, feeds, tags } = await db.row(SQL`SELECT
@@ -421,14 +432,17 @@ const addCommonContext = async (ctx, next) => {
 	ctx.link.set({ rel: 'self', uri: ctx.reqUriStr })
 	await next()
 	ctx.response.set('Link', ctx.link.toString())
-	const connectSrc = `connect-src 'self' ${mediaEndpoint.startsWith('/') ? '' : mediaEndpoint}`
 	const scriptSrc = `script-src 'self' 'unsafe-eval'`
 	const styleSrc = `style-src 'self' data: 'unsafe-inline'`
 	const imgSrc = `img-src 'self' https: data:`
 	const mediaSrc = `media-src 'self' ${allowedCdns}`
+	const connectSrc = `connect-src 'self' ${mediaEndpoint.startsWith('/') ? '' : mediaEndpoint}`
+	const frameSrc = `frame-src web+action: https:`
 	const formAction = `form-action 'self' ${indieAuthEndpoint.startsWith('/') ? '' : indieAuthEndpoint}`
-	ctx.response.set('Content-Security-Policy', `default-src 'self'; ${scriptSrc}; ${styleSrc}; ${imgSrc}; ${mediaSrc}; ${connectSrc}; ${formAction}; frame-ancestors 'none'`)
-	ctx.response.set('X-Frame-Options', 'DENY')
+	if (!ctx.response.get('Content-Security-Policy')) {
+		ctx.response.set('Content-Security-Policy', `default-src 'self'; ${scriptSrc}; ${styleSrc}; ${imgSrc}; ${mediaSrc}; ${connectSrc}; ${frameSrc}; ${formAction}; frame-ancestors 'none'`)
+		ctx.response.set('X-Frame-Options', 'DENY')
+	}
 	ctx.response.set('X-XSS-Protection', '1; mode=block')
 	ctx.response.set('X-Content-Type-Options', 'nosniff')
 }
@@ -465,6 +479,7 @@ if (!env.NO_SERVE_DIST) {
 router.addRoute('GET', '/live', liveHandler)
 router.addRoute('GET', '/robots.txt', robotsHandler)
 router.addRoute('POST', '/logout', logoutHandler)
+router.addRoute('GET', '/_indie-config', compose([addAuth, addCommonContext, koaCache, indieConfigHandler].filter(isObject)))
 router.addRoute('GET', '/custom.css', compose([addAuth, addCommonContext, koaCache, customCssHandler].filter(isObject)))
 router.addRoute('GET', '/search', compose([addAuth, addCommonContext, koaCache, searchHandler].filter(isObject)))
 router.options.notFound = compose([addAuth, addCommonContext, koaCache, handler].filter(isObject))

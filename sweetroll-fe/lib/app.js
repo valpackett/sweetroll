@@ -400,6 +400,7 @@ const addCommonContext = async (ctx, next) => {
 		auth: ctx.auth,
 		authedAsAdmin: ctx.auth && new URI(ctx.auth.sub).equals(ctx.domainUri),
 		// App settings
+		mediaEndpoint,
 		indieAuthEndpoint,
 		vapidKeys,
 		granaries,

@@ -32,6 +32,7 @@ const websubHub = env.WEBSUB_HUB || 'https://switchboard.p3k.io'
 const websubHubMode = env.WEBSUB_HUB_MODE || 'multi' // Whether to do one request for all URLs affected by a change or one request per URL
 const indieAuthEndpoint = env.INDIEAUTH_ENDPOINT || 'https://indieauth.com/auth'
 const mediaEndpoint = env.MEDIA_ENDPOINT || '/micropub/media'
+const mediaAuthToken = env.MEDIA_AUTH_TOKEN // Simple token auth for having the endpoint on a different domain & keeping cookies httpOnly
 const webmentionOutbox = env.WEBMENTION_OUTBOX // Allow using an external sender like Telegraph, default to sending on our own
 const webmentionOutboxConf = JSON.parse(env.WEBMENTION_OUTBOX_CONF || '{}') // Something like {token: '...'} for Telegraph
 const allowedCdns = env.ALLOWED_CDNS || '' // List of allowed CDN domains for Content-Security-Policy
@@ -401,6 +402,7 @@ const addCommonContext = async (ctx, next) => {
 		authedAsAdmin: ctx.auth && new URI(ctx.auth.sub).equals(ctx.domainUri),
 		// App settings
 		mediaEndpoint,
+		mediaAuthToken,
 		indieAuthEndpoint,
 		vapidKeys,
 		granaries,

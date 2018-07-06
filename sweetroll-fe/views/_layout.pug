@@ -37,7 +37,7 @@ html(lang=_.get(siteSettings, 'site-lang', 'en'))
 	body
 		if authedAsAdmin
 			micro-panel-toolbar
-			micro-panel-editor(hidden micropub='/micropub' media=mediaEndpoint)
+			micro-panel-editor(hidden micropub='/micropub' media=mediaEndpoint mediatoken=mediaAuthToken)
 		block body
 			.site-content("class"=obj && obj.type)
 				header#author.site-header.h-card.p-author

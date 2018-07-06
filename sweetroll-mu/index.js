@@ -64,6 +64,10 @@ switch ((env.UPLOAD_BACKEND || 'fs').toLowerCase()) {
 	default: uploadBackend = backendFs(); break
 }
 
+function tokenAuth (ctx) {
+	return env.MEDIA_AUTH_TOKEN && (ctx.headers.authorization || '').includes(env.MEDIA_AUTH_TOKEN)
+}
+
 const proc = require('./lib/proc')
 const getStream = require('get-stream')
 const common = require('../sweetroll-node-common')
@@ -72,7 +76,13 @@ const app = new Koa()
 app.use(common.authentication(log, require('jsonwebtoken').verify))
 app.use(require('koa-busboy')({}))
 app.use(async (ctx, next) => {
-	if (!ctx.auth) {
+	ctx.response.set('Access-Control-Allow-Origin', '*')
+	ctx.response.set('Access-Control-Allow-Headers', 'Authorization')
+	if (ctx.request.method === 'OPTIONS') {
+		ctx.response.status = 200
+		return next()
+	}
+	if (!ctx.auth && !tokenAuth(ctx)) {
 		ctx.response.status = 401
 		ctx.response.set('WWW-Authenticate', 'Bearer')
 		return next()

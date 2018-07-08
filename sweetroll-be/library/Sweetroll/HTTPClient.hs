@@ -26,23 +26,24 @@ import           Sweetroll.Conf (mf2Options)
 performWithHtml ∷ Request → ExceptT Text Sweetroll (Response XDocument)
 performWithHtml = performWithFn (.| sinkDoc) . (\req → req { requestHeaders = [ (hAccept, "text/html; charset=utf-8") ] })
 
-fetchEntryWithAuthors ∷ URI → Response XDocument → ExceptT Text Sweetroll (Maybe Value, Value)
-fetchEntryWithAuthors uri res = do
+fetchEntriesWithAuthors ∷ URI → Response XDocument → ExceptT Text Sweetroll ([Value], Value)
+fetchEntriesWithAuthors uri res = do
   let mf2Options' = mf2Options { baseUri = Just uri }
       mfRoot = parseMf2 mf2Options' $ documentRoot $ responseBody res
-  he ← case headMay =<< allMicroformatsOfType "h-entry" mfRoot of
-    Just mfEntry@(mfE, _) → do
+      allMfs = fromMaybe [] $ allMicroformatsOfType "h-entry" mfRoot
+        <|> (map (\x → [(x, [])]) $ parseTwitter mf2Options' $ documentRoot $ responseBody res)
+  he ← forM allMfs $ \mfEntry@(mfE, _) → do
       let fetch uri' = fmap (\x → responseBody <$> hush x) $ runHTTP $ reqU uri' >>= performWithHtml
       authors ← lift $ entryAuthors mf2Options' fetch uri mfRoot mfEntry
       let addAuthors (Object o) = Object $ adjust addAuthors' "properties" o
           addAuthors x = x
           addAuthors' (Object o) = Object $ insertMap "author" (Array $ fromList $ fromMaybe [] authors) o
           addAuthors' x = x
-      return $ Just $ addAuthors mfE
-    _ → return $ parseTwitter mf2Options' $ documentRoot $ responseBody res
-  return $ case he of
-             Just mfE → (Just mfE, mfRoot)
-             _ → (Nothing, mfRoot)
+      return $ addAuthors mfE
+  return (he, mfRoot)
+
+fetchEntryWithAuthors ∷ URI → Response XDocument → ExceptT Text Sweetroll (Maybe Value, Value)
+fetchEntryWithAuthors uri res = (& _1 %~ headMay) <$> fetchEntriesWithAuthors uri res
 
 fetchLinkedEntires' ∷ Int → Set URI → Set URI → Object → Sweetroll Object
 fetchLinkedEntires' 0 _ _ props = return props

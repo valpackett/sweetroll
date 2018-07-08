@@ -4,10 +4,10 @@ synopsis: A micro+blogging (IndieWeb) engine with curved swords. Curved! Swords!
 category: Web
 author: Greg V
 maintainer: greg@unrelenting.technology
-copyright: 2014-2017 Greg V <greg@unrelenting.technology>
+copyright: 2014-2018 Greg V <greg@unrelenting.technology>
 license: PublicDomain
 github: myfreeweb/sweetroll
-tested-with: GHC==8.2.1
+tested-with: GHC==8.4.3
 dependencies:
   - base >=4.8.0.0 && <5
   - cryptonite

@@ -8,6 +8,9 @@
         "site-name": "unrelenting.technology"
       }
     ],
+    "site-css": [
+      ":root { --text-color: red; }"
+    ],
     "feed-settings": [
       {
         "show-in-nav": true,

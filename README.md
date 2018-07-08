@@ -22,6 +22,7 @@ I'm running it on [my website](https://unrelenting.technology).
 [kinds of content]: https://indieweb.org/posts
 [Haskell]: https://www.haskell.org
 [Node.js]: https://nodejs.org/en/
+[mf2sql]: https://github.com/myfreeweb/mf2sql
 
 [Microformats2]: http://microformats.org/wiki/microformats2
 [Micropub]: https://indieweb.org/micropub
@@ -31,38 +32,11 @@ I'm running it on [my website](https://unrelenting.technology).
 [readers]: https://indieweb.org/readers
 [Granary]: https://granary-demo.appspot.com
 
-## Usage
+## Installation
 
 *Installing Sweetroll on a server requires some UNIX sysadmin skills. If you can't do it, ask your friends for help or check out [other IndieWeb projects](https://indieweb.org/projects): some of them have hosted versions, some run on shared PHP hosting.*
 
-### Running on a server
-
-Set up a Postgres database with the [mf2sql] schema.
-
-Copy the binary to the server (using `scp`, usually).
-
-Create a user account on the server (for example, `sweetroll`).
-
-And configure your favorite service management program (don't forget to replace everything with your values!) to run Sweetroll as that user!
-
-Here's an example for [runit](http://smarden.org/runit/index.html):
-
-```bash
-#!/bin/sh
-
-umask g+w
-export SWEETROLL_HTTPS_WORKS=True # this means HTTPS is *working*! i.e. you have it set up on your reverse proxy!
-export SWEETROLL_DOMAIN=unrelenting.technology # your actual domain!
-export SWEETROLL_SECRET="GENERATE YOUR LONG PSEUDORANDOM VALUE!...2MGy9ZkKgzexRpd7vl8" 
-exec chpst -u sweetroll /home/sweetroll/.local/bin/sweetroll
-        --protocol=unix --socket=/var/run/sweetroll/sock \
-  # or: --protocol=http --port=3030 \
-        2>&1
-```
-
-TODO same for frontend
-
-(Use something like `head -c 1024 < /dev/random | openssl dgst -sha512` to get the random value for the `secret`. No, not dynamically in the script. Copy and paste the value into the script. Otherwise you'll be logged out on every restart.)
+[Read the Docs](https://sweetroll.readthedocs.io/en/latest/) for installation instructions!
 
 ## TODO
 
@@ -86,5 +60,3 @@ TODO same for frontend
 
 This is free and unencumbered software released into the public domain.  
 For more information, please refer to the `UNLICENSE` file or [unlicense.org](http://unlicense.org).
-
-[mf2sql]: https://github.com/myfreeweb/mf2sql

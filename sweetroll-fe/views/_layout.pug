@@ -53,12 +53,13 @@ html(lang=_.get(siteSettings, 'site-lang', 'en'))
 								- const isCurrentPage = reqUri.equals(_.get(feed, 'properties.url[0]'))
 								if _.get(feed, 'properties.feed-settings[0].show-in-nav') !== false || isCurrentPage
 									- const name = helpers.insertParams(_.get(feed, 'properties.name[0]', 'Unnamed feed'), reqUriFull.search(true))
+									- const catname = _.get(feed, 'properties.filter[0].category[0]')
 									|  
 									if isCurrentPage
 										span= name
-										data.p-name(value=`${name} / ${siteSettings && siteSettings['site-name']}`)
+										data.p-name(value=`${name} / ${siteSettings && siteSettings['site-name']}` data-mf-category=catname)
 									else
-										a(href=relativeUrl(_.get(feed, 'properties.url[0]')) rel="feed" type="text/html" title=`${name} / ${siteSettings && siteSettings['site-name']}`)= name
+										a(href=relativeUrl(_.get(feed, 'properties.url[0]')) rel="feed" type="text/html" title=`${name} / ${siteSettings && siteSettings['site-name']}` data-mf-category=catname)= name
 				block site-tags
 					nav.site-tags
 						- const tagfeed = _.head(helpers.matchingFeeds(siteFeeds, {properties: {category: ['--TAG-HERE--']}}).filter(feed => !(_.get(feed, 'params.tag', '').startsWith('_'))))

@@ -436,7 +436,7 @@ const addCommonContext = async (ctx, next) => {
 	const styleSrc = `style-src 'self' data: 'unsafe-inline'`
 	const imgSrc = `img-src 'self' https: data:`
 	const mediaSrc = `media-src 'self' ${allowedCdns}`
-	const connectSrc = `connect-src 'self' ${mediaEndpoint.startsWith('/') ? '' : mediaEndpoint}`
+	const connectSrc = `connect-src 'self' ${mediaEndpoint.startsWith('/') ? '' : mediaEndpoint} https://*.openstreetmap.org`
 	const frameSrc = `frame-src web+action: https:`
 	const formAction = `form-action 'self' ${indieAuthEndpoint.startsWith('/') ? '' : indieAuthEndpoint}`
 	if (!ctx.response.get('Content-Security-Policy')) {

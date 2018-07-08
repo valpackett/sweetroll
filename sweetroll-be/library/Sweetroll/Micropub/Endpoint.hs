@@ -96,8 +96,13 @@ respNoContent = ServantErr { errHTTPCode = 204
                            , errBody    = "" }
 
 decideSlug ∷ ObjProperties → UTCTime → String
-decideSlug props now = unpack . fromMaybe fallback $ getProp "mp-slug" <|> getProp "slug"
-  where fallback = smartSlugify . fromMaybe (formatTimeSlug now) $ getProp "name"
+decideSlug props now = unpack . fromMaybe autoSlug $ nonEmpty $ getProp "mp-slug" <|> getProp "slug"
+  where -- Omnibear (https://indieweb.org/Omnibear) likes to send mp-slug="", which caused replies posted as "/replies/".
+        -- Reject that and all-whitespace slugs too.
+        nonEmpty (Just "") = Nothing
+        nonEmpty (Just x) | all C.isSpace x = Nothing
+        nonEmpty x = x
+        autoSlug = smartSlugify . fromMaybe (formatTimeSlug now) $ getProp "name"
         formatTimeSlug = pack . formatTime defaultTimeLocale "%Y-%m-%d-%H-%M-%S"
         getProp k = firstStr (Object props) (key k)
         -- take WikiStyleTitles into slugs as-is (without lowercasing), for KnowledgeBase posts

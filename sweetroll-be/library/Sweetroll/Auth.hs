@@ -27,8 +27,8 @@ import           Sweetroll.Conf
 type instance AuthServerData (AuthProtect "jwt") = JWT VerifiedJWT
 
 instance HasLink sub ⇒ HasLink (AuthProtect "jwt" :> sub) where
-  type MkLink (AuthProtect "jwt" :> sub) = MkLink sub
-  toLink _ = toLink (Proxy ∷ Proxy sub)
+  type MkLink (AuthProtect "jwt" :> sub) a = MkLink sub a
+  toLink toA _ = toLink toA (Proxy ∷ Proxy sub)
 
 data AccessToken = AccessToken
   { accessToken ∷ Text

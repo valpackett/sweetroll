@@ -6,7 +6,7 @@
 const cacheTemplates = process.env.CACHE_TEMPLATES // Do not recompile templates on every request. Enable in prod for perf boost
 const _ = require('lodash')
 const { head, some, trim, get, eq, includes, concat, sortBy, capitalize,
-	flatMap, isString, isArray, isObject, difference } = _
+	flatMap, isString, isArray, isObject, compact, difference } = _
 const { count: countEmoji } = require('emoji-king')
 const pug = require('pug')
 const URI = require('urijs')
@@ -168,12 +168,12 @@ module.exports = {
 	},
 
 	getContent (properties, { preferSummary, onlySummary }) {
-		const content = head(onlySummary ? properties.summary : (
+		const content = head(compact(onlySummary ? properties.summary : (
 			preferSummary
 				? concat(properties.summary || [], properties.content || [], properties.name || [])
 				: concat(properties.content || [], properties.summary || [], properties.name || [])
 			)
-		) || ''
+		)) || ''
 		return this.getHtml(content)
 	},
 

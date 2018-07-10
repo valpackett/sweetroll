@@ -14,7 +14,7 @@ import           Sweetroll.Micropub.Endpoint
 import           Sweetroll.Webmention.Receive
 
 sweetrollServerT ∷ ServerT SweetrollAPI Sweetroll
-sweetrollServerT = postLogin :<|> getAuth :<|> getSelfLogin
+sweetrollServerT = postLogin :<|> getAuth :<|> getSelfLogin :<|> getTestLogin
                   :<|> postMicropub :<|> getMicropub
                   :<|> receiveWebmention
 

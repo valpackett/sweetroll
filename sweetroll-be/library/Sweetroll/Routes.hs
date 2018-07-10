@@ -14,11 +14,12 @@ type Auth = AuthProtect "jwt"
 type PostLoginRoute           = "login" :> Host :> Form :> Post '[FormUrlEncoded, JSON] AccessToken
 type GetLoginRoute            = "login" :> Auth :> Get '[FormUrlEncoded] [(Text, Text)]
 type GetSelfLoginRoute        = "login" :> "self" :> Host :> QueryParam "me" Text :> QueryParam "code" Text :> QueryParam "scope" Text :> Get '[FormUrlEncoded] NoContent
+type GetTestLoginRoute        = "login" :> "test" :> Host :> QueryParam "state" Text :> QueryParam "redirect_uri" Text :> Get '[FormUrlEncoded] NoContent
 type PostMicropubRoute        = "micropub" :> Auth :> Host :> ReqBody '[FormUrlEncoded, JSON] MicropubRequest :> PostCreated '[FormUrlEncoded, JSON] (Headers '[Header "Location" Text] MicropubResponse)
 type GetMicropubRoute         = "micropub" :> Auth :> Host :> QueryParam "q" Text :> QueryParams "properties" Text :> QueryParam "url" Text :> Get '[JSON, FormUrlEncoded] MicropubResponse
 type PostWebmentionRoute      = "webmention" :> Form :> PostAccepted '[JSON] NoContent
 
-type SweetrollAPI             = PostLoginRoute :<|> GetLoginRoute :<|> GetSelfLoginRoute
+type SweetrollAPI             = PostLoginRoute :<|> GetLoginRoute :<|> GetSelfLoginRoute :<|> GetTestLoginRoute
                            :<|> PostMicropubRoute :<|> GetMicropubRoute
                            :<|> PostWebmentionRoute
 

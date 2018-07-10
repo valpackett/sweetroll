@@ -88,13 +88,17 @@ makeAccessToken domain me scope clientId = do
                        , clientId = clientId
                        , me = me }
 
+-- | Token endpoint
 postLogin ∷ Maybe Text → [(Text, Text)] → Sweetroll AccessToken
 postLogin host params = do
   let domain = fromMaybe "localhost" host
   isTestMode ← getConfOpt testMode
   --let isTestMode = False
   if isTestMode
-     then makeAccessToken domain (fromMaybe "unknown" $ lookup "me" params) (fromMaybe "post" $ lookup "scope" params) "example.com"
+     then makeAccessToken domain
+       (fromMaybe "unknown" $ lookup "me" params)
+       (fromMaybe "post create update delete read follow mute block channels" $ lookup "scope" params)
+       "example.com"
      else do
        checkURI ← getConfOpt indieauthCheckEndpoint
        resp0 ← runHTTP $ reqS checkURI >>= postForm params >>= performWithBytes
@@ -110,6 +114,7 @@ postLogin host params = do
            logInfo $ "Authentication error: " ++ display e ++ " / params: " ++ display (tshow params)
            throwM errWrongAuth
 
+-- | Internal "client" (redirect_uri target)
 getSelfLogin ∷ Maybe Text → Maybe Text → Maybe Text → Maybe Text → Sweetroll NoContent
 getSelfLogin host me code scope = do
   let domain = fromMaybe "localhost" host
@@ -120,12 +125,21 @@ getSelfLogin host me code scope = do
         ++ if isHttpOnly then "; HttpOnly" else ""
   result ← postLogin host [ ("me", fromMaybe ("https://" ++ domain) me)
                           , ("code", fromMaybe "" code)
-                          , ("scope", fromMaybe "post" scope)
+                          , ("scope", fromMaybe "post create update delete read follow mute block channels" scope)
                           , ("redirect_uri", "https://" ++ domain ++ "/login/self")
                           , ("client_id", "https://" ++ domain ++ "/")
                           , ("grant_type", "authorization_code") ]
   throwM err303 { errHeaders = [ ("Set-Cookie", "Bearer=" ++ (cs $ accessToken result) ++ "; Path=/; Max-Age=5184000" ++ security)
-                                   , (hLocation, "/") ] }
+                               , (hLocation, "/") ] }
+
+getTestLogin ∷ Maybe Text → Maybe Text → Maybe Text → Sweetroll NoContent
+getTestLogin host state redirect_uri = do
+  isTestMode ← getConfOpt testMode
+  guardBool errWrongAuth isTestMode
+  let reduri = fromMaybe "" redirect_uri
+  throwM err302 { errHeaders = [ (hLocation, cs $ reduri ++ (if "?" `isInfixOf` reduri then "&" else "?") ++
+    "state=" ++ fromMaybe "" state ++ "&code=test") ] }
+
 
 errNoAuth ∷ ServantErr
 errNoAuth = errText err401 "Authorization/access_token not found."

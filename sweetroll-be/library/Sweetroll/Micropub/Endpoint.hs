@@ -1,10 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, FlexibleInstances, ScopedTypeVariables, MultiParamTypeClasses, TypeFamilies, TypeOperators, DataKinds #-}
 
-module Sweetroll.Micropub.Endpoint (
-  getMicropub
-, postMicropub
-) where
+module Sweetroll.Micropub.Endpoint where
 
 import           Sweetroll.Prelude hiding (host)
 import qualified Data.Text as T
@@ -41,7 +38,7 @@ getMicropub token host _ props url = getMicropub token host (Just "media-endpoin
 
 postMicropub ∷ JWT VerifiedJWT → Maybe Text → MicropubRequest
              → Sweetroll (Headers '[Servant.Header "Location" Text] MicropubResponse)
-postMicropub token host (Create htype props _) = do
+postMicropub token host (Create htype props acl _) = do
   ensureScope token $ any (\x → x == "create" || x == "post")
   now ← liftIO getCurrentTime
   lds ← return . S.fromList . map parseUri =<< guardDbError =<< queryDb () getLocalDomains
@@ -52,7 +49,7 @@ postMicropub token host (Create htype props _) = do
         |>  setClientId (tshow $ base host) token
         |>  (if "h-entry" `elem` htype then setCategory else id)
         |>  setUrl (base host) now
-  let obj = wrapWithType htype prs
+  let obj = wrapWithTypeAndAcl htype (fromMaybe ["*"] acl) prs
   guardDbError =<< queryDb obj upsertObject
   let url = (fromMaybe "" $ firstStr (Object prs) (key "url"))
   guardDbError =<< queryDb url undeleteObject -- for recreating at the same URL
@@ -68,7 +65,7 @@ postMicropub token host (Update url upds) = do
       Just obj → do
         let modify o = foldl' applyUpdates o upds
                      & setUpdated now
-            newObj = obj & key "properties" . _Object %~ modify
+            newObj = applyAcl upds $ obj & key "properties" . _Object %~ modify
         -- TODO ensure domain not modified
         
         queryTx newObj upsertObject
@@ -151,10 +148,11 @@ setUrl hostbase now props =
   where category = cs $ drop 1 $ fromMaybe "_unknown" $ find (\x → headMay x == Just '_') $ categories props
         slug = decideSlug props now
 
-wrapWithType ∷ ObjType → ObjProperties → Value
-wrapWithType htype props =
+wrapWithTypeAndAcl ∷ ObjType → [Text] → ObjProperties → Value
+wrapWithTypeAndAcl htype acl props =
   object [ "type"       .= toJSON htype
-         , "properties" .= props ]
+         , "properties" .= props
+         , "acl"        .= toJSON acl ]
 
 applyUpdates ∷ ObjProperties → MicropubUpdate → ObjProperties
 applyUpdates props (ReplaceProps newProps) =
@@ -171,7 +169,15 @@ applyUpdates props (DelFromProps newProps) =
           del _ old = old
 applyUpdates props (DelProps newProps) =
   foldl' (flip HMS.delete) props newProps
+applyUpdates props (SetAcl _) = props
 
 filterProps ∷ Value → [Text] → Value
 filterProps obj [] = obj
 filterProps obj ps = obj & key "properties" . _Object %~ HMS.filterWithKey (\k _ → k `elem` ps)
+
+applyAcl ∷ [MicropubUpdate] → Value → Value
+applyAcl upds obj = case headMay $ mapMaybe extractAcl upds of
+                         Just newAcl → obj & key "acl" .~ toJSON newAcl
+                         _ → obj
+  where extractAcl (SetAcl x) = Just x
+        extractAcl _ = Nothing

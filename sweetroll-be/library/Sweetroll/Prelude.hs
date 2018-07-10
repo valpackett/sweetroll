@@ -81,3 +81,6 @@ ensureRightDomain x y = guardBool errWrongDomain $ compareDomain x y
 guardEntryNotFound ∷ MonadThrow μ ⇒ Maybe α → μ α
 guardEntryNotFound (Just obj) = return obj
 guardEntryNotFound Nothing = throwErrText err404 "Entry not found."
+
+withTrailingSlash ∷ Text → [Text]
+withTrailingSlash t = let t' = fromMaybe t (stripSuffix "/" t) in [ t', t' ++ "/" ]

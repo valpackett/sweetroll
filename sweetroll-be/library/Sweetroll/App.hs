@@ -11,11 +11,15 @@ import           Sweetroll.Context
 import           Sweetroll.Routes
 import           Sweetroll.Auth
 import           Sweetroll.Micropub.Endpoint
+import           Sweetroll.Microsub.Endpoint
+import           Sweetroll.Microsub.Fetch
 import           Sweetroll.Webmention.Receive
 
 sweetrollServerT ∷ ServerT SweetrollAPI Sweetroll
 sweetrollServerT = postLogin :<|> getAuth :<|> getSelfLogin :<|> getTestLogin
                   :<|> postMicropub :<|> getMicropub
+                  :<|> postMicrosub :<|> getMicrosub
+                  :<|> fetchAndStoreAllFeedsIfAllowed
                   :<|> receiveWebmention
 
 sweetrollApp ∷ SweetrollCtx → Application

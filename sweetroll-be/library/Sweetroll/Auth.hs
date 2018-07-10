@@ -66,6 +66,12 @@ fromHeader au = return $ drop 7 au -- 7 chars in "Bearer "
 getAuth ∷ JWT VerifiedJWT → Sweetroll [(Text, Text)]
 getAuth token = return $ ("me", maybe "" tshow $ sub $ claims token) : unregClaims token
 
+getSub ∷ JWT VerifiedJWT → Text
+getSub = maybe "" tshow . sub . claims
+
+mkAcl ∷ JWT VerifiedJWT → [Text]
+mkAcl token = "*" : withTrailingSlash (getSub token)
+
 unregClaims ∷ JWT VerifiedJWT → [(Text, Text)]
 unregClaims = mapMaybe unValue . M.toList . unregisteredClaims . claims
   where unValue (k, String s) = Just (k, s)

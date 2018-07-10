@@ -13,9 +13,10 @@ When Sweetroll renders a page, it looks up the request URL in the database and l
 
 - if it's of type ``h-entry``, it's just displayed as an entry
 - if it's of type ``h-feed``, it's displayed as a feed -- but why would you ever store a static feed? -- so,
-- if it's of type ``h-x-dynamic-feed``, the contents of the feed are built dynamically using filters.
+- if it's of type ``h-x-dynamic-feed``, the contents of the feed are built dynamically using filters!
+- if it's of type ``h-x-reader-channel``, pretty much the same (more on that below: :ref:`reader`)
 
-Here's a simple example:
+Here's a simple example of a dynamic feed:
 
 .. literalinclude:: ../example-feeds/articles.json
    :language: json
@@ -58,7 +59,7 @@ Feeds can be parameterized with URL query keys by using ``{curly braces}`` in fi
 So feeds for arbitrary tags are dynamically constructed from one "template" feed configuration:
 
 .. literalinclude:: ../example-feeds/tag.json
-	 :language: json
+   :language: json
 
 With the above configuration, the URL ``https://unrelenting.technology/tag?tag=memes`` will show posts that include ``memes`` in the ``category`` property.
 And Sweetroll is smart enough to construct URLs like that in lists of tags.
@@ -78,4 +79,40 @@ The home (index) page is usually just a dynamic feed as seen above, but there ar
 In the following example, you can see the above properties, as well as some filter tricks (such as an ``index-display`` property that allows explicitly forcing any post to show up or not to show up on the home feed).
 
 .. literalinclude:: ../example-feeds/index.json
-	 :language: json
+   :language: json
+
+.. _reader:
+
+Reader Channels
+---------------
+
+Sweetroll works as a `reader <https://indieweb.org/reader>`_: you can subscribe to feeds in channels and read them.
+The `Microsub <https://indieweb.org/Microsub>`_ endpoint can manage channels, but you can also create them manually using Micropub using the following structure.
+
+.. code-block:: json
+
+   {
+      "type": ["h-x-reader-channel"],
+      "properties": {
+         "url": ["https://unrelenting.technology/channels/indieweb"],
+         "name": ["IndieWeb channel"],
+         "subscriptions": [
+            {
+               "feed": "http://rhiaro.co.uk",
+               "entries": ["http://rhiaro.co.uk/2018/07/croatia", "http://rhiaro.co.uk/2018/07/related"]
+            }
+         ],
+         "blocked": [
+            "https://asshole.example.com"
+         ],
+         "muted": [
+            "https://annoying.example.com"
+         ]
+      }
+   }
+
+The ``entries`` field of each subscription is managed automatically by Sweetroll's feed fetcher.
+The purpose of the field is:
+
+- to store references to all the entries ever seen on that feed, not just the current state of the feed (so you can scroll far down into history)
+- to allow removing entries from the channel (Microsub: ``action=timeline`` ``method=remove``)

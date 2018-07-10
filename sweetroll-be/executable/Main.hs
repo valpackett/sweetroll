@@ -10,6 +10,7 @@ import           Sweetroll.Conf
 import           Sweetroll.App (initSweetrollApp)
 import qualified Data.Text as T
 import qualified Data.ByteString as BS
+import           Data.Maybe
 import           Crypto.Random
 import           Crypto.Hash
 import           Network.Wai.Cli
@@ -28,5 +29,7 @@ main = do
                     hPutStrLn stderr "Warning: the SWEETROLL_SECRET value is shorter than 40 characters. Not using it and generating a random one. Authentication tokens will expire after restarting Sweetroll."
                     randBytes ← getRandomBytes 64 ∷ IO BS.ByteString
                     return $ T.pack $ show $ hashWith SHA3_512 randBytes
-  let secs = def { secretKey = secretVal }
+  pollToken ← fromMaybe secretVal . fmap T.pack <$> lookupEnv "SWEETROLL_POLL_TOKEN"
+  let secs = def { secretKey = secretVal
+                 , pollSecretToken = pollToken }
   defWaiMain =<< initSweetrollApp conf secs

@@ -355,7 +355,8 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 	if (obj) {
 		response.status = 200
 		tplctx.obj = obj
-		const authorizedPersonally = includes(obj.acl, (auth && auth.sub) || 'anonymous') || includes(obj.acl, (auth && (auth.sub + '/')) || 'anonymous')
+		const authorizedPersonally = includes(obj.acl, (auth && auth.sub && auth.sub.replace(/\/$/, "")) || 'anonymous') ||
+			includes(obj.acl, (auth && (auth.sub + '/')) || 'anonymous')
 		if (obj.deleted) {
 			response.status = 410
 			tpl = '410.pug'
@@ -365,7 +366,7 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 			tpl = '401.pug'
 		} else if (includes(obj.type, 'h-entry') || includes(obj.type, 'h-review')) {
 			tpl = 'entry.pug'
-		} else if (includes(obj.type, 'h-feed') || includes(obj.type, 'h-x-dynamic-feed')) {
+		} else if (includes(obj.type, 'h-feed') || includes(obj.type, 'h-x-dynamic-feed') || includes(obj.type, 'h-x-reader-channel')) {
 			if (!includes(obj.type, 'h-feed')) {
 				obj.type.push('h-feed')
 			}
@@ -426,6 +427,7 @@ const addCommonContext = async (ctx, next) => {
 	ctx.link = new LinkHeader()
 	ctx.link.set({ rel: 'webmention', uri: ctx.domainUri.clone().path('/webmention').toString() })
 	ctx.link.set({ rel: 'micropub', uri: ctx.domainUri.clone().path('/micropub').toString() })
+	ctx.link.set({ rel: 'microsub', uri: ctx.domainUri.clone().path('/microsub').toString() })
 	ctx.link.set({ rel: 'token_endpoint', uri: ctx.domainUri.clone().path('/login').toString() })
 	ctx.link.set({ rel: 'authorization_endpoint', uri: indieAuthEndpoint })
 	ctx.link.set({ rel: 'hub', uri: websubHub })

@@ -10,11 +10,13 @@ type ObjType = [Text]
 type ObjProperties = Object
 type ObjSyndication = Text
 type ObjUrl = Text
+type ObjAcl = Maybe [Text]
 
 data MicropubUpdate = ReplaceProps ObjProperties
                     | AddToProps ObjProperties
                     | DelFromProps ObjProperties
                     | DelProps [Text]
+                    | SetAcl [Text]
                     deriving (Eq, Show)
 
 instance {-# OVERLAPPING #-} FromJSON [MicropubUpdate] where
@@ -23,10 +25,11 @@ instance {-# OVERLAPPING #-} FromJSON [MicropubUpdate] where
         addp = AddToProps <$> v ^? key "add" . _Object
         delf = DelFromProps <$> v ^? key "delete" . _Object
         delp = DelProps <$> mapMaybe (^? _String) . toList <$> v ^? key "delete" . _Array
-     in return $ catMaybes [ rplc, addp, delf, delp ]
+        aclp = SetAcl <$> mapMaybe (^? _String) . toList <$> v ^? key "acl" . _Array
+     in return $ catMaybes [ rplc, addp, delf, delp, aclp ]
   parseJSON _ = mzero
 
-data MicropubRequest = Create ObjType ObjProperties [ObjSyndication]
+data MicropubRequest = Create ObjType ObjProperties ObjAcl [ObjSyndication]
                      | Update ObjUrl [MicropubUpdate]
                      | Delete ObjUrl
                      | Undelete ObjUrl
@@ -50,6 +53,7 @@ instance FromJSON MicropubRequest where
       Nothing → return $
         Create ((\case [] → ["h-entry"]; x → x) $ v ^.. key "type" . values . _String)
                (fromMaybe (object [] ^. _Object) $ v ^? key "properties" . _Object)
+               (map (mapMaybe (^? _String) . toList) $ v ^? key "acl" . _Array)
                (v ^.. key "mp-syndicate-to" . values . _String)
       _ → fail "Unknown action type"
   parseJSON _ = mzero
@@ -76,5 +80,5 @@ instance FromForm MicropubRequest where
             synd = nub $ (v ^.. key "mp-syndicate-to" . values . _String) ++
                          (v ^.. key "syndicate-to" . values . _String)
                          -- no syndicate-to[], the [] is handled in formToObject
-         in Right $ Create [h] o synd
+         in Right $ Create [h] o Nothing synd
       _ → Left "Unknown action type"

@@ -60,7 +60,7 @@ block append main
 	nav.category-nav
 		if obj.children.length >= 0
 			-
-				const href = reqUriFull.clone().search(q => {
+				const href = '/' + reqUriFull.clone().search(q => {
 					q.before = _.get(_.last(obj.children), 'properties.published[0]')
 					q.after = undefined
 				}).relativeTo(domainUri).toString()
@@ -70,7 +70,7 @@ block append main
 		= ' '
 		if qq.before || qq.after
 			-
-				const href = reqUriFull.clone().search(q => {
+				const href = '/' + reqUriFull.clone().search(q => {
 					q.before = undefined
 					q.after = _.get(_.head(obj.children), 'properties.published[0]')
 				}).relativeTo(domainUri).toString()

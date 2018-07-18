@@ -41,7 +41,7 @@ mixin showContent(properties, { preferSummary, showRels, permalink })
 	if !_.isEmpty(properties['x-content-warning'])
 		| </div>
 
-mixin showMeta(entry, comments, permalinkAbs, compactView)
+mixin showMeta(entry, comments, permalinkAbs, compactView, entryIsForeign)
 	-
 		const properties = entry.properties || {}
 		const dateFormat = compactView ? 'MMM Do YYYY, HH:mm' : 'dddd, MMMM Do YYYY, HH:mm'
@@ -55,7 +55,7 @@ mixin showMeta(entry, comments, permalinkAbs, compactView)
 					= ftag
 					| 
 		if _.isEmpty(properties['like-of']) && _.isEmpty(properties['bookmark-of'])
-			+showActions(entry, permalinkAbs)
+			+showActions(entry, permalinkAbs, entryIsForeign)
 		| / posted on 
 		time.dt-published(datetime=_.head(properties.published))
 			a.u-url.u-uid.note-permalink(rel=compactView ? '' : 'bookmark' href=permalinkAbs)
@@ -104,7 +104,7 @@ mixin showFacepile(entry, name, reactions)
 				span.p-author.h-card
 					img.facepile-avatar.u-photo.p-name(alt=authorName title=authorName src=helpers.showAvatar(author))
 
-mixin showActions(entry, permalink)
+mixin showActions(entry, permalink, entryIsForeign)
 	span.entry-actions
 		-
 			const twitterUrl = _(entry).at('properties.syndication')
@@ -114,7 +114,7 @@ mixin showActions(entry, permalink)
 				twitterId
 					? 'https://twitter.com/intent/' + act + '?' + (act == 'reply' ? 'in_reply_to' : 'tweet_id') + '=' + twitterId
 					: 'javascript:void(0)// ' + (act == 'retweet' ? 'repost' : act) + ' using indie-config. do not open this in a new tab. see https://indieweb.org/indie-config for info.'
-		if authedAsAdmin
+		if authedAsAdmin && !entryIsForeign
 			micro-panel-action(with=permalink)
 				button
 					| Edit
@@ -256,7 +256,7 @@ mixin showEntry(entry, compactView)
 				|  
 	+showContent(properties, { preferSummary: compactView, showRels: !compactView, permalink })
 	footer.entry-footer
-		+showMeta(entry, comments, permalinkAbs, compactView)
+		+showMeta(entry, comments, permalinkAbs, compactView, entryIsForeign)
 		if !compactView
 			each reactions, name in comments || {}
 				if name != 'replies' && !_.isEmpty(reactions)

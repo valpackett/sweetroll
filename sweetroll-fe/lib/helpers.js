@@ -156,6 +156,9 @@ module.exports = {
 	getHtml (content) {
 		if (isObject(content)) {
 			if (isString(content.html)) {
+				if (content.html.length > 1 && !content.html.includes('<p')) {
+					return `<p>${content.html}</p>`
+				}
 				return content.html
 			}
 			if (isString(content.markdown || content.value)) {
@@ -167,14 +170,13 @@ module.exports = {
 		}
 	},
 
-	getContent (properties, { preferSummary, onlySummary }) {
-		const content = head(compact(onlySummary ? properties.summary : (
+	getContent (properties, { preferSummary }) {
+		const content = head(compact(
 			preferSummary
 				? concat(properties.summary || [], properties.content || [], properties.name || [])
 				: concat(properties.content || [], properties.summary || [], properties.name || [])
-			)
 		)) || ''
-		return this.getHtml(content)
+		return trim(this.getHtml(content))
 	},
 
 	processContent (properties, opts) {

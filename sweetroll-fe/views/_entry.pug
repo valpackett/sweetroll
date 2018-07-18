@@ -2,11 +2,10 @@ include /_globals.pug
 include /_icons.pug
 include /_media.pug
 
-mixin showContent(properties, { preferSummary, stronglyPreferSummary, showRels, permalink })
+mixin showContent(properties, { preferSummary, showRels, permalink })
 	-
 		let isUntitled = _.isEmpty(properties.name) || !_.isEmpty(properties['bookmark-of'])
-		const onlySummary = !isUntitled && stronglyPreferSummary
-		const { textContent, photos, videos, audios } = helpers.processContent(properties, { preferSummary, onlySummary })
+		const { textContent, photos, videos, audios } = helpers.processContent(properties, { preferSummary })
 		const isCrapName = helpers.isActuallyTheSameDamnThing(_.get(properties, 'name[0]') || '', textContent)
 		if (isCrapName) {
 			isUntitled = true
@@ -28,8 +27,7 @@ mixin showContent(properties, { preferSummary, stronglyPreferSummary, showRels, 
 		| <div class="click-to-reveal-target">
 	each repost in properties['repost-of'] || []
 		+showRefContext(repost, { prop: 'u-repost-of', reasonIcon: 'megaphone', reasonIconClass: 'repost', reason: 'reposted a post by', rel: showRels ? 'repost-of' : '' })
-	if isUntitled || !onlySummary
-		+showMedia(properties, textContent)
+	+showMedia(properties, textContent)
 	if !isUntitled
 		h1.p-name.entry-core
 			if showRels
@@ -37,7 +35,7 @@ mixin showContent(properties, { preferSummary, stronglyPreferSummary, showRels, 
 			else
 				a.u-url.u-uid(href=permalink tabindex="-1")
 					= _.head(properties.name)
-	if _.trim(textContent).length > 0
+	if textContent.length > 0
 		fragmention-target(exact)
 			.e-content.entry-core('class'=isUntitled ? 'p-name' : '') !{ textContent }
 	if !_.isEmpty(properties['x-content-warning'])
@@ -149,38 +147,9 @@ mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, sh
 					else if !_.isObject(entry)
 						| something weird
 			if _.isObject(entry)
-				-
-					const authors = properties.author
-					const permalink = helpers.onlyHttpUrl(_.get(properties, 'url[0]', ''))
-				.ref-context-core
-					a.ref-context-avatar-link(href=helpers.onlyHttpUrl(_.get(authors, '[0].properties.url[0]', '')))
-						img.ref-context-avatar(alt="" src=helpers.showAvatar((authors || [])[0]))
-					.ref-context-content
-						.ref-context-meta
-							span.ref-context-authors
-								if !_.isEmpty(authors)
-									each author in authors
-										span.p-author.h-card
-											a.u-url(href=_.get(author, 'properties.url[0]'))
-												span.p-name= _.get(author, 'properties.name[0]')
-												- const pN = _.get(author, 'properties.x-pronoun-nominative[0]')
-												- const pO = _.get(author, 'properties.x-pronoun-oblique[0]')
-												if pN || pO
-													sup
-														|  (
-														if pN
-															span.p-x-pronoun-nominative= pN
-														if pN && pO
-															| /
-														if pO
-															span.p-x-pronoun-oblique= pO
-														| )
-										|  
-							|  
-							a.u-url.ref-context-date(rel=rel href=permalink)
-								= moment.utc(_.get(properties, 'published[0]', '')).format('MMM Do YYYY, HH:mm')
-						blockquote.ref-context-content
-							+showContent(properties, { preferSummary: true, stronglyPreferSummary: false, showRels: false, permalink })
+				+showRefContextCore(properties)
+					blockquote.ref-context-content
+						+showContent(properties, { preferSummary: true, showRels: false, permalink })
 				if showReplies && !_.isEmpty(comments.replies)
 					.ref-context-thread-down
 						each reply in comments.replies
@@ -190,6 +159,38 @@ mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, sh
 		- const url = _.get(entry, 'properties.url[0]', 'javascript:void(0)')
 		a('class'=prop href=url)= url
 
+mixin showRefContextCore(properties)
+	-
+		const authors = properties.author
+		const permalink = helpers.onlyHttpUrl(_.get(properties, 'url[0]', ''))
+	.ref-context-core
+		a.ref-context-avatar-link(href=helpers.onlyHttpUrl(_.get(authors, '[0].properties.url[0]', '')))
+			img.ref-context-avatar(alt="" src=helpers.showAvatar((authors || [])[0]))
+		.ref-context-content
+			.ref-context-meta
+				span.ref-context-authors
+					if !_.isEmpty(authors)
+						each author in authors
+							span.p-author.h-card
+								a.u-url(href=_.get(author, 'properties.url[0]'))
+									span.p-name= _.get(author, 'properties.name[0]')
+									- const pN = _.get(author, 'properties.x-pronoun-nominative[0]')
+									- const pO = _.get(author, 'properties.x-pronoun-oblique[0]')
+									if pN || pO
+										sup
+											|  (
+											if pN
+												span.p-x-pronoun-nominative= pN
+											if pN && pO
+												| /
+											if pO
+												span.p-x-pronoun-oblique= pO
+											| )
+							|  
+				|  
+				a.u-url.ref-context-date(rel=rel href=permalink)
+					= moment.utc(_.get(properties, 'published[0]', '')).format('MMM Do YYYY, HH:mm')
+			block
 
 mixin showEntry(entry, compactView)
 	-
@@ -199,6 +200,10 @@ mixin showEntry(entry, compactView)
 		const props = { reposts: 'p-repost', likes: 'p-like', bookmarks: 'p-bookmark', quotations: 'p-quotation' }
 		const comments = helpers.separateComments(properties.url, properties.comment || [])
 		const acl = (entry.acl || []).filter(u => u !== '*')
+		const entryIsForeign = !permalink.startsWith('/') /* if it's our domain, it becomes actually relative */
+	if entryIsForeign
+		.layer-2.ref-context.entry-author-context
+			+showRefContextCore(properties)
 	each reply in properties['in-reply-to'] || []
 		+showRefContext(reply, { prop: 'u-in-reply-to', reasonIcon: 'reply', reason: 'in reply to', rel: !compactView ? 'in-reply-to' : '', showReplies: false, showContexts: !compactView })
 	each like in properties['like-of'] || []
@@ -249,7 +254,7 @@ mixin showEntry(entry, compactView)
 				else
 					a(href=url)= url.replace('https://', '').replace('http://', '')
 				|  
-	+showContent(properties, { preferSummary: compactView, stronglyPreferSummary: compactView, showRels: !compactView, permalink })
+	+showContent(properties, { preferSummary: compactView, showRels: !compactView, permalink })
 	footer.entry-footer
 		+showMeta(entry, comments, permalinkAbs, compactView)
 		if !compactView

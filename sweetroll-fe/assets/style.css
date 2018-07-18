@@ -606,6 +606,25 @@ a.review-item-link {
 	border-left: 0.5rem solid #cecece;
 }
 
+.entry-author-context {
+	padding-top: 0.6rem;
+
+	& .ref-context-core {
+		align-items: center;
+	}
+
+	& .ref-context-avatar {
+		width: 24px;
+		height: 24px;
+
+		@media screen and (min-width: 400px) {
+			width: 32px;
+			height: 32px;
+			min-width: 32px;
+		}
+	}
+}
+
 .search-results {
 	list-style-position: outside;
 }

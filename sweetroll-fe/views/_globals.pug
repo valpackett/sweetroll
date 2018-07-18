@@ -1,3 +1,9 @@
 -
-	const relativeUrl = u => '/' + new URI(u).relativeTo(domainUri).toString()
+	const relativeUrl = u => {
+		const uu = new URI(u)
+		if (uu.host() === domainUri.host()) {
+			return uu.pathname()
+		}
+		return u
+	}
 	assets.basedir = basedir

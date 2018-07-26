@@ -7,8 +7,6 @@ const MergeTrees = require('broccoli-merge-trees')
 const AssetRev = require('broccoli-static-asset-rev')
 const ConfigReplace = require('broccoli-config-replace')
 const SVGStore = require('broccoli-svgstore')
-const Zopfli = require('@floatboth/broccoli-zopfli')
-const Brotli = require('broccoli-brotli')
 const { SourceMapExtractor } = require('broccoli-source-map')
 const Pug = require('broccoli-pug-render')
 const PostCSS = require('broccoli-postcss')
@@ -127,14 +125,6 @@ const errPages = new Pug([new MergeTrees([
 	siteSettings: { }
 })
 
-const all = new MergeTrees([
+module.exports = new MergeTrees([
 	npmdeps, micropanel, scripts, sw, styles, icons, errPages
 ])
-
-const compressExts = ['js', 'css', 'svg', 'html']
-
-module.exports = process.env.SKIP_COMPRESSION ? all : new MergeTrees([
-	all,
-	new Zopfli(all, { extensions: compressExts }),
-	new Brotli(all, { extensions: compressExts })
-], { overwrite: true })

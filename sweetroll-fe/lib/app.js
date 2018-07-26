@@ -447,6 +447,7 @@ const addCommonContext = async (ctx, next) => {
 	}
 	ctx.response.set('X-XSS-Protection', '1; mode=block')
 	ctx.response.set('X-Content-Type-Options', 'nosniff')
+	ctx.response.set('Feature-Policy', `unsized-media 'none'; sync-xhr 'none'; document-write 'none'`)
 }
 
 const koaCache = cache ? require('koa-cash')({

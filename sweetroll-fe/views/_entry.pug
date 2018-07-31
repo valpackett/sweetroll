@@ -163,8 +163,9 @@ mixin showRefContextCore(properties)
 	-
 		const authors = properties.author
 		const permalink = helpers.onlyHttpUrl(_.get(properties, 'url[0]', ''))
+		const permalinkOrigin = new URI(permalink).origin().toString()
 	.ref-context-core
-		a.ref-context-avatar-link(href=helpers.onlyHttpUrl(_.get(authors, '[0].properties.url[0]', '')))
+		a.ref-context-avatar-link(href=helpers.onlyHttpUrl(_.get(authors, '[0].properties.url[0]', permalinkOrigin)))
 			img.ref-context-avatar(alt="" src=helpers.showAvatar((authors || [])[0]))
 		.ref-context-content
 			.ref-context-meta
@@ -186,7 +187,14 @@ mixin showRefContextCore(properties)
 											if pO
 												span.p-x-pronoun-oblique= pO
 											| )
+									|  
+									span.author-domain
+										= _.get(author, 'properties.url[0]').replace('http://', '').replace('https://', '').replace(/\/$/, '')
 							|  
+					else
+						span.p-author.h-card
+							a.u-url(href=permalinkOrigin)
+								span.p-name.author-domain= new URI(permalink).hostname().toString()
 				|  
 				a.u-url.ref-context-date(rel=rel href=permalink)
 					= moment.utc(_.get(properties, 'published[0]', '')).format('MMM Do YYYY, HH:mm')

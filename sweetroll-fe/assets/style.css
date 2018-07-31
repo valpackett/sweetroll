@@ -606,6 +606,11 @@ a.review-item-link {
 	border-left: 0.5rem solid #cecece;
 }
 
+.author-domain {
+	color: #888;
+	font-size: 0.9em;
+}
+
 .entry-author-context {
 	padding-top: 0.6rem;
 

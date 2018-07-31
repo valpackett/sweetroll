@@ -89,20 +89,20 @@ mixin showAudio(audio)
 				each track in audio.track || []
 					track(src=track.src kind=track.kind label=track.label srclang=track.srclang default=(track.default || false))
 
-mixin showMedia(properties, textContent, showMeta=true)
-	each photo in properties.photo || []
+mixin showMedia({ photos, videos, audios }, textContent, showMeta=true)
+	each photo in photos || []
 		if _.isString(photo)
 			if !(_.includes(textContent, photo.replace('&', '&amp;')) || _.includes(textContent, photo))
 				img.u-photo.entry-photo(src=photo alt="")
 		else if _.isObject(photo)
 			+showPhoto(photo, showMeta)
-	each video in properties.video || []
+	each video in videos || []
 		if _.isString(video)
 			if !(_.includes(textContent, video.replace('&', '&amp;')) || _.includes(textContent, video))
 				video.u-video.entry-video(controls=true src=video)
 		else if _.isObject(video)
 			+showVideo(video)
-	each audio in properties.audio || []
+	each audio in audios || []
 		if _.isString(audio)
 			if !(_.includes(textContent, audio.replace('&', '&amp;')) || _.includes(textContent, audio))
 				audio.u-audio.entry-audio(controls=true src=audio)

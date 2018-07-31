@@ -26,7 +26,7 @@ mixin showContent(properties, { preferSummary, showRels, permalink, entryIsForei
 		| <div class="click-to-reveal-target">
 	each repost in properties['repost-of'] || []
 		+showRefContext(repost, { prop: 'u-repost-of', reasonIcon: 'megaphone', reasonIconClass: 'repost', reason: 'reposted a post by', rel: showRels ? 'repost-of' : '' })
-	+showMedia(properties, textContent)
+	+showMedia({ photos, videos, audios }, textContent)
 	if !isUntitled
 		h1.p-name.entry-core
 			if showRels

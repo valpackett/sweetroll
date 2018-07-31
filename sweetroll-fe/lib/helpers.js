@@ -12,6 +12,7 @@ const pug = require('pug')
 const URI = require('urijs')
 const entities = require('entities')
 const cheerio = require('cheerio')
+const truncate = require('truncate-html')
 const gravatarUrl = require('gravatar-url')
 const log = require('debug')('sweetroll-fe:helpers')
 const markdown = require('remark')()
@@ -213,7 +214,15 @@ module.exports = {
 				}
 			})
 		}
-		return Object.assign({ textContent: $('body').html() }, media)
+		let txt = $('body').html()
+		if (opts.preferSummary && (opts.entryIsForeign || (properties.name && properties.name.length > 0))) {
+			// In feeds (but not for local notes), avoid showing giant walls of text or media
+			txt = truncate(textContent, 96, { byWords: true, ellipsis: '…', reserveLastWord: true })
+			media.photo = media.photo.slice(0, 2)
+			media.video = media.video.slice(0, 1)
+			media.audio = media.audio.slice(0, 2)
+		}
+		return Object.assign({ textContent: txt }, media)
 	},
 
 	findMentionedLinks (obj) {

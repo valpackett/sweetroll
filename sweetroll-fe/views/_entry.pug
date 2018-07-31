@@ -2,10 +2,10 @@ include /_globals.pug
 include /_icons.pug
 include /_media.pug
 
-mixin showContent(properties, { preferSummary, showRels, permalink })
+mixin showContent(properties, { preferSummary, showRels, permalink, entryIsForeign })
 	-
 		let isUntitled = _.isEmpty(properties.name) || !_.isEmpty(properties['bookmark-of'])
-		const { textContent, photos, videos, audios } = helpers.processContent(properties, { preferSummary })
+		const { textContent, photos, videos, audios } = helpers.processContent(properties, { preferSummary, entryIsForeign })
 		const isCrapName = helpers.isActuallyTheSameDamnThing(_.get(properties, 'name[0]') || '', textContent)
 		if (isCrapName) {
 			isUntitled = true
@@ -262,7 +262,7 @@ mixin showEntry(entry, compactView)
 				else
 					a(href=url)= url.replace('https://', '').replace('http://', '')
 				|  
-	+showContent(properties, { preferSummary: compactView, showRels: !compactView, permalink })
+	+showContent(properties, { preferSummary: compactView, showRels: !compactView, permalink, entryIsForeign })
 	footer.entry-footer
 		+showMeta(entry, comments, permalinkAbs, compactView, entryIsForeign)
 		if !compactView

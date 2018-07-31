@@ -79,6 +79,7 @@
     "remark-math": "^1.0.4",
     "rev-hash": "^2.0.0",
     "sse-broadcast": "^0.5.2",
+    "truncate-html": "^1.0.0",
     "urijs": "^1.19.1",
     "web-push": "^3.3.2"
   }

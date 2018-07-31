@@ -665,6 +665,11 @@ a.review-item-link {
 	}
 }
 
+simple-live {
+	background: purple;
+	color: white;
+}
+
 .gallery-row {
 	display: flex;
 	flex-flow: row wrap;

@@ -5,8 +5,7 @@ include /_media.pug
 mixin showContent(properties, { preferSummary, showRels, permalink, entryIsForeign })
 	-
 		let isUntitled = _.isEmpty(properties.name) || !_.isEmpty(properties['bookmark-of'])
-		const { textContent, photos, videos, audios } = helpers.processContent(properties, { preferSummary, entryIsForeign })
-		const isCrapName = helpers.isActuallyTheSameDamnThing(_.get(properties, 'name[0]') || '', textContent)
+		const { textContent, isCrapName, photos, videos, audios } = helpers.processContent(properties, { preferSummary, entryIsForeign })
 		if (isCrapName) {
 			isUntitled = true
 		}

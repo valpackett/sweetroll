@@ -215,6 +215,7 @@ module.exports = {
 			})
 		}
 		let txt = $('body').html()
+		const isCrapName = this.isActuallyTheSameDamnThing(get(properties, 'name[0]') || '', txt)
 		if (opts.preferSummary && (opts.entryIsForeign || (properties.name && properties.name.length > 0))) {
 			// In feeds (but not for local notes), avoid showing giant walls of text or media
 			txt = truncate(textContent, 96, { byWords: true, ellipsis: '…', reserveLastWord: true })
@@ -222,7 +223,7 @@ module.exports = {
 			media.video = media.video.slice(0, 1)
 			media.audio = media.audio.slice(0, 2)
 		}
-		return Object.assign({ textContent: txt }, media)
+		return Object.assign({ textContent: txt, isCrapName }, media)
 	},
 
 	findMentionedLinks (obj) {

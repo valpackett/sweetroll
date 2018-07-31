@@ -197,7 +197,7 @@ mixin showRefContextCore(properties)
 								span.p-name.author-domain= new URI(permalink).hostname().toString()
 				|  
 				a.u-url.ref-context-date(rel=rel href=permalink)
-					= moment.utc(_.get(properties, 'published[0]', '')).format('MMM Do YYYY, HH:mm')
+					= moment.utc(_.head(properties.published)).format('MMM Do YYYY, HH:mm')
 			block
 
 mixin showEntry(entry, compactView)

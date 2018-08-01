@@ -12,7 +12,7 @@ mixin showGalleryEntry(entry)
 		const properties = entry.properties || {}
 		const permalink = relativeUrl(_.get(properties, 'url[0]'))
 	a.h-entry(href=permalink style=`flex:${_.get(properties, 'photo[0].width', _.get(properties, 'video[0].width', 1)) / _.get(properties, 'photo[0].height', _.get(properties, 'video[0].width', 1))}`)
-		+showMedia({ photos: properties.photo, videos: properties.video }, '', false)
+		+showMedia(properties, '', false)
 
 block append main
 	//- Some pagination info: https://wiki.postgresql.org/images/3/35/Pagination_Done_the_PostgreSQL_Way.pdf

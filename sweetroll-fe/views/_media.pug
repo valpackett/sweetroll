@@ -89,22 +89,22 @@ mixin showAudio(audio)
 				each track in audio.track || []
 					track(src=track.src kind=track.kind label=track.label srclang=track.srclang default=(track.default || false))
 
-mixin showMedia({ photos, videos, audios }, textContent, showMeta=true)
-	each photo in photos || []
-		if _.isString(photo)
-			if !(_.includes(textContent, photo.replace('&', '&amp;')) || _.includes(textContent, photo))
-				img.u-photo.entry-photo(src=photo alt="")
-		else if _.isObject(photo)
-			+showPhoto(photo, showMeta)
-	each video in videos || []
-		if _.isString(video)
-			if !(_.includes(textContent, video.replace('&', '&amp;')) || _.includes(textContent, video))
-				video.u-video.entry-video(controls=true src=video)
-		else if _.isObject(video)
-			+showVideo(video)
-	each audio in audios || []
-		if _.isString(audio)
-			if !(_.includes(textContent, audio.replace('&', '&amp;')) || _.includes(textContent, audio))
-				audio.u-audio.entry-audio(controls=true src=audio)
-		else if _.isObject(audio)
-			+showAudio(audio)
+mixin showMedia({ photo, video, audio }, textContent, showMeta=true)
+	each pic in photo || []
+		if _.isString(pic)
+			if !(_.includes(textContent, pic.replace('&', '&amp;')) || _.includes(textContent, pic))
+				img.u-photo.entry-photo(src=pic alt="")
+		else if _.isObject(pic)
+			+showPhoto(pic, showMeta)
+	each vid in video || []
+		if _.isString(vid)
+			if !(_.includes(textContent, vid.replace('&', '&amp;')) || _.includes(textContent, vid))
+				video.u-video.entry-video(controls=true src=vid)
+		else if _.isObject(vid)
+			+showVideo(vid)
+	each aud in audio || []
+		if _.isString(aud)
+			if !(_.includes(textContent, aud.replace('&', '&amp;')) || _.includes(textContent, aud))
+				audio.u-audio.entry-audio(controls=true src=aud)
+		else if _.isObject(aud)
+			+showAudio(aud)

@@ -154,7 +154,11 @@ mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, sh
 						each reply in comments.replies
 							+showRefContext(reply, { prop: 'p-comment', rel: '', showReplies: true, showContexts: false })
 	catch
-		div.tpl-error Error: could not render the entry
+		div.tpl-error
+			| Error: could not render the entry
+			| <!--
+			| !{JSON.stringify(entry)}
+			| -->
 		- const url = _.get(entry, 'properties.url[0]', 'javascript:void(0)')
 		a('class'=prop href=url)= url
 
@@ -188,7 +192,7 @@ mixin showRefContextCore(properties)
 											| )
 									|  
 									span.author-domain
-										= _.get(author, 'properties.url[0]').replace('http://', '').replace('https://', '').replace(/\/$/, '')
+										= _.get(author, 'properties.url[0]', 'javascript:void(0)').replace('http://', '').replace('https://', '').replace(/\/$/, '')
 							|  
 					else
 						span.p-author.h-card

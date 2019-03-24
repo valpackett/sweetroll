@@ -2,7 +2,7 @@ import { dirname } from 'path';
 import dotenv from 'dotenv';
 import debug from 'debug';
 import minimist from 'minimist';
-import app from './lib/app';
+import app from './src/app';
 
 const __dirname = dirname(new URL(import.meta.url).pathname);
 process.chdir(__dirname)

@@ -1,16 +1,17 @@
 'use strict'
 
-const { join } = require('path')
-const { readFileSync } = require('fs')
-const Funnel = require('broccoli-funnel')
-const MergeTrees = require('broccoli-merge-trees')
-const AssetRev = require('broccoli-static-asset-rev')
-const ConfigReplace = require('broccoli-config-replace')
-const SVGStore = require('broccoli-svgstore')
-const { SourceMapExtractor } = require('broccoli-source-map')
-const Pug = require('broccoli-pug-render')
-const PostCSS = require('broccoli-postcss')
-const Concat = require('broccoli-concat')
+import { join } from 'path'
+import { readFileSync } from 'fs'
+import * as helpers from './src/helpers'
+import Funnel from 'broccoli-funnel'
+import MergeTrees from 'broccoli-merge-trees'
+import AssetRev from 'broccoli-static-asset-rev'
+import ConfigReplace from 'broccoli-config-replace'
+import SVGStore from 'broccoli-svgstore'
+import { SourceMapExtractor } from 'broccoli-source-map'
+import Pug from 'broccoli-pug-render'
+import PostCSS from 'broccoli-postcss'
+import Concat from 'broccoli-concat'
 
 const npmdeps = new Funnel('node_modules', {
 	include: [
@@ -111,7 +112,7 @@ const errPages = new Pug([new MergeTrees([
 	_: require('lodash'),
 	qs: require('qs'),
 	revHash: require('rev-hash'),
-	helpers: require('./lib/helpers'),
+	helpers,
 	assets: {
 		hashes: null,
 		prefix: '/dist/',

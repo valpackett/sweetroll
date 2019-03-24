@@ -47,8 +47,7 @@
     "postcss-nesting": "^7.0.0",
     "postcss-responsive-type": "^1.0.0",
     "prok": "0.0.8",
-    "sanitize.css": "^8.0.0",
-    "svgxuse": "^1.2.6"
+    "sanitize.css": "^8.0.0"
   },
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",

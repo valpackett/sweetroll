@@ -19,7 +19,6 @@ const npmdeps = new Funnel('node_modules', {
 		'katex/dist/fonts/*',
 		'@webcomponents/webcomponentsjs/*.js',
 		'findandreplacedomtext/src/*.js',
-		'svgxuse/*.min.js',
 		'localforage/dist/localforage.js',
 		'lazyload-image/lazyload-image.html',
 		'indieweb-components/*.{html,js}',

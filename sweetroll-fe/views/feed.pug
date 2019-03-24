@@ -28,6 +28,8 @@ block append main
 			each row in helpers.galleryRows(entries)
 				.gallery-row
 					each entry in row
+						- if (_.isString(entry)) entry = obj.preloaded[entry]
+						- if (!entry) continue
 						if entry.deleted
 							+showTombstone(entry)
 						else
@@ -38,6 +40,8 @@ block append main
 		else if feedSettings.layout === 'plain-list'
 			ul
 				each entry in entries
+					- if (_.isString(entry)) entry = obj.preloaded[entry]
+					- if (!entry) continue
 					li
 						if entry.deleted
 							+showTombstone(entry)
@@ -49,6 +53,8 @@ block append main
 								div.tpl-error Error: could not render the entry
 		else
 			each entry in entries
+				- if (_.isString(entry)) entry = obj.preloaded[entry]
+				- if (!entry) continue
 				if entry.deleted
 					+showTombstone(entry)
 				else
@@ -60,8 +66,10 @@ block append main
 	nav.category-nav
 		if obj.children.length >= 0
 			-
+				let last = _.last(obj.children)
+				if (_.isString(last)) last = obj.preloaded[last]
 				const href = '/' + reqUriFull.clone().search(q => {
-					q.before = _.get(_.last(obj.children), 'properties.published[0]')
+					q.before = _.get(last, 'properties.published[0]')
 					q.after = undefined
 				}).relativeTo(domainUri).toString()
 			a(href=href rel="prev")
@@ -70,9 +78,11 @@ block append main
 		= ' '
 		if qq.before || qq.after
 			-
+				let first = _.head(obj.children)
+				if (_.isString(first)) first = obj.preloaded[first]
 				const href = '/' + reqUriFull.clone().search(q => {
 					q.before = undefined
-					q.after = _.get(_.head(obj.children), 'properties.published[0]')
+					q.after = _.get(first, 'properties.published[0]')
 				}).relativeTo(domainUri).toString()
 			a(href=href rel="next")
 				+icon('arrow-up')

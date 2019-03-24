@@ -64,7 +64,7 @@ const affectedUrls = async (url) => {
 	const objUriStr = norm.clone().toString()
 	const domainUriStr = norm.pathname('').search('').toString()
 	const { obj, feeds } = await db.row(SQL`SELECT
-		mf2.objects_smart_fetch(${objUriStr}, ${domainUriStr}, 1, null, null, null) AS obj,
+		mf2.objects_fetch(${objUriStr}, ${domainUriStr}, 1, null, null, null) AS obj,
 		mf2.objects_fetch_feeds(${domainUriStr}) AS feeds
 	`)
 	if (!obj || !feeds) return { affUrls: [url], domainUriStr }
@@ -107,7 +107,7 @@ updateLocalDomains()
 
 const onWebmention = async ({ source, target }) => {
 	const domainUriStr = new URI(target).normalizePort().normalizeHostname().pathname('').search('').toString()
-	const { dobj } = await db.row(SQL`SELECT mf2.objects_smart_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj`)
+	const { dobj } = await db.row(SQL`SELECT mf2.objects_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj`)
 
 	// Web Push notifications
 	for (const subscription of get(dobj, 'properties.site-web-push-subscriptions', [])) {
@@ -287,7 +287,7 @@ const customCssHandler = async ({ request, response, auth, domainUriStr, cashed 
 	}
 	const { dobj } = await db.row(SQL`SELECT
 	set_config('mf2sql.current_user_url', ${(auth && auth.sub) || 'anonymous'}, true),
-	mf2.objects_smart_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj`)
+	mf2.objects_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj`)
 	response.body = (dobj.properties['site-css'] || []).join('\n')
 	return next()
 }
@@ -296,7 +296,7 @@ const searchHandler = async ({ request, response, auth, domainUriStr, tplctx }, 
 	const searchQuery = request.query.q || ''
 	const { dobj, results, feeds, tags } = await db.row(SQL`SELECT
 	set_config('mf2sql.current_user_url', ${(auth && auth.sub) || 'anonymous'}, true),
-	mf2.objects_smart_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj,
+	mf2.objects_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj,
 	(SELECT jsonb_agg(row_to_json(subq)) FROM (
 		SELECT
 			type,
@@ -337,8 +337,8 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 	const perPage = reqUriStr.endsWith('/kb') ? 999999 : 20 // XXX: ugly hardcode but avoids a roundtrip :D
 	const { dobj, obj, feeds, tags } = await db.row(SQL`SELECT
 	set_config('mf2sql.current_user_url', ${(auth && auth.sub) || 'anonymous'}, true),
-	mf2.objects_smart_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj,
-	mf2.objects_smart_fetch(${reqUriStr}, ${domainUriStr}, ${perPage}, ${request.query.before || null}, ${request.query.after || null}, ${request.query}) AS obj,
+	mf2.objects_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj,
+	mf2.objects_fetch(${reqUriStr}, ${domainUriStr}, ${perPage}, ${request.query.before || null}, ${request.query.after || null}, ${request.query}) AS obj,
 	mf2.objects_fetch_feeds(${domainUriStr}) AS feeds,
 	mf2.objects_fetch_categories(${domainUriStr}) AS tags
 	`)

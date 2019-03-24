@@ -36,7 +36,11 @@ block append main
 							try
 								+showGalleryEntry(entry)
 							catch
-								div.tpl-error Error: could not render the entry
+								div.tpl-error
+									| Error: could not render the entry
+									| <!--
+									| !{JSON.stringify(entry)}
+									| -->
 		else if feedSettings.layout === 'plain-list'
 			ul
 				each entry in entries
@@ -50,7 +54,11 @@ block append main
 								- const permalink = relativeUrl(_.get(entry, 'properties.url[0]'))
 								a('class'=entry.type.join(' ') href=permalink)= _.get(entry, 'properties.name[0]', 'Untitled')
 							catch
-								div.tpl-error Error: could not render the entry
+								div.tpl-error
+									| Error: could not render the entry
+									| <!--
+									| !{JSON.stringify(entry)}
+									| -->
 		else
 			each entry in entries
 				- if (_.isString(entry)) entry = obj.preloaded[entry]
@@ -62,7 +70,11 @@ block append main
 						article.block.layer-1.entry('class'=entry.type.join(' '))
 							+showEntry(entry, true)
 					catch
-						div.tpl-error Error: could not render the entry
+						div.tpl-error
+							| Error: could not render the entry
+							| <!--
+							| !{JSON.stringify(entry)}
+							| -->
 	nav.category-nav
 		if obj.children.length >= 0
 			-

@@ -1,13 +1,10 @@
 import { dirname } from 'path';
-import dotenv from 'dotenv';
 import debug from 'debug';
 import minimist from 'minimist';
 import app from './src/app';
 
 const __dirname = dirname(new URL(import.meta.url).pathname);
 process.chdir(__dirname)
-
-dotenv.config()
 
 const log = debug('sweetroll-fe:listen')
 const argv = minimist(process.argv.slice(2))

@@ -2,7 +2,7 @@
 	const relativeUrl = u => {
 		const uu = new URI(u)
 		if (uu.host() === domainUri.host()) {
-			return uu.pathname()
+			return uu.pathname() + '?' + uu.query()
 		}
 		return u
 	}

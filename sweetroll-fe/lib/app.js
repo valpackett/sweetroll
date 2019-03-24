@@ -333,15 +333,23 @@ const handler = async ({ request, response, auth, domainUri, reqUri, reqUriFull,
 	if (cache && !auth && await cashed(2 * 60 * 1000)) {
 		return
 	}
-	// TODO don't fetch twice when domain URI == request URI (i.e. home page)
 	const perPage = reqUriStr.endsWith('/kb') ? 999999 : 20 // XXX: ugly hardcode but avoids a roundtrip :D
-	const { dobj, obj, feeds, tags } = await db.row(SQL`SELECT
-	set_config('mf2sql.current_user_url', ${(auth && auth.sub) || 'anonymous'}, true),
-	mf2.objects_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS dobj,
-	mf2.objects_fetch(${reqUriStr}, ${domainUriStr}, ${perPage}, ${request.query.before || null}, ${request.query.after || null}, ${request.query}) AS obj,
-	mf2.objects_fetch_feeds(${domainUriStr}) AS feeds,
-	mf2.objects_fetch_categories(${domainUriStr}) AS tags
-	`)
+	const { _dobj, obj, feeds, tags } = await db.row(
+		reqUriStr == domainUriStr // don't fetch twice
+		? SQL`SELECT
+			set_config('mf2sql.current_user_url', ${(auth && auth.sub) || 'anonymous'}, true),
+			NULL as _dobj,
+			mf2.objects_fetch(${reqUriStr}, ${domainUriStr}, ${perPage}, ${request.query.before || null}, ${request.query.after || null}, ${request.query}) AS obj,
+			mf2.objects_fetch_feeds(${domainUriStr}) AS feeds,
+			mf2.objects_fetch_categories(${domainUriStr}) AS tags`
+		: SQL`SELECT
+			set_config('mf2sql.current_user_url', ${(auth && auth.sub) || 'anonymous'}, true),
+			mf2.objects_fetch(${domainUriStr}, ${domainUriStr}, 1, null, null, null) AS _dobj,
+			mf2.objects_fetch(${reqUriStr}, ${domainUriStr}, ${perPage}, ${request.query.before || null}, ${request.query.after || null}, ${request.query}) AS obj,
+			mf2.objects_fetch_feeds(${domainUriStr}) AS feeds,
+			mf2.objects_fetch_categories(${domainUriStr}) AS tags`
+	)
+	const dobj = reqUriStr == domainUriStr ? obj : _dobj
 
 	// tplctx.perPage = perPage
 	tplctx.siteCard = get(dobj, 'properties.author[0]', {})

@@ -1,30 +1,39 @@
 'use strict'
 
-const helpers = require('./helpers')
-const URI = require('urijs')
-const LinkHeader = require('http-link-header')
-const moment = require('moment')
-const fetch = require('node-fetch')
-const webpush = require('web-push')
-const qs = require('qs')
-const Retry = require('promised-retry')
-const _ = require('lodash')
+import * as helpers from './helpers'
+import URI from 'urijs'
+import LinkHeader from 'http-link-header'
+import moment from 'moment'
+import fetch from 'node-fetch'
+import webpush from 'web-push'
+import qs from 'qs'
+import Retry from 'promised-retry'
+import _ from 'lodash'
 const { head, merge, concat, get, isObject, groupBy, sortBy, includes, isString, debounce, some, flatMap } = _
-const revHash = require('rev-hash')
-const pify = require('pify')
-const pug = require('pug')
-const pugTryCatch = require('pug-plugin-try-catch')
-const pg = require('pg')
-const { default: PgAsync, SQL } = require('pg-async')
+import revHash from 'rev-hash'
+import pify from 'pify'
+import pug from 'pug'
+import pugTryCatch from 'pug-plugin-try-catch'
+import pg from 'pg'
+import pgasync from 'pg-async'
+const PgAsync = pgasync.default
+const { SQL } = PgAsync
+import debug from 'debug'
+import ssecast from 'sse-broadcast'
+import assrev from 'dynamic-asset-rev'
+import lru from 'lru-cache'
+import pgstring from 'pg-connection-string'
+import jsonwebtoken from 'jsonwebtoken'
+import common from '../../sweetroll-node-common'
 
 const env = process.env
 const userAgent = 'Sweetroll'
-const assets = require('dynamic-asset-rev')('dist')
-const log = require('debug')('sweetroll-fe')
-const sse = require('sse-broadcast')({ compression: true })
+const assets = assrev('dist')
+const log = debug('sweetroll-fe')
+const sse = ssecast({ compression: true })
 const isProxied = env.IS_PROXIED // Whether to trust X-Forwarded-Proto
 const cacheTemplates = env.CACHE_TEMPLATES // Do not recompile templates on every request. Enable in prod for perf boost
-const cache = env.DO_CACHE ? require('lru-cache')({
+const cache = env.DO_CACHE ? lru({
 	max: parseInt(env.CACHE_MAX_ITEMS || '128')
 }) : null
 const granaryUrl = env.GRANARY_URL || 'https://granary-demo.appspot.com/url'
@@ -40,14 +49,13 @@ const vapidKeys = { publicKey: env.VAPID_PUBLIC_KEY, privateKey: env.VAPID_PRIVA
 if (vapidKeys.publicKey) {
 	webpush.setVapidDetails(vapidKeys.contact, vapidKeys.publicKey, vapidKeys.privateKey)
 }
-const dbsettings = require('pg-connection-string').parse(env.DATABASE_URL || env.DATABASE_URI || 'postgres://localhost/sweetroll')
+const dbsettings = pgstring.parse(env.DATABASE_URL || env.DATABASE_URI || 'postgres://localhost/sweetroll')
 dbsettings.application_name = 'sweetroll-fe'
 dbsettings.max = parseInt(env.PG_POOL_MAX || '4')
 dbsettings.ssl = env.PG_SSL
 const db = new PgAsync(dbsettings)
 
-const common = require('../../sweetroll-node-common')
-const addAuth = common.authentication(log, require('jsonwebtoken').verify)
+const addAuth = common.authentication(log, jsonwebtoken.verify)
 
 const pugRender = pify(pug.renderFile)
 const render = async (file, tplctx) =>
@@ -196,7 +204,7 @@ const onEntryChange = async (eventUrl) => {
 
 const notificationListener = new Retry({
 	name: 'notificationListener',
-	log: require('debug')('retry:pg-listen'),
+	log: debug('retry:pg-listen'),
 	try () {
 		const ldb = new pg.Client(dbsettings)
 		ldb.on('error', () => {
@@ -458,7 +466,8 @@ const addCommonContext = async (ctx, next) => {
 	ctx.response.set('Feature-Policy', `unsized-media 'none'; sync-xhr 'none'; document-write 'none'`)
 }
 
-const koaCache = cache ? require('koa-cash')({
+import koaCash from 'koa-cash'
+const koaCache = cache ? koaCash({
 	hash (ctx) {
 		// TODO filter out unused params
 		return ctx.reqUriFullStr
@@ -473,16 +482,19 @@ const koaCache = cache ? require('koa-cash')({
 	},
 }) : null
 
-const mount = require('koa-mount')
-const compose = require('koa-compose')
-const router = require('koa-better-router')()
+import Koa from 'koa'
+import mount from 'koa-mount'
+import compose from 'koa-compose'
+import betterRouter from 'koa-better-router'
+import betterServe from 'koa-better-serve'
+const router = betterRouter()
 if (!env.NO_SERVE_DIST) {
 	const addImmutable = async (ctx, next) => {
 		await next()
 		ctx.response.header['cache-control'] += ', immutable'
 	}
 	router.addRoute('GET', '/dist/(.*)*',
-		mount('/dist', compose([addImmutable, require('koa-better-serve')('./dist', '/', {
+		mount('/dist', compose([addImmutable, betterServe('./dist', '/', {
 			maxage: 30 * 24 * 60 * 60 * 1000
 		})]))
 	)
@@ -494,9 +506,9 @@ router.addRoute('GET', '/_indie-config', compose([addAuth, addCommonContext, koa
 router.addRoute('GET', '/custom.css', compose([addAuth, addCommonContext, koaCache, customCssHandler].filter(isObject)))
 router.addRoute('GET', '/search', compose([addAuth, addCommonContext, koaCache, searchHandler].filter(isObject)))
 router.options.notFound = compose([addAuth, addCommonContext, koaCache, handler].filter(isObject))
-const app = new (require('koa'))()
+const app = new Koa()
 if (isProxied) {
 	app.proxy = true
 }
 app.use(router.middleware())
-module.exports = app
+export default app

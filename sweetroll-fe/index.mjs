@@ -1,9 +1,17 @@
-'use strict'
+import { dirname } from 'path';
+import dotenv from 'dotenv';
+import debug from 'debug';
+import minimist from 'minimist';
+import app from './lib/app';
+
+const __dirname = dirname(new URL(import.meta.url).pathname);
 process.chdir(__dirname)
-require('dotenv').config()
-const log = require('debug')('sweetroll-fe:listen')
-const app = require('./lib/app')
-const argv = require('minimist')(process.argv.slice(2))
+
+dotenv.config()
+
+const log = debug('sweetroll-fe:listen')
+const argv = minimist(process.argv.slice(2))
+
 if (argv.protocol === undefined || argv.protocol === 'http') {
 	const port = argv.port || 3300
 	app.listen(port, () => { log('listening on port', port) })

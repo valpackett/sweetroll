@@ -10,8 +10,11 @@
     "devserve": "prok"
   },
   "processes": {
-    "app": "DEBUG=*,-koa-mount,-css-color-function:parse,-dynamic-asset-rev IS_PROXIED=1 RELAX_CSP=1 INDIEAUTH_ENDPOINT=/login/test WEBSUB_HUB=https://httpbin.org/post MICRO_PANEL_ROOT=/micro-panel node-dev --harmony index.js",
+    "app": "DEBUG=*,-nodemon*,-snapdragon:*,-koa-mount,-css-color-function:parse,-dynamic-asset-rev IS_PROXIED=1 RELAX_CSP=1 INDIEAUTH_ENDPOINT=/login/test WEBSUB_HUB=https://httpbin.org/post MICRO_PANEL_ROOT=/micro-panel nodemon --experimental-modules index.mjs",
     "re-asset": "chokidar 'assets/**/*' 'Brocfile.js' --initial -p -c 'SKIP_COMPRESSION=1 npm run assets'"
+  },
+  "nodemonConfig": {
+    "ignore": ["**/dist/**/*", "**/assets/**/*", "Brocfile.js"]
   },
   "devDependencies": {
     "@webcomponents/webcomponentsjs": "^2.2.7",
@@ -32,7 +35,7 @@
     "font-awesome-svg-png": "^1.2.2",
     "indieweb-components": "^0.1.3",
     "localforage": "^1.7.3",
-    "node-dev": "^3.1.3",
+    "nodemon": "^1.18.10",
     "normalize-opentype.css": "^0.2.4",
     "parallel": "^1.2.0",
     "postcss": "^7.0.14",

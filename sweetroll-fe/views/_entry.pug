@@ -133,7 +133,7 @@ mixin showRefContext(entry, { prop, reasonIcon, reasonIconClass, reason, rel, sh
 			if (_.isString(entry)) entry = obj.preloaded[entry]
 			if (!entry) return ''
 			const properties = entry.properties || {}
-			const comments = helpers.separateComments(properties.url, properties.comment || [])
+			const comments = helpers.separateComments(properties.url, (properties.comment || []).map(x => _.isString(x) ? obj.preloaded[x] : x).filter(x => !!x))
 		.layer-2.ref-context.h-cite('class'=prop)
 			if showContexts && !_.isEmpty(inReplyTo)
 				.ref-context-thread-up
@@ -213,7 +213,7 @@ mixin showEntry(entry, compactView)
 		const permalinkAbs = _.get(properties, 'url[0]')
 		const permalink = relativeUrl(permalinkAbs)
 		const props = { reposts: 'p-repost', likes: 'p-like', bookmarks: 'p-bookmark', quotations: 'p-quotation' }
-		const comments = helpers.separateComments(properties.url, (properties.comment || []).map(x => _.isString(x) ? obj.preloaded[x] : x))
+		const comments = helpers.separateComments(properties.url, (properties.comment || []).map(x => _.isString(x) ? obj.preloaded[x] : x).filter(x => !!x))
 		const acl = (entry.acl || []).filter(u => u !== '*')
 		const entryIsForeign = !permalink.startsWith('/') /* if it's our domain, it becomes actually relative */
 	if entryIsForeign

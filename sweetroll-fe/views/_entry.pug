@@ -177,6 +177,8 @@ mixin showRefContextCore(properties)
 				span.ref-context-authors
 					if !_.isEmpty(authors)
 						each author in authors
+							- if (_.isString(author)) author = obj.preloaded[author]
+							- if (!author) return ''
 							span.p-author.h-card
 								a.u-url(href=_.get(author, 'properties.url[0]'))
 									span.p-name= _.get(author, 'properties.name[0]')
@@ -211,7 +213,7 @@ mixin showEntry(entry, compactView)
 		const permalinkAbs = _.get(properties, 'url[0]')
 		const permalink = relativeUrl(permalinkAbs)
 		const props = { reposts: 'p-repost', likes: 'p-like', bookmarks: 'p-bookmark', quotations: 'p-quotation' }
-		const comments = helpers.separateComments(properties.url, properties.comment || [])
+		const comments = helpers.separateComments(properties.url, (properties.comment || []).map(x => _.isString(x) ? obj.preloaded[x] : x))
 		const acl = (entry.acl || []).filter(u => u !== '*')
 		const entryIsForeign = !permalink.startsWith('/') /* if it's our domain, it becomes actually relative */
 	if entryIsForeign

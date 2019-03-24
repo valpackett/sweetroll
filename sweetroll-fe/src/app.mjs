@@ -21,7 +21,7 @@ const { SQL } = PgAsync
 import debug from 'debug'
 import ssecast from 'sse-broadcast'
 import assrev from 'dynamic-asset-rev'
-import lru from 'lru-cache'
+import Lru from 'lru-cache'
 import pgstring from 'pg-connection-string'
 import jsonwebtoken from 'jsonwebtoken'
 import common from '../../sweetroll-node-common'
@@ -33,7 +33,7 @@ const log = debug('sweetroll-fe')
 const sse = ssecast({ compression: true })
 const isProxied = env.IS_PROXIED // Whether to trust X-Forwarded-Proto
 const cacheTemplates = env.CACHE_TEMPLATES // Do not recompile templates on every request. Enable in prod for perf boost
-const cache = env.DO_CACHE ? lru({
+const cache = env.DO_CACHE ? new Lru({
 	max: parseInt(env.CACHE_MAX_ITEMS || '128')
 }) : null
 const granaryUrl = env.GRANARY_URL || 'https://granary-demo.appspot.com/url'

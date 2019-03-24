@@ -130,7 +130,7 @@ setPublished now = insertWith (\_ x → x) "published" (toJSON [ now ])
 
 setClientId ∷ Text → JWT VerifiedJWT → ObjProperties → ObjProperties
 setClientId hostbase token = insertMap "client-id" $ toJSON $ filter isAllowed $
-  catMaybes [ lookup "client_id" $ unregisteredClaims $ claims token ]
+  catMaybes [ lookup "client_id" $ unClaimsMap $ unregisteredClaims $ claims token ]
   where isAllowed (String "example.com") = False
         isAllowed (String x) | T.dropWhileEnd (== '/') x == T.dropWhileEnd (== '/') hostbase = False
         -- funny bug: mf2sql would inline the whole home feed into the client id :D

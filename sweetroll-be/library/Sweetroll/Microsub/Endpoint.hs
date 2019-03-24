@@ -28,7 +28,7 @@ getMicrosub token host (Just "timeline") (Just channel) after before = do
 
 getMicrosub token (Just host) (Just "channels") _ _ _ = do
   ensureScope token $ elem "read"
-  Just feeds ← preview _Array <$> (guardEntryNotFound =<< guardDbError =<< queryDb ("https://" ++ host) getFeeds)
+  feeds ← guardJust errNotFound $ preview _Array <$> (guardEntryNotFound =<< guardDbError =<< queryDb ("https://" ++ host) getFeeds)
   let chans = mapMaybe compactChannel $ toList $
         filter (\x → elem "h-x-reader-channel" $ x ^? key "type" . values . _String) feeds
   return $ Channels $ Channel "notifications" "Notifications" 0 : chans
@@ -66,7 +66,7 @@ postMicrosub token host (Follow channel url) = do
 
 postMicrosub token host (Preview url) = do
   ensureScope token $ elem "read"
-  Just feed ← fetchFeed $ parseUri url
+  feed ← guardJust errNotFound $ fetchFeed $ parseUri url
   return $ Entries (map toJf2 feed) Nothing
 
 postMicrosub token host _ = throwM respNoContent

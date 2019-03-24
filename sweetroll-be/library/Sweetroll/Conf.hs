@@ -28,6 +28,9 @@ instance Default SweetrollConf where
       , allowJsCookieAccess      = False
       , testMode                 = False }
 
+instance DefConfig SweetrollConf where
+  defConfig = def
+
 instance FromEnv SweetrollConf where
   fromEnv = gFromEnvCustom Option { dropPrefixCount = 0, customPrefix = "" }
 

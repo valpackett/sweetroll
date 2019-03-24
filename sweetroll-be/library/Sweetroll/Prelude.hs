@@ -13,6 +13,7 @@ import           Control.Monad.Trans.Except as X (throwE)
 import           Control.Lens as X hiding (Index, index, cons, snoc, uncons, unsnoc, (<.>), (.=), (|>), (<|), Context, Strict)
 import           Text.XML (Document, Element)
 import qualified Data.Text
+import           Data.Default as X
 import           Data.Maybe (fromJust)
 import           Data.List as X (nub)
 import           Data.List.Split as X (splitOn)
@@ -45,6 +46,9 @@ errWrongDomain = errText err400 "The target URI is not on this domain."
 
 errWrongPath ∷ ServantErr
 errWrongPath = errText err400 "The target URI is not a resource that exists on this domain."
+
+errNotFound ∷ ServantErr
+errNotFound = errText err404 "Not found"
 
 errNoURIInField ∷ LByteString → ServantErr
 errNoURIInField f = errText err400 $ "You didn't put a valid absolute URI in the '" ++ f ++ "' field of the www-form-urlencoded request body."

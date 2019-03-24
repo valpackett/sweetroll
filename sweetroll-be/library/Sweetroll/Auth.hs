@@ -51,7 +51,7 @@ authHandler secKey = mkAuthHandler h
                     ] of
             Nothing → throwM errNoAuth
             Just tok →
-              case decodeAndVerifySignature (secret secKey) (cs tok) of
+              case decodeAndVerifySignature (hmacSecret secKey) (cs tok) of
                 Nothing → throwM errWrongAuth
                 Just decodedToken → do
                   -- !!! Only allow tokens issued by the current Host !!!
@@ -73,17 +73,17 @@ mkAcl ∷ JWT VerifiedJWT → [Text]
 mkAcl token = "*" : withTrailingSlash (getSub token)
 
 unregClaims ∷ JWT VerifiedJWT → [(Text, Text)]
-unregClaims = mapMaybe unValue . M.toList . unregisteredClaims . claims
+unregClaims = mapMaybe unValue . M.toList . unClaimsMap . unregisteredClaims . claims
   where unValue (k, String s) = Just (k, s)
         unValue _ = Nothing
 
 signAccessToken ∷ Text → Text → Text → UTCTime → Text → Text → Text
-signAccessToken sec domain me now scope clientId = encodeSigned HS256 (secret sec) t
-  where t = def { iss = stringOrURI domain
-                , sub = stringOrURI $ dropWhileEnd (== '/') me
-                , iat = numericDate $ utcTimeToPOSIXSeconds now
-                , unregisteredClaims = M.fromList [ ("scope", String scope)
-                                                  , ("client_id", String clientId) ] }
+signAccessToken sec domain me now scope clientId = encodeSigned (hmacSecret sec) t
+  where t = mempty { iss = stringOrURI domain
+                   , sub = stringOrURI $ dropWhileEnd (== '/') me
+                   , iat = numericDate $ utcTimeToPOSIXSeconds now
+                   , unregisteredClaims = ClaimsMap $ M.fromList [ ("scope", String scope)
+                                                                 , ("client_id", String clientId) ] }
 
 makeAccessToken ∷ Text → Text → Text → Text → Sweetroll AccessToken
 makeAccessToken domain me scope clientId = do

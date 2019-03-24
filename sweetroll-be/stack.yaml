@@ -5,5 +5,11 @@ packages:
 extra-deps:
   - rapid-0.1.3
   - microformats2-parser-1.0.1.9
+  - jwt-0.9.0
+  - magicbane-0.4.0
+  - ekg-wai-0.1.0.3
+  - monad-metrics-0.2.1.2
+  - refined-0.4
+  - wai-middleware-metrics-0.2.4
 allow-newer: true
-resolver: nightly-2018-07-09
+resolver: lts-13.14
